@@ -161,13 +161,13 @@ export function analyzePushup(lms) {
 
 /* ============ 内置动作注册表 ============ */
 export const EXERCISES = {
-  squat: { id: 'squat', nameKey: 'exSquat', icon: '🦵', analyze: analyzeSquat,
+  squat: { id: 'squat', nameKey: 'exSquat', icon: 'squat', analyze: analyzeSquat,
            rep: { downBelow: 100, upAbove: 150 }, descKey: 'exSquatDesc',
            labelSet: ['good', 'shallow', 'deep', 'lean', 'valgus'] },
-  lunge: { id: 'lunge', nameKey: 'exLunge', icon: '🚶', analyze: analyzeLunge,
+  lunge: { id: 'lunge', nameKey: 'exLunge', icon: 'lunge', analyze: analyzeLunge,
            rep: { downBelow: 100, upAbove: 150 }, descKey: 'exLungeDesc',
            labelSet: ['good', 'frontShallow', 'frontDeep', 'lean'] },
-  pushup: { id: 'pushup', nameKey: 'exPushup', icon: '💪', analyze: analyzePushup,
+  pushup: { id: 'pushup', nameKey: 'exPushup', icon: 'pushup', analyze: analyzePushup,
             rep: { downBelow: 100, upAbove: 160 }, descKey: 'exPushupDesc',
             labelSet: ['good', 'shallow', 'sag'] },
 };
@@ -181,7 +181,7 @@ export const CUSTOM_JOINTS = [
 export function customDefault() {
   return {
     id: 'custom-' + Date.now().toString(36),
-    name: t('customDefaultName'), icon: '⭐', custom: true,
+    name: t('customDefaultName'), icon: 'custom', custom: true,
     angles: [
       { key: 'a1', name: t('fallbackA1'), type: 'angle', a: 'hip', b: 'knee', c: 'ankle' },
       { key: 'a2', name: t('fallbackLean'), type: 'vertical', a: 'shoulder', b: 'hip' },

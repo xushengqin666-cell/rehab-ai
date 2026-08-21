@@ -19,6 +19,36 @@ const exName = (e) => (e.custom ? e.name : t(e.nameKey));
 const exDesc = (e) => (e.custom ? e.desc : t(e.descKey));
 const depthTxt = (d) => t('depth' + (d ? d.charAt(0).toUpperCase() + d.slice(1) : 'Ok')) || d;
 
+/* ============ 定制图标组（线稿风格，替代 emoji） ============ */
+const ICONS = {
+  squat: '<circle cx="12" cy="4.6" r="2.1"/><path d="M12 6.7v5.8M12 12.5 8.6 15.6 10.8 19.6M12 9.6l4.2-.8"/>',
+  lunge: '<circle cx="9.8" cy="4.6" r="2.1"/><path d="M9.8 6.7v5.5M9.8 12.2l4.8 2.9 4.6 4.4M9.8 12.2l-4.2 2.3-2.2 4.6M9.8 9l4.4-1"/>',
+  pushup: '<circle cx="5.2" cy="9.2" r="2.1"/><path d="M7.3 9.6 16.8 12.4M8.4 10 8.4 16.2M17.9 12.8v-1.5"/>',
+  custom: '<path d="M12 4.5l1.4 4.1 4.1 1.4-4.1 1.4L12 15.5l-1.4-4.1-4.1-1.4 4.1-1.4Z"/><path d="M18.5 15.5l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7Z"/>',
+  play: '<path d="M8.2 5.6v12.8a.7.7 0 0 0 1.1.6l10.2-6.4a.7.7 0 0 0 0-1.2L9.3 5a.7.7 0 0 0-1.1.6Z" fill="currentColor" stroke="none"/>',
+  stop: '<rect x="6.8" y="6.8" width="10.4" height="10.4" rx="2.4" fill="currentColor" stroke="none"/>',
+  loader: '<path d="M12 4a8 8 0 1 1-8 8" stroke-width="2.4"/>',
+  retry: '<path d="M20 11a8 8 0 1 0-.9 4.4M20 5v6h-6"/>',
+  camera: '<path d="M4 8.8A2.2 2.2 0 0 1 6.2 6.6h1.6L9.5 4.4h5l1.7 2.2h1.6A2.2 2.2 0 0 1 20 8.8v7.6a2.2 2.2 0 0 1-2.2 2.2H6.2A2.2 2.2 0 0 1 4 16.4Z"/><circle cx="12" cy="12.4" r="3.2"/>',
+  image: '<rect x="3.8" y="5.2" width="16.4" height="13.6" rx="2.2"/><circle cx="9.2" cy="10" r="1.5"/><path d="M4.8 17.2l5-4.6 3.6 3.2 2.9-2.6 2.9 2.8"/>',
+  check: '<path d="m5 12.5 4.5 4.5L19 7.5"/>',
+  alert: '<circle cx="12" cy="12" r="8.2"/><path d="M12 8.2v4.6M12 15.9h.01"/>',
+  record: '<path d="M5 20v-8.5M12 20V4.5M19 20V11M3.8 20h16.4"/>',
+  assess: '<rect x="6.5" y="4.2" width="11" height="16.2" rx="2.2"/><path d="M9.4 4.2v-1a1 1 0 0 1 1-1h3.2a1 1 0 0 1 1 1v1M9.2 13.6l2.1 2.1 3.7-4.4"/>',
+  schedule: '<rect x="4.2" y="5.8" width="15.6" height="14.4" rx="2.2"/><path d="M4.2 10h15.6M8.4 3.8v3M15.6 3.8v3M8.6 14.5h2M13.4 14.5h2M8.6 17h2"/>',
+  sliders: '<path d="M4.5 7.5h15M4.5 16.5h15"/><circle cx="9.5" cy="7.5" r="1.7" fill="currentColor" stroke="none"/><circle cx="15" cy="16.5" r="1.7" fill="currentColor" stroke="none"/>',
+  plus: '<path d="M12 5.5v13M5.5 12h13"/>',
+  edit: '<path d="M4 20l.8-3.5L16.5 4.8a1.8 1.8 0 0 1 2.6 0l.1.1a1.8 1.8 0 0 1 0 2.6L7.5 19.2 4 20Z"/>',
+  trash: '<path d="M5 7h14M10 7V5.5A1.5 1.5 0 0 1 11.5 4h1A1.5 1.5 0 0 1 14 5.5V7M6.5 7l.8 11.5a2 2 0 0 0 2 2h5.4a2 2 0 0 0 2-2L17.5 7M10 11v6M14 11v6"/>',
+};
+function icon(name, cls = '') {
+  if (name === 'loader-spin') { name = 'loader'; cls = 'spin ' + cls; }
+  const d = ICONS[name] || ICONS.custom;
+  return `<svg class="${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+}
+const fbWrap = (ico, html) => `<span class="fb-ico">${icon(ico)}</span><div class="fb-body">${html}</div>`;
+const emptyBox = (ico, key) => `<div class="empty">${icon(ico)}<span>${t(key)}</span></div>`;
+
 /* ============ 火柴人绘制 ============ */
 const BODY = '#4ade80', JOINT = '#22d3ee', BAD = '#ef4444', HEAD = '#facc15';
 const CONNECTIONS = PoseLandmarker.POSE_CONNECTIONS.map((c) => [c.start, c.end]);
@@ -157,7 +187,7 @@ function showCameraError(e) {
   const cams = state.cameras || [];
   const camBtns = cams.length > 1
     ? `<div class="retry-row">${t('retryCams', { n: cams.length })}${
-        cams.map((c, i) => `<button class="btn small" data-cam="${i}">📷 ${c.label || t('camLabel', { n: i + 1 })}</button>`).join('')}</div>`
+        cams.map((c, i) => `<button class="btn small" data-cam="${i}"><span class="btn-ico">${icon('camera')}</span>${c.label || t('camLabel', { n: i + 1 })}</button>`).join('')}</div>`
     : '';
   box.innerHTML = `
     <div class="retry-card">
@@ -165,8 +195,8 @@ function showCameraError(e) {
       <p class="hint">${cameraErrorText(e)}</p>
       ${camBtns}
       <div class="retry-row">
-        <button class="btn primary" id="btn-cam-retry">${t('btnRetry')}</button>
-        <button class="btn" id="btn-cam-photo">${t('btnUsePhoto')}</button>
+        <button class="btn primary" id="btn-cam-retry"><span class="btn-ico">${icon('retry')}</span><span>${t('btnRetry')}</span></button>
+        <button class="btn" id="btn-cam-photo"><span class="btn-ico">${icon('image')}</span><span>${t('btnUsePhoto')}</span></button>
       </div>
       <p class="hint tiny" id="cam-diag"></p>
     </div>`;
@@ -207,8 +237,8 @@ function renderExChips() {
   const ids = ['squat', 'lunge', 'pushup', ...custom.map((e) => e.id)];
   $('ex-chips').innerHTML = ids.map((id) => {
     const e = EXERCISES[id] || custom.find((x) => x.id === id);
-    return `<button class="chip ${id === activeExId() ? 'on' : ''}" data-ex="${id}">${e.icon} ${exName(e)}</button>`;
-  }).join('') + `<button class="chip plus" id="chip-add">${t('chipAdd')}</button>`;
+    return `<button class="chip ${id === activeExId() ? 'on' : ''}" data-ex="${id}"><span class="chip-ico">${icon(e.icon)}</span><span>${exName(e)}</span></button>`;
+  }).join('') + `<button class="chip plus" id="chip-add"><span class="chip-ico">${icon('plus')}</span><span>${t('chipAdd')}</span></button>`;
   $('ex-chips').querySelectorAll('.chip[data-ex]').forEach((b) =>
     b.addEventListener('click', () => { LS.set('rehab_active_ex', b.dataset.ex); switchEx(); }));
   $('chip-add').addEventListener('click', () => { openCustomForm(null); switchTab('settings'); });
@@ -304,7 +334,7 @@ function loop() {
   if (!result.landmarks || !result.landmarks.length) {
     drawEmpty();
     if (fb._last !== 'nodetect') {
-      fb.innerHTML = t('noPerson');
+      fb.innerHTML = fbWrap('alert', t('noPerson'));
       fb.className = 'feedback';
       fb._last = 'nodetect';
     }
@@ -329,7 +359,7 @@ function loop() {
   $('st-reps').textContent = String(reps);
 
   const msgs = res.badMsgs.length ? res.badMsgs : res.goodMsgs;
-  const msg = msgs.join('<br>');
+  const msg = fbWrap(res.msgsIsBad ? 'alert' : 'check', msgs.join('<br>'));
   if (fb._last !== msg) { fb.innerHTML = msg; fb._last = msg; }
   const cls = 'feedback' + (res.msgsIsBad ? ' bad' : res.depth !== 'ok' ? ' warn' : '');
   if (fb.className !== cls) fb.className = cls;
@@ -341,49 +371,52 @@ function loop() {
 function drawEmpty() { ctx.clearRect(0, 0, $('overlay').width, $('overlay').height); }
 
 /* ============ 开始 / 停止 / 图片 ============ */
-const startLabel = () => (state.running ? t('btnStop') : t('btnStart'));
+function setStartBtn(key, ico) {
+  $('btn-start-label').textContent = t(key);
+  $('btn-start-ico').innerHTML = icon(ico || 'play');
+}
 async function toggleStart() {
   const btn = $('btn-start');
-  if (state.running) { state.running = false; stopCamera(); btn.textContent = startLabel(); return; }
+  if (state.running) { state.running = false; stopCamera(); setStartBtn('btnStart', 'play'); return; }
   $('cam-retry').classList.add('hidden');
   try {
     btn.disabled = true;
     let stream;
     if (state.pickCam !== undefined && state.cameras?.[state.pickCam]) {
       const c = state.cameras[state.pickCam];
-      btn.textContent = t('btnOpening');
+      setStartBtn('btnOpening', 'loader-spin');
       stream = await openCameraWithTimeout({ video: { deviceId: { exact: c.deviceId } }, audio: false });
     } else {
-      btn.textContent = t('btnDetecting');
+      setStartBtn('btnDetecting', 'loader-spin');
       stream = await openCamera();
     }
     await bindStream(stream);
     if (!state.landmarker) {
       $('loading').classList.remove('hidden');
-      btn.textContent = t('btnLoadingModel');
+      setStartBtn('btnLoadingModel', 'loader-spin');
       state.landmarker = await loadModel();
       $('loading').classList.add('hidden');
     }
     state.running = true; state.photoMode = false;
     resetAgg();
-    btn.textContent = t('btnStop');
+    setStartBtn('btnStop', 'stop');
     $('stats-box').classList.remove('hidden');
     $('feedback').classList.remove('hidden');
-    $('feedback').textContent = t('detecting');
+    $('feedback').innerHTML = fbWrap('camera', t('detecting'));
     $('feedback').className = 'feedback';
     $('feedback')._last = null;
     kickLoop();
   } catch (e) {
     console.error(e);
     $('loading').classList.add('hidden');
-    btn.disabled = false; btn.textContent = startLabel();
+    btn.disabled = false; setStartBtn('btnStart', 'play');
     state.videoOn = false;
     showCameraError(e);
   }
 }
 function switchEx() {
   const wasRunning = state.running;
-  if (state.running) { state.running = false; stopCamera(); $('btn-start').textContent = startLabel(); }
+  if (state.running) { state.running = false; stopCamera(); setStartBtn('btnStart', 'play'); }
   state.photoMode = false;
   renderExChips(); renderCollectLabels(getEx(activeExId()));
   resetAgg();
@@ -395,7 +428,7 @@ $('btn-photo').addEventListener('click', () => $('photo-input').click());
 $('btn-toggle-collect').addEventListener('click', () => {
   state.collectMode = !state.collectMode;
   $('collect-panel').classList.toggle('hidden', !state.collectMode);
-  $('btn-toggle-collect').textContent = state.collectMode ? t('btnCollectStop') : t('btnCollect');
+  $('btn-collect-label').textContent = state.collectMode ? t('btnCollectStop') : t('btnCollect');
   renderCollectCount();
 });
 
@@ -406,7 +439,7 @@ $('photo-input').addEventListener('change', async (ev) => {
   img.src = URL.createObjectURL(file);
   await img.decode();
   try {
-    if (state.running) { state.running = false; stopCamera(); $('btn-start').textContent = startLabel(); }
+    if (state.running) { state.running = false; stopCamera(); setStartBtn('btnStart', 'play'); }
     if (!state.landmarker) {
       $('loading').classList.remove('hidden');
       state.landmarker = await loadModel();
@@ -428,7 +461,7 @@ $('photo-input').addEventListener('change', async (ev) => {
     const result = state.landmarker.detectForVideo(off, performance.now());
     resetAgg();
     if (!result.landmarks || !result.landmarks.length) {
-      $('feedback').textContent = t('photoNoPerson');
+      $('feedback').innerHTML = fbWrap('alert', t('photoNoPerson'));
       $('feedback').className = 'feedback warn';
       return;
     }
@@ -441,12 +474,12 @@ $('photo-input').addEventListener('change', async (ev) => {
     recordFrame(res);
     state.statsKey = ex.id;
     renderChips(res);
-    $('feedback').innerHTML = (res.badMsgs.length ? res.badMsgs : res.goodMsgs).join('<br>');
+    $('feedback').innerHTML = fbWrap(res.msgsIsBad ? 'alert' : 'check', (res.badMsgs.length ? res.badMsgs : res.goodMsgs).join('<br>'));
     $('feedback').className = 'feedback' + (res.msgsIsBad ? ' bad' : '');
     $('btn-save').disabled = false;
   } catch (e) {
     console.error(e);
-    $('feedback').textContent = t('photoFail', { msg: e.message });
+    $('feedback').innerHTML = fbWrap('alert', t('photoFail', { msg: e.message }));
     $('feedback').className = 'feedback bad';
   }
   ev.target.value = '';
@@ -491,8 +524,9 @@ function renderRecords() {
     }
   }
   const max = Math.max(1, ...days.map((d) => d.reps));
+  const todayKey = today.toDateString();
   $('week-chart').innerHTML = days.map((d) => `
-    <div class="bar-wrap">
+    <div class="bar-wrap ${d.key === todayKey ? 'today' : ''}">
       <div class="bar ${d.reps ? '' : 'zero'}" style="height:${Math.max(4, 100 * d.reps / max)}%"></div>
       <span class="bar-label">${d.label}</span>
     </div>`).join('');
@@ -507,14 +541,14 @@ function renderRecords() {
     ? t('summaryLine', { n: sessions.length, r: totalReps, s: streak })
     : t('noSessions');
   const list = $('session-list');
-  if (!sessions.length) { list.innerHTML = `<div class="empty">${t('emptyList')}</div>`; return; }
+  if (!sessions.length) { list.innerHTML = emptyBox('record', 'emptyList'); return; }
   list.innerHTML = sessions.slice(0, 20).map((s) => {
     const builtin = EXERCISES[s.ex];
     const name = builtin ? exName(builtin) : (s.exName || '?');
     return `
     <div class="item">
       <div>
-        <div class="t">${builtin?.icon || '⭐'} ${name} · ${fmtDate(s.ts)} · ${t('repsN', { n: s.reps })} · ${s.dur ?? '?'}s · ${depthTxt(s.depth)}</div>
+        <div class="t"><span class="t-ico">${icon(builtin ? builtin.icon : 'custom')}</span>${name} · ${fmtDate(s.ts)} · ${t('repsN', { n: s.reps })} · ${s.dur ?? '?'}s · ${depthTxt(s.depth)}</div>
         <div class="d">${t('badFramesPct', { p: s.badPct })}${s.badPct >= 30 ? ' ⚠️' : ''}${s.valgusPct ? ' · ' + t('valgusFramesPct', { p: s.valgusPct }) : ''}${s.collectCount ? ' · ' + t('collectN', { n: s.collectCount }) : ''}</div>
       </div>
       <button class="del" data-id="${s.id}">✕</button>
@@ -561,7 +595,7 @@ const adviceText = (r) => (r.adviceKeys ? r.adviceKeys.map((k) => t(k)).join(' '
 function renderAssessments() {
   const list = LS.get('rehab_assessments', []);
   const el = $('assess-list');
-  if (!list.length) { el.innerHTML = `<div class="empty">${t('emptyAssess')}</div>`; return; }
+  if (!list.length) { el.innerHTML = emptyBox('assess', 'emptyAssess'); return; }
   el.innerHTML = list.slice(0, 10).map((r) => `
     <div class="item">
       <div>
@@ -593,7 +627,7 @@ $('appt-form').addEventListener('submit', (e) => {
 function renderAppts() {
   const list = LS.get('rehab_appts', []).sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
   const el = $('appt-list');
-  if (!list.length) { el.innerHTML = `<div class="empty">${t('emptyAppts')}</div>`; return; }
+  if (!list.length) { el.innerHTML = emptyBox('schedule', 'emptyAppts'); return; }
   const now = new Date();
   const d2 = (dt) => `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
   const todayStr = d2(now);
@@ -603,13 +637,13 @@ function renderAppts() {
   el.innerHTML = list.map((a) => {
     // 修复：之前用 < 23:59 比较，导致今天还没到的预约也被标成已过期
     const past = a.date < todayStr || (a.date === todayStr && a.time <= nowTime);
-    const tag = past ? `<b style="color:#ef4444">${t('tagPast')}</b>`
-      : a.date === todayStr ? `<b style="color:#22c55e">${t('tagToday')}</b>`
-      : a.date === tomorrowStr ? `<b style="color:#eab308">${t('tagTomorrow')}</b>` : '';
+    const tag = past ? `<b style="color:var(--red)">${t('tagPast')}</b>`
+      : a.date === todayStr ? `<b style="color:var(--green)">${t('tagToday')}</b>`
+      : a.date === tomorrowStr ? `<b style="color:var(--yellow)">${t('tagTomorrow')}</b>` : '';
     return `
     <div class="item" style="${past ? 'opacity:.55' : ''}">
       <div>
-        <div class="t">📅 ${a.date} ${a.time} · ${a.place}${tag ? ' ' + tag : ''}</div>
+        <div class="t"><span class="t-ico">${icon('schedule')}</span>${a.date} ${a.time} · ${a.place}${tag ? ' ' + tag : ''}</div>
         <div class="d">${a.note || t('noNote')}</div>
       </div>
       <button class="del" data-id="${a.id}">✕</button>
@@ -626,16 +660,16 @@ let editingCustomId = null;
 function renderCustomList() {
   const list = loadCustomExercises();
   const el = $('custom-list');
-  if (!list.length) { el.innerHTML = `<div class="empty">${t('noCustom')}</div>`; return; }
+  if (!list.length) { el.innerHTML = emptyBox('sliders', 'noCustom'); return; }
   el.innerHTML = list.map((e) => `
     <div class="item">
       <div>
-        <div class="t">⭐ ${e.name}</div>
+        <div class="t"><span class="t-ico">${icon('custom')}</span>${e.name}</div>
         <div class="d">${e.angles.map((a) => a.name).join(' · ')}</div>
       </div>
       <div style="display:flex;gap:4px">
-        <button class="mini" data-edit="${e.id}">✏️</button>
-        <button class="mini del" data-del="${e.id}">🗑</button>
+        <button class="mini" data-edit="${e.id}">${icon('edit')}</button>
+        <button class="mini del" data-del="${e.id}">${icon('trash')}</button>
       </div>
     </div>`).join('');
   el.querySelectorAll('[data-edit]').forEach((b) => b.addEventListener('click', () => openCustomForm(b.dataset.edit)));
@@ -883,8 +917,8 @@ onLangChanged(() => {
   renderExChips(); renderCollectLabels(getEx(activeExId()));
   renderRecords(); renderAssessments(); renderAppts(); renderCustomList();
   renderCollectCount();
-  $('btn-start').textContent = state.running ? t('btnStop') : t('btnStart');
-  $('btn-toggle-collect').textContent = state.collectMode ? t('btnCollectStop') : t('btnCollect');
+  setStartBtn(state.running ? 'btnStop' : 'btnStart', state.running ? 'stop' : 'play');
+  $('btn-collect-label').textContent = state.collectMode ? t('btnCollectStop') : t('btnCollect');
   $('feedback')._last = null;
   if (state.running) state.statsKey = null;   // 下一帧按新语言重建统计
   if (state._lastCamErr && !$('cam-retry').classList.contains('hidden')) showCameraError(state._lastCamErr);
@@ -892,8 +926,8 @@ onLangChanged(() => {
 renderExChips(); renderCollectLabels(getEx(activeExId())); resetAgg();
 renderRecords(); renderAssessments(); renderAppts(); renderCustomList();
 renderCollectCount();
-$('btn-toggle-collect').textContent = t('btnCollect');
-$('btn-start').textContent = startLabel();
+$('btn-collect-label').textContent = t('btnCollect');
+setStartBtn('btnStart', 'play');
 if (location.hash === '#selftest') selfTest();
 // ?autostart=1 → 页面加载后自动开始分析（测试 / 快捷进入用）
 if (location.search.includes('autostart')) setTimeout(() => toggleStart(), 800);
