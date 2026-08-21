@@ -36,6 +36,7 @@ const DICT = {
     c1: '&nbsp;&nbsp;· NotAllowedError = 权限被拒 → 点地址栏左侧 🔒 或摄像头图标 → 网站设置 → 摄像头 → 允许 → 刷新本页',
     c2: '&nbsp;&nbsp;· NotReadableError = 摄像头被其他程序占用（视频会议/录屏/其他标签页）',
     c3: '&nbsp;&nbsp;· NotFoundError = 没有摄像头设备',
+    wxHint: '⚠️ 检测到微信内置浏览器 —— 微信不允许网页用摄像头，请点右上角「···」→「在浏览器中打开」',
   },
   en: {
     h2: 'Camera self-test', sub: 'This page only tests the camera (no AI model) — to tell whether the issue is the camera or the app.',
@@ -51,6 +52,7 @@ const DICT = {
     c1: '&nbsp;&nbsp;· NotAllowedError = permission denied → tap 🔒 or the camera icon → Site settings → Camera → Allow → reload',
     c2: '&nbsp;&nbsp;· NotReadableError = camera in use by another app (video call / recorder / other tab)',
     c3: '&nbsp;&nbsp;· NotFoundError = no camera device',
+    wxHint: '⚠️ WeChat browser detected — WeChat blocks the camera on web pages. Tap ⋯ (top-right) → "Open in browser".',
   },
 };
 let lang = (() => {
@@ -76,6 +78,7 @@ const log = (html, cls) => { out.innerHTML += '<div class="' + (cls || '') + '" 
 out.innerHTML = '<div style="margin-top:6px">' + t('checking') + '</div>';
 (async () => {
   log(t('pageOk'));
+  if (/micromessenger/i.test(navigator.userAgent)) log(t('wxHint'), 'bad');
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
     log(t('noGUM'), 'bad');
     return;

@@ -377,7 +377,7 @@ function setStartBtn(key, ico) {
 }
 async function toggleStart() {
   const btn = $('btn-start');
-  if (state.running) { state.running = false; stopCamera(); setStartBtn('btnStart', 'play'); return; }
+  if (state.running) { state.running = false; stopCamera(); btn.disabled = false; setStartBtn('btnStart', 'play'); return; }
   $('cam-retry').classList.add('hidden');
   try {
     btn.disabled = true;
@@ -399,6 +399,7 @@ async function toggleStart() {
     }
     state.running = true; state.photoMode = false;
     resetAgg();
+    btn.disabled = false;   // 修复：启动成功后按钮要恢复可点（否则无法停止/重启）
     setStartBtn('btnStop', 'stop');
     $('stats-box').classList.remove('hidden');
     $('feedback').classList.remove('hidden');
@@ -416,7 +417,7 @@ async function toggleStart() {
 }
 function switchEx() {
   const wasRunning = state.running;
-  if (state.running) { state.running = false; stopCamera(); setStartBtn('btnStart', 'play'); }
+  if (state.running) { state.running = false; stopCamera(); setStartBtn('btnStart', 'play'); $('btn-start').disabled = false; }
   state.photoMode = false;
   renderExChips(); renderCollectLabels(getEx(activeExId()));
   resetAgg();
@@ -439,7 +440,7 @@ $('photo-input').addEventListener('change', async (ev) => {
   img.src = URL.createObjectURL(file);
   await img.decode();
   try {
-    if (state.running) { state.running = false; stopCamera(); setStartBtn('btnStart', 'play'); }
+    if (state.running) { state.running = false; stopCamera(); setStartBtn('btnStart', 'play'); $('btn-start').disabled = false; }
     if (!state.landmarker) {
       $('loading').classList.remove('hidden');
       state.landmarker = await loadModel();
@@ -929,6 +930,14 @@ renderCollectCount();
 $('btn-collect-label').textContent = t('btnCollect');
 setStartBtn('btnStart', 'play');
 if (location.hash === '#selftest') selfTest();
+// 微信内置浏览器不支持摄像头 —— 打开时就提示用系统浏览器
+if (/micromessenger/i.test(navigator.userAgent)) {
+  const fb = $('feedback');
+  fb.classList.remove('hidden');
+  fb.innerHTML = fbWrap('alert', t('wechatHint'));
+  fb.className = 'feedback warn';
+  fb._last = 'wechat';
+}
 // ?autostart=1 → 页面加载后自动开始分析（测试 / 快捷进入用）
 if (location.search.includes('autostart')) setTimeout(() => toggleStart(), 800);
 // ?modeltest=1 → 自检 AI 模型能否加载（wasm/MIME/路径，供部署验证用）

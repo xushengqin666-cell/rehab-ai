@@ -29,6 +29,7 @@ const DICT = {
     photoFail: '图片分析失败：{msg}',
     toastNeedPerson: '先让画面检测到人', toastLabeled: '已记录: {label}',
     toastSaved: '已保存本次训练记录',
+    wechatHint: '检测到你正在微信内置浏览器里打开 —— 微信不允许网页使用摄像头。请点右上角「···」→ 选择「在浏览器中打开」，用手机浏览器（Safari / Chrome）打开就能用摄像头了。',
     repsLabel: '次数', modelLoadFail: '模型加载失败：请检查 pose_landmarker_full.task 是否存在',
     // 摄像头错误
     errNotAllowed: '摄像头权限被拒绝。请点击地址栏左侧的 🔒 或摄像头图标 → 「网站设置」→ 把摄像头改为「允许」，然后点「重试」。如果刚才弹过询问框，点「允许」即可。',
@@ -165,6 +166,7 @@ const DICT = {
     photoFail: 'Photo analysis failed: {msg}',
     toastNeedPerson: 'Step into the frame first', toastLabeled: 'Recorded: {label}',
     toastSaved: 'Session saved',
+    wechatHint: 'You are inside the WeChat browser, which blocks the camera. Tap ⋯ in the top-right corner and choose "Open in browser" — then the camera will work.',
     repsLabel: 'Reps', modelLoadFail: 'Model load failed: check that pose_landmarker_full.task exists',
     errNotAllowed: 'Camera permission denied. Tap the 🔒 or camera icon next to the address bar → Site settings → Camera → Allow, then tap "Retry". If a prompt just appeared, tap "Allow".',
     errNotFound: 'No usable camera detected. If your device has more than one camera (e.g. Integrated / IR), refresh and try again — or tap "Analyze photo" to try a photo instead.',
@@ -301,6 +303,8 @@ export function setLang(l) {
   document.title = t('appTitle');
   const md = document.querySelector('meta[name="description"]');
   if (md) md.content = t('metaDesc');
+  const btn = document.getElementById('btn-lang');
+  if (btn) btn.textContent = lang === 'zh' ? 'EN' : '中文';   // 修复：切换后按钮文字同步更新
   applyStatic();
   listeners.forEach((fn) => { try { fn(); } catch (e) { console.warn('lang listener error:', e); } });
 }
