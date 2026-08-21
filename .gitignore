@@ -1,0 +1,6 @@
+# 开发测试残留（不打进仓库）
+.headless-*/
+as-err.txt
+as-out.txt
+ct-err.txt
+ct-out.txt

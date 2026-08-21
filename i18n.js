@@ -1,0 +1,319 @@
+// i18n.js — 国际化：中文 / English 双语，自动检测浏览器语言，可手动切换并记住选择
+// 用法：import { t, initI18n, onLangChanged, getLang } from './i18n.js'
+//   - 静态 HTML 文本：给元素加 data-i18n="key"（占位符用 data-i18n-ph="key"）
+//   - 动态 JS 文本：t('key', {var: 值})，{var} 会被替换
+
+const DICT = {
+  zh: {
+    // 应用
+    appTitle: '康复AI · 火柴人姿势分析',
+    metaDesc: '康复AI：浏览器本地运行 AI 姿态识别，火柴人实时分析深蹲/弓步蹲/俯卧撑，训练记录与理疗预约，视频不上传。',
+    logoName: '🏥 康复AI',
+    headerSub: '火柴人姿势分析 · 端手互通',
+    // 导航
+    navTrain: '训练', navRecord: '记录', navAssess: '评估', navSchedule: '日程', navSettings: '设置',
+    // 训练页
+    phText: '点击「开始分析」启动摄像头<br>手机请授权摄像头权限（需 HTTPS 或 localhost）',
+    loading: '⏳ 正在加载 AI 模型…',
+    btnStart: '▶ 开始分析', btnStop: '⏹ 停止分析',
+    btnOpening: '⏳ 打开摄像头…', btnDetecting: '⏳ 检测摄像头…', btnLoadingModel: '⏳ 加载AI模型(约10秒)…',
+    btnPhoto: '🖼 图片分析', btnSave: '💾 保存本次记录',
+    btnCollect: '📝 数据采集', btnCollectStop: '⏹ 退出采集',
+    collectTitle: '📝 数据采集（训练真实模型用）',
+    collectHint: '摆好姿势 → 点下方标签记录当前帧特征。每个标签 ≥50 条效果最好。',
+    collectCount: '已采 {n} 条', collectFeats: '特征: [{f}]',
+    trainHint: '正面朝向镜头可检测膝盖内扣。采集的数据在「设置」页导出 CSV，用 Python 训练模型。',
+    detecting: '检测中… 站到画面里，让全身完整可见',
+    noPerson: '未检测到人 —— 请站到画面中央，全身入镜（光线充足效果更好）',
+    photoNoPerson: '图片里没检测到人，换一张试试',
+    photoFail: '⚠️ 图片分析失败：{msg}',
+    toastNeedPerson: '先让画面检测到人', toastLabeled: '已记录: {label}',
+    toastSaved: '✅ 已保存本次训练记录',
+    repsLabel: '次数', modelLoadFail: '模型加载失败：请检查 pose_landmarker_full.task 是否存在',
+    // 摄像头错误
+    errNotAllowed: '摄像头权限被拒绝。请点击地址栏左侧的 🔒 或摄像头图标 → 「网站设置」→ 把摄像头改为「允许」，然后点「重试」。如果刚才弹过询问框，点「允许」即可。',
+    errNotFound: '没有检测到可用的摄像头。你的电脑有 2 个摄像头（Integrated Camera / IR Camera），若列表里看不到，请刷新页面再试；也可以先点「🖼 图片分析」用照片体验。',
+    errNotReadable: '摄像头被其他程序占用（视频会议、其他标签页、录屏软件等）。关掉它们再点「重试」。',
+    errOverconstrained: '摄像头不支持当前配置，已自动换用其他模式再试。',
+    errSecurity: '当前页面不是安全环境（需 HTTPS 或 localhost），浏览器禁止摄像头。',
+    errTimeout: '打开摄像头超时。如果屏幕上弹过摄像头权限询问，请点「允许」后重试。',
+    errUnknown: '启动失败：{msg}',
+    retryTitle: '⚠️ 摄像头启动失败', retryCams: '检测到 {n} 个摄像头，点选重试：',
+    camLabel: '摄像头{n}', btnRetry: '🔄 重试', btnUsePhoto: '🖼 改用图片分析',
+    diag: '诊断: {n} 个摄像头 · 权限状态: {p} · 浏览器: {b}',
+    permGranted: '已允许', permPrompt: '会询问', permDenied: '已拒绝', permUnknown: '未知',
+    diagOther: '其他',
+    // 动作
+    exSquat: '深蹲', exSquatDesc: '双脚与肩同宽，蹲到大腿平行地面，膝盖对准脚尖。',
+    exLunge: '弓步蹲', exLungeDesc: '前后分腿下蹲，前膝对准脚尖，后膝接近地面。',
+    exPushup: '俯卧撑', exPushupDesc: '身体保持一条直线，胸口贴近地面再推起。',
+    chipAdd: '➕ 自定义',
+    // 深蹲
+    sqShallow: '蹲得太浅，大腿蹲到与地面平行', sqDeep: '蹲得有点深，注意膝盖别内扣', sqDepthOk: '深度合适',
+    sqLeanBad: '上半身前倾过多，挺直背部', sqBackOk: '背部姿态OK',
+    sqValgusSide: '建议正面朝向镜头以检测膝盖内扣', sqValgusBad: '膝盖内扣！膝盖对准脚尖方向', sqValgusOk: '膝盖方向OK',
+    chipKnee: '膝盖角', chipLean: '前倾角', chipDepth: '深度', chipValgus: '内扣',
+    valgusIn: '内扣 L{l} R{r}', valgusOkVal: '正常', valgusSideVal: '侧身中',
+    depthOk: '标准', depthShallow: '太浅', depthDeep: '太深', depthBad: '需调整',
+    // 弓步蹲
+    luShallow: '前腿下蹲不够，膝盖再向前屈', luDeep: '前腿膝盖过深，注意膝盖对准脚尖', luDepthOk: '前腿深度合适',
+    luBackStraight: '后腿太直，屈膝降低后膝', luBackOk: '后腿姿态OK',
+    chipFrontKnee: '前膝角', chipBackKnee: '后膝角',
+    // 俯卧撑
+    puShallow: '下得太浅，胸口贴近地面（肘约90°）', puDeep: '肘部过屈，注意控制幅度', puDepthOk: '下放深度合适',
+    puSag: '身体塌腰/撅臀，收紧核心保持一条直线', puBodyOk: '身体直线OK',
+    chipElbow: '肘角', chipBody: '身体直线', chipBodyOff: '{n}°偏',
+    // 自定义动作
+    customDefaultName: '我的动作', customDefaultDesc: '自定义康复动作',
+    cgA1Good: '角度1 在目标范围内', cgA1Bad: '角度1 超出范围，调整姿势',
+    cgA2Good: '躯干姿态OK', cgA2Bad: '躯干前倾过多',
+    fallbackName: '我的动作', fallbackDesc: '自定义康复动作',
+    fallbackA1: '角度1', fallbackA2: '角度2', fallbackLean: '前倾角',
+    fallbackA1Good: '角度1 OK', fallbackA1Bad: '角度1 超出范围',
+    fallbackA2Good: '角度2 OK', fallbackA2Bad: '角度2 超出范围',
+    // 关节
+    jShoulder: '肩', jElbow: '肘', jWrist: '腕', jHip: '髋', jKnee: '膝', jAnkle: '踝',
+    jShoulderMid: '肩中线', jHipMid: '髋中线', jNose: '鼻',
+    // 数据标签
+    lbGood: '标准', lbShallow: '太浅', lbDeep: '太深', lbLean: '前倾', lbValgus: '内扣',
+    lbFrontShallow: '前腿浅', lbFrontDeep: '前腿深', lbSag: '塌腰', lbBad: '需调整',
+    // 记录页
+    weekTitle: '📊 本周概况', recordTitle: '📅 打卡记录',
+    summaryLine: '累计 {n} 次训练 · 共 {r} 次动作 · 连续打卡 {s} 天',
+    noSessions: '还没有训练记录，去「训练」页开始吧', emptyList: '暂无记录',
+    repsN: '{n} 次', badFramesPct: '不合格帧 {p}%', valgusFramesPct: '内扣帧 {p}%', collectN: '采集 {n} 条',
+    // 评估页
+    assessTitle: '🩺 自我评估（1 分钟）',
+    qPain: '1. 下蹲时膝盖有疼痛吗？', qValgus: '2. 深蹲时膝盖会不自觉向内扣吗？',
+    qBack: '3. 久坐或运动后腰痛？', qFreq: '4. 每周运动频率？',
+    pain0: '无', pain1: '轻微', pain2: '明显',
+    valgus0: '不会', valgus1: '有时', valgus2: '经常',
+    back0: '无', back1: '偶尔', back2: '经常',
+    freq0: '<1次', freq1: '1-3次', freq2: '4次以上',
+    btnAssess: '生成评估报告', assessScore: '评估分：{s}/8', assessScoreShort: '🩺 {t} · 评估分 {s}/8',
+    advisePain: '⚠️ 下蹲有疼痛：建议暂停深蹲训练，先找理疗师评估（<b>日程页</b>可添加预约）',
+    adviseValgus: '🦵 有膝内扣倾向：强化臀中肌 —— 蚌式开合、侧卧抬腿，深蹲时膝盖对准第二脚趾',
+    adviseBack: '🩺 腰痛：避免久坐，练习臀桥与猫牛式，核心训练循序渐进',
+    adviseFreq: '🏃 运动太少：从每周 2-3 次低冲击运动开始，走路、游泳都行',
+    adviseGood: '🌟 状态良好！保持规律训练，注意动作质量优先于数量',
+    assessListTitle: '📋 历史评估', emptyAssess: '暂无评估记录',
+    // 日程页
+    apptTitle: '📆 理疗预约', phPlace: '理疗师 / 医院名称', phNote: '备注（可选）',
+    btnAddAppt: '➕ 添加预约', apptListTitle: '🗓 预约列表', emptyAppts: '暂无预约',
+    tagPast: '已过期', tagToday: '今天', tagTomorrow: '明天', noNote: '（无备注）',
+    toastAppt: '📆 已添加预约',
+    // 设置页
+    customTitle: '⭐ 自定义动作',
+    customHint: '自己定义动作：选三个关节量夹角（或竖直角度）、设合格范围、设计数规则、写提示语。创建后在「训练」页选择使用。',
+    btnNewCustom: '➕ 新建自定义动作',
+    noCustom: '还没有自定义动作，点下面「新建」',
+    confirmDelCustom: '删除该自定义动作？', toastDeleted: '已删除',
+    cfTitleNew: '新建自定义动作', cfTitleEdit: '编辑自定义动作',
+    cfNamePh: '动作名称（如：单腿蹲）', cfDescPh: '动作说明（可选）',
+    cfA1: '角度1（主角度）', cfA2: '角度2（辅助）',
+    cfAngleName1: '角度名称（如：膝角）', cfAngleName2: '角度名称（如：前倾）',
+    cfTypeAngle: '三点夹角', cfTypeVertical: '竖直角度',
+    cfMin: '合格最小(可空)', cfMax: '合格最大(可空)', cfGoodPh: '合格提示', cfBadPh: '不合格提示',
+    cfRep: '次数计数', cfRepMetricA1: '用角度1 计数', cfRepMetricA2: '用角度2 计数',
+    cfRepDown: '下蹲阈值(如100)', cfRepUp: '起身阈值(如150)',
+    cfCancel: '取消', cfSave: '💾 保存',
+    toastCustomSaved: '✅ 已更新', toastCustomCreated: '✅ 已创建，去「训练」页选择它',
+    exportTitle: '🧪 数据导出（训练模型闭环）',
+    exportHint: '在训练页开启「数据采集」打标签后，导出 CSV → 电脑上用 <b>train_from_web.py</b> 训练真实模型。',
+    btnExportCollect: '⬇ 导出采集 CSV', btnClearCollect: '🗑 清空采集',
+    syncTitle: '🔁 数据同步（端手互通）',
+    syncHint: '数据默认保存在本机浏览器。跨设备同步：一台设备「导出」，另一台「导入」。\n部署到 Netlify/GitHub Pages 后，手机和电脑用同一个网址访问。',
+    btnExport: '⬇ 导出数据', btnImport: '⬆ 导入数据', btnClearAll: '🗑 清除全部数据',
+    aboutTitle: 'ℹ️ 关于',
+    aboutAi: 'AI 模型：MediaPipe PoseLandmarker（本地运行，不上传视频）',
+    aboutData: '数据只存在你自己的浏览器 localStorage 里',
+    aboutHttps: '手机使用摄像头需要 HTTPS —— 部署到 <b>Netlify</b>（免费）即可',
+    aboutDeploy: '部署方法：把本文件夹拖进 <a href="https://app.netlify.com/drop" target="_blank" rel="noopener">app.netlify.com/drop</a>',
+    toastNoCollect: '还没有采集数据，去训练页开启「数据采集」',
+    toastExportCsv: '⬇ 已导出 CSV，可用 Python 训练模型',
+    confirmClearCollect: '清空已采集的数据？', toastClearedCollect: '已清空采集数据',
+    fileCollect: '康复AI采集数据', fileBackup: '康复AI备份',
+    toastExportBackup: '⬇ 已导出备份文件',
+    importFormatErr: '格式不对',
+    toastImportOk: '✅ 导入成功，数据已合并到本机', toastImportFail: '❌ 导入失败：{msg}',
+    confirmClearAll: '确定清除本机全部数据？此操作不可恢复。', toastClearedAll: '🗑 已清除全部数据',
+    // 自测
+    stAngle: 'angle3 直角=90°', stSquat: '深蹲分析返回特征', stValgus: '内扣检测触发',
+    stCounter: '计数状态机 down→up', stDebounce: '计数防抖（间隔内不重计）',
+    stLunge: '弓步蹲分析', stPushup: '俯卧撑分析', stCustom: '自定义动作分析', stCustomRule: '自定义规则 bad 触发',
+    stAllPass: '🎉 全部自测通过', stError: '❌ 异常: {msg}',
+  },
+  en: {
+    appTitle: 'Rehab AI · Stick-Figure Posture Analysis',
+    metaDesc: 'Rehab AI: on-device AI pose analysis with a stick-figure overlay for squats, lunges and push-ups, plus training history and physio bookings. No video upload.',
+    logoName: '🏥 Rehab AI',
+    headerSub: 'Stick-figure analysis · phone & PC',
+    navTrain: 'Train', navRecord: 'History', navAssess: 'Assess', navSchedule: 'Schedule', navSettings: 'Settings',
+    phText: 'Tap "Start" to enable the camera<br>Phones need camera permission (HTTPS or localhost)',
+    loading: '⏳ Loading AI model…',
+    btnStart: '▶ Start', btnStop: '⏹ Stop',
+    btnOpening: '⏳ Opening camera…', btnDetecting: '⏳ Detecting camera…', btnLoadingModel: '⏳ Loading AI model (~10s)…',
+    btnPhoto: '🖼 Analyze photo', btnSave: '💾 Save session',
+    btnCollect: '📝 Data collection', btnCollectStop: '⏹ Exit collection',
+    collectTitle: '📝 Data collection (train a real model)',
+    collectHint: 'Hold a pose → tap a label to record this frame. 50+ samples per label works best.',
+    collectCount: '{n} samples', collectFeats: 'Features: [{f}]',
+    trainHint: 'Face the camera to detect knee valgus. Export collected data as CSV in Settings, then train a model with Python.',
+    detecting: 'Detecting… step into the frame so your whole body is visible',
+    noPerson: 'No person detected — stand in the centre of the frame, full body visible (good lighting helps)',
+    photoNoPerson: 'No person found in this image — try another one',
+    photoFail: '⚠️ Photo analysis failed: {msg}',
+    toastNeedPerson: 'Step into the frame first', toastLabeled: 'Recorded: {label}',
+    toastSaved: '✅ Session saved',
+    repsLabel: 'Reps', modelLoadFail: 'Model load failed: check that pose_landmarker_full.task exists',
+    errNotAllowed: 'Camera permission denied. Tap the 🔒 or camera icon next to the address bar → Site settings → Camera → Allow, then tap "Retry". If a prompt just appeared, tap "Allow".',
+    errNotFound: 'No usable camera detected. If your device has more than one camera (e.g. Integrated / IR), refresh and try again — or tap "🖼 Analyze photo" to try a photo instead.',
+    errNotReadable: 'The camera is being used by another app (video call, other tab, screen recorder). Close them and tap "Retry".',
+    errOverconstrained: 'The camera does not support the current settings — trying other modes automatically.',
+    errSecurity: 'This page is not a secure context (HTTPS or localhost required) — the browser blocks the camera.',
+    errTimeout: 'Camera timed out. If a permission prompt appeared, tap "Allow" and retry.',
+    errUnknown: 'Start failed: {msg}',
+    retryTitle: '⚠️ Camera failed to start', retryCams: '{n} cameras detected — pick one to retry:',
+    camLabel: 'Camera {n}', btnRetry: '🔄 Retry', btnUsePhoto: '🖼 Use photo instead',
+    diag: 'Diagnostics: {n} cameras · permission: {p} · browser: {b}',
+    permGranted: 'Granted', permPrompt: 'Will ask', permDenied: 'Blocked', permUnknown: 'Unknown',
+    diagOther: 'other',
+    exSquat: 'Squat', exSquatDesc: 'Feet shoulder-width apart; squat until thighs are parallel to the floor, knees tracking over toes.',
+    exLunge: 'Lunge', exLungeDesc: 'Step into a split stance; front knee over toes, back knee lowering toward the floor.',
+    exPushup: 'Push-up', exPushupDesc: 'Keep a straight line from head to heels; lower your chest, then push back up.',
+    chipAdd: '➕ Custom',
+    sqShallow: 'Too shallow — squat until thighs are parallel to the floor', sqDeep: 'A bit deep — keep your knees from caving in', sqDepthOk: 'Depth good',
+    sqLeanBad: 'Leaning forward too much — keep your chest up', sqBackOk: 'Back posture OK',
+    sqValgusSide: 'Face the camera to check knee valgus', sqValgusBad: 'Knee caving in! Push your knees toward your toes', sqValgusOk: 'Knee alignment OK',
+    chipKnee: 'Knee', chipLean: 'Lean', chipDepth: 'Depth', chipValgus: 'Valgus',
+    valgusIn: 'In L{l} R{r}', valgusOkVal: 'OK', valgusSideVal: 'Side view',
+    depthOk: 'Good', depthShallow: 'Shallow', depthDeep: 'Deep', depthBad: 'Adjust',
+    luShallow: 'Front knee not bent enough — bend forward more', luDeep: 'Front knee too deep — keep it over your toes', luDepthOk: 'Front depth good',
+    luBackStraight: 'Back leg too straight — bend to lower your back knee', luBackOk: 'Back leg OK',
+    chipFrontKnee: 'Front knee', chipBackKnee: 'Back knee',
+    puShallow: 'Too shallow — lower your chest (elbows ~90°)', puDeep: 'Elbows over-bent — control your range', puDepthOk: 'Lowering depth good',
+    puSag: 'Hips sagging/piking — brace your core and keep a straight line', puBodyOk: 'Body line OK',
+    chipElbow: 'Elbow', chipBody: 'Body line', chipBodyOff: '{n}° off',
+    customDefaultName: 'My exercise', customDefaultDesc: 'Custom rehab exercise',
+    cgA1Good: 'Angle 1 in range', cgA1Bad: 'Angle 1 out of range — adjust',
+    cgA2Good: 'Torso OK', cgA2Bad: 'Leaning too far forward',
+    fallbackName: 'My exercise', fallbackDesc: 'Custom rehab exercise',
+    fallbackA1: 'Angle 1', fallbackA2: 'Angle 2', fallbackLean: 'Lean angle',
+    fallbackA1Good: 'Angle 1 OK', fallbackA1Bad: 'Angle 1 out of range',
+    fallbackA2Good: 'Angle 2 OK', fallbackA2Bad: 'Angle 2 out of range',
+    jShoulder: 'Shoulder', jElbow: 'Elbow', jWrist: 'Wrist', jHip: 'Hip', jKnee: 'Knee', jAnkle: 'Ankle',
+    jShoulderMid: 'Shoulder mid', jHipMid: 'Hip mid', jNose: 'Nose',
+    lbGood: 'Good', lbShallow: 'Shallow', lbDeep: 'Deep', lbLean: 'Lean', lbValgus: 'Valgus',
+    lbFrontShallow: 'Front shallow', lbFrontDeep: 'Front deep', lbSag: 'Sag', lbBad: 'Bad',
+    weekTitle: '📊 This week', recordTitle: '📅 Sessions',
+    summaryLine: '{n} sessions · {r} reps total · {s}-day streak',
+    noSessions: 'No sessions yet — head to the Train tab to start', emptyList: 'Nothing here yet',
+    repsN: '{n} reps', badFramesPct: 'Bad frames {p}%', valgusFramesPct: 'Valgus frames {p}%', collectN: '{n} samples collected',
+    assessTitle: '🩺 Self-assessment (1 min)',
+    qPain: '1. Any knee pain when squatting?', qValgus: '2. Do your knees cave inward when squatting?',
+    qBack: '3. Lower-back pain after sitting or exercise?', qFreq: '4. How often do you exercise per week?',
+    pain0: 'None', pain1: 'Mild', pain2: 'Noticeable',
+    valgus0: 'Never', valgus1: 'Sometimes', valgus2: 'Often',
+    back0: 'None', back1: 'Occasionally', back2: 'Often',
+    freq0: '<1×', freq1: '1–3×', freq2: '4+×',
+    btnAssess: 'Generate report', assessScore: 'Score: {s}/8', assessScoreShort: '🩺 {t} · Score {s}/8',
+    advisePain: '⚠️ Pain when squatting: pause squat training and see a physiotherapist (book one on the <b>Schedule</b> tab)',
+    adviseValgus: '🦵 Knees caving in: strengthen your glutes — clamshells and side leg raises; track your knees over your second toe',
+    adviseBack: '🩺 Back pain: avoid long sitting; try glute bridges and cat-cow, and build core strength gradually',
+    adviseFreq: '🏃 Not enough movement: start with 2–3 low-impact sessions a week — walking or swimming',
+    adviseGood: '🌟 Looking good! Keep training regularly — quality over quantity',
+    assessListTitle: '📋 Past assessments', emptyAssess: 'No assessments yet',
+    apptTitle: '📆 Book physiotherapy', phPlace: 'Physiotherapist / clinic', phNote: 'Notes (optional)',
+    btnAddAppt: '➕ Add booking', apptListTitle: '🗓 Upcoming bookings', emptyAppts: 'No bookings yet',
+    tagPast: 'Past', tagToday: 'Today', tagTomorrow: 'Tomorrow', noNote: '—',
+    toastAppt: '📆 Booking added',
+    customTitle: '⭐ Custom exercises',
+    customHint: 'Define your own exercise: pick joints for an angle (or vertical angle), set a target range, a rep rule and cues. Then select it on the Train tab.',
+    btnNewCustom: '➕ New custom exercise',
+    noCustom: 'No custom exercises yet — tap "New" below',
+    confirmDelCustom: 'Delete this custom exercise?', toastDeleted: 'Deleted',
+    cfTitleNew: 'New custom exercise', cfTitleEdit: 'Edit custom exercise',
+    cfNamePh: 'Name (e.g. single-leg squat)', cfDescPh: 'Description (optional)',
+    cfA1: 'Angle 1 (main)', cfA2: 'Angle 2 (optional)',
+    cfAngleName1: 'Angle name (e.g. knee)', cfAngleName2: 'Angle name (e.g. lean)',
+    cfTypeAngle: 'Three-point angle', cfTypeVertical: 'Vertical angle',
+    cfMin: 'Min (optional)', cfMax: 'Max (optional)', cfGoodPh: 'Good cue', cfBadPh: 'Bad cue',
+    cfRep: 'Rep counting', cfRepMetricA1: 'Count with angle 1', cfRepMetricA2: 'Count with angle 2',
+    cfRepDown: 'Lower threshold (e.g. 100)', cfRepUp: 'Rise threshold (e.g. 150)',
+    cfCancel: 'Cancel', cfSave: '💾 Save',
+    toastCustomSaved: '✅ Updated', toastCustomCreated: '✅ Created — pick it on the Train tab',
+    exportTitle: '🧪 Export data (training loop)',
+    exportHint: 'Collect labelled data on the Train tab, export a CSV, then train a real model with <b>train_from_web.py</b> on your computer.',
+    btnExportCollect: '⬇ Export collection CSV', btnClearCollect: '🗑 Clear collection',
+    syncTitle: '🔁 Sync across devices',
+    syncHint: 'Data stays in this browser. To sync: "Export" on one device, "Import" on another.\nAfter deploying to Netlify/GitHub Pages, phone and PC share one URL.',
+    btnExport: '⬇ Export data', btnImport: '⬆ Import data', btnClearAll: '🗑 Erase all data',
+    aboutTitle: 'ℹ️ About',
+    aboutAi: 'AI model: MediaPipe PoseLandmarker (runs locally — no video upload)',
+    aboutData: 'Data stays in your browser localStorage only',
+    aboutHttps: 'Phone camera requires HTTPS — deploy to <b>Netlify</b> (free)',
+    aboutDeploy: 'To deploy: drag this folder into <a href="https://app.netlify.com/drop" target="_blank" rel="noopener">app.netlify.com/drop</a>',
+    toastNoCollect: 'No collected data yet — enable Data collection on the Train tab',
+    toastExportCsv: '⬇ CSV exported — ready for Python training',
+    confirmClearCollect: 'Clear all collected data?', toastClearedCollect: 'Collection cleared',
+    fileCollect: 'RehabAI-collected-data', fileBackup: 'RehabAI-backup',
+    toastExportBackup: '⬇ Backup exported',
+    importFormatErr: 'Invalid file format',
+    toastImportOk: '✅ Imported — data merged locally', toastImportFail: '❌ Import failed: {msg}',
+    confirmClearAll: 'Erase ALL local data? This cannot be undone.', toastClearedAll: '🗑 All data erased',
+    stAngle: 'angle3 right angle = 90°', stSquat: 'Squat analysis returns features', stValgus: 'Valgus detection triggers',
+    stCounter: 'Rep state machine down→up', stDebounce: 'Rep debounce (no double-count in gap)',
+    stLunge: 'Lunge analysis', stPushup: 'Push-up analysis', stCustom: 'Custom exercise analysis', stCustomRule: 'Custom rule bad triggers',
+    stAllPass: '🎉 All tests passed', stError: '❌ Error: {msg}',
+  },
+};
+
+function detectLang() {
+  try {
+    const s = localStorage.getItem('rehab_lang');
+    if (s === 'zh' || s === 'en') return s;
+  } catch { /* ignore */ }
+  return (navigator.language || 'en').toLowerCase().startsWith('zh') ? 'zh' : 'en';
+}
+
+let lang = detectLang();
+const listeners = [];
+
+export function getLang() { return lang; }
+export function locale() { return lang === 'zh' ? 'zh-CN' : 'en-NZ'; }
+export function onLangChanged(fn) { listeners.push(fn); }
+
+export function t(key, vars) {
+  let s = (DICT[lang] && DICT[lang][key]) ?? DICT.zh[key] ?? key;
+  if (vars) for (const [k, v] of Object.entries(vars)) s = s.split('{' + k + '}').join(String(v));
+  return s;
+}
+
+export function applyStatic() {
+  document.querySelectorAll('[data-i18n]').forEach((el) => { el.innerHTML = t(el.dataset.i18n); });
+  document.querySelectorAll('[data-i18n-ph]').forEach((el) => { el.placeholder = t(el.dataset.i18nPh); });
+}
+
+export function setLang(l) {
+  lang = l === 'zh' ? 'zh' : 'en';
+  try { localStorage.setItem('rehab_lang', lang); } catch { /* ignore */ }
+  document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
+  document.title = t('appTitle');
+  const md = document.querySelector('meta[name="description"]');
+  if (md) md.content = t('metaDesc');
+  applyStatic();
+  listeners.forEach((fn) => { try { fn(); } catch (e) { console.warn('lang listener error:', e); } });
+}
+
+export function initI18n() {
+  document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
+  document.title = t('appTitle');
+  const md = document.querySelector('meta[name="description"]');
+  if (md) md.content = t('metaDesc');
+  applyStatic();
+  const btn = document.getElementById('btn-lang');
+  if (btn) {
+    btn.textContent = lang === 'zh' ? 'EN' : '中文';
+    btn.addEventListener('click', () => setLang(lang === 'zh' ? 'en' : 'zh'));
+  }
+}

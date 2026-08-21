@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0f172a">
+<meta name="description" content="康复AI：浏览器本地运行 AI 姿态识别，火柴人实时分析深蹲/弓步蹲/俯卧撑，训练记录与理疗预约，视频不上传。">
+<title>康复AI · 火柴人姿势分析</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8F%A5%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="app-header">
+  <div class="logo" data-i18n="logoName">🏥 康复AI</div>
+  <div class="sub" data-i18n="headerSub">火柴人姿势分析 · 端手互通</div>
+  <button id="btn-lang" class="lang-btn" title="Switch language">EN</button>
+</header>
+
+<main>
+  <!-- ============ 训练 ============ -->
+  <section id="tab-train" class="tab active">
+    <div class="ex-row">
+      <div id="ex-chips" class="chips"></div>
+    </div>
+    <p class="hint" id="ex-desc"></p>
+
+    <div class="camera-box">
+      <video id="video" playsinline muted autoplay></video>
+      <canvas id="overlay"></canvas>
+      <div id="placeholder">
+        <div class="ph-icon">🕴️</div>
+        <p id="placeholder-text" data-i18n="phText">点击「开始分析」启动摄像头<br>手机请授权摄像头权限（需 HTTPS 或 localhost）</p>
+      </div>
+      <div id="loading" class="hidden" data-i18n="loading">⏳ 正在加载 AI 模型…</div>
+    </div>
+
+    <div id="stats-box" class="hidden">
+      <div id="chips" class="stats"></div>
+    </div>
+
+    <div id="feedback" class="feedback hidden"></div>
+    <div id="cam-retry" class="hidden"></div>
+
+    <!-- 数据采集面板 -->
+    <div id="collect-panel" class="card hidden" style="margin-top:12px">
+      <h3 data-i18n="collectTitle">📝 数据采集（训练真实模型用）</h3>
+      <p class="hint" data-i18n="collectHint">摆好姿势 → 点下方标签记录当前帧特征。每个标签 ≥50 条效果最好。</p>
+      <div id="collect-feats" class="collect-feats">特征: --</div>
+      <div id="collect-labels" class="collect-labels"></div>
+      <div id="collect-count" class="collect-count">已采 0 条</div>
+    </div>
+
+    <div class="controls">
+      <button id="btn-start" class="btn primary" data-i18n="btnStart">▶ 开始分析</button>
+      <button id="btn-photo" class="btn" data-i18n="btnPhoto">🖼 图片分析</button>
+      <input type="file" id="photo-input" accept="image/*" hidden>
+      <button id="btn-toggle-collect" class="btn">📝 数据采集</button>
+      <button id="btn-save" class="btn accent" disabled data-i18n="btnSave">💾 保存本次记录</button>
+    </div>
+    <p class="hint" data-i18n="trainHint">正面朝向镜头可检测膝盖内扣。采集的数据在「设置」页导出 CSV，用 Python 训练模型。</p>
+  </section>
+
+  <!-- ============ 记录打卡 ============ -->
+  <section id="tab-record" class="tab">
+    <div class="card">
+      <h3 data-i18n="weekTitle">📊 本周概况</h3>
+      <div id="week-chart" class="chart"></div>
+      <div class="summary-line" id="summary-line"></div>
+    </div>
+    <div class="card">
+      <h3 data-i18n="recordTitle">📅 打卡记录</h3>
+      <div id="session-list" class="list"></div>
+    </div>
+  </section>
+
+  <!-- ============ 评估反馈 ============ -->
+  <section id="tab-assess" class="tab">
+    <div class="card">
+      <h3 data-i18n="assessTitle">🩺 自我评估（1 分钟）</h3>
+      <div class="q">
+        <label data-i18n="qPain">1. 下蹲时膝盖有疼痛吗？</label>
+        <div class="seg" data-q="pain">
+          <button data-v="0" class="on" data-i18n="pain0">无</button>
+          <button data-v="1" data-i18n="pain1">轻微</button>
+          <button data-v="2" data-i18n="pain2">明显</button>
+        </div>
+      </div>
+      <div class="q">
+        <label data-i18n="qValgus">2. 深蹲时膝盖会不自觉向内扣吗？</label>
+        <div class="seg" data-q="valgus">
+          <button data-v="0" class="on" data-i18n="valgus0">不会</button>
+          <button data-v="1" data-i18n="valgus1">有时</button>
+          <button data-v="2" data-i18n="valgus2">经常</button>
+        </div>
+      </div>
+      <div class="q">
+        <label data-i18n="qBack">3. 久坐或运动后腰痛？</label>
+        <div class="seg" data-q="back">
+          <button data-v="0" class="on" data-i18n="back0">无</button>
+          <button data-v="1" data-i18n="back1">偶尔</button>
+          <button data-v="2" data-i18n="back2">经常</button>
+        </div>
+      </div>
+      <div class="q">
+        <label data-i18n="qFreq">4. 每周运动频率？</label>
+        <div class="seg" data-q="freq">
+          <button data-v="0" class="on" data-i18n="freq0">&lt;1次</button>
+          <button data-v="1" data-i18n="freq1">1-3次</button>
+          <button data-v="2" data-i18n="freq2">4次以上</button>
+        </div>
+      </div>
+      <button id="btn-assess" class="btn primary block" data-i18n="btnAssess">生成评估报告</button>
+      <div id="assess-result" class="assess-result hidden"></div>
+    </div>
+    <div class="card">
+      <h3 data-i18n="assessListTitle">📋 历史评估</h3>
+      <div id="assess-list" class="list"></div>
+    </div>
+  </section>
+
+  <!-- ============ 预约日程 ============ -->
+  <section id="tab-schedule" class="tab">
+    <div class="card">
+      <h3 data-i18n="apptTitle">📆 理疗预约</h3>
+      <form id="appt-form" class="form">
+        <input type="date" id="appt-date" required>
+        <input type="time" id="appt-time" required>
+        <input type="text" id="appt-place" placeholder="理疗师 / 医院名称" data-i18n-ph="phPlace" required>
+        <input type="text" id="appt-note" placeholder="备注（可选）" data-i18n-ph="phNote">
+        <button class="btn primary block" data-i18n="btnAddAppt">➕ 添加预约</button>
+      </form>
+    </div>
+    <div class="card">
+      <h3 data-i18n="apptListTitle">🗓 预约列表</h3>
+      <div id="appt-list" class="list"></div>
+    </div>
+  </section>
+
+  <!-- ============ 设置 ============ -->
+  <section id="tab-settings" class="tab">
+    <div class="card">
+      <h3 data-i18n="customTitle">⭐ 自定义动作</h3>
+      <p class="hint" data-i18n="customHint">自己定义动作：选三个关节量夹角（或竖直角度）、设合格范围、设计数规则、写提示语。创建后在「训练」页选择使用。</p>
+      <div id="custom-list" class="list"></div>
+      <button id="btn-new-custom" class="btn primary block" data-i18n="btnNewCustom">➕ 新建自定义动作</button>
+    </div>
+
+    <div class="card hidden" id="custom-form-card">
+      <h3 id="cf-title">新建自定义动作</h3>
+      <div class="form">
+        <input type="text" id="cf-name" placeholder="动作名称（如：单腿蹲）" data-i18n-ph="cfNamePh">
+        <input type="text" id="cf-desc" placeholder="动作说明（可选）" data-i18n-ph="cfDescPh">
+        <div class="cf-grid">
+          <div class="cf-group">
+            <b data-i18n="cfA1">角度1（主角度）</b>
+            <input type="text" id="cf-a1-name" placeholder="角度名称（如：膝角）" data-i18n-ph="cfAngleName1">
+            <select id="cf-a1-type">
+              <option value="angle" data-i18n="cfTypeAngle">三点夹角</option>
+              <option value="vertical" data-i18n="cfTypeVertical">竖直角度</option>
+            </select>
+            <div class="cf-joints" id="cf-a1-a"></div>
+            <div class="cf-joints" id="cf-a1-b"></div>
+            <div class="cf-joints" id="cf-a1-c"></div>
+            <div class="cf-rule">
+              <input type="number" id="cf-r1-min" placeholder="合格最小(可空)" data-i18n-ph="cfMin">
+              <input type="number" id="cf-r1-max" placeholder="合格最大(可空)" data-i18n-ph="cfMax">
+              <input type="text" id="cf-r1-good" placeholder="合格提示" data-i18n-ph="cfGoodPh">
+              <input type="text" id="cf-r1-bad" placeholder="不合格提示" data-i18n-ph="cfBadPh">
+            </div>
+          </div>
+          <div class="cf-group">
+            <b data-i18n="cfA2">角度2（辅助）</b>
+            <input type="text" id="cf-a2-name" placeholder="角度名称（如：前倾）" data-i18n-ph="cfAngleName2">
+            <select id="cf-a2-type">
+              <option value="angle" data-i18n="cfTypeAngle">三点夹角</option>
+              <option value="vertical" selected data-i18n="cfTypeVertical">竖直角度</option>
+            </select>
+            <div class="cf-joints" id="cf-a2-a"></div>
+            <div class="cf-joints" id="cf-a2-b"></div>
+            <div class="cf-rule">
+              <input type="number" id="cf-r2-min" placeholder="合格最小(可空)" data-i18n-ph="cfMin">
+              <input type="number" id="cf-r2-max" placeholder="合格最大(可空)" data-i18n-ph="cfMax">
+              <input type="text" id="cf-r2-good" placeholder="合格提示" data-i18n-ph="cfGoodPh">
+              <input type="text" id="cf-r2-bad" placeholder="不合格提示" data-i18n-ph="cfBadPh">
+            </div>
+          </div>
+        </div>
+        <div class="cf-group">
+          <b data-i18n="cfRep">次数计数</b>
+          <div class="cf-rep">
+            <select id="cf-rep-metric">
+              <option value="a1" data-i18n="cfRepMetricA1">用角度1 计数</option>
+              <option value="a2" data-i18n="cfRepMetricA2">用角度2 计数</option>
+            </select>
+            <input type="number" id="cf-rep-down" placeholder="下蹲阈值(如100)" data-i18n-ph="cfRepDown">
+            <input type="number" id="cf-rep-up" placeholder="起身阈值(如150)" data-i18n-ph="cfRepUp">
+          </div>
+        </div>
+        <div class="controls">
+          <button id="cf-cancel" class="btn" data-i18n="cfCancel">取消</button>
+          <button id="cf-save" class="btn primary" data-i18n="cfSave">💾 保存</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3 data-i18n="exportTitle">🧪 数据导出（训练模型闭环）</h3>
+      <p class="hint" data-i18n="exportHint">在训练页开启「数据采集」打标签后，导出 CSV → 电脑上用 <b>train_from_web.py</b> 训练真实模型。</p>
+      <div class="controls">
+        <button id="btn-export-collect" class="btn" data-i18n="btnExportCollect">⬇ 导出采集 CSV</button>
+        <button id="btn-clear-collect" class="btn danger" data-i18n="btnClearCollect">🗑 清空采集</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3 data-i18n="syncTitle">🔁 数据同步（端手互通）</h3>
+      <p class="hint" data-i18n="syncHint">数据默认保存在本机浏览器。跨设备同步：一台设备「导出」，另一台「导入」。
+        部署到 Netlify/GitHub Pages 后，手机和电脑用同一个网址访问。</p>
+      <div class="controls">
+        <button id="btn-export" class="btn" data-i18n="btnExport">⬇ 导出数据</button>
+        <button id="btn-import" class="btn" data-i18n="btnImport">⬆ 导入数据</button>
+        <input type="file" id="import-input" accept=".json" hidden>
+        <button id="btn-clear" class="btn danger" data-i18n="btnClearAll">🗑 清除全部数据</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3 data-i18n="aboutTitle">ℹ️ 关于</h3>
+      <ul class="about">
+        <li data-i18n="aboutAi">AI 模型：MediaPipe PoseLandmarker（本地运行，不上传视频）</li>
+        <li data-i18n="aboutData">数据只存在你自己的浏览器 localStorage 里</li>
+        <li data-i18n="aboutHttps">手机使用摄像头需要 HTTPS —— 部署到 <b>Netlify</b>（免费）即可</li>
+        <li data-i18n="aboutDeploy">部署方法：把本文件夹拖进 <a href="https://app.netlify.com/drop" target="_blank" rel="noopener">app.netlify.com/drop</a></li>
+      </ul>
+    </div>
+  </section>
+</main>
+
+<nav class="bottom-nav">
+  <button data-tab="train" class="active">🏋️<br><span data-i18n="navTrain">训练</span></button>
+  <button data-tab="record">📊<br><span data-i18n="navRecord">记录</span></button>
+  <button data-tab="assess">🩺<br><span data-i18n="navAssess">评估</span></button>
+  <button data-tab="schedule">📅<br><span data-i18n="navSchedule">日程</span></button>
+  <button data-tab="settings">⚙️<br><span data-i18n="navSettings">设置</span></button>
+</nav>
+
+<div id="selftest-out" style="display:none"></div>
+<script type="module" src="app.js"></script>
+</body>
+</html>

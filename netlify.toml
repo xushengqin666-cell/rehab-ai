@@ -1,0 +1,8 @@
+# Netlify 静态部署配置：把本文件夹拖到 app.netlify.com/drop 即可
+[build]
+  publish = "."
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Cache-Control = "no-store"

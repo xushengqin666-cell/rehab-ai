@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>康复AI · 摄像头自检 · Rehab AI Camera Test</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8F%A5%3C/text%3E%3C/svg%3E">
+<style>
+  body { font-family: system-ui, "PingFang SC", "Microsoft YaHei", sans-serif; background: #0f172a; color: #e2e8f0; padding: 20px; max-width: 560px; margin: auto; line-height: 1.7; }
+  h2 { margin-bottom: 4px; }
+  .sub { color: #94a3b8; font-size: 13px; margin-bottom: 16px; }
+  video { width: 100%; border-radius: 12px; margin-top: 12px; background: #000; }
+  .ok { color: #22c55e; } .bad { color: #ef4444; }
+  .lang-btn { position: fixed; top: 14px; right: 14px; background: #1e293b; border: 1px solid #2d3a52; color: #38bdf8; border-radius: 999px; padding: 5px 12px; font-size: 13px; font-weight: 700; cursor: pointer; }
+</style>
+</head>
+<body>
+<button id="btn-lang" class="lang-btn">EN</button>
+<h2>📷 <span id="h2-txt">摄像头自检</span></h2>
+<p class="sub" id="sub-txt">这个页面只测摄像头，不加载 AI 模型 —— 用来判断问题出在「摄像头」还是「App」。</p>
+<div id="out">检测中…</div>
+<video id="v" autoplay playsinline muted></video>
+<script>
+const DICT = {
+  zh: {
+    h2: '摄像头自检', sub: '这个页面只测摄像头，不加载 AI 模型 —— 用来判断问题出在「摄像头」还是「App」。',
+    checking: '检测中…', pageOk: '✅ 页面加载成功',
+    noGUM: '❌ 浏览器不支持 getUserMedia —— 当前页面不是安全环境（需 HTTPS 或 localhost）',
+    gumOk: '✅ 浏览器支持 getUserMedia',
+    permGranted: '已允许 ✅', permPrompt: '会弹权限询问', permDenied: '被拒绝 ❌',
+    permState: '🔑 摄像头权限状态: <b>{s}</b>', permUnknown: '🔑 权限状态: 无法查询 ({m})',
+    camCount: '📷 检测到 <b>{n}</b> 个摄像头: {list}', camNone: '无',
+    camOk: '✅ <b>摄像头打开成功！</b>', size: '✅ 画面尺寸: {w}x{h}',
+    playing: '✅ 视频正在播放 —— 能看到自己就说明摄像头完全正常，问题在 App 端；看不到画面说明摄像头输出异常',
+    openFail: '❌ 打开失败: <b>{name}</b> — {msg}', causes: '💡 常见原因:',
+    c1: '&nbsp;&nbsp;· NotAllowedError = 权限被拒 → 点地址栏左侧 🔒 或摄像头图标 → 网站设置 → 摄像头 → 允许 → 刷新本页',
+    c2: '&nbsp;&nbsp;· NotReadableError = 摄像头被其他程序占用（视频会议/录屏/其他标签页）',
+    c3: '&nbsp;&nbsp;· NotFoundError = 没有摄像头设备',
+  },
+  en: {
+    h2: 'Camera self-test', sub: 'This page only tests the camera (no AI model) — to tell whether the issue is the camera or the app.',
+    checking: 'Checking…', pageOk: '✅ Page loaded',
+    noGUM: '❌ getUserMedia not supported — this page is not a secure context (HTTPS or localhost required)',
+    gumOk: '✅ getUserMedia supported',
+    permGranted: 'Granted ✅', permPrompt: 'Will ask', permDenied: 'Blocked ❌',
+    permState: '🔑 Camera permission: <b>{s}</b>', permUnknown: '🔑 Permission: cannot query ({m})',
+    camCount: '📷 <b>{n}</b> camera(s) found: {list}', camNone: 'none',
+    camOk: '✅ <b>Camera opened successfully!</b>', size: '✅ Resolution: {w}x{h}',
+    playing: '✅ Video playing — if you can see yourself the camera is fine and the issue is in the app; otherwise the camera output is abnormal',
+    openFail: '❌ Failed to open: <b>{name}</b> — {msg}', causes: '💡 Common causes:',
+    c1: '&nbsp;&nbsp;· NotAllowedError = permission denied → tap 🔒 or the camera icon → Site settings → Camera → Allow → reload',
+    c2: '&nbsp;&nbsp;· NotReadableError = camera in use by another app (video call / recorder / other tab)',
+    c3: '&nbsp;&nbsp;· NotFoundError = no camera device',
+  },
+};
+let lang = (() => {
+  try { const s = localStorage.getItem('rehab_lang'); if (s === 'zh' || s === 'en') return s; } catch {}
+  return (navigator.language || 'en').toLowerCase().startsWith('zh') ? 'zh' : 'en';
+})();
+const t = (k, v) => { let s = DICT[lang][k] ?? k; if (v) for (const [a, b] of Object.entries(v)) s = s.split('{' + a + '}').join(String(b)); return s; };
+function apply() {
+  document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
+  document.getElementById('h2-txt').textContent = t('h2');
+  document.getElementById('sub-txt').textContent = t('sub');
+  document.getElementById('btn-lang').textContent = lang === 'zh' ? 'EN' : '中文';
+}
+document.getElementById('btn-lang').addEventListener('click', () => {
+  lang = lang === 'zh' ? 'en' : 'zh';
+  try { localStorage.setItem('rehab_lang', lang); } catch {}
+  apply();
+});
+apply();
+
+const out = document.getElementById('out');
+const log = (html, cls) => { out.innerHTML += '<div class="' + (cls || '') + '" style="margin-top:6px">' + html + '</div>'; };
+out.innerHTML = '<div style="margin-top:6px">' + t('checking') + '</div>';
+(async () => {
+  log(t('pageOk'));
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    log(t('noGUM'), 'bad');
+    return;
+  }
+  log(t('gumOk'));
+  try {
+    const perms = await navigator.permissions.query({ name: 'camera' });
+    const txt = { granted: t('permGranted'), prompt: t('permPrompt'), denied: t('permDenied') }[perms.state] || perms.state;
+    log(t('permState', { s: txt }));
+  } catch (e) { log(t('permUnknown', { m: e.message })); }
+  const devs = await navigator.mediaDevices.enumerateDevices().catch(() => []);
+  const cams = devs.filter(d => d.kind === 'videoinput');
+  log(t('camCount', { n: cams.length, list: cams.map(c => c.label || '').join('、') || t('camNone') }));
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+    log(t('camOk'), 'ok');
+    const v = document.getElementById('v');
+    v.srcObject = stream;
+    await new Promise(r => { if (v.readyState >= 1) r(); else v.onloadedmetadata = r; });
+    await v.play();
+    log(t('size', { w: v.videoWidth, h: v.videoHeight }), 'ok');
+    setTimeout(() => log(t('playing'), 'ok'), 800);
+  } catch (e) {
+    log(t('openFail', { name: e.name, msg: e.message }), 'bad');
+    log(t('causes'));
+    log(t('c1'), 'bad');
+    log(t('c2'), 'bad');
+    log(t('c3'), 'bad');
+  }
+})();
+</script>
+</body>
+</html>
