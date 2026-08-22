@@ -353,27 +353,19 @@
     </div>
 
     <div class="card">
-      <h3 data-i18n="cloudTitle">云同步（账号系统）</h3>
-      <p class="hint" data-i18n="cloudHint">配置 Supabase 后：注册/登录账号，数据自动同步到云端，换设备登录即恢复（替代二维码同步）。</p>
-      <div id="cloud-cfg" class="form">
-        <input type="text" id="cloud-url" placeholder="Supabase URL (https://xxx.supabase.co)" data-i18n-ph="phSupabaseUrl">
-        <input type="text" id="cloud-key" placeholder="anon public key" data-i18n-ph="phAnonKey">
-        <button id="btn-cloud-cfg" class="btn primary block" data-i18n="btnCloudSaveCfg">保存配置</button>
+      <h3 data-i18n="accountTitle">我的账号</h3>
+      <div class="account-row">
+        <div class="account-avatar" id="account-avatar">?</div>
+        <div style="flex:1;min-width:0">
+          <div class="account-email" id="cloud-status" data-i18n="cloudNotLoggedIn">未登录</div>
+          <div class="hint" style="margin-top:2px" data-i18n="accountHint">登录后所有数据自动同步到云端，换设备登录即可恢复。</div>
+        </div>
       </div>
-      <div id="cloud-auth" class="hidden">
-        <div class="form" style="margin-top:10px">
-          <input type="email" id="cloud-email" placeholder="email@example.com">
-          <input type="password" id="cloud-pass" placeholder="••••••••">
-          <div class="controls">
-            <button id="btn-cloud-signup" class="btn" data-i18n="btnCloudSignup">注册</button>
-            <button id="btn-cloud-login" class="btn primary" data-i18n="btnCloudLogin">登录</button>
-          </div>
-        </div>
-        <p class="hint" id="cloud-status" data-i18n="cloudNotLoggedIn">未登录</p>
-        <div class="controls">
-          <button id="btn-cloud-sync" class="btn primary" data-i18n="btnCloudSync">立即同步</button>
-          <button id="btn-cloud-logout" class="btn" data-i18n="btnCloudLogout">退出登录</button>
-        </div>
+      <div class="controls">
+        <button id="btn-open-login" class="btn primary" data-i18n="btnOpenLogin">登录 / 注册</button>
+        <button id="btn-config-server" class="btn hidden" data-i18n="btnConfigServer">配置服务器</button>
+        <button id="btn-cloud-sync" class="btn primary hidden" data-i18n="btnCloudSync">立即同步</button>
+        <button id="btn-cloud-logout" class="btn hidden" data-i18n="btnCloudLogout">退出登录</button>
       </div>
     </div>
 
@@ -449,6 +441,42 @@
 </nav>
 
 <div id="selftest-out" style="display:none"></div>
+
+<!-- 登录 / 注册屏（真实 App 体验：启动即见） -->
+<div id="auth-screen" class="auth-overlay hidden">
+  <div class="auth-card">
+    <div class="auth-brand">
+      <svg class="brand-mark" viewBox="0 0 40 40" aria-hidden="true">
+        <rect width="40" height="40" rx="11" fill="#0e7c66"/>
+        <circle cx="20" cy="12.5" r="3.4" fill="none" stroke="#fff" stroke-width="2.4"/>
+        <path d="M20 16.5v8.2M20 20.5l-5.6 4.4M20 20.5l5.6 4.4M20 24.7l-4.4 5.6M20 24.7l4.4 5.6M20 19.5l-6-3.2M20 19.5l6-3.2" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/>
+      </svg>
+      <h2 data-i18n="authWelcome">欢迎使用康复AI</h2>
+      <p class="sub" data-i18n="authTagline">登录后数据自动同步到云端，换设备不丢失</p>
+    </div>
+    <div id="auth-form" class="form">
+      <input type="email" id="auth-email" placeholder="email@example.com" autocomplete="email">
+      <input type="password" id="auth-pass" placeholder="••••••••" autocomplete="current-password">
+      <div class="controls">
+        <button id="btn-auth-login" class="btn primary" data-i18n="btnCloudLogin">登录</button>
+        <button id="btn-auth-signup" class="btn" data-i18n="btnCloudSignup">注册</button>
+      </div>
+      <p class="hint" id="auth-status" style="text-align:center"></p>
+    </div>
+    <div id="auth-config" class="hidden" style="margin-top:10px">
+      <p class="hint" data-i18n="authConfigHint">首次使用：粘贴你的 Supabase 项目 URL 和 anon key（一分钟搞定，详见 README）。</p>
+      <div class="form" style="margin-top:8px">
+        <input type="text" id="auth-url" placeholder="Supabase URL (https://xxx.supabase.co)" data-i18n-ph="phSupabaseUrl">
+        <input type="text" id="auth-key" placeholder="anon public key" data-i18n-ph="phAnonKey">
+        <button id="btn-auth-cfg-save" class="btn primary block" data-i18n="btnCloudSaveCfg">保存配置</button>
+      </div>
+    </div>
+    <div class="auth-actions">
+      <button id="btn-auth-cfg-toggle" class="link-btn" data-i18n="btnConfigServer">配置服务器</button>
+      <button id="btn-auth-skip" class="link-btn" data-i18n="btnSkipAuth">跳过，先逛逛（访客模式）</button>
+    </div>
+  </div>
+</div>
 
 <!-- 二维码同步弹窗 -->
 <div id="qr-modal" class="modal-overlay hidden">

@@ -77,11 +77,19 @@ const remTime = await evl(`document.getElementById('rem-time').value`);
 remTime === '18:00' ? ok('提醒时间默认 18:00') : fail('提醒时间: ' + remTime);
 
 // 云配置
-await evl(`document.getElementById('cloud-url').value='https://fake.supabase.co'; document.getElementById('cloud-key').value='fake-key-123'; document.getElementById('btn-cloud-cfg').click()`);
+// 账号卡片 + 登录屏
+const hasAccount = await evl(`!!document.getElementById('account-avatar')`);
+hasAccount ? ok('设置页顶部账号卡片存在') : fail('账号卡片缺失');
+await evl(`document.getElementById('btn-config-server').click()`);
+await sleep(250);
+await evl(`document.getElementById('auth-url').value='https://fake.supabase.co'; document.getElementById('auth-key').value='fake-key-123'; document.getElementById('btn-auth-cfg-save').click()`);
+await sleep(300);
+const authFormVisible = await evl(`!document.getElementById('auth-form').classList.contains('hidden')`);
+const authStatus = await evl(`document.getElementById('cloud-status').textContent.trim()`);
+(authFormVisible && authStatus === '未登录') ? ok('登录屏配置后显示登录表单') : fail('登录屏: ' + authFormVisible + '/' + authStatus);
+await evl(`document.getElementById('btn-auth-skip').click()`);
 await sleep(200);
-const cloudVisible = await evl(`!document.getElementById('cloud-auth').classList.contains('hidden')`);
-const cloudStatus = await evl(`document.getElementById('cloud-status').textContent.trim()`);
-(cloudVisible && cloudStatus === '未登录') ? ok('云配置保存 + 登录面板出现') : fail('云: ' + cloudVisible + '/' + cloudStatus);
+(await evl(`document.getElementById('auth-screen').classList.contains('hidden')`)) ? ok('访客模式跳过登录') : fail('跳过失败');
 
 // 自测 + 同步自测
 await evl(`location.hash='#selftest'; location.reload()`);

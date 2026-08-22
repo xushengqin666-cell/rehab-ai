@@ -351,6 +351,7 @@ function renderCollectLabels(ex) {
       LS.set('rehab_collect', state.collectBuf);
       renderCollectCount();
       toast(t('toastLabeled', { label: b.dataset.label }));
+      scheduleCloudSync();
     }));
 }
 
@@ -691,6 +692,7 @@ $('btn-save').addEventListener('click', () => {
   renderRecords();
   renderGoal();
   toast(t('toastSaved'));
+  scheduleCloudSync();
 });
 
 /* ============ 记录打卡页 ============ */
@@ -777,6 +779,7 @@ $('btn-assess').addEventListener('click', () => {
   el.innerHTML = `<b>${t('assessScore', { s: score })}</b><br>${adviceKeys.map((k) => t(k)).join('<br>')}`;
   el.classList.remove('hidden');
   renderAssessments();
+  scheduleCloudSync();
 });
 const adviceText = (r) => (r.adviceKeys ? r.adviceKeys.map((k) => t(k)).join(' ') : (r.advice || ''));
 function renderAssessments() {
@@ -794,6 +797,7 @@ function renderAssessments() {
   el.querySelectorAll('.del').forEach((btn) => btn.addEventListener('click', () => {
     LS.set('rehab_assessments', list.filter((r) => r.id !== btn.dataset.id));
     renderAssessments();
+    scheduleCloudSync();
   }));
   // 评估分数趋势
   const scores = [...list].reverse().slice(-10).map((r) => r.score);
@@ -813,6 +817,7 @@ $('appt-form').addEventListener('submit', (e) => {
   $('appt-form').reset();
   renderAppts();
   toast(t('toastAppt'));
+  scheduleCloudSync();
 });
 function renderAppts() {
   const list = LS.get('rehab_appts', []).sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
@@ -842,6 +847,7 @@ function renderAppts() {
   el.querySelectorAll('.del').forEach((btn) => btn.addEventListener('click', () => {
     LS.set('rehab_appts', list.filter((a) => a.id !== btn.dataset.id));
     renderAppts();
+    scheduleCloudSync();
   }));
 }
 
@@ -935,6 +941,7 @@ $('cf-save').addEventListener('click', () => {
   $('custom-form-card').classList.add('hidden');
   renderCustomList(); renderExChips();
   toast(editingCustomId ? t('toastCustomSaved') : t('toastCustomCreated'));
+  scheduleCloudSync();
 });
 
 /* ============ 设置页：数据采集导出 ============ */
@@ -997,6 +1004,7 @@ $('import-input').addEventListener('change', async (ev) => {
     if (Array.isArray(data.collect)) { state.collectBuf = data.collect; LS.set('rehab_collect', data.collect); }
     renderRecords(); renderAssessments(); renderAppts(); renderCustomList(); renderExChips();
     toast(t('toastImportOk'));
+    scheduleCloudSync();
   } catch (e) { toast(t('toastImportFail', { msg: e.message })); }
   ev.target.value = '';
 });
@@ -1008,6 +1016,7 @@ $('btn-clear').addEventListener('click', () => {
   renderRecords(); renderAssessments(); renderAppts(); renderCustomList(); renderExChips();
   renderCollectCount();
   toast(t('toastClearedAll'));
+  scheduleCloudSync();
 });
 
 /* ============ 导航 ============ */
@@ -1226,6 +1235,7 @@ function renderProfile() {
 $('btn-save-profile').addEventListener('click', () => {
   LS.set('rehab_profile', { name: $('pf-name').value.trim(), goal: $('pf-goal').value, injury: $('pf-injury').value.trim() });
   toast(t('toastProfile'));
+  scheduleCloudSync();
 });
 
 /* ============ 统计报表（30 天趋势 / 动作分布） ============ */
@@ -1366,6 +1376,7 @@ function togglePlanDone(ex) {
   renderTodayPlan();
   renderAchievements();
   renderGoal();
+  scheduleCloudSync();
 }
 function renderPlanList() {
   const list = planGet();
@@ -1384,6 +1395,7 @@ function renderPlanList() {
   el.querySelectorAll('[data-plan-del]').forEach((b) => b.addEventListener('click', () => {
     LS.set('rehab_plan', planGet().filter((p) => p.ex !== b.dataset.planDel));
     renderPlanList(); renderTodayPlan();
+    scheduleCloudSync();
   }));
 }
 let planEditEx = null;
@@ -1430,6 +1442,7 @@ $('btn-plan-save').addEventListener('click', () => {
   $('plan-editor').classList.add('hidden');
   renderPlanList(); renderTodayPlan(); renderAchievements();
   toast(t('planAdded'));
+  scheduleCloudSync();
 });
 
 /* ============ 训练提醒 ============ */
@@ -1527,42 +1540,75 @@ async function cloudSync() {
 }
 function renderCloud() {
   const cfg = cloudCfg();
-  $('cloud-cfg').classList.toggle('hidden', !!cfg);
-  $('cloud-auth').classList.toggle('hidden', !cfg);
-  if (cfg) {
-    $('cloud-url').value = cfg.url || '';
-    $('cloud-key').value = cfg.anonKey || '';
-  }
   const s = cloudSession();
-  $('cloud-status').textContent = s ? t('cloudLoggedIn', { e: s.email }) : t('cloudNotLoggedIn');
+  const av = $('account-avatar');
+  if (av) av.textContent = (s && s.email ? s.email[0] : (cfg ? '?' : '☁')).toUpperCase();
+  $('cloud-status').textContent = s ? t('cloudLoggedIn', { e: s.email }) : (cfg ? t('cloudNotLoggedIn') : t('cloudUnconfigured'));
+  $('btn-cloud-sync').classList.toggle('hidden', !s);
+  $('btn-cloud-logout').classList.toggle('hidden', !s);
+  $('btn-open-login').classList.toggle('hidden', !!s);
+  $('btn-config-server').classList.toggle('hidden', !!cfg);
 }
-$('btn-cloud-cfg').addEventListener('click', () => {
-  const url = $('cloud-url').value.trim();
-  const anonKey = $('cloud-key').value.trim();
-  if (!/^(https?:\/\/(127\.0\.0\.1|localhost)(:\d+)?|https:\/\/.+\.supabase\.(co|com))/i.test(url) || !anonKey) { toast(t('cloudErr', { msg: 'URL/key' })); return; }
+// 登录屏：已配置但未登录 → 启动即显示（真实 App 体验）
+function renderAuth() {
+  const show = !!cloudCfg() && !cloudSession();
+  $('auth-screen').classList.toggle('hidden', !show);
+  if (show) $('auth-status').textContent = '';
+}
+function showAuth(openConfig = false) {
+  $('auth-screen').classList.remove('hidden');
+  $('auth-config').classList.toggle('hidden', !openConfig);
+  $('auth-form').classList.toggle('hidden', openConfig);
+}
+async function authLogin(register) {
+  const email = $('auth-email').value.trim();
+  const pass = $('auth-pass').value;
+  if (!email || !pass) { $('auth-status').textContent = t('cloudErr', { msg: 'Email/password' }); return; }
+  $('auth-status').textContent = t('cloudSyncing');
+  try {
+    await cloudAuth(email, pass, register);
+    $('auth-screen').classList.add('hidden');
+    toast(t('cloudOk'));
+    scheduleCloudSync();
+  } catch (e) {
+    $('auth-status').textContent = t('cloudErr', { msg: e.message });
+  }
+}
+// 登录后数据变更 → 4 秒防抖自动同步（像真 App 一样无感）
+let cloudSyncTimer = null;
+function scheduleCloudSync() {
+  if (!cloudCfg() || !cloudSession()) return;
+  clearTimeout(cloudSyncTimer);
+  cloudSyncTimer = setTimeout(() => { cloudSync().catch(() => {}); }, 4000);
+}
+$('btn-open-login').addEventListener('click', () => showAuth(false));
+$('btn-config-server').addEventListener('click', () => showAuth(true));
+$('btn-auth-cfg-toggle').addEventListener('click', () => {
+  const cfgOpen = !$('auth-config').classList.contains('hidden');
+  $('auth-config').classList.toggle('hidden', cfgOpen);
+  $('auth-form').classList.toggle('hidden', !cfgOpen);
+});
+$('btn-auth-cfg-save').addEventListener('click', () => {
+  const url = $('auth-url').value.trim();
+  const anonKey = $('auth-key').value.trim();
+  if (!/^(https?:\/\/(127\.0\.0\.1|localhost)(:\d+)?|https:\/\/.+\.supabase\.(co|com))/i.test(url) || !anonKey) { $('auth-status').textContent = t('cloudErr', { msg: 'URL/key' }); return; }
   LS.set('rehab_cloud', { url, anonKey });
+  $('auth-config').classList.add('hidden');
+  $('auth-form').classList.remove('hidden');
+  $('auth-status').textContent = t('toastCloudCfg');
   renderCloud();
-  toast(t('toastCloudCfg'));
 });
-$('btn-cloud-signup').addEventListener('click', async () => {
-  try {
-    await cloudAuth($('cloud-email').value.trim(), $('cloud-pass').value, true);
-    toast(t('cloudOk'));
-  } catch (e) { toast(t('cloudErr', { msg: e.message })); }
-});
-$('btn-cloud-login').addEventListener('click', async () => {
-  try {
-    await cloudAuth($('cloud-email').value.trim(), $('cloud-pass').value, false);
-    toast(t('cloudOk'));
-  } catch (e) { toast(t('cloudErr', { msg: e.message })); }
-});
+$('btn-auth-login').addEventListener('click', () => authLogin(false));
+$('btn-auth-signup').addEventListener('click', () => authLogin(true));
+$('btn-auth-skip').addEventListener('click', () => $('auth-screen').classList.add('hidden'));
 $('btn-cloud-sync').addEventListener('click', async () => {
   try { await cloudSync(); } catch (e) { $('cloud-status').textContent = t('cloudNotLoggedIn'); toast(t('cloudErr', { msg: e.message })); }
 });
 $('btn-cloud-logout').addEventListener('click', () => {
   localStorage.removeItem('rehab_cloud_session');
   renderCloud();
-  toast(t('toastDeleted'));
+  renderAuth();
+  toast(t('toastLogout'));
 });
 
 /* ============ 轻提示 ============ */
@@ -1672,10 +1718,12 @@ onLangChanged(() => {
 renderExChips(); renderCollectLabels(getEx(activeExId())); resetAgg();
 renderRecords(); renderAssessments(); renderAppts(); renderCustomList();
 renderCollectCount();
-renderProfile(); renderReminder(); renderCloud();
+renderProfile(); renderReminder(); renderCloud(); renderAuth();
 renderTodayPlan(); renderPlanList();
 $('btn-collect-label').textContent = t('btnCollect');
 setStartBtn('btnStart', 'play');
+// 登录用户：启动后自动同步一次
+if (cloudCfg() && cloudSession()) setTimeout(() => cloudSync().catch(() => {}), 2500);
 // 关于：版本号 + 分享
 $('about-version').textContent = t('versionLabel', { v: APP_VERSION });
 $('btn-share').addEventListener('click', async () => {

@@ -174,15 +174,23 @@ await evl(`document.getElementById('btn-clear').click()`);
 await sleep(400);
 (await evl(`!localStorage.getItem('rehab_sessions')`)) ? ok('清空全部数据（确认弹窗）') : bad('清空失败');
 
-console.log('===== 10. 云同步（mock Supabase 端到端） =====');
-await evl(`document.getElementById('cloud-url').value='http://127.0.0.1:8555'; document.getElementById('cloud-key').value='test-anon-key'; document.getElementById('btn-cloud-cfg').click()`);
+console.log('===== 10. 账号系统（登录屏 + mock Supabase 端到端） =====');
+// 通过设置页账号卡片 → 打开登录屏 → 首次配置服务器
+await evl(`document.getElementById('btn-config-server').click()`);
+await sleep(250);
+await evl(`document.getElementById('auth-url').value='http://127.0.0.1:8555'; document.getElementById('auth-key').value='test-anon-key'; document.getElementById('btn-auth-cfg-save').click()`);
+await sleep(300);
+(await evl(`!document.getElementById('auth-form').classList.contains('hidden')`)) ? ok('登录屏显示登录表单（首次配置后）') : bad('登录表单未出现');
+// 注册
+await evl(`document.getElementById('auth-email').value='fulltest@t.com'; document.getElementById('auth-pass').value='pw123456'; document.getElementById('btn-auth-signup').click()`);
 await waitToast();
+(await evl(`document.getElementById('auth-screen').classList.contains('hidden')`)) ? ok('注册成功直接进入主界面') : bad('注册后未进入主界面');
+(await evl(`document.getElementById('cloud-status').textContent.includes('fulltest@t.com')`)) ? ok('账号卡片显示邮箱') : bad('账号卡片邮箱缺失');
+// 推送
 await evl(`localStorage.setItem('rehab_sessions', JSON.stringify([{ id: 'cloud1', ts: Date.now(), ex: 'squat', exName: '深蹲', reps: 12, dur: 60, depth: 'ok', badPct: 3, valgusPct: 0, riskPct: 0, collectCount: 0 }]))`);
-await evl(`document.getElementById('cloud-email').value='fulltest@t.com'; document.getElementById('cloud-pass').value='pw123456'; document.getElementById('btn-cloud-signup').click()`);
-await waitToast();
-(await evl(`document.getElementById('cloud-status').textContent.includes('fulltest@t.com')`)) ? ok('云注册登录') : bad('云注册失败');
 await evl(`document.getElementById('btn-cloud-sync').click()`);
 await sleep(1200);
+// 换设备恢复
 await evl(`localStorage.setItem('rehab_sessions','[]'); location.reload()`);
 await sleep(2200);
 await evl(`document.querySelector('.bottom-nav button[data-tab="settings"]').click()`);
@@ -190,6 +198,15 @@ await sleep(200);
 await evl(`document.getElementById('btn-cloud-sync').click()`);
 await sleep(1200);
 (await evl(`JSON.parse(localStorage.getItem('rehab_sessions')).length === 1`)) ? ok('云端数据恢复（换设备）') : bad('云恢复失败');
+// 退出登录 → 重新加载 → 启动即显示登录页（真实 App 体验）
+await evl(`document.getElementById('btn-cloud-logout').click()`);
+await sleep(300);
+await evl(`location.reload()`);
+await sleep(2500);
+(await evl(`!document.getElementById('auth-screen').classList.contains('hidden')`)) ? ok('启动即显示登录页') : bad('登录页未在启动时出现');
+await evl(`document.getElementById('auth-email').value='fulltest@t.com'; document.getElementById('auth-pass').value='pw123456'; document.getElementById('btn-auth-login').click()`);
+await waitToast();
+(await evl(`document.getElementById('auth-screen').classList.contains('hidden')`)) ? ok('重新登录直接进入主界面') : bad('重新登录失败');
 
 console.log('===== 11. 二维码同步 + 警报 UI + PWA + 微信提示 =====');
 await send('Page.navigate', { url: APP + '?synctest=1' });
