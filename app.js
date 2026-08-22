@@ -24,6 +24,10 @@ const ICONS = {
   squat: '<circle cx="12" cy="4.6" r="2.1"/><path d="M12 6.7v5.8M12 12.5 8.6 15.6 10.8 19.6M12 9.6l4.2-.8"/>',
   lunge: '<circle cx="9.8" cy="4.6" r="2.1"/><path d="M9.8 6.7v5.5M9.8 12.2l4.8 2.9 4.6 4.4M9.8 12.2l-4.2 2.3-2.2 4.6M9.8 9l4.4-1"/>',
   pushup: '<circle cx="5.2" cy="9.2" r="2.1"/><path d="M7.3 9.6 16.8 12.4M8.4 10 8.4 16.2M17.9 12.8v-1.5"/>',
+  sitstand: '<circle cx="12" cy="4.6" r="2.1"/><path d="M12 6.7v5.8M12 12.5l-3.6 2.8-1.2 3.6M12 12.5l3.6 2.8 1.2 3.6M12 9.5l-4.2-.8M12 9.5l4.2-.8"/><path d="M3.5 20.5h17"/>',
+  hiphinge: '<circle cx="13" cy="4.8" r="2.1"/><path d="M13 6.9v4.6M13 11.5l-5.5 1.2M7.5 12.7l1.5 4M7.5 12.7l6.5 2.3M14 15l1 4M13 8.5l-4.5-.5"/>',
+  stepup: '<circle cx="11" cy="4.4" r="2.1"/><path d="M11 6.5v4.2M11 10.7l3.6 2.4 1 3.6M11 10.7l-3 2.2-2.8 1M11 8l-4.4-1M11 8l4-1"/><path d="M2.5 20.5h19"/>',
+  shoulderraise: '<circle cx="12" cy="4.4" r="2.1"/><path d="M12 6.5v6M12 12.5l-3 4M12 12.5l3 4M12 9l-4-1.2M12 9l4.5 1.8M16.5 10.8l1.5-4.5"/>',
   custom: '<path d="M12 4.5l1.4 4.1 4.1 1.4-4.1 1.4L12 15.5l-1.4-4.1-4.1-1.4 4.1-1.4Z"/><path d="M18.5 15.5l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7Z"/>',
   play: '<path d="M8.2 5.6v12.8a.7.7 0 0 0 1.1.6l10.2-6.4a.7.7 0 0 0 0-1.2L9.3 5a.7.7 0 0 0-1.1.6Z" fill="currentColor" stroke="none"/>',
   stop: '<rect x="6.8" y="6.8" width="10.4" height="10.4" rx="2.4" fill="currentColor" stroke="none"/>',
@@ -282,11 +286,16 @@ function featureNames(ex) {
   if (ex.id === 'squat') return ['knee', 'hip', 'lean', 'valgus'];
   if (ex.id === 'lunge') return ['frontKnee', 'backKnee', 'lean'];
   if (ex.id === 'pushup') return ['elbow', 'body'];
+  if (ex.id === 'sitstand') return ['knee', 'lean', 'valgus'];
+  if (ex.id === 'hiphinge') return ['hip', 'knee', 'lean'];
+  if (ex.id === 'stepup') return ['knee', 'lean', 'valgus'];
+  if (ex.id === 'shoulderraise') return ['arm', 'lean', 'elbow'];
   return ex.angles.map((a) => a.key);
 }
+const exStd = (e) => (e.custom ? t('stdCustom') : t(e.stdKey || 'stdCustom'));
 function renderExChips() {
   const custom = customList();
-  const ids = ['squat', 'lunge', 'pushup', ...custom.map((e) => e.id)];
+  const ids = ['squat', 'lunge', 'pushup', 'sitstand', 'hiphinge', 'stepup', 'shoulderraise', ...custom.map((e) => e.id)];
   $('ex-chips').innerHTML = ids.map((id) => {
     const e = EXERCISES[id] || custom.find((x) => x.id === id);
     return `<button class="chip ${id === activeExId() ? 'on' : ''}" data-ex="${id}"><span class="chip-ico">${icon(e.icon)}</span><span>${exName(e)}</span></button>`;
@@ -295,7 +304,7 @@ function renderExChips() {
     b.addEventListener('click', () => { LS.set('rehab_active_ex', b.dataset.ex); switchEx(); }));
   $('chip-add').addEventListener('click', () => { openCustomForm(null); switchTab('settings'); });
   const ex = getEx(activeExId());
-  $('ex-desc').textContent = ex ? exDesc(ex) : '';
+  $('ex-desc').innerHTML = ex ? exDesc(ex) + '<br><span class="std">' + exStd(ex) + '</span>' : '';
   renderGoal();
 }
 // 训练页「今日目标」进度条（与康复计划联动）
@@ -350,10 +359,11 @@ const ctx = $('overlay').getContext('2d');
 function resetAgg() {
   const ex = getEx(activeExId());
   state.counter = { state: 'up', reps: 0, ex: ex.id, d: ex.rep.downBelow, u: ex.rep.upAbove, belowT: 0, lastRepTs: 0, confirmMs: 120, minGapMs: 350 };
-  state.agg = { frames: 0, startTS: Date.now(), depth: {}, badFrames: 0, valgusFrames: 0 };
+  state.agg = { frames: 0, startTS: Date.now(), depth: {}, badFrames: 0, valgusFrames: 0, riskFrames: 0 };
   state.lastResult = null;
   state.statsKey = null;
   state.blackFrames = 0; state.blackWarned = false; state.blackTS = 0; state.blackLum = null;
+  state.alarmOn = false; state.alarmTS = 0;
   const r = $('st-reps'); if (r) r.textContent = '0';
   document.querySelectorAll('#chips [data-stat]').forEach((el) => { el.textContent = '--'; });
   const save = $('btn-save'); if (save) save.disabled = true;
@@ -380,6 +390,7 @@ function recordFrame(res) {
   if (res.depth && res.depth !== 'ok') a.depth[res.depth] = (a.depth[res.depth] || 0) + 1;
   if (res.msgsIsBad) a.badFrames++;
   if (res.metrics && res.metrics.valgus > 0.15) a.valgusFrames++;
+  if ((res.riskLevel || 0) >= 2) a.riskFrames++;
 }
 
 // 单一调度入口：只在训练页可见且页面在前台时排帧（省电）
@@ -459,10 +470,20 @@ function loop() {
   else updateStats(res);
   $('st-reps').textContent = String(reps);
 
-  const msgs = res.badMsgs.length ? res.badMsgs : res.goodMsgs;
-  const msg = fbWrap(res.msgsIsBad ? 'alert' : 'check', msgs.join('<br>'));
+  // 受伤风险：1=提醒(warn) 2=警报(alarm，声音+震动+闪烁)
+  const riskLevel = res.riskLevel || 0;
+  if (riskLevel >= 2) {
+    if (!state.alarmOn) { state.alarmOn = true; state.alarmTS = ts; alarmBurst(); }
+    else if (ts - state.alarmTS > 5000) { state.alarmTS = ts; alarmBurst(); }
+  } else {
+    state.alarmOn = false;
+  }
+  const riskMsgs = (res.risk && res.risk.length) ? res.risk : [];
+  const bodyMsgs = riskMsgs.length ? riskMsgs : (res.badMsgs.length ? res.badMsgs : res.goodMsgs);
+  const msg = fbWrap(riskLevel >= 2 ? 'alert' : (res.msgsIsBad ? 'alert' : 'check'),
+    (riskLevel >= 2 ? '<b>' + t('alarmTitle') + '</b><br>' : '') + bodyMsgs.join('<br>'));
   if (fb._last !== msg) { fb.innerHTML = msg; fb._last = msg; }
-  const cls = 'feedback' + (res.msgsIsBad ? ' bad' : res.depth !== 'ok' ? ' warn' : '');
+  const cls = 'feedback' + (riskLevel >= 2 ? ' alarm' : res.msgsIsBad ? ' bad' : res.depth !== 'ok' ? ' warn' : '');
   if (fb.className !== cls) fb.className = cls;
 
   if (state.collectMode) $('collect-feats').textContent = t('collectFeats', { f: res.features.join(', ') });
@@ -471,6 +492,31 @@ function loop() {
 }
 function drawEmpty() { ctx.clearRect(0, 0, $('overlay').width, $('overlay').height); }
 
+/* ============ 受伤风险警报（声音 + 震动） ============ */
+let audioCtx = null;
+function ensureAudio() {
+  if (!audioCtx) { try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch { /* ignore */ } }
+  if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume().catch(() => {});
+}
+function alarmBurst() {
+  if (navigator.vibrate) { try { navigator.vibrate([300, 120, 300]); } catch { /* ignore */ } }
+  ensureAudio();
+  if (!audioCtx) return;
+  const t0 = audioCtx.currentTime;
+  for (let i = 0; i < 3; i++) {
+    const o = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    o.type = 'square';
+    o.frequency.value = 880;
+    g.gain.setValueAtTime(0.0001, t0 + i * 0.3);
+    g.gain.exponentialRampToValueAtTime(0.16, t0 + i * 0.3 + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + i * 0.3 + 0.18);
+    o.connect(g).connect(audioCtx.destination);
+    o.start(t0 + i * 0.3);
+    o.stop(t0 + i * 0.3 + 0.22);
+  }
+}
+
 /* ============ 开始 / 停止 / 图片 ============ */
 function setStartBtn(key, ico) {
   $('btn-start-label').textContent = t(key);
@@ -478,6 +524,7 @@ function setStartBtn(key, ico) {
 }
 async function toggleStart() {
   const btn = $('btn-start');
+  ensureAudio();   // 用户点击手势内创建音频上下文（警报声用）
   if (state.running) { state.running = false; stopCamera(); btn.disabled = false; setStartBtn('btnStart', 'play'); return; }
   $('cam-retry').classList.add('hidden');
   try {
@@ -617,6 +664,7 @@ $('btn-save').addEventListener('click', () => {
     depth: depthMode,
     badPct: Math.round(100 * a.badFrames / a.frames),
     valgusPct: a.valgusFrames ? Math.round(100 * a.valgusFrames / a.frames) : 0,
+    riskPct: a.riskFrames ? Math.round(100 * a.riskFrames / a.frames) : 0,
     collectCount: state.collectBuf.length,
   };
   const list = LS.get('rehab_sessions', []);
@@ -682,7 +730,7 @@ function renderRecords() {
       <div class="item">
         <div>
           <div class="t"><span class="t-ico">${icon(builtin ? builtin.icon : 'custom')}</span>${name} · ${fmtDate(s.ts)} · ${t('repsN', { n: s.reps })} · ${s.dur ?? '?'}s · ${depthTxt(s.depth)}</div>
-          <div class="d">${t('badFramesPct', { p: s.badPct })}${s.badPct >= 30 ? ' ⚠️' : ''}${s.valgusPct ? ' · ' + t('valgusFramesPct', { p: s.valgusPct }) : ''}${s.collectCount ? ' · ' + t('collectN', { n: s.collectCount }) : ''}</div>
+          <div class="d">${t('badFramesPct', { p: s.badPct })}${s.badPct >= 30 ? ' ⚠️' : ''}${s.riskPct ? ' · ' + t('riskFramesPct', { p: s.riskPct }) + ' 🚨' : ''}${s.valgusPct ? ' · ' + t('valgusFramesPct', { p: s.valgusPct }) : ''}${s.collectCount ? ' · ' + t('collectN', { n: s.collectCount }) : ''}</div>
         </div>
         <button class="del" data-id="${s.id}">✕</button>
       </div>`;
@@ -1351,7 +1399,7 @@ function renderPlanDayDots() {
   }));
 }
 function renderPlanPick() {
-  const all = ['squat', 'lunge', 'pushup', ...customList().map((e) => e.id)];
+  const all = ['squat', 'lunge', 'pushup', 'sitstand', 'hiphinge', 'stepup', 'shoulderraise', ...customList().map((e) => e.id)];
   $('plan-ex-pick').innerHTML = all.map((id) => {
     const e = getEx(id);
     return `<button class="chip ${planEditEx === id ? 'on' : ''}" data-pick="${id}"><span class="chip-ico">${icon(e.icon)}</span><span>${exName(e)}</span></button>`;
@@ -1583,6 +1631,20 @@ async function selfTest() {
     const c2 = customDefault(); c2.rules[0].max = 50;   // a1(≈128°) 超出 max=50 → bad
     const c2res = analyzeAny(base(), c2);
     log(t('stCustomRule'), c2res.depth === 'bad' && c2res.badMsgs.length > 0, c2res.badMsgs.join('|'));
+    // 8. 日常高频动作引擎
+    const ss = analyzeAny(base(), EXERCISES.sitstand);
+    log(t('stSitStand'), ss.features.length === 3 && typeof ss.repValue === 'number', JSON.stringify(ss.features));
+    const hh = analyzeAny(base(), EXERCISES.hiphinge);
+    log(t('stHipHinge'), hh.features.length === 3, JSON.stringify(hh.features));
+    const su = analyzeAny(base(), EXERCISES.stepup);
+    log(t('stStepUp'), su.features.length === 3, JSON.stringify(su.features));
+    const sr = analyzeAny(base(), EXERCISES.shoulderraise);
+    log(t('stShoulderRaise'), sr.features.length === 3, JSON.stringify(sr.features));
+    // 9. 受伤风险警报：弯腰+直腿搬物 → 弓背风险 2 级
+    const hh2 = base();
+    hh2[11] = mk(0.18, 0.46); hh2[12] = mk(0.20, 0.46);
+    const hhRisk = analyzeAny(hh2, EXERCISES.hiphinge);
+    log(t('stRiskAlarm'), hhRisk.riskLevel === 2 && hhRisk.risk.length > 0, `level=${hhRisk.riskLevel} ${hhRisk.risk.join('|')}`);
     out.innerHTML += `<div class="st-pass" style="margin-top:8px;font-weight:800">${t('stAllPass')}</div>`;
     console.log('SELFTEST: ALL PASS');
   } catch (e) {

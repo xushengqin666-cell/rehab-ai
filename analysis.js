@@ -90,9 +90,17 @@ export function analyzeSquat(lms) {
   if (!vg.frontal) msgs.push(t('sqValgusSide'));
   else msgs.push(vg.valgus ? t('sqValgusBad') : t('sqValgusOk'));
   const valgusFeat = vg.frontal ? Math.max(vg.left, vg.right) : 0;
+  // 统一风险分级：1 = 提醒，2 = 警报
+  const risk = []; let riskLevel = 0;
+  if (vg.frontal && valgusFeat > 0.25) { riskLevel = 2; risk.push(t('riskValgusSevere')); }
+  else if (vg.valgus) { riskLevel = 1; risk.push(t('riskValgus')); }
+  if (lean > 35) { riskLevel = 2; risk.push(t('riskLeanSevere')); }
+  else if (lean > 25) riskLevel = Math.max(riskLevel, 1);
+  if (knee < 60) { riskLevel = 2; risk.push(t('riskKneeDeep')); }
   return {
     metrics: { knee, hipA, lean, valgus: valgusFeat, vgL: vg.left, vgR: vg.right },
     depth, goodMsgs: [], badMsgs: msgs, msgsIsBad: vg.valgus || leanState === 'lean',
+    risk, riskLevel,
     chips: [
       { k: t('chipKnee'), v: `${Math.round(knee)}°`, cls: depth === 'ok' ? 'ok' : depth === 'shallow' ? 'warn' : 'bad' },
       { k: t('chipLean'), v: `${Math.round(lean)}°`, cls: leanState === 'ok' ? 'ok' : 'bad' },
@@ -120,9 +128,14 @@ export function analyzeLunge(lms) {
             : depth === 'deep' ? t('luDeep') : t('luDepthOk'));
   msgs.push(backKnee > 140 ? t('luBackStraight') : t('luBackOk'));
   msgs.push(lean > 25 ? t('sqLeanBad') : t('sqBackOk'));
+  const risk = []; let riskLevel = 0;
+  if (frontKnee < 55) { riskLevel = 2; risk.push(t('riskKneeDeep')); }
+  if (lean > 35) { riskLevel = 2; risk.push(t('riskLeanSevere')); }
+  else if (lean > 25) riskLevel = Math.max(riskLevel, 1);
   return {
     metrics: { frontKnee, backKnee, lean },
     depth, goodMsgs: [], badMsgs: msgs, msgsIsBad: depth !== 'ok' || lean > 25,
+    risk, riskLevel,
     chips: [
       { k: t('chipFrontKnee'), v: `${Math.round(frontKnee)}°`, cls: depth === 'ok' ? 'ok' : 'warn' },
       { k: t('chipBackKnee'), v: `${Math.round(backKnee)}°`, cls: backKnee > 140 ? 'warn' : 'ok' },
@@ -146,9 +159,14 @@ export function analyzePushup(lms) {
   msgs.push(depth === 'shallow' ? t('puShallow')
             : depth === 'deep' ? t('puDeep') : t('puDepthOk'));
   msgs.push(bodyLean > 15 ? t('puSag') : t('puBodyOk'));
+  const risk = []; let riskLevel = 0;
+  if (bodyLean > 25) { riskLevel = 2; risk.push(t('riskBackRound')); }
+  else if (bodyLean > 15) riskLevel = Math.max(riskLevel, 1);
+  if (elbow < 50) { riskLevel = 2; risk.push(t('riskKneeDeep')); }
   return {
     metrics: { elbow, body: bodyLean },
     depth, goodMsgs: [], badMsgs: msgs, msgsIsBad: depth !== 'ok' || bodyLean > 15,
+    risk, riskLevel,
     chips: [
       { k: t('chipElbow'), v: `${Math.round(elbow)}°`, cls: depth === 'ok' ? 'ok' : 'warn' },
       { k: t('chipBody'), v: t('chipBodyOff', { n: Math.round(bodyLean) }), cls: bodyLean > 15 ? 'bad' : 'ok' },
@@ -159,17 +177,163 @@ export function analyzePushup(lms) {
   };
 }
 
+/* ============ 椅子起坐（一天最高频动作） ============ */
+export function analyzeSitStand(lms) {
+  const s = pickSide(lms);
+  const knee = angle3(lms[s.hip], lms[s.knee], lms[s.ankle]);
+  const lean = verticalAngle(lms[s.shoulder], lms[s.hip]);
+  const vg = kneeValgus(lms);
+  const depth = knee > 130 ? 'shallow' : knee < 80 ? 'deep' : 'ok';
+  const msgs = [];
+  msgs.push(depth === 'shallow' ? t('ssShallow')
+            : depth === 'deep' ? t('ssDeep') : t('ssDepthOk'));
+  msgs.push(lean > 30 ? t('sqLeanBad') : t('sqBackOk'));
+  if (!vg.frontal) msgs.push(t('sqValgusSide'));
+  else msgs.push(vg.valgus ? t('sqValgusBad') : t('sqValgusOk'));
+  const valgusFeat = vg.frontal ? Math.max(vg.left, vg.right) : 0;
+  const risk = []; let riskLevel = 0;
+  if (vg.frontal && valgusFeat > 0.25) { riskLevel = 2; risk.push(t('riskValgusSevere')); }
+  else if (vg.valgus) { riskLevel = 1; risk.push(t('riskValgus')); }
+  if (lean > 40) { riskLevel = 2; risk.push(t('riskLeanSevere')); }
+  else if (lean > 30) riskLevel = Math.max(riskLevel, 1);
+  if (knee < 65) { riskLevel = 2; risk.push(t('riskKneeDeep')); }
+  return {
+    metrics: { knee, lean, valgus: valgusFeat },
+    depth, goodMsgs: [], badMsgs: msgs, msgsIsBad: vg.valgus || lean > 30 || depth !== 'ok',
+    risk, riskLevel,
+    chips: [
+      { k: t('chipKnee'), v: `${Math.round(knee)}°`, cls: depth === 'ok' ? 'ok' : depth === 'shallow' ? 'warn' : 'bad' },
+      { k: t('chipLean'), v: `${Math.round(lean)}°`, cls: lean > 30 ? 'bad' : 'ok' },
+      { k: t('chipDepth'), v: { ok: t('depthOk'), shallow: t('depthShallow'), deep: t('depthDeep') }[depth], cls: depth === 'ok' ? 'ok' : 'warn' },
+      { k: t('chipValgus'), v: vg.frontal ? (vg.valgus ? t('valgusIn', { l: vg.left, r: vg.right }) : t('valgusOkVal')) : t('valgusSideVal'), cls: vg.valgus ? 'bad' : (vg.frontal ? 'ok' : 'warn') },
+    ],
+    features: [+knee.toFixed(1), +lean.toFixed(1), +valgusFeat.toFixed(2)],
+    repValue: knee,
+    labelSet: ['good', 'shallow', 'deep', 'lean', 'valgus'],
+  };
+}
+
+/* ============ 搬重物·髋铰链（背部安全重点） ============ */
+export function analyzeHipHinge(lms) {
+  const s = pickSide(lms);
+  const hipA = angle3(lms[s.shoulder], lms[s.hip], lms[s.knee]);
+  const knee = angle3(lms[s.hip], lms[s.knee], lms[s.ankle]);
+  const lean = verticalAngle(lms[s.shoulder], lms[s.hip]);
+  const depth = hipA > 140 ? 'shallow' : hipA < 75 ? 'deep' : 'ok';
+  const msgs = [];
+  msgs.push(depth === 'shallow' ? t('hhShallow')
+            : depth === 'deep' ? t('hhDeep') : t('hhDepthOk'));
+  msgs.push(lean > 60 && knee > 160 ? t('hhStraightLegs') : t('hhKneeOk'));
+  const risk = []; let riskLevel = 0;
+  if (lean > 60 && hipA < 100 && knee > 150) { riskLevel = 2; risk.push(t('riskBackRound')); }
+  else if (lean > 45 && knee > 140) { riskLevel = 1; risk.push(t('riskBackRoundWarn')); }
+  if (knee < 60) { riskLevel = 2; risk.push(t('riskKneeDeep')); }
+  return {
+    metrics: { hipA, knee, lean },
+    depth, goodMsgs: [], badMsgs: msgs, msgsIsBad: depth !== 'ok' || riskLevel > 0,
+    risk, riskLevel,
+    chips: [
+      { k: t('chipHip'), v: `${Math.round(hipA)}°`, cls: depth === 'ok' ? 'ok' : 'warn' },
+      { k: t('chipKnee'), v: `${Math.round(knee)}°`, cls: knee < 70 ? 'bad' : 'ok' },
+      { k: t('chipBack'), v: riskLevel === 2 ? t('riskBackRound') : riskLevel === 1 ? t('riskBackRoundWarn') : t('backOkVal'), cls: riskLevel === 2 ? 'bad' : riskLevel === 1 ? 'warn' : 'ok' },
+    ],
+    features: [+hipA.toFixed(1), +knee.toFixed(1), +lean.toFixed(1)],
+    repValue: hipA,
+    labelSet: ['good', 'shallow', 'deep', 'sag'],
+  };
+}
+
+/* ============ 上台阶（楼梯/台阶） ============ */
+export function analyzeStepUp(lms) {
+  const L = { hip: 23, knee: 25, ankle: 27, shoulder: 11 }, R = { hip: 24, knee: 26, ankle: 28, shoulder: 12 };
+  const aL = angle3(lms[L.hip], lms[L.knee], lms[L.ankle]);
+  const aR = angle3(lms[R.hip], lms[R.knee], lms[R.ankle]);
+  const work = aL < aR ? L : R;
+  const knee = Math.min(aL, aR);
+  const lean = verticalAngle(lms[work.shoulder], lms[work.hip]);
+  const vg = kneeValgus(lms);
+  const depth = knee > 115 ? 'shallow' : knee < 70 ? 'deep' : 'ok';
+  const msgs = [];
+  msgs.push(depth === 'shallow' ? t('suShallow')
+            : depth === 'deep' ? t('suDeep') : t('suDepthOk'));
+  msgs.push(lean > 25 ? t('riskSway') : t('sqBackOk'));
+  if (!vg.frontal) msgs.push(t('sqValgusSide'));
+  else msgs.push(vg.valgus ? t('sqValgusBad') : t('sqValgusOk'));
+  const valgusFeat = vg.frontal ? Math.max(vg.left, vg.right) : 0;
+  const risk = []; let riskLevel = 0;
+  if (knee < 60) { riskLevel = 2; risk.push(t('riskKneeDeep')); }
+  if (lean > 35) { riskLevel = 2; risk.push(t('riskLeanSevere')); }
+  else if (lean > 25) riskLevel = Math.max(riskLevel, 1);
+  if (vg.frontal && valgusFeat > 0.25) { riskLevel = 2; risk.push(t('riskValgusSevere')); }
+  else if (vg.valgus) riskLevel = Math.max(riskLevel, 1);
+  return {
+    metrics: { knee, lean, valgus: valgusFeat },
+    depth, goodMsgs: [], badMsgs: msgs, msgsIsBad: depth !== 'ok' || lean > 25 || vg.valgus,
+    risk, riskLevel,
+    chips: [
+      { k: t('chipFrontKnee'), v: `${Math.round(knee)}°`, cls: depth === 'ok' ? 'ok' : 'warn' },
+      { k: t('chipLean'), v: `${Math.round(lean)}°`, cls: lean > 25 ? 'bad' : 'ok' },
+      { k: t('chipValgus'), v: vg.frontal ? (vg.valgus ? t('valgusIn', { l: vg.left, r: vg.right }) : t('valgusOkVal')) : t('valgusSideVal'), cls: vg.valgus ? 'bad' : (vg.frontal ? 'ok' : 'warn') },
+    ],
+    features: [+knee.toFixed(1), +lean.toFixed(1), +valgusFeat.toFixed(2)],
+    repValue: knee,
+    labelSet: ['good', 'shallow', 'deep', 'lean', 'valgus'],
+  };
+}
+
+/* ============ 肩上举（高处取物） ============ */
+export function analyzeShoulderRaise(lms) {
+  const s = pickSide(lms);
+  const arm = verticalAngle(lms[s.shoulder], lms[s.wrist]);
+  const elbow = angle3(lms[s.shoulder], lms[s.elbow], lms[s.wrist]);
+  const lean = verticalAngle(lms[s.shoulder], lms[s.hip]);
+  const depth = arm < 120 ? 'shallow' : 'ok';
+  const msgs = [];
+  msgs.push(depth === 'shallow' ? t('srShallow') : t('srOk'));
+  msgs.push(lean > 15 ? t('riskCompensate') : t('sqBackOk'));
+  const risk = []; let riskLevel = 0;
+  if (lean > 25) { riskLevel = 2; risk.push(t('riskCompensateSevere')); }
+  else if (lean > 15) riskLevel = Math.max(riskLevel, 1);
+  if (elbow < 90) { riskLevel = 2; risk.push(t('riskElbowBend')); }
+  else if (elbow < 120) riskLevel = Math.max(riskLevel, 1);
+  return {
+    metrics: { arm, lean, elbow },
+    depth, goodMsgs: [], badMsgs: msgs, msgsIsBad: depth !== 'ok' || lean > 15,
+    risk, riskLevel,
+    chips: [
+      { k: t('chipArm'), v: `${Math.round(arm)}°`, cls: depth === 'ok' ? 'ok' : 'warn' },
+      { k: t('chipLean'), v: `${Math.round(lean)}°`, cls: lean > 15 ? 'bad' : 'ok' },
+      { k: t('chipElbow'), v: `${Math.round(elbow)}°`, cls: elbow < 120 ? 'warn' : 'ok' },
+    ],
+    features: [+arm.toFixed(1), +lean.toFixed(1), +elbow.toFixed(1)],
+    repValue: arm,
+    labelSet: ['good', 'shallow', 'bad'],
+  };
+}
+
 /* ============ 内置动作注册表 ============ */
 export const EXERCISES = {
   squat: { id: 'squat', nameKey: 'exSquat', icon: 'squat', analyze: analyzeSquat,
-           rep: { downBelow: 100, upAbove: 150 }, descKey: 'exSquatDesc',
+           rep: { downBelow: 100, upAbove: 150 }, descKey: 'exSquatDesc', stdKey: 'exSquatStd',
            labelSet: ['good', 'shallow', 'deep', 'lean', 'valgus'] },
   lunge: { id: 'lunge', nameKey: 'exLunge', icon: 'lunge', analyze: analyzeLunge,
-           rep: { downBelow: 100, upAbove: 150 }, descKey: 'exLungeDesc',
+           rep: { downBelow: 100, upAbove: 150 }, descKey: 'exLungeDesc', stdKey: 'exLungeStd',
            labelSet: ['good', 'frontShallow', 'frontDeep', 'lean'] },
   pushup: { id: 'pushup', nameKey: 'exPushup', icon: 'pushup', analyze: analyzePushup,
-            rep: { downBelow: 100, upAbove: 160 }, descKey: 'exPushupDesc',
+            rep: { downBelow: 100, upAbove: 160 }, descKey: 'exPushupDesc', stdKey: 'exPushupStd',
             labelSet: ['good', 'shallow', 'sag'] },
+  sitstand: { id: 'sitstand', nameKey: 'exSitStand', icon: 'sitstand', analyze: analyzeSitStand,
+              rep: { downBelow: 115, upAbove: 165 }, descKey: 'exSitStandDesc', stdKey: 'exSitStandStd',
+              labelSet: ['good', 'shallow', 'deep', 'lean', 'valgus'] },
+  hiphinge: { id: 'hiphinge', nameKey: 'exHipHinge', icon: 'hiphinge', analyze: analyzeHipHinge,
+              rep: { downBelow: 120, upAbove: 160 }, descKey: 'exHipHingeDesc', stdKey: 'exHipHingeStd',
+              labelSet: ['good', 'shallow', 'deep', 'sag'] },
+  stepup: { id: 'stepup', nameKey: 'exStepUp', icon: 'stepup', analyze: analyzeStepUp,
+            rep: { downBelow: 105, upAbove: 160 }, descKey: 'exStepUpDesc', stdKey: 'exStepUpStd',
+            labelSet: ['good', 'shallow', 'deep', 'lean', 'valgus'] },
+  shoulderraise: { id: 'shoulderraise', nameKey: 'exShoulderRaise', icon: 'shoulderraise', analyze: analyzeShoulderRaise,
+                   rep: { downBelow: 40, upAbove: 140 }, descKey: 'exShoulderRaiseDesc', stdKey: 'exShoulderRaiseStd',
+                   labelSet: ['good', 'shallow', 'bad'] },
 };
 
 /* ============ 自定义动作 ============ */
