@@ -423,6 +423,7 @@ function resetAgg() {
   state.statsKey = null;
   state.blackFrames = 0; state.blackWarned = false; state.blackTS = 0; state.blackLum = null;
   state.alarmOn = false; state.alarmTS = 0;
+  state.voiceReps = 0; state.voiceTS = 0;
   const r = $('st-reps'); if (r) r.textContent = '0';
   document.querySelectorAll('#chips [data-stat]').forEach((el) => { el.textContent = '--'; });
   const save = $('btn-save'); if (save) save.disabled = true;
@@ -528,8 +529,13 @@ function loop() {
   if (state.statsKey !== ex.id) { renderChips(res); state.statsKey = ex.id; }
   else updateStats(res);
   $('st-reps').textContent = String(reps);
+  // 语音播报：每 5 次报一次数
+  if (reps > 0 && reps % 5 === 0 && reps !== state.voiceReps) {
+    state.voiceReps = reps;
+    speak(t('voiceRep', { n: reps }));
+  }
 
-  // 受伤风险：1=提醒(warn) 2=警报(alarm，声音+震动+闪烁)
+  // 受伤风险：1=提醒(warn) 2=警报(alarm，声音+震动+闪烁+语音)
   const riskLevel = res.riskLevel || 0;
   if (riskLevel >= 2) {
     if (!state.alarmOn) { state.alarmOn = true; state.alarmTS = ts; alarmBurst(); }
@@ -538,6 +544,10 @@ function loop() {
     state.alarmOn = false;
   }
   const riskMsgs = (res.risk && res.risk.length) ? res.risk : [];
+  if (riskMsgs.length) {
+    if (riskLevel >= 2 && ts - state.voiceTS > 8000) { state.voiceTS = ts; speak(t('alarmTitle') + '，' + riskMsgs[0]); }
+    else if (riskLevel === 1 && ts - state.voiceTS > 8000) { state.voiceTS = ts; speak(riskMsgs[0]); }
+  }
   const bodyMsgs = riskMsgs.length ? riskMsgs : (res.badMsgs.length ? res.badMsgs : res.goodMsgs);
   const msg = fbWrap(riskLevel >= 2 ? 'alert' : (res.msgsIsBad ? 'alert' : 'check'),
     (riskLevel >= 2 ? '<b>' + t('alarmTitle') + '</b><br>' : '') + bodyMsgs.join('<br>'));
@@ -743,6 +753,7 @@ $('btn-save').addEventListener('click', () => {
       sset('rehab_plan_done', dd);
       renderTodayPlan();
       toast(t('goalDone'));
+      speak(t('goalDone'));
     }
   }
   resetAgg();
@@ -1689,6 +1700,29 @@ $('btn-cloud-logout').addEventListener('click', () => {
   toast(t('toastLogout'));
 });
 
+/* ============ 语音播报（系统 TTS，离线可用） ============ */
+const voiceEnabled = () => LS.get('rehab_voice', false);
+function speak(text) {
+  if (!voiceEnabled() || !('speechSynthesis' in window)) return;
+  try {
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(String(text).replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\uFE0F]/gu, ''));
+    u.lang = locale() === 'zh-CN' ? 'zh-CN' : 'en-US';
+    u.rate = 1.05;
+    speechSynthesis.speak(u);
+  } catch { /* ignore */ }
+}
+function renderVoice() {
+  $('btn-voice-toggle').textContent = voiceEnabled() ? t('btnVoiceDisable') : t('btnVoiceEnable');
+  $('btn-voice-toggle').classList.toggle('primary', !voiceEnabled());
+  $('voice-status').textContent = voiceEnabled() ? t('voiceOn') : '';
+}
+$('btn-voice-toggle').addEventListener('click', () => {
+  LS.set('rehab_voice', !voiceEnabled());
+  renderVoice();
+  speak(t('voiceOn'));
+});
+
 /* ============ 轻提示 ============ */
 function toast(msg) {
   let t = $('toast');
@@ -1787,7 +1821,7 @@ onLangChanged(() => {
   renderCollectCount();
   renderProfile(); renderReminder(); renderCloud();
   renderTodayPlan(); renderPlanList(); renderPlanPick(); renderPlanDayDots();
-  renderGoal();
+  renderGoal(); renderVoice();
   setStartBtn(state.running ? 'btnStop' : 'btnStart', state.running ? 'stop' : 'play');
   $('btn-collect-label').textContent = state.collectMode ? t('btnCollectStop') : t('btnCollect');
   $('feedback')._last = null;
@@ -1799,6 +1833,7 @@ renderRecords(); renderAssessments(); renderAppts(); renderCustomList();
 renderCollectCount();
 renderProfile(); renderReminder(); renderCloud(); renderAuth();
 renderTodayPlan(); renderPlanList();
+renderVoice();
 $('btn-collect-label').textContent = t('btnCollect');
 setStartBtn('btnStart', 'play');
 // 登录用户：启动后自动同步一次

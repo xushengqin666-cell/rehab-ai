@@ -212,6 +212,9 @@ const DICT = {
     remTitle: '训练提醒', remHint: '到点提醒完成今日计划（需允许通知；页面开着时生效）。',
     remTime: '提醒时间', btnRemEnable: '开启提醒', btnRemDisable: '关闭提醒', btnRemPerm: '允许通知',
     remOn: '已开启：每天 {t} 提醒', remDenied: '浏览器拒绝了通知权限，请在浏览器设置里允许',
+    voiceTitle: '语音播报', voiceHint: '开启后用语音提示动作要领、计数里程碑和危险警报（手机/电脑系统语音，离线可用）。',
+    btnVoiceEnable: '开启语音', btnVoiceDisable: '关闭语音', voiceOn: '已开启：警报/计数/要领会语音播报',
+    voiceRep: '{n} 次！',
     remindMsg: '康复AI：今天也要动一动哦', remindMsgPlan: '康复AI：今日计划还有 {n} 项未完成',
     // 云同步
     cloudTitle: '云同步（账号系统）', cloudHint: '配置 Supabase 后：注册/登录账号，数据自动同步到云端，换设备登录即恢复（替代二维码同步）。',
@@ -431,6 +434,9 @@ const DICT = {
     remTitle: 'Reminders', remHint: 'A daily nudge to finish today\'s plan (needs notification permission; works while the app is open).',
     remTime: 'Reminder time', btnRemEnable: 'Enable', btnRemDisable: 'Disable', btnRemPerm: 'Allow notifications',
     remOn: 'On: reminds daily at {t}', remDenied: 'Notifications blocked — allow them in browser settings',
+    voiceTitle: 'Voice coaching', voiceHint: 'Speaks form cues, rep milestones and danger alarms (uses your device voice, works offline).',
+    btnVoiceEnable: 'Enable voice', btnVoiceDisable: 'Disable voice', voiceOn: 'On: alarms, reps and cues are spoken',
+    voiceRep: '{n} reps!',
     remindMsg: 'Rehab AI: time to move today!', remindMsgPlan: 'Rehab AI: {n} plan items still to do today',
     // 云同步
     cloudTitle: 'Cloud sync (accounts)', cloudHint: 'After configuring Supabase: sign up / log in and your data syncs to the cloud — log in on any device to restore it (replaces QR sync).',

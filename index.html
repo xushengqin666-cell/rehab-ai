@@ -219,6 +219,15 @@
     </div>
 
     <div class="card">
+      <h3 data-i18n="voiceTitle">语音播报</h3>
+      <p class="hint" data-i18n="voiceHint">开启后用语音提示动作要领、计数里程碑和危险警报（手机/电脑系统语音，离线可用）。</p>
+      <div class="rem-row">
+        <button id="btn-voice-toggle" class="btn primary block" data-i18n="btnVoiceEnable">开启语音</button>
+      </div>
+      <p class="hint" id="voice-status"></p>
+    </div>
+
+    <div class="card">
       <h3 data-i18n="apptTitle">理疗预约</h3>
       <form id="appt-form" class="form">
         <input type="date" id="appt-date" required>
