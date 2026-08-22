@@ -119,7 +119,15 @@ main { max-width: 560px; margin: 0 auto; }
 .feedback.warn .fb-ico { color: var(--yellow); }
 .feedback.bad .fb-ico { color: var(--red); }
 .fb-ico svg { width: 17px; height: 17px; }
-.fb-body { min-width: 0; }
+.fb-body { min-width: 0; flex: 1; }
+.fb-action {
+  flex: none; display: inline-flex; align-items: center; gap: 6px;
+  margin-top: 8px; padding: 7px 12px; border-radius: 10px;
+  border: 1px solid rgba(14, 124, 102, .35); background: rgba(14, 124, 102, .08);
+  color: var(--teal-d); font-size: 12.5px; font-weight: 700; cursor: pointer;
+}
+.fb-action .btn-ico svg { width: 14px; height: 14px; }
+.feedback { flex-wrap: wrap; }
 
 /* 按钮 */
 .controls { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }

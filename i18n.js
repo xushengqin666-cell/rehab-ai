@@ -168,6 +168,9 @@ const DICT = {
     btnPlanAdd: '➕ 添加动作到计划', planAdded: '已加入计划', planPickEx: '先在上方选一个动作',
     goalLine: '今日目标：{name} ×{n}', goalProgress: '已完成 {d} / {t}', goalDone: '🎉 今日目标达成！',
     assessTrend: '评估分数趋势', swUpdate: '已下载新版本，刷新页面即可更新',
+    blackCamHint: '画面是全黑的 —— 可能选到了红外摄像头(IR)或被隐私盖挡住。点右侧「切换摄像头」换一个。',
+    btnSwitchCam: '切换摄像头', camPickerTitle: '选择摄像头',
+    camPickerHint: '画面全黑多半是选到了红外摄像头(IR Camera)——换「Integrated Camera」试试；还不行就检查摄像头隐私盖是否打开。',
     // 提醒
     remTitle: '训练提醒', remHint: '到点提醒完成今日计划（需允许通知；页面开着时生效）。',
     remTime: '提醒时间', btnRemEnable: '开启提醒', btnRemDisable: '关闭提醒', btnRemPerm: '允许通知',
@@ -335,6 +338,9 @@ const DICT = {
     btnPlanAdd: '➕ Add exercise to plan', planAdded: 'Added to plan', planPickEx: 'Pick an exercise above first',
     goalLine: "Today's goal: {name} ×{n}", goalProgress: 'Done {d} of {t}', goalDone: '🎉 Daily goal reached!',
     assessTrend: 'Score trend', swUpdate: 'New version downloaded — refresh to update',
+    blackCamHint: 'The picture is completely black — you may be on the IR camera or the privacy shutter is closed. Tap "Switch camera".',
+    btnSwitchCam: 'Switch camera', camPickerTitle: 'Choose a camera',
+    camPickerHint: 'A black picture usually means the IR camera is selected — pick "Integrated Camera". Otherwise check the privacy shutter.',
     // 提醒
     remTitle: 'Reminders', remHint: 'A daily nudge to finish today\'s plan (needs notification permission; works while the app is open).',
     remTime: 'Reminder time', btnRemEnable: 'Enable', btnRemDisable: 'Disable', btnRemPerm: 'Allow notifications',

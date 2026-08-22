@@ -165,17 +165,29 @@ async function openCamera() {
   }
   state.cameras = await detectCameras();
   if (!state.cameras.length) throw new DOMException('未检测到摄像头', 'NoCamera');
+  const isIRLabel = (s) => /ir|红外/i.test(s || '');
+  // 红外摄像头拍出来是全黑的 —— 把非 IR 设备排在前面，并跳过 IR 流
+  const devs = state.cameras.filter((c) => c.deviceId).sort((a, b) => (isIRLabel(a.label) ? 1 : 0) - (isIRLabel(b.label) ? 1 : 0));
+  const nonIR = devs.filter((d) => !isIRLabel(d.label));
   const candidates = [
     { video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false },
     { video: { width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false },
     { video: { width: { ideal: 640 }, height: { ideal: 480 } }, audio: false },   // 低配设备兜底
-    ...state.cameras.filter((c) => c.deviceId).map((c) => ({
+    ...devs.map((c) => ({
       video: { deviceId: { exact: c.deviceId }, width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false,
     })),
   ];
   let lastErr = null;
   for (const c of candidates) {
-    try { return await openCameraWithTimeout(c); } catch (e) { lastErr = e; }
+    try {
+      const stream = await openCameraWithTimeout(c);
+      const label = stream.getVideoTracks()[0]?.label || '';
+      if (isIRLabel(label) && nonIR.length) {   // 选到了红外摄像头 → 停掉，换下一个候选
+        stream.getTracks().forEach((t) => t.stop());
+        continue;
+      }
+      return stream;
+    } catch (e) { lastErr = e; }
   }
   throw lastErr;
 }
@@ -245,6 +257,24 @@ function stopCamera() {
   if (video.srcObject) video.srcObject.getTracks().forEach((t) => t.stop());
   video.srcObject = null;
   state.videoOn = false;
+}
+// 手动选择摄像头（黑屏时切换用）
+function showCamPicker() {
+  const box = $('cam-retry');
+  box.classList.remove('hidden');
+  state._lastCamErr = null;
+  const cams = state.cameras || [];
+  box.innerHTML = `
+    <div class="retry-card">
+      <b>${t('camPickerTitle')}</b>
+      <div class="retry-row">${cams.map((c, i) => `<button class="btn small" data-cam="${i}"><span class="btn-ico">${icon('camera')}</span>${c.label || t('camLabel', { n: i + 1 })}</button>`).join('')}</div>
+      <p class="hint tiny">${t('camPickerHint')}</p>
+    </div>`;
+  box.querySelectorAll('[data-cam]').forEach((b) => b.addEventListener('click', () => {
+    state.pickCam = +b.dataset.cam;
+    box.classList.add('hidden');
+    toggleStart();
+  }));
 }
 
 /* ============ 界面：动作选择 + 统计 ============ */
@@ -323,6 +353,7 @@ function resetAgg() {
   state.agg = { frames: 0, startTS: Date.now(), depth: {}, badFrames: 0, valgusFrames: 0 };
   state.lastResult = null;
   state.statsKey = null;
+  state.blackFrames = 0; state.blackWarned = false; state.blackTS = 0; state.blackLum = null;
   const r = $('st-reps'); if (r) r.textContent = '0';
   document.querySelectorAll('#chips [data-stat]').forEach((el) => { el.textContent = '--'; });
   const save = $('btn-save'); if (save) save.disabled = true;
@@ -359,6 +390,38 @@ function kickLoop() {
   requestAnimationFrame(() => { state.loopScheduled = false; loop(); });
 }
 
+// 画面亮度检测：连续 ~3 秒全黑 → 提示切换摄像头（红外摄像头/隐私盖问题）
+function checkBlackFrame() {
+  const v = $('video');
+  if (!state.videoOn || v.readyState < 2 || !v.videoWidth) return;
+  const now = performance.now();
+  if (now - (state.blackTS || 0) < 500) return;
+  state.blackTS = now;
+  const c = state.blackCanvas || (state.blackCanvas = document.createElement('canvas'));
+  c.width = 48; c.height = 48;
+  const cx = c.getContext('2d');
+  cx.drawImage(v, 0, 0, 48, 48);
+  const d = cx.getImageData(0, 0, 48, 48).data;
+  let sum = 0;
+  for (let i = 0; i < d.length; i += 4) sum += (d[i] + d[i + 1] + d[i + 2]) / 3;
+  const lum = sum / (d.length / 4);
+  state.blackLum = Math.round((100 * lum) / 255);
+  if (lum < 8) {
+    state.blackFrames = (state.blackFrames || 0) + 1;
+    if (state.blackFrames >= 6 && !state.blackWarned) {
+      state.blackWarned = true;
+      const fb = $('feedback');
+      fb.innerHTML = fbWrap('alert', t('blackCamHint')) + `<button class="fb-action"><span class="btn-ico">${icon('camera')}</span><span>${t('btnSwitchCam')}</span></button>`;
+      fb.className = 'feedback warn';
+      fb._last = 'black';
+      fb.querySelector('.fb-action').addEventListener('click', () => { toggleStart(); showCamPicker(); });
+    }
+  } else {
+    state.blackFrames = 0;
+    if (state.blackWarned) { state.blackWarned = false; $('feedback')._last = null; }
+  }
+}
+
 function loop() {
   if (!state.running || state.photoMode || state.tab !== 'train' || document.hidden) return;
   const video = $('video');
@@ -366,6 +429,7 @@ function loop() {
   const ts = performance.now();
   if (ts - state.lastTS < 33) { kickLoop(); return; }
   state.lastTS = ts;
+  checkBlackFrame();
   const result = state.landmarker.detectForVideo(video, ts);
   const fb = $('feedback');
   if (!result.landmarks || !result.landmarks.length) {
