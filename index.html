@@ -53,6 +53,15 @@
     <div id="feedback" class="feedback hidden"></div>
     <div id="cam-retry" class="hidden"></div>
 
+    <!-- 二维码同步状态 -->
+    <div id="sync-panel" class="card hidden" style="margin-top:12px">
+      <h3 data-i18n="scanTitle">正在扫描二维码…</h3>
+      <p class="hint" id="sync-progress">…</p>
+      <div class="controls">
+        <button id="btn-sync-cancel" class="btn" data-i18n="scanCancel">取消</button>
+      </div>
+    </div>
+
     <!-- 数据采集面板 -->
     <div id="collect-panel" class="card hidden" style="margin-top:12px">
       <h3 data-i18n="collectTitle">数据采集（训练真实模型用）</h3>
@@ -252,9 +261,23 @@
     </div>
 
     <div class="card">
-      <h3 data-i18n="syncTitle">数据同步（端手互通）</h3>
-      <p class="hint" data-i18n="syncHint">数据默认保存在本机浏览器。跨设备同步：一台设备「导出」，另一台「导入」。
-        部署到 Netlify/GitHub Pages 后，手机和电脑用同一个网址访问。</p>
+      <h3 data-i18n="syncTitle">端手互通（二维码同步）</h3>
+      <p class="hint" data-i18n="syncHint">两台设备都打开同一个网址：一台点「显示二维码」，另一台点「扫描二维码」，数据几秒内自动合并。</p>
+      <div class="controls">
+        <button id="btn-sync-show" class="btn primary">
+          <span class="btn-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="4.5" width="6" height="6" rx="1"/><rect x="13.5" y="4.5" width="6" height="6" rx="1"/><rect x="4.5" y="13.5" width="6" height="6" rx="1"/><path d="M13.5 13.5h3v3h-3zM13.5 19.5h3M19.5 13.5v6"/></svg></span>
+          <span data-i18n="btnSyncShow">显示二维码</span>
+        </button>
+        <button id="btn-sync-scan" class="btn">
+          <span class="btn-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 8V6.5A2.5 2.5 0 0 1 6 4h2M15.5 4H18a2.5 2.5 0 0 1 2.5 2.5V8M20.5 16v1.5a2.5 2.5 0 0 1-2.5 2.5h-2.5M8.5 20H6a2.5 2.5 0 0 1-2.5-2.5V16"/></svg></span>
+          <span data-i18n="btnSyncScan">扫描二维码</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3 data-i18n="backupTitle">备份 / 恢复（JSON 文件）</h3>
+      <p class="hint" data-i18n="backupHint">完整备份（含采集数据）：导出 JSON 文件保存，另一台「导入数据」恢复。</p>
       <div class="controls">
         <button id="btn-export" class="btn">
           <span class="btn-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v10M7.5 10.5 12 15l4.5-4.5M5 20h14"/></svg></span>
@@ -308,6 +331,19 @@
 </nav>
 
 <div id="selftest-out" style="display:none"></div>
+
+<!-- 二维码同步弹窗 -->
+<div id="qr-modal" class="modal-overlay hidden">
+  <div class="modal-card">
+    <h3 data-i18n="qrTitle">同步二维码</h3>
+    <canvas id="qr-canvas" class="qr-canvas"></canvas>
+    <p id="qr-page" class="hint" style="text-align:center"></p>
+    <button id="qr-close" class="btn block" data-i18n="qrClose">关闭</button>
+  </div>
+</div>
+
+<script src="vendor/qrcode.js"></script>
+<script src="vendor/jsqr.js"></script>
 <script type="module" src="app.js"></script>
 </body>
 </html>

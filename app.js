@@ -867,6 +867,171 @@ document.querySelectorAll('.bottom-nav button').forEach((btn) => {
 // 切到后台自动暂停分析，回来自动恢复（省电）
 document.addEventListener('visibilitychange', () => { if (!document.hidden) kickLoop(); });
 
+/* ============ 端手互通：二维码同步（无服务器 · 数据本地压缩加密传输） ============ */
+const SYNC_PREFIX = 'RAS|';
+const syncState = { scanning: false, got: [], total: null, last: 0, off: null, showing: false, frameIdx: 0, chunks: [], frameTimer: null };
+
+const bytesToB64 = (buf) => {
+  const arr = new Uint8Array(buf);
+  let s = '';
+  for (let i = 0; i < arr.length; i += 0x8000) s += String.fromCharCode.apply(null, arr.subarray(i, i + 0x8000));
+  return btoa(s);
+};
+const b64ToBytes = (b64) => {
+  const s = atob(b64);
+  const arr = new Uint8Array(s.length);
+  for (let i = 0; i < s.length; i++) arr[i] = s.charCodeAt(i);
+  return arr;
+};
+const gzipB64 = async (text) => bytesToB64(await new Response(new Blob([text]).stream().pipeThrough(new CompressionStream('gzip'))).arrayBuffer());
+const gunzipB64 = async (b64) => new Response(new Blob([b64ToBytes(b64)]).stream().pipeThrough(new DecompressionStream('gzip'))).text();
+
+function makeSyncData() {
+  return {
+    app: 'RehabAI', v: 3, ts: Date.now(),
+    sessions: LS.get('rehab_sessions', []),
+    assessments: LS.get('rehab_assessments', []),
+    appts: LS.get('rehab_appts', []),
+    customExercises: loadCustomExercises(),
+  };
+}
+// 按 id 合并：双方都保留，同 id 以对方为准；按时间倒序
+function mergeSyncData(data) {
+  const mergeById = (cur, inc) => {
+    const m = new Map(cur.map((x) => [x.id, x]));
+    (inc || []).forEach((x) => m.set(x.id, x));
+    return [...m.values()].sort((a, b) => (b.ts || 0) - (a.ts || 0));
+  };
+  LS.set('rehab_sessions', mergeById(LS.get('rehab_sessions', []), data.sessions));
+  LS.set('rehab_assessments', mergeById(LS.get('rehab_assessments', []), data.assessments));
+  LS.set('rehab_appts', mergeById(LS.get('rehab_appts', []), data.appts));
+  if (Array.isArray(data.customExercises) && data.customExercises.length) {
+    saveCustomExercises(mergeById(loadCustomExercises(), data.customExercises));
+    invalidateCustom();
+  }
+  return { s: (data.sessions || []).length, a: (data.assessments || []).length, p: (data.appts || []).length, c: (data.customExercises || []).length };
+}
+
+/* ---------- 显示二维码（发送端） ---------- */
+async function startSyncShow() {
+  const data = makeSyncData();
+  if (!data.sessions.length && !data.assessments.length && !data.appts.length && !data.customExercises.length) {
+    toast(t('qrEmpty'));
+    return;
+  }
+  const b64 = await gzipB64(JSON.stringify(data));
+  const SIZE = 1300;
+  syncState.chunks = [];
+  for (let i = 0; i < b64.length; i += SIZE) syncState.chunks.push(b64.slice(i, i + SIZE));
+  syncState.frameIdx = 0;
+  syncState.showing = true;
+  $('qr-modal').classList.remove('hidden');
+  renderQrFrame();
+  clearInterval(syncState.frameTimer);
+  syncState.frameTimer = setInterval(() => {
+    syncState.frameIdx = (syncState.frameIdx + 1) % syncState.chunks.length;
+    renderQrFrame();
+  }, 1500);
+}
+function renderQrFrame() {
+  const i = syncState.frameIdx;
+  const text = SYNC_PREFIX + '|' + i + '|' + syncState.chunks.length + '|' + syncState.chunks[i];
+  const qr = window.qrcode(0, 'L');
+  qr.addData(text, 'Byte');
+  qr.make();
+  const canvas = $('qr-canvas');
+  const n = qr.getModuleCount();
+  const size = 540;
+  canvas.width = size; canvas.height = size;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, size, size);
+  ctx.fillStyle = '#14181f';
+  const cell = size / n;
+  for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) {
+    if (qr.isDark(r, c)) ctx.fillRect(c * cell, r * cell, cell + 0.5, cell + 0.5);
+  }
+  $('qr-page').textContent = t('qrPage', { i: i + 1, n: syncState.chunks.length });
+}
+function stopSyncShow() {
+  syncState.showing = false;
+  clearInterval(syncState.frameTimer);
+  $('qr-modal').classList.add('hidden');
+}
+
+/* ---------- 扫描二维码（接收端） ---------- */
+async function startSyncScan() {
+  if (syncState.scanning) return;
+  try {
+    if (state.running) { state.running = false; stopCamera(); setStartBtn('btnStart', 'play'); $('btn-start').disabled = false; }
+    if (!state.videoOn) {
+      const stream = await openCamera();
+      await bindStream(stream);
+    }
+    state.photoMode = false;
+    switchTab('train');
+    syncState.scanning = true; syncState.got = []; syncState.total = null; syncState.last = 0;
+    $('sync-progress').textContent = t('scanHint');
+    $('sync-panel').classList.remove('hidden');
+    scanLoop();
+  } catch (e) { showCameraError(e); }
+}
+function scanLoop() {
+  if (!syncState.scanning) return;
+  requestAnimationFrame(scanLoop);
+  const now = performance.now();
+  if (now - syncState.last < 150) return;
+  syncState.last = now;
+  const v = $('video');
+  if (!state.videoOn || v.readyState < 2 || !window.jsQR) return;
+  const w = 420;
+  const h = Math.max(2, Math.round(420 * v.videoHeight / Math.max(1, v.videoWidth)));
+  const off = syncState.off || (syncState.off = document.createElement('canvas'));
+  off.width = w; off.height = h;
+  const octx = off.getContext('2d');
+  octx.drawImage(v, 0, 0, w, h);
+  const img = octx.getImageData(0, 0, w, h);
+  const code = window.jsQR(img.data, w, h, { inversionAttempts: 'dontInvert' });
+  if (code && code.data && code.data.startsWith(SYNC_PREFIX)) {
+    const parts = code.data.split('|');
+    const idx = +parts[1], total = +parts[2];
+    const payload = parts.slice(3).join('|');
+    if (!syncState.total) syncState.total = total;
+    if (!syncState.got[idx]) {
+      syncState.got[idx] = payload;
+      const have = syncState.got.filter(Boolean).length;
+      $('sync-progress').textContent = t('scanProgress', { i: have, n: syncState.total });
+      if (have === syncState.total) finishSyncScan();
+    }
+  }
+}
+async function finishSyncScan() {
+  syncState.scanning = false;
+  stopCamera();
+  $('sync-panel').classList.add('hidden');
+  $('placeholder').classList.remove('hidden');
+  try {
+    const json = await gunzipB64(syncState.got.join(''));
+    const data = JSON.parse(json);
+    if (!Array.isArray(data.sessions)) throw new Error('bad payload');
+    const r = mergeSyncData(data);
+    renderRecords(); renderAssessments(); renderAppts(); renderCustomList(); renderExChips();
+    toast(t('scanDone', { s: r.s, a: r.a, p: r.p, c: r.c }));
+  } catch (e) {
+    toast(t('scanError', { msg: e.message }));
+  }
+}
+function cancelSyncScan() {
+  syncState.scanning = false;
+  stopCamera();
+  $('sync-panel').classList.add('hidden');
+  $('placeholder').classList.remove('hidden');
+  setStartBtn('btnStart', 'play');
+}
+$('btn-sync-show').addEventListener('click', startSyncShow);
+$('btn-sync-scan').addEventListener('click', startSyncScan);
+$('btn-sync-cancel').addEventListener('click', cancelSyncScan);
+$('qr-close').addEventListener('click', stopSyncShow);
+
 /* ============ 轻提示 ============ */
 function toast(msg) {
   let t = $('toast');
@@ -982,6 +1147,47 @@ if (location.search.includes('modeltest')) {
     } catch (e) {
       out.innerHTML += `<div class="st-fail">❌ model load FAIL: ${e.message}</div>`;
       console.log('MODELTEST: FAIL', e);
+    }
+  })();
+}
+// ?synctest=1 → 二维码同步编解码/合并自检
+if (location.search.includes('synctest')) {
+  (async () => {
+    const out = $('selftest-out');
+    const log = (n, okv, d) => {
+      out.innerHTML += `<div class="${okv ? 'st-pass' : 'st-fail'}">${okv ? '✅' : '❌'} ${n} ${d || ''}</div>`;
+      console.log('SYNCTEST:', n, okv ? 'PASS' : 'FAIL');
+    };
+    try {
+      const data = { app: 'RehabAI', v: 3, ts: Date.now(), sessions: [{ id: 'a1', ts: 111, reps: 5 }], assessments: [{ id: 'b1', ts: 222, score: 2 }], appts: [], customExercises: [] };
+      const b64 = await gzipB64(JSON.stringify(data));
+      const back = JSON.parse(await gunzipB64(b64));
+      log('gzip 往返编解码', back.sessions?.[0]?.id === 'a1' && back.assessments?.[0]?.id === 'b1');
+      const qr = window.qrcode(0, 'L');
+      qr.addData(SYNC_PREFIX + '|0|1|' + b64.slice(0, 200), 'Byte');
+      qr.make();
+      log('二维码生成', qr.getModuleCount() > 10 && qr.isDark(0, 0));
+      // 真实往返：画到 canvas 像素 → jsQR 解码
+      const cv = document.createElement('canvas');
+      const n2 = qr.getModuleCount();
+      const S = n2 * 10;
+      cv.width = S; cv.height = S;
+      const cctx = cv.getContext('2d');
+      cctx.fillStyle = '#fff'; cctx.fillRect(0, 0, S, S);
+      cctx.fillStyle = '#000';
+      for (let r2 = 0; r2 < n2; r2++) for (let c2 = 0; c2 < n2; c2++) if (qr.isDark(r2, c2)) cctx.fillRect(c2 * 10, r2 * 10, 10.5, 10.5);
+      const img2 = cctx.getImageData(0, 0, S, S);
+      const dec = window.jsQR(img2.data, S, S);
+      log('真实二维码 生成→像素→解码', !!dec && dec.data === SYNC_PREFIX + '|0|1|' + b64.slice(0, 200));
+      const before = LS.get('rehab_sessions', []);
+      LS.set('rehab_sessions', [{ id: 'x9', ts: 999, reps: 1 }]);
+      mergeSyncData(back);
+      const after = LS.get('rehab_sessions', []);
+      LS.set('rehab_sessions', before);
+      log('数据合并(去重+保留双方)', after.length === 2 && after.some((s) => s.id === 'a1'));
+      log('jsQR 解码器可用', typeof window.jsQR === 'function');
+    } catch (e) {
+      log('异常', false, e.message);
     }
   })();
 }
