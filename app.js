@@ -1342,9 +1342,9 @@ async function cloudAuth(email, pass, register) {
   const cfg = cloudCfg();
   if (!cfg) throw new Error(t('cloudNotLoggedIn'));
   if (register) {
-    await cloudReq('/auth/v1/signup', { method: 'POST', body: JSON.stringify({ email, password }) }, cfg);
+    await cloudReq('/auth/v1/signup', { method: 'POST', body: JSON.stringify({ email, password: pass }) }, cfg);
   }
-  const r = await cloudReq('/auth/v1/token?grant_type=password', { method: 'POST', body: JSON.stringify({ email, password }) }, cfg);
+  const r = await cloudReq('/auth/v1/token?grant_type=password', { method: 'POST', body: JSON.stringify({ email, password: pass }) }, cfg);
   LS.set('rehab_cloud_session', { access_token: r.access_token, refresh_token: r.refresh_token, uid: r.user?.id, email });
   renderCloud();
 }
@@ -1357,7 +1357,7 @@ async function cloudSync() {
   const rows = await cloudReq(`/rest/v1/userdata?user_id=eq.${s.uid}&select=payload,updated_at&order=updated_at.asc`, {}, cfg);
   for (const row of rows || []) mergeSyncData(row.payload || {});
   const merged = makeSyncData();
-  await cloudReq('/rest/v1/userdata', {
+  await cloudReq('/rest/v1/userdata?on_conflict=id', {
     method: 'POST',
     body: JSON.stringify({ id: s.uid, user_id: s.uid, payload: merged, updated_at: new Date().toISOString() }),
     headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
@@ -1380,7 +1380,7 @@ function renderCloud() {
 $('btn-cloud-cfg').addEventListener('click', () => {
   const url = $('cloud-url').value.trim();
   const anonKey = $('cloud-key').value.trim();
-  if (!/^https:\/\/.+\.supabase\.(co|com)/i.test(url) || !anonKey) { toast(t('cloudErr', { msg: 'URL/key' })); return; }
+  if (!/^(https?:\/\/(127\.0\.0\.1|localhost)(:\d+)?|https:\/\/.+\.supabase\.(co|com))/i.test(url) || !anonKey) { toast(t('cloudErr', { msg: 'URL/key' })); return; }
   LS.set('rehab_cloud', { url, anonKey });
   renderCloud();
   toast(t('toastCloudCfg'));
@@ -1502,6 +1502,10 @@ renderProfile(); renderReminder(); renderCloud();
 renderTodayPlan(); renderPlanList();
 $('btn-collect-label').textContent = t('btnCollect');
 setStartBtn('btnStart', 'play');
+// PWA：可安装到主屏幕 + 离线可用
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  window.addEventListener('load', () => { navigator.serviceWorker.register('./sw.js').catch(() => {}); });
+}
 if (location.hash === '#selftest') selfTest();
 // 微信内置浏览器不支持摄像头 —— 打开时就提示用系统浏览器
 if (/micromessenger/i.test(navigator.userAgent)) {

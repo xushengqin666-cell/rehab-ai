@@ -1,0 +1,17 @@
+{
+  "name": "康复AI · Rehab AI — 火柴人姿势分析",
+  "short_name": "Rehab AI",
+  "description": "On-device AI stick-figure posture analysis for squats, lunges and push-ups — training history, rehab plan, achievements, QR sync. Bilingual 中文/English.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f6f4ef",
+  "theme_color": "#0e7c66",
+  "lang": "zh-CN",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
