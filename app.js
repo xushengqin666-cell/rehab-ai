@@ -4,7 +4,7 @@ import { FilesetResolver, PoseLandmarker } from './vision_bundle.mjs';
 import { t, getLang, locale, initI18n, onLangChanged } from './i18n.js';
 import {
   EXERCISES, analyzeAny, loadCustomExercises, saveCustomExercises,
-  customDefault, CUSTOM_JOINTS, angle3, kneeValgus, pickSide,
+  customDefault, CUSTOM_JOINTS, angle3, kneeValgus, pickSide, setCustomKey,
 } from './analysis.js';
 
 /* ============ 基础工具 ============ */
@@ -13,6 +13,63 @@ const LS = {
   get(k, d) { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } },
   set(k, v) { localStorage.setItem(k, JSON.stringify(v)); },
 };
+// ============ 账号系统：本地账号（PBKDF2 加密）+ 按账号分区存储 ============
+const accountCurrent = () => LS.get('rehab_current_user', null);
+const ukey = (k) => { const u = accountCurrent(); return u ? 'u:' + u + ':' + k : k; };
+const sget = (k, d) => LS.get(ukey(k), d);
+const sset = (k, v) => LS.set(ukey(k), v);
+const sdel = (k) => localStorage.removeItem(ukey(k));
+const b64e = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf)));
+const b64d = (s) => new Uint8Array([...atob(s)].map((c) => c.charCodeAt(0)));
+async function pbkdf2(pass, salt) {
+  if (!crypto?.subtle) {   // 非安全环境兜底（简单散列，仅本地体验用）
+    let h = 5381;
+    const str = pass + ':' + String.fromCharCode(...new Uint8Array(salt));
+    for (let i = 0; i < str.length; i++) h = ((h << 5) + h + str.charCodeAt(i)) | 0;
+    return 'djb2:' + h;
+  }
+  const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(pass), 'PBKDF2', false, ['deriveBits']);
+  const bits = await crypto.subtle.deriveBits({ name: 'PBKDF2', salt, iterations: 100000, hash: 'SHA-256' }, key, 256);
+  return b64e(bits);
+}
+const accounts = () => LS.get('rehab_accounts', {});
+async function accountRegister(email, pass) {
+  const list = accounts();
+  if (list[email]) throw new Error(t('acctExists'));
+  if (!pass || pass.length < 6) throw new Error(t('acctPassShort'));
+  const salt = crypto?.getRandomValues ? crypto.getRandomValues(new Uint8Array(16)) : new Uint8Array(16);
+  list[email] = { salt: b64e(salt), hash: await pbkdf2(pass, salt) };
+  LS.set('rehab_accounts', list);
+}
+async function accountLogin(email, pass) {
+  const a = accounts()[email];
+  if (!a) throw new Error(t('acctNotFound'));
+  const hash = await pbkdf2(pass, b64d(a.salt));
+  if (hash !== a.hash) throw new Error(t('acctWrongPass'));
+  LS.set('rehab_current_user', email);
+  LS.set('rehab_guest', false);
+  setCustomKey(ukey('rehab_custom_ex'));
+}
+function accountLogout() {
+  localStorage.removeItem('rehab_current_user');
+  localStorage.removeItem('rehab_guest');
+  setCustomKey(ukey('rehab_custom_ex'));
+}
+// 首次注册账号时，把本机原有数据迁移进账号空间
+function migrateDeviceData(email) {
+  if (LS.get('rehab_migrated_to', null)) return;
+  const keys = ['rehab_sessions', 'rehab_assessments', 'rehab_appts', 'rehab_custom_ex', 'rehab_collect', 'rehab_plan', 'rehab_plan_done', 'rehab_profile'];
+  let any = false;
+  for (const k of keys) {
+    const v = localStorage.getItem(k);
+    if (v !== null && localStorage.getItem('u:' + email + ':' + k) === null) {
+      localStorage.setItem('u:' + email + ':' + k, v);
+      localStorage.removeItem(k);
+      any = true;
+    }
+  }
+  if (any) LS.set('rehab_migrated_to', email);
+}
 const fmtDate = (ts) => new Date(ts).toLocaleString(locale(), { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 const APP_VERSION = 'v2.8.1';
@@ -101,7 +158,7 @@ const state = {
   running: false, photoMode: false, collectMode: false,
   landmarker: null, videoOn: false,
   counter: null, agg: null, lastTS: 0,
-  ex: null, collectBuf: LS.get('rehab_collect', []),
+  ex: null, collectBuf: sget('rehab_collect', []),
   cameras: null, pickCam: undefined,
   tab: 'train', statsKey: null, loopScheduled: false,
 };
@@ -316,7 +373,7 @@ function renderGoal() {
   const item = planForToday().find((p) => p.ex === ex.id);
   if (!item) { el.classList.add('hidden'); return; }
   const today = new Date(); today.setHours(0, 0, 0, 0);
-  const done = LS.get('rehab_sessions', []).filter((s) => new Date(s.ts) >= today && s.ex === ex.id).reduce((a, s) => a + s.reps, 0);
+  const done = sget('rehab_sessions', []).filter((s) => new Date(s.ts) >= today && s.ex === ex.id).reduce((a, s) => a + s.reps, 0);
   const okv = done >= item.reps;
   el.classList.remove('hidden');
   el.classList.toggle('on', okv);
@@ -348,7 +405,7 @@ function renderCollectLabels(ex) {
       const m = state.lastResult;
       if (!m) { toast(t('toastNeedPerson')); return; }
       state.collectBuf.push({ ex: ex.id, feats: m.features, label: b.dataset.label });
-      LS.set('rehab_collect', state.collectBuf);
+      sset('rehab_collect', state.collectBuf);
       renderCollectCount();
       toast(t('toastLabeled', { label: b.dataset.label }));
       scheduleCloudSync();
@@ -669,9 +726,9 @@ $('btn-save').addEventListener('click', () => {
     riskPct: a.riskFrames ? Math.round(100 * a.riskFrames / a.frames) : 0,
     collectCount: state.collectBuf.length,
   };
-  const list = LS.get('rehab_sessions', []);
+  const list = sget('rehab_sessions', []);
   list.unshift(session);
-  LS.set('rehab_sessions', list);
+  sset('rehab_sessions', list);
   // 自动核对今日计划目标：达标即自动打卡
   const t0 = new Date(); t0.setHours(0, 0, 0, 0);
   const tReps = list.reduce((a, s) => (new Date(s.ts) >= t0 && s.ex === ex.id ? a + s.reps : a), 0);
@@ -683,7 +740,7 @@ $('btn-save').addEventListener('click', () => {
     if (!arr.includes(ex.id)) {
       arr.push(ex.id);
       dd[k] = arr;
-      LS.set('rehab_plan_done', dd);
+      sset('rehab_plan_done', dd);
       renderTodayPlan();
       toast(t('goalDone'));
     }
@@ -697,7 +754,7 @@ $('btn-save').addEventListener('click', () => {
 
 /* ============ 记录打卡页 ============ */
 function renderRecords() {
-  const sessions = LS.get('rehab_sessions', []);
+  const sessions = sget('rehab_sessions', []);
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const days = [...Array(7)].map((_, i) => {
     const d = new Date(today); d.setDate(d.getDate() - (6 - i));
@@ -739,7 +796,7 @@ function renderRecords() {
       </div>`;
     }).join('');
     list.querySelectorAll('.del').forEach((btn) => btn.addEventListener('click', () => {
-      LS.set('rehab_sessions', sessions.filter((s) => s.id !== btn.dataset.id));
+      sset('rehab_sessions', sessions.filter((s) => s.id !== btn.dataset.id));
       renderRecords();
     }));
   }
@@ -772,9 +829,9 @@ $('btn-assess').addEventListener('click', () => {
   if (answers.freq === 0) adviceKeys.push('adviseFreq');
   if (score <= 1) adviceKeys.push('adviseGood');
   const report = { id: uid(), ts: Date.now(), answers, score, adviceKeys };
-  const list = LS.get('rehab_assessments', []);
+  const list = sget('rehab_assessments', []);
   list.unshift(report);
-  LS.set('rehab_assessments', list);
+  sset('rehab_assessments', list);
   const el = $('assess-result');
   el.innerHTML = `<b>${t('assessScore', { s: score })}</b><br>${adviceKeys.map((k) => t(k)).join('<br>')}`;
   el.classList.remove('hidden');
@@ -783,7 +840,7 @@ $('btn-assess').addEventListener('click', () => {
 });
 const adviceText = (r) => (r.adviceKeys ? r.adviceKeys.map((k) => t(k)).join(' ') : (r.advice || ''));
 function renderAssessments() {
-  const list = LS.get('rehab_assessments', []);
+  const list = sget('rehab_assessments', []);
   const el = $('assess-list');
   if (!list.length) { el.innerHTML = emptyBox('assess', 'emptyAssess'); return; }
   el.innerHTML = list.slice(0, 10).map((r) => `
@@ -795,7 +852,7 @@ function renderAssessments() {
       <button class="del" data-id="${r.id}">✕</button>
     </div>`).join('');
   el.querySelectorAll('.del').forEach((btn) => btn.addEventListener('click', () => {
-    LS.set('rehab_assessments', list.filter((r) => r.id !== btn.dataset.id));
+    sset('rehab_assessments', list.filter((r) => r.id !== btn.dataset.id));
     renderAssessments();
     scheduleCloudSync();
   }));
@@ -811,16 +868,16 @@ $('appt-form').addEventListener('submit', (e) => {
     id: uid(), date: $('appt-date').value, time: $('appt-time').value,
     place: $('appt-place').value.trim(), note: $('appt-note').value.trim(),
   };
-  const list = LS.get('rehab_appts', []);
+  const list = sget('rehab_appts', []);
   list.push(appt);
-  LS.set('rehab_appts', list);
+  sset('rehab_appts', list);
   $('appt-form').reset();
   renderAppts();
   toast(t('toastAppt'));
   scheduleCloudSync();
 });
 function renderAppts() {
-  const list = LS.get('rehab_appts', []).sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
+  const list = sget('rehab_appts', []).sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
   const el = $('appt-list');
   if (!list.length) { el.innerHTML = emptyBox('schedule', 'emptyAppts'); return; }
   const now = new Date();
@@ -845,7 +902,7 @@ function renderAppts() {
     </div>`;
   }).join('');
   el.querySelectorAll('.del').forEach((btn) => btn.addEventListener('click', () => {
-    LS.set('rehab_appts', list.filter((a) => a.id !== btn.dataset.id));
+    sset('rehab_appts', list.filter((a) => a.id !== btn.dataset.id));
     renderAppts();
     scheduleCloudSync();
   }));
@@ -967,7 +1024,7 @@ $('btn-export-collect').addEventListener('click', () => {
 });
 $('btn-clear-collect').addEventListener('click', () => {
   if (!confirm(t('confirmClearCollect'))) return;
-  state.collectBuf = []; LS.set('rehab_collect', []);
+  state.collectBuf = []; sset('rehab_collect', []);
   renderCollectCount();
   toast(t('toastClearedCollect'));
 });
@@ -976,9 +1033,9 @@ $('btn-clear-collect').addEventListener('click', () => {
 $('btn-export').addEventListener('click', () => {
   const data = {
     app: '康复AI', version: 2, exportedAt: new Date().toISOString(),
-    sessions: LS.get('rehab_sessions', []),
-    assessments: LS.get('rehab_assessments', []),
-    appts: LS.get('rehab_appts', []),
+    sessions: sget('rehab_sessions', []),
+    assessments: sget('rehab_assessments', []),
+    appts: sget('rehab_appts', []),
     customExercises: loadCustomExercises(),
     collect: state.collectBuf,
   };
@@ -997,11 +1054,11 @@ $('import-input').addEventListener('change', async (ev) => {
   try {
     const data = JSON.parse(await file.text());
     if (!data || !Array.isArray(data.sessions)) throw new Error(t('importFormatErr'));
-    LS.set('rehab_sessions', data.sessions || []);
-    LS.set('rehab_assessments', data.assessments || []);
-    LS.set('rehab_appts', data.appts || []);
+    sset('rehab_sessions', data.sessions || []);
+    sset('rehab_assessments', data.assessments || []);
+    sset('rehab_appts', data.appts || []);
     if (Array.isArray(data.customExercises)) { saveCustomExercises(data.customExercises); invalidateCustom(); }
-    if (Array.isArray(data.collect)) { state.collectBuf = data.collect; LS.set('rehab_collect', data.collect); }
+    if (Array.isArray(data.collect)) { state.collectBuf = data.collect; sset('rehab_collect', data.collect); }
     renderRecords(); renderAssessments(); renderAppts(); renderCustomList(); renderExChips();
     toast(t('toastImportOk'));
     scheduleCloudSync();
@@ -1010,11 +1067,11 @@ $('import-input').addEventListener('change', async (ev) => {
 });
 $('btn-clear').addEventListener('click', () => {
   if (!confirm(t('confirmClearAll'))) return;
-  ['rehab_sessions', 'rehab_assessments', 'rehab_appts', 'rehab_custom_ex', 'rehab_collect'].forEach((k) => localStorage.removeItem(k));
+  ['rehab_sessions', 'rehab_assessments', 'rehab_appts', 'rehab_custom_ex', 'rehab_collect', 'rehab_plan', 'rehab_plan_done', 'rehab_profile'].forEach((k) => sdel(k));
   state.collectBuf = [];
   invalidateCustom();
   renderRecords(); renderAssessments(); renderAppts(); renderCustomList(); renderExChips();
-  renderCollectCount();
+  renderCollectCount(); renderProfile(); renderTodayPlan(); renderPlanList(); renderAchievements(); renderGoal();
   toast(t('toastClearedAll'));
   scheduleCloudSync();
 });
@@ -1057,13 +1114,13 @@ const gunzipB64 = async (b64) => new Response(new Blob([b64ToBytes(b64)]).stream
 function makeSyncData(includeCollect = false) {
   const d = {
     app: 'RehabAI', v: 3, ts: Date.now(),
-    sessions: LS.get('rehab_sessions', []),
-    assessments: LS.get('rehab_assessments', []),
-    appts: LS.get('rehab_appts', []),
+    sessions: sget('rehab_sessions', []),
+    assessments: sget('rehab_assessments', []),
+    appts: sget('rehab_appts', []),
     customExercises: loadCustomExercises(),
-    plan: LS.get('rehab_plan', []),
-    planDone: LS.get('rehab_plan_done', {}),
-    profile: LS.get('rehab_profile', {}),
+    plan: sget('rehab_plan', []),
+    planDone: sget('rehab_plan_done', {}),
+    profile: sget('rehab_profile', {}),
   };
   if (includeCollect) d.collect = state.collectBuf;
   return d;
@@ -1075,23 +1132,23 @@ function mergeSyncData(data) {
     (inc || []).forEach((x) => m.set(x.id, x));
     return [...m.values()].sort((a, b) => (b.ts || 0) - (a.ts || 0));
   };
-  LS.set('rehab_sessions', mergeById(LS.get('rehab_sessions', []), data.sessions));
-  LS.set('rehab_assessments', mergeById(LS.get('rehab_assessments', []), data.assessments));
-  LS.set('rehab_appts', mergeById(LS.get('rehab_appts', []), data.appts));
+  sset('rehab_sessions', mergeById(sget('rehab_sessions', []), data.sessions));
+  sset('rehab_assessments', mergeById(sget('rehab_assessments', []), data.assessments));
+  sset('rehab_appts', mergeById(sget('rehab_appts', []), data.appts));
   if (Array.isArray(data.customExercises) && data.customExercises.length) {
     saveCustomExercises(mergeById(loadCustomExercises(), data.customExercises));
     invalidateCustom();
   }
   if (Array.isArray(data.plan) && data.plan.length) {
-    LS.set('rehab_plan', mergeById(LS.get('rehab_plan', []), data.plan));
+    sset('rehab_plan', mergeById(sget('rehab_plan', []), data.plan));
   }
   if (data.planDone && typeof data.planDone === 'object') {
-    const cur = LS.get('rehab_plan_done', {});
+    const cur = sget('rehab_plan_done', {});
     for (const [k, v] of Object.entries(data.planDone)) cur[k] = [...new Set([...(cur[k] || []), ...(v || [])])];
-    LS.set('rehab_plan_done', cur);
+    sset('rehab_plan_done', cur);
   }
   if (data.profile && (data.profile.name || data.profile.injury)) {
-    LS.set('rehab_profile', { ...(LS.get('rehab_profile', {})), ...data.profile });
+    sset('rehab_profile', { ...(sget('rehab_profile', {})), ...data.profile });
   }
   if (Array.isArray(data.collect) && data.collect.length) {
     const seen = new Set(state.collectBuf.map((r) => r.ex + '|' + r.label + '|' + (r.feats || []).join(',')));
@@ -1099,7 +1156,7 @@ function mergeSyncData(data) {
       const k = r.ex + '|' + r.label + '|' + (r.feats || []).join(',');
       if (!seen.has(k)) { state.collectBuf.push(r); seen.add(k); }
     }
-    LS.set('rehab_collect', state.collectBuf);
+    sset('rehab_collect', state.collectBuf);
   }
   return { s: (data.sessions || []).length, a: (data.assessments || []).length, p: (data.appts || []).length, c: (data.customExercises || []).length };
 }
@@ -1225,7 +1282,7 @@ $('btn-sync-cancel').addEventListener('click', cancelSyncScan);
 $('qr-close').addEventListener('click', stopSyncShow);
 
 /* ============ 个人资料 ============ */
-const profileGet = () => LS.get('rehab_profile', { name: '', goal: 'knee', injury: '' });
+const profileGet = () => sget('rehab_profile', { name: '', goal: 'knee', injury: '' });
 function renderProfile() {
   const p = profileGet();
   $('pf-name').value = p.name || '';
@@ -1233,7 +1290,7 @@ function renderProfile() {
   $('pf-injury').value = p.injury || '';
 }
 $('btn-save-profile').addEventListener('click', () => {
-  LS.set('rehab_profile', { name: $('pf-name').value.trim(), goal: $('pf-goal').value, injury: $('pf-injury').value.trim() });
+  sset('rehab_profile', { name: $('pf-name').value.trim(), goal: $('pf-goal').value, injury: $('pf-injury').value.trim() });
   toast(t('toastProfile'));
   scheduleCloudSync();
 });
@@ -1255,7 +1312,7 @@ function lineChart(points, color, uid) {
   </svg>`;
 }
 function renderTrends() {
-  const sessions = LS.get('rehab_sessions', []);
+  const sessions = sget('rehab_sessions', []);
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const reps = new Array(30).fill(0);
   const bad = new Array(30).fill(0);
@@ -1275,7 +1332,7 @@ function renderTrends() {
   $('quality-chart').innerHTML = lineChart(qual, '#d14a4a', 'q');
 }
 function renderDist() {
-  const sessions = LS.get('rehab_sessions', []);
+  const sessions = sget('rehab_sessions', []);
   const totals = {};
   sessions.forEach((s) => { totals[s.ex] = (totals[s.ex] || 0) + s.reps; });
   const entries = Object.entries(totals).sort((a, b) => b[1] - a[1]);
@@ -1314,12 +1371,12 @@ const ACHIEVEMENTS = [
   { id: 'collect', icon: 'flask', nameKey: 'achCollect', descKey: 'achCollectD', test: (x) => x.collectCount >= 50 },
 ];
 function renderAchievements() {
-  const sessions = LS.get('rehab_sessions', []);
+  const sessions = sget('rehab_sessions', []);
   const stats = {
     sessions: sessions.length,
     reps: sessions.reduce((a, s) => a + s.reps, 0),
     streak: calcStreak(sessions),
-    planDays: Object.keys(LS.get('rehab_plan_done', {})).length,
+    planDays: Object.keys(sget('rehab_plan_done', {})).length,
     customCount: customList().length,
     collectCount: state.collectBuf.length,
   };
@@ -1334,8 +1391,8 @@ function renderAchievements() {
 }
 
 /* ============ 康复计划 ============ */
-const planGet = () => LS.get('rehab_plan', []);
-const planDoneGet = () => LS.get('rehab_plan_done', {});
+const planGet = () => sget('rehab_plan', []);
+const planDoneGet = () => sget('rehab_plan_done', {});
 const todayKeyStr = () => {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -1372,7 +1429,7 @@ function togglePlanDone(ex) {
   const i = arr.indexOf(ex);
   if (i >= 0) arr.splice(i, 1); else arr.push(ex);
   dd[k] = arr;
-  LS.set('rehab_plan_done', dd);
+  sset('rehab_plan_done', dd);
   renderTodayPlan();
   renderAchievements();
   renderGoal();
@@ -1393,7 +1450,7 @@ function renderPlanList() {
     </div>`;
   }).join('');
   el.querySelectorAll('[data-plan-del]').forEach((b) => b.addEventListener('click', () => {
-    LS.set('rehab_plan', planGet().filter((p) => p.ex !== b.dataset.planDel));
+    sset('rehab_plan', planGet().filter((p) => p.ex !== b.dataset.planDel));
     renderPlanList(); renderTodayPlan();
     scheduleCloudSync();
   }));
@@ -1438,7 +1495,7 @@ $('btn-plan-save').addEventListener('click', () => {
   const i = list.findIndex((p) => p.ex === planEditEx);
   if (i >= 0) list[i] = { ex: planEditEx, reps, days };
   else list.push({ ex: planEditEx, reps, days });
-  LS.set('rehab_plan', list);
+  sset('rehab_plan', list);
   $('plan-editor').classList.add('hidden');
   renderPlanList(); renderTodayPlan(); renderAchievements();
   toast(t('planAdded'));
@@ -1541,17 +1598,18 @@ async function cloudSync() {
 function renderCloud() {
   const cfg = cloudCfg();
   const s = cloudSession();
+  const localUser = accountCurrent();
   const av = $('account-avatar');
-  if (av) av.textContent = (s && s.email ? s.email[0] : (cfg ? '?' : '☁')).toUpperCase();
-  $('cloud-status').textContent = s ? t('cloudLoggedIn', { e: s.email }) : (cfg ? t('cloudNotLoggedIn') : t('cloudUnconfigured'));
+  if (av) av.textContent = ((s && s.email) || localUser || (cfg ? '?' : '☁'))[0].toUpperCase();
+  $('cloud-status').textContent = s ? t('cloudLoggedIn', { e: s.email }) : localUser ? t('cloudLoggedIn', { e: localUser }) : (cfg ? t('cloudNotLoggedIn') : t('cloudUnconfigured'));
   $('btn-cloud-sync').classList.toggle('hidden', !s);
-  $('btn-cloud-logout').classList.toggle('hidden', !s);
-  $('btn-open-login').classList.toggle('hidden', !!s);
+  $('btn-cloud-logout').classList.toggle('hidden', !(s || localUser));
+  $('btn-open-login').classList.toggle('hidden', !!(s || localUser));
   $('btn-config-server').classList.toggle('hidden', !!cfg);
 }
-// 登录屏：已配置但未登录 → 启动即显示（真实 App 体验）
+// 登录屏：未登录账号 → 启动即显示（真实 App 体验）；访客模式跳过后不再打扰
 function renderAuth() {
-  const show = !!cloudCfg() && !cloudSession();
+  const show = !accountCurrent() && !cloudSession() && !LS.get('rehab_guest', false);
   $('auth-screen').classList.toggle('hidden', !show);
   if (show) $('auth-status').textContent = '';
 }
@@ -1560,16 +1618,29 @@ function showAuth(openConfig = false) {
   $('auth-config').classList.toggle('hidden', !openConfig);
   $('auth-form').classList.toggle('hidden', openConfig);
 }
+async function linkCloudAfterLogin(email, pass) {
+  if (!cloudCfg()) return;
+  try { await cloudAuth(email, pass, false); }
+  catch { try { await cloudAuth(email, pass, true); } catch { /* 云端不可用则静默，本地账号照常 */ } }
+}
 async function authLogin(register) {
   const email = $('auth-email').value.trim();
   const pass = $('auth-pass').value;
-  if (!email || !pass) { $('auth-status').textContent = t('cloudErr', { msg: 'Email/password' }); return; }
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { $('auth-status').textContent = t('cloudErr', { msg: 'Email' }); return; }
+  if (!pass || pass.length < 6) { $('auth-status').textContent = t('acctPassShort'); return; }
   $('auth-status').textContent = t('cloudSyncing');
   try {
-    await cloudAuth(email, pass, register);
+    if (register) {
+      await accountRegister(email, pass);
+      migrateDeviceData(email);
+    }
+    await accountLogin(email, pass);
     $('auth-screen').classList.add('hidden');
-    toast(t('cloudOk'));
-    scheduleCloudSync();
+    renderCloud();
+    renderRecords(); renderAssessments(); renderAppts(); renderCustomList(); renderExChips();
+    renderProfile(); renderTodayPlan(); renderPlanList(); renderAchievements(); renderCollectCount(); renderGoal();
+    toast(register ? t('acctRegistered') : t('acctLoggedIn'));
+    linkCloudAfterLogin(email, pass);
   } catch (e) {
     $('auth-status').textContent = t('cloudErr', { msg: e.message });
   }
@@ -1600,13 +1671,20 @@ $('btn-auth-cfg-save').addEventListener('click', () => {
 });
 $('btn-auth-login').addEventListener('click', () => authLogin(false));
 $('btn-auth-signup').addEventListener('click', () => authLogin(true));
-$('btn-auth-skip').addEventListener('click', () => $('auth-screen').classList.add('hidden'));
+$('btn-auth-skip').addEventListener('click', () => {
+  LS.set('rehab_guest', true);
+  $('auth-screen').classList.add('hidden');
+});
 $('btn-cloud-sync').addEventListener('click', async () => {
   try { await cloudSync(); } catch (e) { $('cloud-status').textContent = t('cloudNotLoggedIn'); toast(t('cloudErr', { msg: e.message })); }
 });
 $('btn-cloud-logout').addEventListener('click', () => {
+  accountLogout();
   localStorage.removeItem('rehab_cloud_session');
+  invalidateCustom();
   renderCloud();
+  renderRecords(); renderAssessments(); renderAppts(); renderCustomList(); renderExChips();
+  renderProfile(); renderTodayPlan(); renderPlanList(); renderAchievements(); renderCollectCount(); renderGoal();
   renderAuth();
   toast(t('toastLogout'));
 });
@@ -1702,6 +1780,7 @@ async function selfTest() {
 
 /* ============ 启动 ============ */
 initI18n();
+setCustomKey(ukey('rehab_custom_ex'));   // 账号分区：自定义动作按当前账号隔离
 onLangChanged(() => {
   renderExChips(); renderCollectLabels(getEx(activeExId()));
   renderRecords(); renderAssessments(); renderAppts(); renderCustomList();
@@ -1819,11 +1898,11 @@ if (location.search.includes('synctest')) {
       const img2 = cctx.getImageData(0, 0, S, S);
       const dec = window.jsQR(img2.data, S, S);
       log('真实二维码 生成→像素→解码', !!dec && dec.data === SYNC_PREFIX + '|0|1|' + b64.slice(0, 200));
-      const before = LS.get('rehab_sessions', []);
-      LS.set('rehab_sessions', [{ id: 'x9', ts: 999, reps: 1 }]);
+      const before = sget('rehab_sessions', []);
+      sset('rehab_sessions', [{ id: 'x9', ts: 999, reps: 1 }]);
       mergeSyncData(back);
-      const after = LS.get('rehab_sessions', []);
-      LS.set('rehab_sessions', before);
+      const after = sget('rehab_sessions', []);
+      sset('rehab_sessions', before);
       log('数据合并(去重+保留双方)', after.length === 2 && after.some((s) => s.id === 'a1'));
       log('jsQR 解码器可用', typeof window.jsQR === 'function');
     } catch (e) {

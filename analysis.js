@@ -359,11 +359,14 @@ export function customDefault() {
     desc: t('customDefaultDesc'),
   };
 }
+// 自定义动作按账号分区存储（多账号隔离）；app.js 切换账号时调用 setCustomKey
+let CUSTOM_KEY = 'rehab_custom_ex';
+export function setCustomKey(k) { CUSTOM_KEY = k; }
 export function loadCustomExercises() {
-  try { return JSON.parse(localStorage.getItem('rehab_custom_ex')) ?? []; }
+  try { return JSON.parse(localStorage.getItem(CUSTOM_KEY)) ?? []; }
   catch { return []; }
 }
-export function saveCustomExercises(list) { localStorage.setItem('rehab_custom_ex', JSON.stringify(list)); }
+export function saveCustomExercises(list) { localStorage.setItem(CUSTOM_KEY, JSON.stringify(list)); }
 
 // 统一入口：给定动作 id/自定义对象，返回分析结果
 export function analyzeAny(lms, ex) {
