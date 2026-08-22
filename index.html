@@ -404,7 +404,23 @@
         <li data-i18n="aboutData">数据只存在你自己的浏览器 localStorage 里</li>
         <li data-i18n="aboutHttps">手机使用摄像头需要 HTTPS —— 部署到 <b>Netlify</b>（免费）即可</li>
         <li data-i18n="aboutDeploy">部署方法：把本文件夹拖进 <a href="https://app.netlify.com/drop" target="_blank" rel="noopener">app.netlify.com/drop</a></li>
+        <li data-i18n="aboutPwa">支持安装到手机主屏幕（浏览器菜单 → 添加到主屏幕），像 App 一样使用，离线也能打开</li>
+        <li id="about-version" class="about-version"></li>
       </ul>
+      <button id="btn-share" class="btn primary block" style="margin-top:10px">
+        <span class="btn-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="12" r="2.6"/><circle cx="17.5" cy="5.5" r="2.6"/><circle cx="17.5" cy="18.5" r="2.6"/><path d="M8.3 10.8l6.9-4M8.3 13.2l6.9 4"/></svg></span>
+        <span data-i18n="btnShare">分享 App</span>
+      </button>
+    </div>
+
+    <div class="card">
+      <h3 data-i18n="privacyTitle">隐私政策</h3>
+      <p class="about" data-i18n="privacyText">1. 全部数据默认只保存在你自己的浏览器（localStorage），不上传任何服务器。<br>2. 摄像头画面只在你的设备上由 AI 本地处理，视频绝不上传。<br>3. 二维码同步仅在你主动操作时，于两台设备之间直接传输，不经过任何服务器。<br>4. 云同步仅在你主动配置并登录 Supabase 账号后启用，数据存入你自己的云端项目。<br>5. 随时可在设置页「清除全部数据」。</p>
+    </div>
+
+    <div class="card">
+      <h3 data-i18n="disclaimerTitle">免责声明</h3>
+      <p class="about" data-i18n="disclaimerText">本应用仅用于运动姿态参考与科研学习，不构成医疗建议。如训练中感到疼痛或已有伤病，请停止训练并咨询专业理疗师或医生。请量力而行，因使用本应用造成的任何伤害，开发者不承担责任。</p>
     </div>
   </section>
 </main>

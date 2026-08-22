@@ -15,6 +15,7 @@ const LS = {
 };
 const fmtDate = (ts) => new Date(ts).toLocaleString(locale(), { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const APP_VERSION = 'v2.8.1';
 const exName = (e) => (e.custom ? e.name : t(e.nameKey));
 const exDesc = (e) => (e.custom ? e.desc : t(e.descKey));
 const depthTxt = (d) => t('depth' + (d ? d.charAt(0).toUpperCase() + d.slice(1) : 'Ok')) || d;
@@ -1675,6 +1676,22 @@ renderProfile(); renderReminder(); renderCloud();
 renderTodayPlan(); renderPlanList();
 $('btn-collect-label').textContent = t('btnCollect');
 setStartBtn('btnStart', 'play');
+// 关于：版本号 + 分享
+$('about-version').textContent = t('versionLabel', { v: APP_VERSION });
+$('btn-share').addEventListener('click', async () => {
+  const url = location.href;
+  try {
+    if (navigator.share) {
+      await navigator.share({ title: t('appTitle'), text: t('metaDesc'), url });
+      return;
+    }
+    await navigator.clipboard.writeText(url);
+    toast(t('shareCopied'));
+  } catch (e) {
+    try { await navigator.clipboard.writeText(url); toast(t('shareCopied')); }
+    catch { toast(t('shareFail')); }
+  }
+});
 // PWA：可安装到主屏幕 + 离线可用 + 新版本提示
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
   window.addEventListener('load', () => {
@@ -1714,6 +1731,16 @@ if (location.search.includes('modeltest')) {
       console.log('MODELTEST: FAIL', e);
     }
   })();
+}
+// ?alarmtest=1 → 触发一次警报 UI（声音+震动+闪烁），上市验收用
+if (location.search.includes('alarmtest')) {
+  setTimeout(() => {
+    const fb = $('feedback');
+    fb.classList.remove('hidden');
+    fb.innerHTML = fbWrap('alert', '<b>' + t('alarmTitle') + '</b><br>' + t('riskBackRound'));
+    fb.className = 'feedback alarm';
+    alarmBurst();
+  }, 1000);
 }
 // ?synctest=1 → 二维码同步编解码/合并自检
 if (location.search.includes('synctest')) {

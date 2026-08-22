@@ -247,6 +247,7 @@ main { max-width: 560px; margin: 0 auto; }
 .about li { position: relative; padding-left: 14px; }
 .about li::before { content: ''; position: absolute; left: 0; top: 9px; width: 5px; height: 5px; border-radius: 50%; background: rgba(14, 124, 102, .4); }
 .about a { color: var(--teal); }
+.about-version { color: var(--dim); font-size: 11.5px; margin-top: 4px; }
 
 /* ---------- 底部导航 ---------- */
 .bottom-nav {
