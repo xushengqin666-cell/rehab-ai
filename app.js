@@ -40,6 +40,15 @@ const ICONS = {
   plus: '<path d="M12 5.5v13M5.5 12h13"/>',
   edit: '<path d="M4 20l.8-3.5L16.5 4.8a1.8 1.8 0 0 1 2.6 0l.1.1a1.8 1.8 0 0 1 0 2.6L7.5 19.2 4 20Z"/>',
   trash: '<path d="M5 7h14M10 7V5.5A1.5 1.5 0 0 1 11.5 4h1A1.5 1.5 0 0 1 14 5.5V7M6.5 7l.8 11.5a2 2 0 0 0 2 2h5.4a2 2 0 0 0 2-2L17.5 7M10 11v6M14 11v6"/>',
+  star: '<path d="M12 3.6l2.5 5.2 5.7.8-4.1 4 1 5.6-5.1-2.7-5.1 2.7 1-5.6-4.1-4 5.7-.8Z"/>',
+  medal: '<circle cx="12" cy="9" r="4.5"/><path d="M9.5 13 8 20.5l4-2.2 4 2.2L14.5 13"/>',
+  target: '<circle cx="12" cy="12" r="8.2"/><circle cx="12" cy="12" r="4.4"/><circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none"/>',
+  trophy: '<path d="M7 4h10v5a5 5 0 0 1-10 0Z"/><path d="M7 5.5H4.5v1A3.5 3.5 0 0 0 8 10M17 5.5h2.5v1A3.5 3.5 0 0 1 16 10M12 14v3M8.5 20h7M10 17h4"/>',
+  flame: '<path d="M12 3.5c1 3-2.5 4.5-2.5 8a2.5 2.5 0 0 0 5 0c0-1.5-.5-2.5-.5-2.5 2.5 1 5 3.5 5 6.5a7 7 0 1 1-14 0c0-4.5 4-6.5 7-9.5Z"/>',
+  flask: '<path d="M9.5 3.5h5M10.5 3.5v5L5.5 17a2.5 2.5 0 0 0 2.2 3.7h8.6a2.5 2.5 0 0 0 2.2-3.7L13.5 8.5v-5M7.5 14.5h9"/>',
+  lock: '<rect x="5.5" y="10.5" width="13" height="9.5" rx="2.2"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"/>',
+  bell: '<path d="M6 9.5a6 6 0 0 1 12 0c0 4 1.5 5.5 1.5 5.5h-15S6 13.5 6 9.5Z"/><path d="M10 18.5a2 2 0 0 0 4 0"/>',
+  cloud: '<path d="M7 18a4.5 4.5 0 0 1-.6-8.95A6 6 0 0 1 18 9.7 4 4 0 0 1 17.5 18Z"/>',
 };
 function icon(name, cls = '') {
   if (name === 'loader-spin') { name = 'loader'; cls = 'spin ' + cls; }
@@ -562,33 +571,35 @@ function renderRecords() {
       <span class="bar-label">${d.label}</span>
     </div>`).join('');
   const totalReps = sessions.reduce((s, x) => s + x.reps, 0);
-  let streak = 0;
-  for (let i = 0; i < 365; i++) {
-    const d = new Date(today); d.setDate(d.getDate() - i);
-    if (sessions.some((s) => new Date(s.ts).toDateString() === d.toDateString())) streak++;
-    else if (i > 0) break;
-  }
+  const streak = calcStreak(sessions);
   $('summary-line').textContent = sessions.length
     ? t('summaryLine', { n: sessions.length, r: totalReps, s: streak })
     : t('noSessions');
   const list = $('session-list');
-  if (!sessions.length) { list.innerHTML = emptyBox('record', 'emptyList'); return; }
-  list.innerHTML = sessions.slice(0, 20).map((s) => {
-    const builtin = EXERCISES[s.ex];
-    const name = builtin ? exName(builtin) : (s.exName || '?');
-    return `
-    <div class="item">
-      <div>
-        <div class="t"><span class="t-ico">${icon(builtin ? builtin.icon : 'custom')}</span>${name} · ${fmtDate(s.ts)} · ${t('repsN', { n: s.reps })} · ${s.dur ?? '?'}s · ${depthTxt(s.depth)}</div>
-        <div class="d">${t('badFramesPct', { p: s.badPct })}${s.badPct >= 30 ? ' ⚠️' : ''}${s.valgusPct ? ' · ' + t('valgusFramesPct', { p: s.valgusPct }) : ''}${s.collectCount ? ' · ' + t('collectN', { n: s.collectCount }) : ''}</div>
-      </div>
-      <button class="del" data-id="${s.id}">✕</button>
-    </div>`;
-  }).join('');
-  list.querySelectorAll('.del').forEach((btn) => btn.addEventListener('click', () => {
-    LS.set('rehab_sessions', sessions.filter((s) => s.id !== btn.dataset.id));
-    renderRecords();
-  }));
+  if (!sessions.length) {
+    list.innerHTML = emptyBox('record', 'emptyList');
+  } else {
+    list.innerHTML = sessions.slice(0, 20).map((s) => {
+      const builtin = EXERCISES[s.ex];
+      const name = builtin ? exName(builtin) : (s.exName || '?');
+      return `
+      <div class="item">
+        <div>
+          <div class="t"><span class="t-ico">${icon(builtin ? builtin.icon : 'custom')}</span>${name} · ${fmtDate(s.ts)} · ${t('repsN', { n: s.reps })} · ${s.dur ?? '?'}s · ${depthTxt(s.depth)}</div>
+          <div class="d">${t('badFramesPct', { p: s.badPct })}${s.badPct >= 30 ? ' ⚠️' : ''}${s.valgusPct ? ' · ' + t('valgusFramesPct', { p: s.valgusPct }) : ''}${s.collectCount ? ' · ' + t('collectN', { n: s.collectCount }) : ''}</div>
+        </div>
+        <button class="del" data-id="${s.id}">✕</button>
+      </div>`;
+    }).join('');
+    list.querySelectorAll('.del').forEach((btn) => btn.addEventListener('click', () => {
+      LS.set('rehab_sessions', sessions.filter((s) => s.id !== btn.dataset.id));
+      renderRecords();
+    }));
+  }
+  // 统计报表 + 成就
+  renderTrends();
+  renderDist();
+  renderAchievements();
 }
 
 /* ============ 评估反馈页 ============ */
@@ -893,6 +904,9 @@ function makeSyncData() {
     assessments: LS.get('rehab_assessments', []),
     appts: LS.get('rehab_appts', []),
     customExercises: loadCustomExercises(),
+    plan: LS.get('rehab_plan', []),
+    planDone: LS.get('rehab_plan_done', {}),
+    profile: LS.get('rehab_profile', {}),
   };
 }
 // 按 id 合并：双方都保留，同 id 以对方为准；按时间倒序
@@ -908,6 +922,17 @@ function mergeSyncData(data) {
   if (Array.isArray(data.customExercises) && data.customExercises.length) {
     saveCustomExercises(mergeById(loadCustomExercises(), data.customExercises));
     invalidateCustom();
+  }
+  if (Array.isArray(data.plan) && data.plan.length) {
+    LS.set('rehab_plan', mergeById(LS.get('rehab_plan', []), data.plan));
+  }
+  if (data.planDone && typeof data.planDone === 'object') {
+    const cur = LS.get('rehab_plan_done', {});
+    for (const [k, v] of Object.entries(data.planDone)) cur[k] = [...new Set([...(cur[k] || []), ...(v || [])])];
+    LS.set('rehab_plan_done', cur);
+  }
+  if (data.profile && (data.profile.name || data.profile.injury)) {
+    LS.set('rehab_profile', { ...(LS.get('rehab_profile', {})), ...data.profile });
   }
   return { s: (data.sessions || []).length, a: (data.assessments || []).length, p: (data.appts || []).length, c: (data.customExercises || []).length };
 }
@@ -1032,6 +1057,355 @@ $('btn-sync-scan').addEventListener('click', startSyncScan);
 $('btn-sync-cancel').addEventListener('click', cancelSyncScan);
 $('qr-close').addEventListener('click', stopSyncShow);
 
+/* ============ 个人资料 ============ */
+const profileGet = () => LS.get('rehab_profile', { name: '', goal: 'knee', injury: '' });
+function renderProfile() {
+  const p = profileGet();
+  $('pf-name').value = p.name || '';
+  $('pf-goal').value = p.goal || 'knee';
+  $('pf-injury').value = p.injury || '';
+}
+$('btn-save-profile').addEventListener('click', () => {
+  LS.set('rehab_profile', { name: $('pf-name').value.trim(), goal: $('pf-goal').value, injury: $('pf-injury').value.trim() });
+  toast(t('toastProfile'));
+});
+
+/* ============ 统计报表（30 天趋势 / 动作分布） ============ */
+function lineChart(points, color, uid) {
+  const W = 320, H = 72, P = 8;
+  const n = points.length;
+  const m = Math.max(1, ...points);
+  const x = (i) => P + (W - 2 * P) * (i / Math.max(1, n - 1));
+  const y = (v) => H - P - (H - 2 * P) * (v / m);
+  const path = points.map((v, i) => (i ? 'L' : 'M') + x(i).toFixed(1) + ' ' + y(v).toFixed(1)).join(' ');
+  const area = path + ` L${x(n - 1).toFixed(1)} ${H - P} L${x(0).toFixed(1)} ${H - P} Z`;
+  return `<svg viewBox="0 0 ${W} ${H}" class="line-chart" preserveAspectRatio="none">
+    <defs><linearGradient id="grad${uid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${color}" stop-opacity=".25"/><stop offset="1" stop-color="${color}" stop-opacity="0"/></linearGradient></defs>
+    <path d="${area}" fill="url(#grad${uid})" stroke="none"/>
+    <path d="${path}" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+    ${points.map((v, i) => `<circle cx="${x(i).toFixed(1)}" cy="${y(v).toFixed(1)}" r="2.2" fill="${color}"/>`).join('')}
+  </svg>`;
+}
+function renderTrends() {
+  const sessions = LS.get('rehab_sessions', []);
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const reps = new Array(30).fill(0);
+  const bad = new Array(30).fill(0);
+  const cnt = new Array(30).fill(0);
+  for (const s of sessions) {
+    const d = new Date(s.ts); d.setHours(0, 0, 0, 0);
+    const i = Math.round((today - d) / 86400000);
+    if (i >= 0 && i < 30) {
+      const idx = 29 - i;
+      reps[idx] += s.reps;
+      bad[idx] += s.badPct || 0;
+      cnt[idx]++;
+    }
+  }
+  const qual = bad.map((b, i) => (cnt[i] ? Math.round(b / cnt[i]) : 0));
+  $('trend-chart').innerHTML = lineChart(reps, '#0e7c66', 't');
+  $('quality-chart').innerHTML = lineChart(qual, '#d14a4a', 'q');
+}
+function renderDist() {
+  const sessions = LS.get('rehab_sessions', []);
+  const totals = {};
+  sessions.forEach((s) => { totals[s.ex] = (totals[s.ex] || 0) + s.reps; });
+  const entries = Object.entries(totals).sort((a, b) => b[1] - a[1]);
+  if (!entries.length) { $('dist-chart').innerHTML = emptyBox('record', 'emptyList'); return; }
+  const max = entries[0][1];
+  $('dist-chart').innerHTML = entries.map(([id, n]) => {
+    const e = EXERCISES[id];
+    return `<div class="dist-row">
+      <span class="dist-name"><span class="t-ico">${icon(e ? e.icon : 'custom')}</span>${e ? exName(e) : id}</span>
+      <div class="dist-bar"><div class="dist-fill" style="width:${(100 * n / max).toFixed(1)}%"></div></div>
+      <span class="dist-num">${n}</span>
+    </div>`;
+  }).join('');
+}
+
+/* ============ 成就系统 ============ */
+function calcStreak(sessions) {
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  let streak = 0;
+  for (let i = 0; i < 365; i++) {
+    const d = new Date(today); d.setDate(d.getDate() - i);
+    if (sessions.some((s) => new Date(s.ts).toDateString() === d.toDateString())) streak++;
+    else if (i > 0) break;
+  }
+  return streak;
+}
+const ACHIEVEMENTS = [
+  { id: 'first', icon: 'star', nameKey: 'achFirst', descKey: 'achFirstD', test: (x) => x.sessions >= 1 },
+  { id: 's10', icon: 'medal', nameKey: 'achS10', descKey: 'achS10D', test: (x) => x.sessions >= 10 },
+  { id: 'r100', icon: 'target', nameKey: 'achR100', descKey: 'achR100D', test: (x) => x.reps >= 100 },
+  { id: 'r1000', icon: 'trophy', nameKey: 'achR1000', descKey: 'achR1000D', test: (x) => x.reps >= 1000 },
+  { id: 'streak7', icon: 'flame', nameKey: 'achStreak7', descKey: 'achStreak7D', test: (x) => x.streak >= 7 },
+  { id: 'plan1', icon: 'check', nameKey: 'achPlan1', descKey: 'achPlan1D', test: (x) => x.planDays >= 1 },
+  { id: 'plan7', icon: 'medal', nameKey: 'achPlan7', descKey: 'achPlan7D', test: (x) => x.planDays >= 7 },
+  { id: 'custom', icon: 'custom', nameKey: 'achCustom', descKey: 'achCustomD', test: (x) => x.customCount >= 1 },
+  { id: 'collect', icon: 'flask', nameKey: 'achCollect', descKey: 'achCollectD', test: (x) => x.collectCount >= 50 },
+];
+function renderAchievements() {
+  const sessions = LS.get('rehab_sessions', []);
+  const stats = {
+    sessions: sessions.length,
+    reps: sessions.reduce((a, s) => a + s.reps, 0),
+    streak: calcStreak(sessions),
+    planDays: Object.keys(LS.get('rehab_plan_done', {})).length,
+    customCount: customList().length,
+    collectCount: state.collectBuf.length,
+  };
+  $('ach-grid').innerHTML = ACHIEVEMENTS.map((a) => {
+    const okv = a.test(stats);
+    return `<div class="ach-item ${okv ? 'on' : ''}">
+      <div class="ach-ico">${icon(okv ? a.icon : 'lock')}</div>
+      <div class="ach-name">${t(a.nameKey)}</div>
+      <div class="ach-desc">${t(a.descKey)}</div>
+    </div>`;
+  }).join('');
+}
+
+/* ============ 康复计划 ============ */
+const planGet = () => LS.get('rehab_plan', []);
+const planDoneGet = () => LS.get('rehab_plan_done', {});
+const todayKeyStr = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
+function planForToday() {
+  const day = new Date().getDay();
+  return planGet().filter((p) => (p.days || []).includes(day));
+}
+function renderTodayPlan() {
+  const items = planForToday();
+  const done = planDoneGet()[todayKeyStr()] || [];
+  const el = $('today-plan');
+  if (!items.length) { el.innerHTML = emptyBox('check', 'planNone'); return; }
+  const doneCount = items.filter((p) => done.includes(p.ex)).length;
+  el.innerHTML = items.map((p) => {
+    const e = getEx(p.ex);
+    const isDone = done.includes(p.ex);
+    return `<div class="item">
+      <button class="todo-check ${isDone ? 'on' : ''}" data-ex="${p.ex}">${isDone ? icon('check') : ''}</button>
+      <div style="flex:1">
+        <div class="t"><span class="t-ico">${icon(e ? e.icon : 'custom')}</span>${e ? exName(e) : p.ex} · ${t('repsN', { n: p.reps })}</div>
+      </div>
+    </div>`;
+  }).join('') + `<div class="plan-progress">
+      <div class="plan-progress-txt">${t('planProgress', { d: doneCount, t: items.length })}</div>
+      <div class="plan-bar"><div class="plan-fill" style="width:${(100 * doneCount / items.length).toFixed(0)}%"></div></div>
+    </div>`;
+  el.querySelectorAll('.todo-check').forEach((b) => b.addEventListener('click', () => togglePlanDone(b.dataset.ex)));
+}
+function togglePlanDone(ex) {
+  const dd = planDoneGet();
+  const k = todayKeyStr();
+  const arr = dd[k] || [];
+  const i = arr.indexOf(ex);
+  if (i >= 0) arr.splice(i, 1); else arr.push(ex);
+  dd[k] = arr;
+  LS.set('rehab_plan_done', dd);
+  renderTodayPlan();
+  renderAchievements();
+}
+function renderPlanList() {
+  const list = planGet();
+  const el = $('plan-list');
+  if (!list.length) { el.innerHTML = emptyBox('sliders', 'planEmpty'); return; }
+  el.innerHTML = list.map((p) => {
+    const e = getEx(p.ex);
+    return `<div class="item">
+      <div>
+        <div class="t"><span class="t-ico">${icon(e ? e.icon : 'custom')}</span>${e ? exName(e) : p.ex} · ${t('repsN', { n: p.reps })}</div>
+        <div class="d">${(p.days || []).map((d) => new Date(2024, 0, 7 + d).toLocaleDateString(locale(), { weekday: 'short' })).join(' · ')}</div>
+      </div>
+      <button class="mini del" data-plan-del="${p.ex}">${icon('trash')}</button>
+    </div>`;
+  }).join('');
+  el.querySelectorAll('[data-plan-del]').forEach((b) => b.addEventListener('click', () => {
+    LS.set('rehab_plan', planGet().filter((p) => p.ex !== b.dataset.planDel));
+    renderPlanList(); renderTodayPlan();
+  }));
+}
+let planEditEx = null;
+let planEditDays = new Set([1, 3, 5]);
+function renderPlanDayDots() {
+  $('plan-days').innerHTML = [0, 1, 2, 3, 4, 5, 6].map((d) => {
+    const label = new Date(2024, 0, 7 + d).toLocaleDateString(locale(), { weekday: 'short' });
+    return `<button class="plan-day ${planEditDays.has(d) ? 'on' : ''}" data-day="${d}">${label}</button>`;
+  }).join('');
+  $('plan-days').querySelectorAll('[data-day]').forEach((b) => b.addEventListener('click', () => {
+    const d = +b.dataset.day;
+    if (planEditDays.has(d)) planEditDays.delete(d); else planEditDays.add(d);
+    renderPlanDayDots();
+  }));
+}
+function renderPlanPick() {
+  const all = ['squat', 'lunge', 'pushup', ...customList().map((e) => e.id)];
+  $('plan-ex-pick').innerHTML = all.map((id) => {
+    const e = getEx(id);
+    return `<button class="chip ${planEditEx === id ? 'on' : ''}" data-pick="${id}"><span class="chip-ico">${icon(e.icon)}</span><span>${exName(e)}</span></button>`;
+  }).join('');
+  $('plan-ex-pick').querySelectorAll('[data-pick]').forEach((b) => b.addEventListener('click', () => {
+    planEditEx = b.dataset.pick;
+    renderPlanPick();
+  }));
+}
+$('btn-plan-add').addEventListener('click', () => {
+  planEditEx = planEditEx || 'squat';
+  renderPlanPick();
+  renderPlanDayDots();
+  $('plan-editor').classList.remove('hidden');
+  $('plan-editor').scrollIntoView({ behavior: 'smooth' });
+});
+$('btn-plan-cancel').addEventListener('click', () => $('plan-editor').classList.add('hidden'));
+$('btn-plan-save').addEventListener('click', () => {
+  if (!planEditEx) { toast(t('planPickEx')); return; }
+  const reps = Math.max(1, +$('plan-reps').value || 30);
+  const days = [...planEditDays].sort();
+  const list = planGet();
+  const i = list.findIndex((p) => p.ex === planEditEx);
+  if (i >= 0) list[i] = { ex: planEditEx, reps, days };
+  else list.push({ ex: planEditEx, reps, days });
+  LS.set('rehab_plan', list);
+  $('plan-editor').classList.add('hidden');
+  renderPlanList(); renderTodayPlan(); renderAchievements();
+  toast(t('planAdded'));
+});
+
+/* ============ 训练提醒 ============ */
+const remGet = () => LS.get('rehab_reminder', { on: false, time: '18:00' });
+function renderReminder() {
+  const r = remGet();
+  $('rem-time').value = r.time || '18:00';
+  $('btn-rem-toggle').textContent = r.on ? t('btnRemDisable') : t('btnRemEnable');
+  $('btn-rem-toggle').classList.toggle('primary', !r.on);
+  $('rem-status').textContent = r.on ? t('remOn', { t: r.time }) : '';
+}
+$('btn-rem-toggle').addEventListener('click', async () => {
+  const r = remGet();
+  if (!r.on) {
+    if (!('Notification' in window)) { toast(t('remDenied')); return; }
+    let perm = Notification.permission;
+    if (perm === 'default') { try { perm = await Notification.requestPermission(); } catch { perm = 'denied'; } }
+    if (perm !== 'granted') { toast(t('remDenied')); return; }
+    r.on = true;
+    r.time = $('rem-time').value || '18:00';
+  } else {
+    r.on = false;
+  }
+  LS.set('rehab_reminder', r);
+  renderReminder();
+});
+$('rem-time').addEventListener('change', () => {
+  const r = remGet();
+  r.time = $('rem-time').value;
+  LS.set('rehab_reminder', r);
+  renderReminder();
+});
+setInterval(() => {
+  const r = remGet();
+  if (!r.on || !r.time) return;
+  const now = new Date();
+  const [h, m] = r.time.split(':').map(Number);
+  if (now.getHours() === h && now.getMinutes() === m && LS.get('rehab_remind_today') !== now.toDateString()) {
+    LS.set('rehab_remind_today', now.toDateString());
+    const left = planForToday().filter((p) => !(planDoneGet()[todayKeyStr()] || []).includes(p.ex)).length;
+    const msg = left ? t('remindMsgPlan', { n: left }) : t('remindMsg');
+    if (Notification.permission === 'granted') { try { new Notification(t('appTitle'), { body: msg }); } catch { /* ignore */ } }
+    toast(msg);
+  }
+}, 30000);
+
+/* ============ 云同步（Supabase 账号系统） ============ */
+const cloudCfg = () => LS.get('rehab_cloud', null);
+const cloudSession = () => LS.get('rehab_cloud_session', null);
+async function cloudReq(path, opts = {}, cfg) {
+  const s = cloudSession();
+  const res = await fetch(cfg.url.replace(/\/+$/, '') + path, {
+    ...opts,
+    headers: {
+      apikey: cfg.anonKey,
+      'Content-Type': 'application/json',
+      ...(s && s.access_token ? { Authorization: 'Bearer ' + s.access_token } : {}),
+      ...(opts.headers || {}),
+    },
+  });
+  if (!res.ok) {
+    let msg = 'HTTP ' + res.status;
+    try { const j = await res.json(); msg = j.msg || j.message || msg; } catch { /* ignore */ }
+    throw new Error(msg);
+  }
+  return res.status === 204 ? null : res.json();
+}
+async function cloudAuth(email, pass, register) {
+  const cfg = cloudCfg();
+  if (!cfg) throw new Error(t('cloudNotLoggedIn'));
+  if (register) {
+    await cloudReq('/auth/v1/signup', { method: 'POST', body: JSON.stringify({ email, password }) }, cfg);
+  }
+  const r = await cloudReq('/auth/v1/token?grant_type=password', { method: 'POST', body: JSON.stringify({ email, password }) }, cfg);
+  LS.set('rehab_cloud_session', { access_token: r.access_token, refresh_token: r.refresh_token, uid: r.user?.id, email });
+  renderCloud();
+}
+async function cloudSync() {
+  const cfg = cloudCfg();
+  const s = cloudSession();
+  if (!cfg || !s) throw new Error(t('cloudNotLoggedIn'));
+  $('cloud-status').textContent = t('cloudSyncing');
+  // 拉取云端全部快照 → 按时间升序合并 → 合并本地 → 写回一条快照
+  const rows = await cloudReq(`/rest/v1/userdata?user_id=eq.${s.uid}&select=payload,updated_at&order=updated_at.asc`, {}, cfg);
+  for (const row of rows || []) mergeSyncData(row.payload || {});
+  const merged = makeSyncData();
+  await cloudReq('/rest/v1/userdata', {
+    method: 'POST',
+    body: JSON.stringify({ id: s.uid, user_id: s.uid, payload: merged, updated_at: new Date().toISOString() }),
+    headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
+  }, cfg);
+  $('cloud-status').textContent = t('cloudOk');
+  renderRecords(); renderAssessments(); renderAppts(); renderCustomList(); renderExChips(); renderProfile();
+  renderTodayPlan(); renderPlanList(); renderAchievements();
+}
+function renderCloud() {
+  const cfg = cloudCfg();
+  $('cloud-cfg').classList.toggle('hidden', !!cfg);
+  $('cloud-auth').classList.toggle('hidden', !cfg);
+  if (cfg) {
+    $('cloud-url').value = cfg.url || '';
+    $('cloud-key').value = cfg.anonKey || '';
+  }
+  const s = cloudSession();
+  $('cloud-status').textContent = s ? t('cloudLoggedIn', { e: s.email }) : t('cloudNotLoggedIn');
+}
+$('btn-cloud-cfg').addEventListener('click', () => {
+  const url = $('cloud-url').value.trim();
+  const anonKey = $('cloud-key').value.trim();
+  if (!/^https:\/\/.+\.supabase\.(co|com)/i.test(url) || !anonKey) { toast(t('cloudErr', { msg: 'URL/key' })); return; }
+  LS.set('rehab_cloud', { url, anonKey });
+  renderCloud();
+  toast(t('toastCloudCfg'));
+});
+$('btn-cloud-signup').addEventListener('click', async () => {
+  try {
+    await cloudAuth($('cloud-email').value.trim(), $('cloud-pass').value, true);
+    toast(t('cloudOk'));
+  } catch (e) { toast(t('cloudErr', { msg: e.message })); }
+});
+$('btn-cloud-login').addEventListener('click', async () => {
+  try {
+    await cloudAuth($('cloud-email').value.trim(), $('cloud-pass').value, false);
+    toast(t('cloudOk'));
+  } catch (e) { toast(t('cloudErr', { msg: e.message })); }
+});
+$('btn-cloud-sync').addEventListener('click', async () => {
+  try { await cloudSync(); } catch (e) { $('cloud-status').textContent = t('cloudNotLoggedIn'); toast(t('cloudErr', { msg: e.message })); }
+});
+$('btn-cloud-logout').addEventListener('click', () => {
+  localStorage.removeItem('rehab_cloud_session');
+  renderCloud();
+  toast(t('toastDeleted'));
+});
+
 /* ============ 轻提示 ============ */
 function toast(msg) {
   let t = $('toast');
@@ -1113,6 +1487,8 @@ onLangChanged(() => {
   renderExChips(); renderCollectLabels(getEx(activeExId()));
   renderRecords(); renderAssessments(); renderAppts(); renderCustomList();
   renderCollectCount();
+  renderProfile(); renderReminder(); renderCloud();
+  renderTodayPlan(); renderPlanList(); renderPlanPick(); renderPlanDayDots();
   setStartBtn(state.running ? 'btnStop' : 'btnStart', state.running ? 'stop' : 'play');
   $('btn-collect-label').textContent = state.collectMode ? t('btnCollectStop') : t('btnCollect');
   $('feedback')._last = null;
@@ -1122,6 +1498,8 @@ onLangChanged(() => {
 renderExChips(); renderCollectLabels(getEx(activeExId())); resetAgg();
 renderRecords(); renderAssessments(); renderAppts(); renderCustomList();
 renderCollectCount();
+renderProfile(); renderReminder(); renderCloud();
+renderTodayPlan(); renderPlanList();
 $('btn-collect-label').textContent = t('btnCollect');
 setStartBtn('btnStart', 'play');
 if (location.hash === '#selftest') selfTest();

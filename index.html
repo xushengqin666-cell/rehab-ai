@@ -101,6 +101,21 @@
       <div class="summary-line" id="summary-line"></div>
     </div>
     <div class="card">
+      <h3 data-i18n="trendTitle">30 天趋势</h3>
+      <p class="chart-cap" data-i18n="trendReps">每日次数</p>
+      <div id="trend-chart" class="trend"></div>
+      <p class="chart-cap" data-i18n="trendQuality">动作质量（不合格帧 %）</p>
+      <div id="quality-chart" class="trend"></div>
+    </div>
+    <div class="card">
+      <h3 data-i18n="distTitle">各动作分布</h3>
+      <div id="dist-chart" class="dist"></div>
+    </div>
+    <div class="card">
+      <h3 data-i18n="achTitle">成就</h3>
+      <div id="ach-grid" class="ach"></div>
+    </div>
+    <div class="card">
       <h3 data-i18n="recordTitle">打卡记录</h3>
       <div id="session-list" class="list"></div>
     </div>
@@ -157,6 +172,39 @@
   <!-- ============ 预约日程 ============ -->
   <section id="tab-schedule" class="tab">
     <div class="card">
+      <h3 data-i18n="todayPlan">今日任务</h3>
+      <div id="today-plan" class="list"></div>
+    </div>
+
+    <div class="card">
+      <h3 data-i18n="planTitle">康复计划</h3>
+      <p class="hint" data-i18n="planHint">给每周的每天安排动作和目标次数，训练页打卡后自动计入进度。</p>
+      <div id="plan-list" class="list"></div>
+      <button id="btn-plan-add" class="btn block" data-i18n="btnPlanAdd">➕ 添加动作到计划</button>
+      <div id="plan-editor" class="plan-editor hidden">
+        <div id="plan-ex-pick" class="chips" style="margin-top:10px"></div>
+        <div class="cf-rep" style="margin-top:8px">
+          <input type="number" id="plan-reps" min="1" value="30" placeholder="目标次数" data-i18n-ph="planReps">
+        </div>
+        <div class="plan-days" id="plan-days"></div>
+        <div class="controls">
+          <button id="btn-plan-cancel" class="btn" data-i18n="cfCancel">取消</button>
+          <button id="btn-plan-save" class="btn primary" data-i18n="cfSave">保存</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3 data-i18n="remTitle">训练提醒</h3>
+      <p class="hint" data-i18n="remHint">到点提醒完成今日计划（需允许通知；页面开着时生效）。</p>
+      <div class="rem-row">
+        <input type="time" id="rem-time" value="18:00">
+        <button id="btn-rem-toggle" class="btn primary" data-i18n="btnRemEnable">开启提醒</button>
+      </div>
+      <p class="hint" id="rem-status"></p>
+    </div>
+
+    <div class="card">
       <h3 data-i18n="apptTitle">理疗预约</h3>
       <form id="appt-form" class="form">
         <input type="date" id="appt-date" required>
@@ -177,6 +225,21 @@
 
   <!-- ============ 设置 ============ -->
   <section id="tab-settings" class="tab">
+    <div class="card">
+      <h3 data-i18n="profileTitle">个人资料</h3>
+      <div class="form">
+        <input type="text" id="pf-name" placeholder="昵称" data-i18n-ph="phName">
+        <select id="pf-goal">
+          <option value="knee" data-i18n="goalKnee">膝关节康复</option>
+          <option value="posture" data-i18n="goalPosture">改善姿势</option>
+          <option value="fitness" data-i18n="goalFitness">增强体能</option>
+          <option value="other" data-i18n="goalOther">其他</option>
+        </select>
+        <input type="text" id="pf-injury" placeholder="伤情备注（可选，仅存本机）" data-i18n-ph="phInjury">
+        <button id="btn-save-profile" class="btn primary block" data-i18n="btnSaveProfile">保存资料</button>
+      </div>
+    </div>
+
     <div class="card">
       <h3 data-i18n="customTitle">自定义动作</h3>
       <p class="hint" data-i18n="customHint">自己定义动作：选三个关节量夹角（或竖直角度）、设合格范围、设计数规则、写提示语。创建后在「训练」页选择使用。</p>
@@ -272,6 +335,31 @@
           <span class="btn-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 8V6.5A2.5 2.5 0 0 1 6 4h2M15.5 4H18a2.5 2.5 0 0 1 2.5 2.5V8M20.5 16v1.5a2.5 2.5 0 0 1-2.5 2.5h-2.5M8.5 20H6a2.5 2.5 0 0 1-2.5-2.5V16"/></svg></span>
           <span data-i18n="btnSyncScan">扫描二维码</span>
         </button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3 data-i18n="cloudTitle">云同步（账号系统）</h3>
+      <p class="hint" data-i18n="cloudHint">配置 Supabase 后：注册/登录账号，数据自动同步到云端，换设备登录即恢复（替代二维码同步）。</p>
+      <div id="cloud-cfg" class="form">
+        <input type="text" id="cloud-url" placeholder="Supabase URL (https://xxx.supabase.co)" data-i18n-ph="phSupabaseUrl">
+        <input type="text" id="cloud-key" placeholder="anon public key" data-i18n-ph="phAnonKey">
+        <button id="btn-cloud-cfg" class="btn primary block" data-i18n="btnCloudSaveCfg">保存配置</button>
+      </div>
+      <div id="cloud-auth" class="hidden">
+        <div class="form" style="margin-top:10px">
+          <input type="email" id="cloud-email" placeholder="email@example.com">
+          <input type="password" id="cloud-pass" placeholder="••••••••">
+          <div class="controls">
+            <button id="btn-cloud-signup" class="btn" data-i18n="btnCloudSignup">注册</button>
+            <button id="btn-cloud-login" class="btn primary" data-i18n="btnCloudLogin">登录</button>
+          </div>
+        </div>
+        <p class="hint" id="cloud-status" data-i18n="cloudNotLoggedIn">未登录</p>
+        <div class="controls">
+          <button id="btn-cloud-sync" class="btn primary" data-i18n="btnCloudSync">立即同步</button>
+          <button id="btn-cloud-logout" class="btn" data-i18n="btnCloudLogout">退出登录</button>
+        </div>
       </div>
     </div>
 
