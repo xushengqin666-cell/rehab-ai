@@ -97,23 +97,33 @@ const invalidateCustom = () => { _customCache = null; };
 const getEx = (id) => EXERCISES[id] || customList().find((e) => e.id === id);
 const activeExId = () => LS.get('rehab_active_ex', 'squat');
 
-/* ============ AI 模型加载 ============ */
+/* ============ AI 模型加载（多镜像 + 超时保护） ============ */
+// jsDelivr 镜像国内访问更快（同仓库文件）；googleapis 作最后兜底
+const CDN_BASE = 'https://cdn.jsdelivr.net/gh/xushengqin666-cell/rehab-ai@main';
+const GOOGLE_MODEL_URL = 'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_full/float16/1/pose_landmarker_full.task';
+const withTimeout = (p, ms) => Promise.race([
+  p,
+  new Promise((_, rej) => setTimeout(() => rej(new Error('模型加载超时(网络慢)')), ms)),
+]);
 async function loadModel() {
-  const vision = await FilesetResolver.forVisionTasks('./wasm');
-  const local = './pose_landmarker_full.task';
-  const cdn = 'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_full/float16/1/pose_landmarker_full.task';
+  // wasm 运行时：本地优先，失败走 jsDelivr（国内速度快）
+  let vision;
+  try { vision = await FilesetResolver.forVisionTasks('./wasm'); }
+  catch { vision = await FilesetResolver.forVisionTasks(CDN_BASE + '/wasm'); }
   const mk = (modelAssetPath, delegate) => PoseLandmarker.createFromOptions(vision, {
     baseOptions: { modelAssetPath, delegate },
     runningMode: 'VIDEO', numPoses: 1,
     minPoseDetectionConfidence: 0.5, minPosePresenceConfidence: 0.5, minTrackingConfidence: 0.5,
   });
-  for (const url of [local, cdn]) {
+  const urls = ['./pose_landmarker_full.task', CDN_BASE + '/pose_landmarker_full.task', GOOGLE_MODEL_URL];
+  let lastErr = null;
+  for (const url of urls) {
     try {
-      try { await fetch(url, { method: 'HEAD' }); } catch { /* 本地缺失走 CDN */ }
-      try { return await mk(url, 'GPU'); } catch { return await mk(url, 'CPU'); }
-    } catch (e) { console.warn('模型加载失败:', url, e); }
+      try { return await withTimeout(mk(url, 'GPU'), 90000); }
+      catch { return await withTimeout(mk(url, 'CPU'), 90000); }
+    } catch (e) { lastErr = e; console.warn('模型加载失败:', url, e); }
   }
-  throw new Error(t('modelLoadFail'));
+  throw new Error(t('modelLoadFail') + (lastErr ? ' — ' + lastErr.message : ''));
 }
 
 /* ============ 摄像头（增强版：诊断 / 多设备 / 超时 / 重试） ============ */
@@ -149,6 +159,7 @@ async function openCamera() {
   const candidates = [
     { video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false },
     { video: { width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false },
+    { video: { width: { ideal: 640 }, height: { ideal: 480 } }, audio: false },   // 低配设备兜底
     ...state.cameras.filter((c) => c.deviceId).map((c) => ({
       video: { deviceId: { exact: c.deviceId }, width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false,
     })),
@@ -180,19 +191,21 @@ function permText(s) {
 function browserName() {
   return navigator.userAgent.includes('Edg') ? 'Edge' : navigator.userAgent.includes('Chrome') ? 'Chrome' : t('diagOther');
 }
-function showCameraError(e) {
+function showCameraError(e, modelFail = false) {
   const box = $('cam-retry');
   box.classList.remove('hidden');
   state._lastCamErr = e;
+  state._lastCamIsModel = modelFail;
   const cams = state.cameras || [];
-  const camBtns = cams.length > 1
+  const camBtns = !modelFail && cams.length > 1
     ? `<div class="retry-row">${t('retryCams', { n: cams.length })}${
         cams.map((c, i) => `<button class="btn small" data-cam="${i}"><span class="btn-ico">${icon('camera')}</span>${c.label || t('camLabel', { n: i + 1 })}</button>`).join('')}</div>`
     : '';
+  const errText = modelFail ? t('errUnknown', { msg: e.message || e.name }) : cameraErrorText(e);
   box.innerHTML = `
     <div class="retry-card">
-      <b>${t('retryTitle')}</b>
-      <p class="hint">${cameraErrorText(e)}</p>
+      <b>${modelFail ? t('modelFailTitle') : t('retryTitle')}</b>
+      <p class="hint">${errText}</p>
       ${camBtns}
       <div class="retry-row">
         <button class="btn primary" id="btn-cam-retry"><span class="btn-ico">${icon('retry')}</span><span>${t('btnRetry')}</span></button>
@@ -390,22 +403,39 @@ async function toggleStart() {
       setStartBtn('btnDetecting', 'loader-spin');
       stream = await openCamera();
     }
+    // 摄像头画面立刻显示（不再被黑色加载遮罩挡住）
     await bindStream(stream);
-    if (!state.landmarker) {
-      $('loading').classList.remove('hidden');
-      setStartBtn('btnLoadingModel', 'loader-spin');
-      state.landmarker = await loadModel();
-      $('loading').classList.add('hidden');
-    }
     state.running = true; state.photoMode = false;
     resetAgg();
-    btn.disabled = false;   // 修复：启动成功后按钮要恢复可点（否则无法停止/重启）
+    btn.disabled = false;
     setStartBtn('btnStop', 'stop');
     $('stats-box').classList.remove('hidden');
     $('feedback').classList.remove('hidden');
     $('feedback').innerHTML = fbWrap('camera', t('detecting'));
     $('feedback').className = 'feedback';
     $('feedback')._last = null;
+    // AI 模型在后台加载：画面可见，只有一个小进度胶囊
+    if (!state.landmarker) {
+      const t0 = Date.now();
+      $('loading').innerHTML = icon('loader-spin') + '<span>' + t('loading') + ' 0s</span>';
+      $('loading').classList.remove('hidden');
+      const tick = setInterval(() => {
+        $('loading').innerHTML = icon('loader-spin') + '<span>' + t('loading') + ' ' + Math.round((Date.now() - t0) / 1000) + 's</span>';
+      }, 1000);
+      try {
+        state.landmarker = await loadModel();
+      } catch (e) {
+        console.error('模型加载失败:', e);
+        stopCamera();
+        state.running = false;
+        setStartBtn('btnStart', 'play');
+        showCameraError(e, true);   // 摄像头没问题，是模型/网络问题
+        return;
+      } finally {
+        clearInterval(tick);
+        $('loading').classList.add('hidden');
+      }
+    }
     kickLoop();
   } catch (e) {
     console.error(e);
@@ -922,7 +952,7 @@ onLangChanged(() => {
   $('btn-collect-label').textContent = state.collectMode ? t('btnCollectStop') : t('btnCollect');
   $('feedback')._last = null;
   if (state.running) state.statsKey = null;   // 下一帧按新语言重建统计
-  if (state._lastCamErr && !$('cam-retry').classList.contains('hidden')) showCameraError(state._lastCamErr);
+  if (state._lastCamErr && !$('cam-retry').classList.contains('hidden')) showCameraError(state._lastCamErr, state._lastCamIsModel);
 });
 renderExChips(); renderCollectLabels(getEx(activeExId())); resetAgg();
 renderRecords(); renderAssessments(); renderAppts(); renderCustomList();
