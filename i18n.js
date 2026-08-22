@@ -166,6 +166,8 @@ const DICT = {
     todayPlan: '今日任务', planProgress: '已完成 {d} / {t}', planNone: '今天没有安排任务',
     planEmpty: '还没有计划 —— 在下面添加动作并勾选星期', planReps: '目标次数', planDays: '星期',
     btnPlanAdd: '➕ 添加动作到计划', planAdded: '已加入计划', planPickEx: '先在上方选一个动作',
+    goalLine: '今日目标：{name} ×{n}', goalProgress: '已完成 {d} / {t}', goalDone: '🎉 今日目标达成！',
+    assessTrend: '评估分数趋势', swUpdate: '已下载新版本，刷新页面即可更新',
     // 提醒
     remTitle: '训练提醒', remHint: '到点提醒完成今日计划（需允许通知；页面开着时生效）。',
     remTime: '提醒时间', btnRemEnable: '开启提醒', btnRemDisable: '关闭提醒', btnRemPerm: '允许通知',
@@ -331,6 +333,8 @@ const DICT = {
     todayPlan: "Today's plan", planProgress: 'Done {d} of {t}', planNone: 'Nothing planned for today',
     planEmpty: 'No plan yet — add exercises and tick weekdays below', planReps: 'Target reps', planDays: 'Days',
     btnPlanAdd: '➕ Add exercise to plan', planAdded: 'Added to plan', planPickEx: 'Pick an exercise above first',
+    goalLine: "Today's goal: {name} ×{n}", goalProgress: 'Done {d} of {t}', goalDone: '🎉 Daily goal reached!',
+    assessTrend: 'Score trend', swUpdate: 'New version downloaded — refresh to update',
     // 提醒
     remTitle: 'Reminders', remHint: 'A daily nudge to finish today\'s plan (needs notification permission; works while the app is open).',
     remTime: 'Reminder time', btnRemEnable: 'Enable', btnRemDisable: 'Disable', btnRemPerm: 'Allow notifications',

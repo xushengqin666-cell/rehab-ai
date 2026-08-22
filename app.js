@@ -266,6 +266,21 @@ function renderExChips() {
   $('chip-add').addEventListener('click', () => { openCustomForm(null); switchTab('settings'); });
   const ex = getEx(activeExId());
   $('ex-desc').textContent = ex ? exDesc(ex) : '';
+  renderGoal();
+}
+// 训练页「今日目标」进度条（与康复计划联动）
+function renderGoal() {
+  const el = $('goal-line');
+  if (!el) return;
+  const ex = getEx(activeExId());
+  const item = planForToday().find((p) => p.ex === ex.id);
+  if (!item) { el.classList.add('hidden'); return; }
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const done = LS.get('rehab_sessions', []).filter((s) => new Date(s.ts) >= today && s.ex === ex.id).reduce((a, s) => a + s.reps, 0);
+  const okv = done >= item.reps;
+  el.classList.remove('hidden');
+  el.classList.toggle('on', okv);
+  el.innerHTML = `<span class="goal-ico">${icon(okv ? 'check' : 'target')}</span><span>${t('goalLine', { name: exName(ex), n: item.reps })} · ${t('goalProgress', { d: Math.min(done, item.reps), t: item.reps })}</span>`;
 }
 function renderChips(res) {
   const chips = res.chips.map((c, i) => `
@@ -543,8 +558,25 @@ $('btn-save').addEventListener('click', () => {
   const list = LS.get('rehab_sessions', []);
   list.unshift(session);
   LS.set('rehab_sessions', list);
+  // 自动核对今日计划目标：达标即自动打卡
+  const t0 = new Date(); t0.setHours(0, 0, 0, 0);
+  const tReps = list.reduce((a, s) => (new Date(s.ts) >= t0 && s.ex === ex.id ? a + s.reps : a), 0);
+  const tPlan = planForToday().find((p) => p.ex === ex.id);
+  if (tPlan && tReps >= tPlan.reps) {
+    const dd = planDoneGet();
+    const k = todayKeyStr();
+    const arr = dd[k] || [];
+    if (!arr.includes(ex.id)) {
+      arr.push(ex.id);
+      dd[k] = arr;
+      LS.set('rehab_plan_done', dd);
+      renderTodayPlan();
+      toast(t('goalDone'));
+    }
+  }
   resetAgg();
   renderRecords();
+  renderGoal();
   toast(t('toastSaved'));
 });
 
@@ -650,6 +682,9 @@ function renderAssessments() {
     LS.set('rehab_assessments', list.filter((r) => r.id !== btn.dataset.id));
     renderAssessments();
   }));
+  // 评估分数趋势
+  const scores = [...list].reverse().slice(-10).map((r) => r.score);
+  $('assess-trend').innerHTML = scores.length ? lineChart(scores, '#0e7c66', 'a') : emptyBox('assess', 'emptyAssess');
 }
 
 /* ============ 预约日程页 ============ */
@@ -897,8 +932,8 @@ const b64ToBytes = (b64) => {
 const gzipB64 = async (text) => bytesToB64(await new Response(new Blob([text]).stream().pipeThrough(new CompressionStream('gzip'))).arrayBuffer());
 const gunzipB64 = async (b64) => new Response(new Blob([b64ToBytes(b64)]).stream().pipeThrough(new DecompressionStream('gzip'))).text();
 
-function makeSyncData() {
-  return {
+function makeSyncData(includeCollect = false) {
+  const d = {
     app: 'RehabAI', v: 3, ts: Date.now(),
     sessions: LS.get('rehab_sessions', []),
     assessments: LS.get('rehab_assessments', []),
@@ -908,6 +943,8 @@ function makeSyncData() {
     planDone: LS.get('rehab_plan_done', {}),
     profile: LS.get('rehab_profile', {}),
   };
+  if (includeCollect) d.collect = state.collectBuf;
+  return d;
 }
 // 按 id 合并：双方都保留，同 id 以对方为准；按时间倒序
 function mergeSyncData(data) {
@@ -933,6 +970,14 @@ function mergeSyncData(data) {
   }
   if (data.profile && (data.profile.name || data.profile.injury)) {
     LS.set('rehab_profile', { ...(LS.get('rehab_profile', {})), ...data.profile });
+  }
+  if (Array.isArray(data.collect) && data.collect.length) {
+    const seen = new Set(state.collectBuf.map((r) => r.ex + '|' + r.label + '|' + (r.feats || []).join(',')));
+    for (const r of data.collect) {
+      const k = r.ex + '|' + r.label + '|' + (r.feats || []).join(',');
+      if (!seen.has(k)) { state.collectBuf.push(r); seen.add(k); }
+    }
+    LS.set('rehab_collect', state.collectBuf);
   }
   return { s: (data.sessions || []).length, a: (data.assessments || []).length, p: (data.appts || []).length, c: (data.customExercises || []).length };
 }
@@ -1207,6 +1252,7 @@ function togglePlanDone(ex) {
   LS.set('rehab_plan_done', dd);
   renderTodayPlan();
   renderAchievements();
+  renderGoal();
 }
 function renderPlanList() {
   const list = planGet();
@@ -1356,7 +1402,7 @@ async function cloudSync() {
   // 拉取云端全部快照 → 按时间升序合并 → 合并本地 → 写回一条快照
   const rows = await cloudReq(`/rest/v1/userdata?user_id=eq.${s.uid}&select=payload,updated_at&order=updated_at.asc`, {}, cfg);
   for (const row of rows || []) mergeSyncData(row.payload || {});
-  const merged = makeSyncData();
+  const merged = makeSyncData(true);
   await cloudReq('/rest/v1/userdata?on_conflict=id', {
     method: 'POST',
     body: JSON.stringify({ id: s.uid, user_id: s.uid, payload: merged, updated_at: new Date().toISOString() }),
@@ -1364,7 +1410,7 @@ async function cloudSync() {
   }, cfg);
   $('cloud-status').textContent = t('cloudOk');
   renderRecords(); renderAssessments(); renderAppts(); renderCustomList(); renderExChips(); renderProfile();
-  renderTodayPlan(); renderPlanList(); renderAchievements();
+  renderTodayPlan(); renderPlanList(); renderAchievements(); renderCollectCount(); renderGoal();
 }
 function renderCloud() {
   const cfg = cloudCfg();
@@ -1489,6 +1535,7 @@ onLangChanged(() => {
   renderCollectCount();
   renderProfile(); renderReminder(); renderCloud();
   renderTodayPlan(); renderPlanList(); renderPlanPick(); renderPlanDayDots();
+  renderGoal();
   setStartBtn(state.running ? 'btnStop' : 'btnStart', state.running ? 'stop' : 'play');
   $('btn-collect-label').textContent = state.collectMode ? t('btnCollectStop') : t('btnCollect');
   $('feedback')._last = null;
@@ -1502,9 +1549,19 @@ renderProfile(); renderReminder(); renderCloud();
 renderTodayPlan(); renderPlanList();
 $('btn-collect-label').textContent = t('btnCollect');
 setStartBtn('btnStart', 'play');
-// PWA：可安装到主屏幕 + 离线可用
+// PWA：可安装到主屏幕 + 离线可用 + 新版本提示
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
-  window.addEventListener('load', () => { navigator.serviceWorker.register('./sw.js').catch(() => {}); });
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').then((reg) => {
+      reg.addEventListener('updatefound', () => {
+        const nw = reg.installing;
+        if (!nw) return;
+        nw.addEventListener('statechange', () => {
+          if (nw.state === 'installed' && navigator.serviceWorker.controller) toast(t('swUpdate'));
+        });
+      });
+    }).catch(() => {});
+  });
 }
 if (location.hash === '#selftest') selfTest();
 // 微信内置浏览器不支持摄像头 —— 打开时就提示用系统浏览器
