@@ -424,6 +424,7 @@ function resetAgg() {
   state.blackFrames = 0; state.blackWarned = false; state.blackTS = 0; state.blackLum = null;
   state.alarmOn = false; state.alarmTS = 0;
   state.voiceReps = 0; state.voiceTS = 0;
+  state.missingFrames = 0;
   const r = $('st-reps'); if (r) r.textContent = '0';
   document.querySelectorAll('#chips [data-stat]').forEach((el) => { el.textContent = '--'; });
   const save = $('btn-save'); if (save) save.disabled = true;
@@ -461,13 +462,20 @@ function kickLoop() {
   requestAnimationFrame(() => { state.loopScheduled = false; loop(); });
 }
 
-// 身体完整性：肩/髋/膝/踝 8 个关键关节，任一个可见度不足 → 返回缺失部位（本地化名称）
-const BODY_NEED = [[11, 'jShoulder'], [12, 'jShoulder'], [23, 'jHip'], [24, 'jHip'], [25, 'jKnee'], [26, 'jKnee'], [27, 'jAnkle'], [28, 'jAnkle']];
+// 身体完整性：只检查「正在分析的那一侧」（侧面时另一侧会被身体遮挡，不算缺失）
+// 判定：可见度 <0.4 或 坐标出画面边界（贴近边缘 2% 内）→ 认为该部位没照全
+function partVisible(lms, i) {
+  const lm = lms[i];
+  if (!lm) return false;
+  const vis = lm.visibility ?? 1;
+  const inFrame = lm.x > 0.02 && lm.x < 0.98 && lm.y > 0.02 && lm.y < 0.98;
+  return vis >= 0.4 && inFrame;
+}
 function bodyMissing(lms) {
+  const s = pickSide(lms);
+  const need = [[s.shoulder, 'jShoulder'], [s.hip, 'jHip'], [s.knee, 'jKnee'], [s.ankle, 'jAnkle']];
   const miss = new Set();
-  for (const [i, k] of BODY_NEED) {
-    if ((lms[i]?.visibility ?? 1) < 0.5) miss.add(t(k));
-  }
+  for (const [i, k] of need) if (!partVisible(lms, i)) miss.add(t(k));
   return [...miss];
 }
 
@@ -531,15 +539,18 @@ function loop() {
   ctx.clearRect(0, 0, cw, ch);
   drawStick(ctx, lms, cw, ch, true);
 
-  // 身体完整性检测：关键关节没照全 → 提醒全身入镜并暂停分析（避免错误数据）
+  // 身体完整性检测：关键部位没照全 → 持续 ~5 帧才提醒（防单帧误判闪烁），并暂停分析
   const missingParts = bodyMissing(lms);
   if (missingParts.length) {
+    state.missingFrames = (state.missingFrames || 0) + 1;
+    if (state.missingFrames < 5) { kickLoop(); return; }
     const msg = fbWrap('alert', t('bodyCutOff', { parts: missingParts.join('、') }) + '<br>' + t('bodyCutOffHint'));
     if (fb._last !== msg) { fb.innerHTML = msg; fb._last = msg; }
     fb.className = 'feedback warn';
     kickLoop();
     return;
   }
+  state.missingFrames = 0;
   const ex = getEx(activeExId());
   const res = analyzeAny(lms, ex);
   state.lastResult = res;
@@ -1888,10 +1899,13 @@ async function selfTest() {
     hh2[11] = mk(0.18, 0.46); hh2[12] = mk(0.20, 0.46);
     const hhRisk = analyzeAny(hh2, EXERCISES.hiphinge);
     log(t('stRiskAlarm'), hhRisk.riskLevel === 2 && hhRisk.risk.length > 0, `level=${hhRisk.riskLevel} ${hhRisk.risk.join('|')}`);
-    // 10. 身体完整性检测：右踝不可见 → 提醒缺「踝」
+    // 10. 身体完整性检测：右踝不可见 → 提醒缺「踝」；另一侧被遮挡不算缺失（侧面视角不误报）
     const inc = base(); inc[28].visibility = 0;
     const miss = bodyMissing(inc);
     log(t('stBodyCheck'), miss.length === 1 && miss[0] === t('jAnkle'), miss.join(','));
+    const side = base(); side[23].visibility = 0; side[25].visibility = 0; side[27].visibility = 0;
+    const miss2 = bodyMissing(side);
+    log(t('stBodySide'), miss2.length === 0, miss2.join(',') || 'OK');
     out.innerHTML += `<div class="st-pass" style="margin-top:8px;font-weight:800">${t('stAllPass')}</div>`;
     console.log('SELFTEST: ALL PASS');
   } catch (e) {
