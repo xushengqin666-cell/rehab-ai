@@ -1606,6 +1606,59 @@ async function cloudSync() {
   renderRecords(); renderAssessments(); renderAppts(); renderCustomList(); renderExChips(); renderProfile();
   renderTodayPlan(); renderPlanList(); renderAchievements(); renderCollectCount(); renderGoal();
 }
+/* ============ 首次启动引导 + 版本更新检测 ============ */
+const OB_STEPS = [
+  { ico: 'squat', titleKey: 'obTitle1', textKey: 'obText1' },
+  { ico: 'schedule', titleKey: 'obTitle2', textKey: 'obText2' },
+  { ico: 'record', titleKey: 'obTitle3', textKey: 'obText3' },
+  { ico: 'cloud', titleKey: 'obTitle4', textKey: 'obText4' },
+];
+let obStep = 0;
+function renderOnboard() {
+  const s = OB_STEPS[obStep];
+  $('ob-ico').innerHTML = icon(s.ico);
+  $('ob-title').textContent = t(s.titleKey);
+  $('ob-text').textContent = t(s.textKey);
+  $('ob-dots').innerHTML = OB_STEPS.map((_, i) => `<span class="ob-dot ${i === obStep ? 'on' : ''}"></span>`).join('');
+  $('btn-ob-next').textContent = obStep === OB_STEPS.length - 1 ? t('obStart') : t('obNext');
+}
+function closeOnboard() {
+  LS.set('rehab_onboarded', true);
+  $('onboard').classList.add('hidden');
+  renderAuth();
+}
+function showOnboard() {
+  if (LS.get('rehab_onboarded', false)) return;
+  obStep = 0;
+  renderOnboard();
+  $('onboard').classList.remove('hidden');
+}
+$('btn-ob-next').addEventListener('click', () => {
+  if (obStep < OB_STEPS.length - 1) { obStep++; renderOnboard(); }
+  else closeOnboard();
+});
+$('btn-ob-skip').addEventListener('click', closeOnboard);
+// 新版本检测（每天一次，静默）
+async function checkUpdate() {
+  const last = LS.get('rehab_update_check', 0);
+  if (Date.now() - last < 86400000) return;
+  LS.set('rehab_update_check', Date.now());
+  try {
+    const r = await fetch('https://api.github.com/repos/xushengqin666-cell/rehab-ai/releases/latest');
+    if (!r.ok) return;
+    const j = await r.json();
+    const latest = String(j.tag_name || '').replace(/^v/, '');
+    const cur = APP_VERSION.replace(/^v/, '');
+    if (latest && latest !== cur && latest > cur) {
+      const fb = $('feedback');
+      fb.classList.remove('hidden');
+      fb.innerHTML = fbWrap('check', `<b>${t('updateAvailable', { v: latest })}</b> — <a href="${j.html_url}" target="_blank" rel="noopener">${t('updateGo')}</a>`);
+      fb.className = 'feedback';
+      fb._last = null;
+    }
+  } catch { /* 网络失败忽略 */ }
+}
+
 function renderCloud() {
   const cfg = cloudCfg();
   const s = cloudSession();
@@ -1834,10 +1887,12 @@ renderCollectCount();
 renderProfile(); renderReminder(); renderCloud(); renderAuth();
 renderTodayPlan(); renderPlanList();
 renderVoice();
+showOnboard();
 $('btn-collect-label').textContent = t('btnCollect');
 setStartBtn('btnStart', 'play');
-// 登录用户：启动后自动同步一次
+// 登录用户：启动后自动同步一次；版本更新检测（每天一次）
 if (cloudCfg() && cloudSession()) setTimeout(() => cloudSync().catch(() => {}), 2500);
+setTimeout(checkUpdate, 6000);
 // 关于：版本号 + 分享
 $('about-version').textContent = t('versionLabel', { v: APP_VERSION });
 $('btn-share').addEventListener('click', async () => {

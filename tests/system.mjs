@@ -91,6 +91,18 @@ await evl(`document.getElementById('btn-auth-skip').click()`);
 await sleep(200);
 (await evl(`document.getElementById('auth-screen').classList.contains('hidden')`)) ? ok('访客模式跳过登录') : fail('跳过失败');
 
+// 首次引导
+await evl(`localStorage.removeItem('rehab_onboarded'); location.reload()`);
+await sleep(2500);
+(await evl(`!document.getElementById('onboard').classList.contains('hidden')`)) ? ok('首次启动显示引导页') : fail('引导页未出现');
+await evl(`document.getElementById('btn-ob-next').click()`);
+await sleep(150);
+const obTitle2 = await evl(`document.getElementById('ob-title').textContent`);
+obTitle2.includes('计划') ? ok('引导第 2 步') : fail('引导切换: ' + obTitle2);
+await evl(`document.getElementById('btn-ob-next').click(); document.getElementById('btn-ob-next').click(); document.getElementById('btn-ob-next').click()`);
+await sleep(300);
+(await evl(`document.getElementById('onboard').classList.contains('hidden') && localStorage.getItem('rehab_onboarded') === 'true'`)) ? ok('引导完成并记住（下次不再出现）') : fail('引导完成失败');
+
 // 自测 + 同步自测
 await evl(`location.hash='#selftest'; location.reload()`);
 await sleep(2500);

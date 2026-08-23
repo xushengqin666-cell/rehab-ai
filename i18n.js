@@ -232,6 +232,13 @@ const DICT = {
     acctExists: '该邮箱已注册，直接登录即可', acctPassShort: '密码至少 6 位',
     acctNotFound: '账号不存在，请先注册', acctWrongPass: '密码错误',
     acctRegistered: '注册成功，已登录', acctLoggedIn: '登录成功',
+    // 首次引导
+    obTitle1: 'AI 火柴人动作分析', obText1: '摄像头实时识别你的动作，7 个日常动作 + 自定义，统一标准，受伤风险自动警报（声音+震动）。',
+    obTitle2: '康复计划与提醒', obText2: '按星期安排训练目标，「今日任务」一键打卡，每天到点提醒你动一动。',
+    obTitle3: '数据报表与成就', obText3: '30 天趋势、动作质量、9 枚成就徽章、自我评估和理疗预约，进步看得见。',
+    obTitle4: '账号与互通', obText4: '注册账号登录（数据加密存本机），配置云同步后换设备自动恢复；二维码扫一扫也能互通。',
+    obSkip: '跳过', obNext: '下一步', obStart: '开始使用',
+    updateAvailable: '发现新版本 v{v}', updateGo: '点此下载更新',
     toastLogout: '已退出登录',
     // 自测
     stAngle: 'angle3 直角=90°', stSquat: '深蹲分析返回特征', stValgus: '内扣检测触发',
@@ -454,6 +461,13 @@ const DICT = {
     acctExists: 'Email already registered — just log in', acctPassShort: 'Password must be 6+ characters',
     acctNotFound: 'Account not found — sign up first', acctWrongPass: 'Wrong password',
     acctRegistered: 'Registered and logged in', acctLoggedIn: 'Logged in',
+    // 首次引导
+    obTitle1: 'AI stick-figure analysis', obText1: 'Your camera tracks your movement live — 7 everyday exercises plus custom ones, unified standards, and injury-risk alarms (sound + vibration).',
+    obTitle2: 'Rehab plan & reminders', obText2: 'Plan training targets by weekday, tick off today\'s tasks, and get a daily reminder to move.',
+    obTitle3: 'Reports & achievements', obText3: '30-day trends, movement quality, 9 achievement badges, self-assessments and physio bookings — see your progress.',
+    obTitle4: 'Account & sync', obText4: 'Register an account (password encrypted on-device); configure cloud sync to restore on any device — or scan a QR code to merge data.',
+    obSkip: 'Skip', obNext: 'Next', obStart: 'Get started',
+    updateAvailable: 'New version v{v} available', updateGo: 'Download it here',
     toastLogout: 'Logged out',
     stAngle: 'angle3 right angle = 90°', stSquat: 'Squat analysis returns features', stValgus: 'Valgus detection triggers',
     stCounter: 'Rep state machine down→up', stDebounce: 'Rep debounce (no double-count in gap)',

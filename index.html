@@ -451,6 +451,20 @@
 
 <div id="selftest-out" style="display:none"></div>
 
+<!-- 首次启动引导 -->
+<div id="onboard" class="auth-overlay hidden" style="z-index:90">
+  <div class="auth-card ob-card">
+    <div class="ob-ico" id="ob-ico"></div>
+    <h2 id="ob-title" style="text-align:center;font-size:19px;margin-top:10px"></h2>
+    <p id="ob-text" class="hint" style="text-align:center;min-height:64px"></p>
+    <div class="ob-dots" id="ob-dots"></div>
+    <div class="controls">
+      <button id="btn-ob-skip" class="btn" data-i18n="obSkip">跳过</button>
+      <button id="btn-ob-next" class="btn primary" data-i18n="obNext">下一步</button>
+    </div>
+  </div>
+</div>
+
 <!-- 登录 / 注册屏（真实 App 体验：启动即见） -->
 <div id="auth-screen" class="auth-overlay hidden">
   <div class="auth-card">
