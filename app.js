@@ -5,6 +5,7 @@ import { t, getLang, locale, initI18n, onLangChanged } from './i18n.js';
 import {
   EXERCISES, analyzeAny, loadCustomExercises, saveCustomExercises,
   customDefault, CUSTOM_JOINTS, angle3, kneeValgus, pickSide, setCustomKey,
+  verticalAngle,
 } from './analysis.js';
 
 /* ============ 基础工具 ============ */
@@ -72,7 +73,7 @@ function migrateDeviceData(email) {
 }
 const fmtDate = (ts) => new Date(ts).toLocaleString(locale(), { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-const APP_VERSION = 'v2.13.0';
+const APP_VERSION = 'v2.14.0';
 const exName = (e) => (e.custom ? e.name : t(e.nameKey));
 const exDesc = (e) => (e.custom ? e.desc : t(e.descKey));
 const depthTxt = (d) => t('depth' + (d ? d.charAt(0).toUpperCase() + d.slice(1) : 'Ok')) || d;
@@ -161,12 +162,16 @@ const state = {
   ex: null, collectBuf: sget('rehab_collect', []),
   cameras: null, pickCam: undefined,
   tab: 'train', statsKey: null, loopScheduled: false,
+  autoEx: 'squat', autoVotes: {}, autoVoteN: 0,
 };
 let _customCache = null;
 const customList = () => { if (_customCache === null) _customCache = loadCustomExercises(); return _customCache; };
 const invalidateCustom = () => { _customCache = null; };
-const getEx = (id) => EXERCISES[id] || customList().find((e) => e.id === id);
-const activeExId = () => LS.get('rehab_active_ex', 'squat');
+const getEx = (id) => {
+  if (id === 'auto') return EXERCISES[state.autoEx] || EXERCISES.squat;
+  return EXERCISES[id] || customList().find((e) => e.id === id);
+};
+const activeExId = () => LS.get('rehab_active_ex', 'auto');   // 默认智能识别
 
 /* ============ AI 模型加载（多镜像 + 超时保护） ============ */
 // jsDelivr 镜像国内访问更快（同仓库文件）；googleapis 作最后兜底
@@ -339,6 +344,33 @@ function showCamPicker() {
   }));
 }
 
+/* ============ 智能动作识别（自动分类，无需手动选动作） ============ */
+function classifyAuto(lms) {
+  const L = { shoulder: 11, hip: 23, knee: 25, ankle: 27, elbow: 13, wrist: 15 };
+  const R = { shoulder: 12, hip: 24, knee: 26, ankle: 28, elbow: 14, wrist: 16 };
+  const ka = (S) => angle3(lms[S.hip], lms[S.knee], lms[S.ankle]);
+  const kL = ka(L), kR = ka(R);
+  const kneeMin = Math.min(kL, kR), kneeMax = Math.max(kL, kR), kneeDiff = kneeMax - kneeMin;
+  const s = pickSide(lms);
+  const lean = verticalAngle(lms[s.shoulder], lms[s.hip]);
+  const hipA = angle3(lms[s.shoulder], lms[s.hip], lms[s.knee]);
+  const elbow = angle3(lms[s.shoulder], lms[s.elbow], lms[s.wrist]);
+  const armRaised = (lms[s.shoulder].y - lms[s.wrist].y) > 0.18;   // 手腕明显高于肩膀
+  const wristNearShoulder = Math.abs(lms[s.wrist].x - lms[s.shoulder].x) < 0.18;
+  const bodyLow = lms[s.hip].y > 0.58;
+
+  if (lean > 55) {                                   // 躯干接近水平
+    if (elbow < 140 && wristNearShoulder && bodyLow && kneeMin > 110) return 'pushup';
+    return 'hiphinge';                               // 弯腰搬物
+  }
+  if (kneeDiff > 35) {                               // 单腿发力
+    return kneeMax > 150 ? 'stepup' : 'lunge';
+  }
+  if (kneeMin < 115) return 'squat';                 // 双腿下蹲（深蹲/椅子起坐）
+  if (armRaised && elbow > 150) return 'shoulderraise';
+  return 'squat';
+}
+
 /* ============ 界面：动作选择 + 统计 ============ */
 function featureNames(ex) {
   if (ex.id === 'squat') return ['knee', 'hip', 'lean', 'valgus'];
@@ -353,16 +385,21 @@ function featureNames(ex) {
 const exStd = (e) => (e.custom ? t('stdCustom') : t(e.stdKey || 'stdCustom'));
 function renderExChips() {
   const custom = customList();
-  const ids = ['squat', 'lunge', 'pushup', 'sitstand', 'hiphinge', 'stepup', 'shoulderraise', ...custom.map((e) => e.id)];
+  const ids = ['auto', 'squat', 'lunge', 'pushup', 'sitstand', 'hiphinge', 'stepup', 'shoulderraise', ...custom.map((e) => e.id)];
   $('ex-chips').innerHTML = ids.map((id) => {
-    const e = EXERCISES[id] || custom.find((x) => x.id === id);
+    const e = id === 'auto' ? { nameKey: 'chipAuto', icon: 'target' } : (EXERCISES[id] || custom.find((x) => x.id === id));
     return `<button class="chip ${id === activeExId() ? 'on' : ''}" data-ex="${id}"><span class="chip-ico">${icon(e.icon)}</span><span>${exName(e)}</span></button>`;
   }).join('') + `<button class="chip plus" id="chip-add"><span class="chip-ico">${icon('plus')}</span><span>${t('chipAdd')}</span></button>`;
   $('ex-chips').querySelectorAll('.chip[data-ex]').forEach((b) =>
     b.addEventListener('click', () => { LS.set('rehab_active_ex', b.dataset.ex); switchEx(); }));
   $('chip-add').addEventListener('click', () => { openCustomForm(null); switchTab('settings'); });
   const ex = getEx(activeExId());
-  $('ex-desc').innerHTML = ex ? exDesc(ex) + '<br><span class="std">' + exStd(ex) + '</span>' : '';
+  if (ex) {
+    const autoLabel = activeExId() === 'auto' ? `<span class="std">✨ ${t('autoDetected', { name: exName(ex) })}</span><br>` : '';
+    $('ex-desc').innerHTML = autoLabel + exDesc(ex) + '<br><span class="std">' + exStd(ex) + '</span>';
+  } else {
+    $('ex-desc').innerHTML = '';
+  }
   renderGoal();
 }
 // 训练页「今日目标」进度条（与康复计划联动）
@@ -551,6 +588,27 @@ function loop() {
     return;
   }
   state.missingFrames = 0;
+
+  // 智能识别模式：每帧投票，稳定后自动切换分析引擎（不重置计数）
+  if (activeExId() === 'auto') {
+    const cls = classifyAuto(lms);
+    state.autoVotes[cls] = (state.autoVotes[cls] || 0) + 1;
+    state.autoVoteN++;
+    if (state.autoVoteN >= 12) {
+      const winner = Object.entries(state.autoVotes).sort((a, b) => b[1] - a[1])[0][0];
+      if (winner !== state.autoEx) {
+        state.autoEx = winner;
+        const nex = EXERCISES[winner];
+        state.counter.ex = winner;
+        state.counter.d = nex.rep.downBelow;
+        state.counter.u = nex.rep.upAbove;
+        state.statsKey = null;                       // 统计卡下一帧按新动作重建
+        renderExChips();
+        renderCollectLabels(getEx('auto'));
+      }
+      state.autoVotes = {}; state.autoVoteN = 0;
+    }
+  }
   const ex = getEx(activeExId());
   const res = analyzeAny(lms, ex);
   state.lastResult = res;
@@ -740,6 +798,8 @@ $('photo-input').addEventListener('change', async (ev) => {
       $('feedback').className = 'feedback warn';
       return;
     }
+    // 智能识别模式：照片也自动分类一次
+    if (activeExId() === 'auto') state.autoEx = classifyAuto(lms);
     const ex = getEx(activeExId());
     const res = analyzeAny(lms, ex);
     state.lastResult = res;
@@ -1906,6 +1966,22 @@ async function selfTest() {
     const side = base(); side[23].visibility = 0; side[25].visibility = 0; side[27].visibility = 0;
     const miss2 = bodyMissing(side);
     log(t('stBodySide'), miss2.length === 0, miss2.join(',') || 'OK');
+    // 11. 智能识别分类（5 种合成姿势）
+    const mkPose = (mutate) => { const b = base(); mutate(b); return b; };
+    const squatP = mkPose((b) => { [23, 24].forEach((i) => { b[i].x = 0.5; b[i].y = 0.55; }); [25, 26].forEach((i) => { b[i].x = 0.62; b[i].y = 0.70; }); });
+    const hingeP = mkPose((b) => { [11, 12].forEach((i) => { b[i].x = 0.25; b[i].y = 0.5; }); });
+    const pushP = mkPose((b) => {
+      [11, 12].forEach((i) => { b[i].x = 0.20; b[i].y = 0.75; });
+      [13, 14].forEach((i) => { b[i].x = 0.28; b[i].y = 0.82; });
+      [15, 16].forEach((i) => { b[i].x = 0.20; b[i].y = 0.90; });
+      [23, 24].forEach((i) => { b[i].x = 0.50; b[i].y = 0.75; });
+      [25, 26].forEach((i) => { b[i].x = 0.62; b[i].y = 0.75; });
+      [27, 28].forEach((i) => { b[i].x = 0.80; b[i].y = 0.75; });
+    });
+    const stepP = mkPose((b) => { b[26].x = 0.68; b[26].y = 0.58; });
+    const raiseP = mkPose((b) => { b[14].x = 0.58; b[14].y = 0.12; b[16].x = 0.58; b[16].y = 0.03; });
+    const autoRes = [classifyAuto(squatP), classifyAuto(hingeP), classifyAuto(pushP), classifyAuto(stepP), classifyAuto(raiseP)];
+    log(t('stAutoClass'), autoRes.join(',') === 'squat,hiphinge,pushup,stepup,shoulderraise', autoRes.join(','));
     out.innerHTML += `<div class="st-pass" style="margin-top:8px;font-weight:800">${t('stAllPass')}</div>`;
     console.log('SELFTEST: ALL PASS');
   } catch (e) {

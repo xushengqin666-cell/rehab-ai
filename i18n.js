@@ -28,6 +28,7 @@ const DICT = {
     bodyCutOff: '身体没有完全入镜 —— 画面里看不到：{parts}',
     bodyCutOffHint: '请后退几步，让全身（头到脚）都出现在画面里',
     stBodyCheck: '身体完整性检测', stBodySide: '侧面遮挡不误报',
+    stAutoClass: '智能识别分类（5 动作）',
     photoNoPerson: '图片里没检测到人，换一张试试',
     photoFail: '图片分析失败：{msg}',
     toastNeedPerson: '先让画面检测到人', toastLabeled: '已记录: {label}',
@@ -73,6 +74,7 @@ const DICT = {
     riskSway: '⚠️ 身体晃动，注意稳定',
     alarmTitle: '🚨 危险动作警报',
     chipAdd: '自定义',
+    chipAuto: '✨ 智能识别', autoDetected: '智能识别为：{name}（可点上方动作手动锁定）',
     // 椅子起坐
     ssDepthOk: '起坐幅度合适', ssDeep: '坐得过深，注意控制', ssShallow: '没坐下去，再深一点',
     // 搬重物
@@ -272,6 +274,7 @@ const DICT = {
     bodyCutOff: 'Body not fully in frame — can\'t see: {parts}',
     bodyCutOffHint: 'Step back so your whole body (head to feet) fits in the frame',
     stBodyCheck: 'Body-in-frame check', stBodySide: 'Side-view occlusion ignored',
+    stAutoClass: 'Auto classification (5 exercises)',
     photoNoPerson: 'No person found in this image — try another one',
     photoFail: 'Photo analysis failed: {msg}',
     toastNeedPerson: 'Step into the frame first', toastLabeled: 'Recorded: {label}',
@@ -315,6 +318,7 @@ const DICT = {
     riskSway: '⚠️ Body swaying — stay stable',
     alarmTitle: '🚨 DANGER ALERT',
     chipAdd: 'Custom',
+    chipAuto: '✨ Auto detect', autoDetected: 'Auto-detected: {name} (tap an exercise to lock it)',
     // 椅子起坐
     ssDepthOk: 'Sit depth good', ssDeep: 'Sitting too deep — control it', ssShallow: 'Not down far enough',
     // 搬重物

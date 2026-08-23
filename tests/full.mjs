@@ -236,7 +236,7 @@ await send('Page.navigate', { url: APP });
 await sleep(2500);
 await evl(`document.querySelector('.bottom-nav button[data-tab="settings"]').click()`);
 await sleep(200);
-(await evl(`document.getElementById('about-version').textContent.includes('v2.13')`)) ? ok('版本号显示') : bad('版本号失败');
+(await evl(`document.getElementById('about-version').textContent.includes('v2.14')`)) ? ok('版本号显示') : bad('版本号失败');
 (await evl(`document.getElementById('tab-settings').textContent.includes('隐私政策') && document.getElementById('tab-settings').textContent.includes('免责声明')`)) ? ok('隐私政策 + 免责声明') : bad('法务文案缺失');
 await evl(`document.getElementById('btn-share').click()`);
 await sleep(400);
