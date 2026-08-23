@@ -77,10 +77,10 @@ const remTime = await evl(`document.getElementById('rem-time').value`);
 remTime === '18:00' ? ok('提醒时间默认 18:00') : fail('提醒时间: ' + remTime);
 
 // 云配置
-// 账号卡片 + 登录屏
+// 账号卡片 + 登录屏（开发模式解锁配置入口）
 const hasAccount = await evl(`!!document.getElementById('account-avatar')`);
 hasAccount ? ok('设置页顶部账号卡片存在') : fail('账号卡片缺失');
-await evl(`document.getElementById('btn-config-server').click()`);
+await evl(`document.getElementById('btn-config-server').classList.remove('hidden'); document.getElementById('btn-config-server').click()`);
 await sleep(250);
 await evl(`document.getElementById('auth-url').value='https://fake.supabase.co'; document.getElementById('auth-key').value='fake-key-123'; document.getElementById('btn-auth-cfg-save').click()`);
 await sleep(300);

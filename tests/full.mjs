@@ -177,8 +177,8 @@ await sleep(400);
 console.log('===== 10. 账号系统（本地账号 + 登录屏 + mock Supabase） =====');
 // 启动即应显示登录屏（未登录 + 未跳过）
 (await evl(`!document.getElementById('auth-screen').classList.contains('hidden')`)) ? ok('启动即显示登录页') : bad('登录页未在启动时出现');
-// 首次配置服务器（登录屏内）
-await evl(`document.getElementById('btn-auth-cfg-toggle').click()`);
+// 首次配置服务器（登录屏内，测试用开发入口解锁）
+await evl(`document.getElementById('btn-auth-cfg-toggle').classList.remove('hidden'); document.getElementById('btn-auth-cfg-toggle').click()`);
 await sleep(250);
 await evl(`document.getElementById('auth-url').value='http://127.0.0.1:8555'; document.getElementById('auth-key').value='test-anon-key'; document.getElementById('btn-auth-cfg-save').click()`);
 await sleep(300);
@@ -236,7 +236,7 @@ await send('Page.navigate', { url: APP });
 await sleep(2500);
 await evl(`document.querySelector('.bottom-nav button[data-tab="settings"]').click()`);
 await sleep(200);
-(await evl(`document.getElementById('about-version').textContent.includes('v2.8')`)) ? ok('版本号显示') : bad('版本号失败');
+(await evl(`document.getElementById('about-version').textContent.includes('v2.13')`)) ? ok('版本号显示') : bad('版本号失败');
 (await evl(`document.getElementById('tab-settings').textContent.includes('隐私政策') && document.getElementById('tab-settings').textContent.includes('免责声明')`)) ? ok('隐私政策 + 免责声明') : bad('法务文案缺失');
 await evl(`document.getElementById('btn-share').click()`);
 await sleep(400);

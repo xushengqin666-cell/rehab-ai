@@ -1558,7 +1558,10 @@ setInterval(() => {
 }, 30000);
 
 /* ============ 云同步（Supabase 账号系统） ============ */
-const cloudCfg = () => LS.get('rehab_cloud', null);
+// ★ 写死配置位：把 Supabase 项目信息填进这里（如 { url: 'https://xxx.supabase.co', anonKey: 'eyJ...' }），
+//   云端同步即刻对所有用户生效，用户界面不会出现任何配置项。填 null 时云端功能待启用。
+const CLOUD_HARDCODED = null;
+const cloudCfg = () => CLOUD_HARDCODED || LS.get('rehab_cloud', null);
 const cloudSession = () => LS.get('rehab_cloud_session', null);
 async function cloudReq(path, opts = {}, cfg) {
   const s = cloudSession();
@@ -1669,7 +1672,8 @@ function renderCloud() {
   $('btn-cloud-sync').classList.toggle('hidden', !s);
   $('btn-cloud-logout').classList.toggle('hidden', !(s || localUser));
   $('btn-open-login').classList.toggle('hidden', !!(s || localUser));
-  $('btn-config-server').classList.toggle('hidden', !!cfg);
+  // 配置入口默认对用户隐藏：密钥写死后用户永远看不到；
+  // 开发模式（?cfg=1）或云端未配置时由下方逻辑控制，普通用户界面保持纯净
 }
 // 登录屏：未登录账号 → 启动即显示（真实 App 体验）；访客模式跳过后不再打扰
 function renderAuth() {
@@ -1888,6 +1892,11 @@ renderProfile(); renderReminder(); renderCloud(); renderAuth();
 renderTodayPlan(); renderPlanList();
 renderVoice();
 showOnboard();
+// 开发模式：?cfg=1 显示配置入口（普通用户永远看不到；密钥写死后由 CLOUD_HARDCODED 生效）
+if (location.search.includes('cfg')) {
+  $('btn-auth-cfg-toggle').classList.remove('hidden');
+  $('btn-config-server').classList.remove('hidden');
+}
 $('btn-collect-label').textContent = t('btnCollect');
 setStartBtn('btnStart', 'play');
 // 登录用户：启动后自动同步一次；版本更新检测（每天一次）
