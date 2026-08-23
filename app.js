@@ -7,6 +7,7 @@ import {
   customDefault, CUSTOM_JOINTS, angle3, kneeValgus, pickSide, setCustomKey,
   verticalAngle,
 } from './analysis.js';
+import { healthCheck, buildFeedbackReport, logAiError, aiErrors, aiStats, aiStatsGet, aiFeedbackAdd } from './ai.js';
 
 /* ============ 基础工具 ============ */
 const $ = (id) => document.getElementById(id);
@@ -73,7 +74,7 @@ function migrateDeviceData(email) {
 }
 const fmtDate = (ts) => new Date(ts).toLocaleString(locale(), { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-const APP_VERSION = 'v2.15.0';
+const APP_VERSION = 'v2.16.0';
 const exName = (e) => (e.custom ? e.name : t(e.nameKey));
 const exDesc = (e) => (e.custom ? e.desc : t(e.descKey));
 const depthTxt = (d) => t('depth' + (d ? d.charAt(0).toUpperCase() + d.slice(1) : 'Ok')) || d;
@@ -286,6 +287,8 @@ function showCameraError(e, modelFail = false) {
   box.classList.remove('hidden');
   state._lastCamErr = e;
   state._lastCamIsModel = modelFail;
+  aiStats(modelFail ? 'modelFail' : 'cameraFail');      // AI 管家记录诊断
+  logAiError(modelFail ? 'model' : 'camera', (e && (e.message || e.name)) || 'unknown');
   const cams = state.cameras || [];
   const camBtns = !modelFail && cams.length > 1
     ? `<div class="retry-row">${t('retryCams', { n: cams.length })}${
@@ -1768,6 +1771,8 @@ async function fetchLatest() {
         version: String(j.version).replace(/^v/, ''),
         apk: j.apk || '',
         releaseUrl: j.releaseUrl || 'https://github.com/xushengqin666-cell/rehab-ai/releases/latest',
+        notes: j.notes || '',
+        important: !!j.important,
       };
     }
   } catch { /* 回退 */ }
@@ -1778,7 +1783,7 @@ async function fetchLatest() {
       const tag = String(j.tag_name || '').replace(/^v/, '');
       if (tag) {
         const apkAsset = (j.assets || []).find((a) => /\.apk$/i.test(a.name || ''));
-        return { version: tag, apk: apkAsset ? apkAsset.browser_download_url : '', releaseUrl: j.html_url || '' };
+        return { version: tag, apk: apkAsset ? apkAsset.browser_download_url : '', releaseUrl: j.html_url || '', notes: String(j.body || '').split('\n')[0].slice(0, 120), important: false };
       }
     }
   } catch { /* 忽略 */ }
@@ -1791,7 +1796,7 @@ function showUpdateCard(info) {
   fb.classList.remove('hidden');
   fb.innerHTML = fbWrap('download', `
     <b>${t('updTitle', { v: info.version })}</b>
-    <div class="hint">${t('updDesc')}</div>
+    <div class="hint">${info.notes ? info.notes : t('updDesc')}</div>
     <div class="upd-actions">
       <button id="btn-upd-now" class="btn small primary"><span class="btn-ico">${icon('download')}</span><span>${t('updBtnNow')}</span></button>
       <button id="btn-upd-later" class="btn small"><span>${t('updBtnLater')}</span></button>
@@ -1810,6 +1815,23 @@ async function applyUpdate(info, manual) {
       if (!info.apk) throw new Error('no apk url');
       const upd = window.Capacitor.Plugins.AutoUpdater;
       try { upd.addListener('progress', (p) => toast(t('updDownloading', { p: p.percent }))); } catch { /* 无进度回调也兼容 */ }
+      if (!manual) {
+        // 全自动：静默下载 → 空闲时自动唤起安装
+        toast(t('updDownloading', { p: 0 }));
+        const r = await upd.download({ url: info.apk });
+        if (r && r.ready) {
+          if (!state.running) { await upd.install({}); return; }
+          updState.pendingInstall = true;        // 训练中 → 等空闲再装
+          updState.installWatch = setInterval(async () => {
+            if (state.running) return;
+            clearInterval(updState.installWatch);
+            updState.pendingInstall = false;
+            try { await upd.install({}); } catch { showUpdateCard(info); }
+          }, 4000);
+          setTimeout(() => { if (updState.pendingInstall) { clearInterval(updState.installWatch); updState.pendingInstall = false; } }, 600000);
+        } else throw new Error('download failed');
+        return;
+      }
       toast(t('updDownloading', { p: 0 }));
       const r = await upd.downloadAndInstall({ url: info.apk });
       if (r && r.started) {
@@ -1838,8 +1860,11 @@ async function applyUpdate(info, manual) {
   }
 }
 
+const updModeGet = () => LS.get('rehab_upd_mode', 'auto');
+
 async function checkUpdate(manual) {
   if (!manual) {
+    if (updModeGet() === 'off') return;          // 用户关闭自动更新（手动检查仍可用）
     const last = LS.get('rehab_update_check', 0);
     if (Date.now() - last < UPD_DAY) return;    // 自动检查：每天最多一次
     LS.set('rehab_update_check', Date.now());
@@ -1849,15 +1874,141 @@ async function checkUpdate(manual) {
   if (!info) { if (manual) toast(t('updFail')); return; }
   if (verCmp(info.version, APP_VERSION) <= 0) {
     if (manual) toast(t('updLatest', { v: APP_VERSION.replace(/^v/, '') }));
+    updState.info = null;
+    aiRun();                                     // AI 管家刷新（无更新项）
     return;
   }
   updState.info = info;
-  if (!manual && !isAndroidNative() && !state.running) {
-    // 网页版空闲时全自动：静默下载 + 自动重启（安卓版弹卡片，由用户点安装）
+  aiRun();                                       // AI 管家感知新版本
+  const auto = updModeGet() === 'auto';
+  if (!manual && auto && !isAndroidNative() && !state.running) {
+    // 网页版空闲时全自动：静默下载 + 自动重启
     try { await applyUpdate(info, false); } catch { /* 下次再试 */ }
     return;
   }
+  if (!manual && auto && isAndroidNative()) {
+    // 安卓全自动：后台静默下载 → 空闲时唤起安装（不弹卡片）
+    try { await applyUpdate(info, false); } catch { /* 下载失败 → 弹卡片兜底 */ showUpdateCard(info); }
+    return;
+  }
   showUpdateCard(info);
+}
+
+/* ============ AI 系统管家：体检 + 建议 + 反馈收集 ============ */
+const aiEnv = () => {
+  const sessions = sget('rehab_sessions', []);
+  const stats = aiStatsGet();
+  const distMap = {};
+  sessions.forEach((s) => { const k = s.ex || '?'; distMap[k] = (distMap[k] || 0) + (s.reps || 0); });
+  const dist = Object.entries(distMap).map(([ex, reps]) => ({ ex, reps }));
+  const achStats2 = {
+    sessions: sessions.length,
+    reps: sessions.reduce((a, s) => a + (s.reps || 0), 0),
+    streak: calcStreak(sessions),
+    planDays: Object.keys(sget('rehab_plan_done', {})).length,
+    customCount: customList().length,
+    collectCount: state.collectBuf.length,
+  };
+  const ach = ACHIEVEMENTS.reduce((a, x) => a + (x.test(achStats2) ? 1 : 0), 0);
+  const lastTs = sessions.length ? Math.max(...sessions.map((s) => s.ts || 0)) : 0;
+  return {
+    version: APP_VERSION,
+    platform: isAndroidNative() ? 'Android' : 'Web',
+    lang: getLang(),
+    latest: updState.info ? updState.info.version : null,
+    important: !!(updState.info && updState.info.important),
+    sessions,
+    streak: calcStreak(sessions),
+    achievementsTotal: ACHIEVEMENTS.length,
+    achievementsUnlocked: ach,
+    dist,
+    profile: profileGet(),
+    planCount: planGet().length,
+    customCount: loadCustomExercises().length,
+    errors: aiErrors(),
+    cameraFails: stats.cameraFail || 0,
+    modelFails: stats.modelFail || 0,
+    daysSinceTrain: lastTs ? (Date.now() - lastTs) / 86400000 : null,
+  };
+};
+let aiLast = null;
+function aiRun() {
+  const env = aiEnv();
+  aiLast = healthCheck(env);
+  renderAiCard();
+  return aiLast;
+}
+function renderAiCard() {
+  const box = $('ai-card');
+  if (!box || !aiLast) return;
+  const { score, items } = aiLast;
+  const cls = score >= 80 ? 'ok' : (score >= 60 ? 'warn' : 'bad');
+  box.innerHTML = `
+    <div class="ai-head">
+      <div class="ai-score ${cls}"><b>${score}</b><span>/100</span></div>
+      <div class="ai-meta">
+        <b>${t('aiTitle')}</b>
+        <span class="hint">${t('aiSub')}</span>
+      </div>
+    </div>
+    <ul class="ai-items">
+      ${items.slice(0, 4).map((it) => `<li class="ai-item ${it.level}"><span class="ai-ico">${icon(it.icon)}</span><span>${t(it.key, it.args)}</span></li>`).join('')}
+    </ul>
+    <div class="upd-actions">
+      <button id="btn-ai-check" class="btn small"><span class="btn-ico">${icon('refresh')}</span><span>${t('aiBtnCheck')}</span></button>
+      <button id="btn-ai-fb" class="btn small primary"><span class="btn-ico">${icon('custom')}</span><span>${t('aiBtnFeedback')}</span></button>
+    </div>`;
+  $('btn-ai-check').addEventListener('click', () => { aiRun(); toast(t('aiScore') + ': ' + aiLast.score + '/100'); });
+  $('btn-ai-fb').addEventListener('click', openFeedback);
+}
+function openFeedback() {
+  const m = $('fb-modal');
+  m.classList.remove('hidden');
+  const env = aiEnv();
+  const report = buildFeedbackReport(env, fbRating(), $('fb-text').value);
+  $('fb-report').textContent = report.body;
+  $('fb-title-preview').textContent = report.title;
+}
+let fbRating = () => {
+  let v = 5;
+  try { v = JSON.parse(localStorage.getItem('rehab_fb_rating') || '5'); } catch { /* 忽略 */ }
+  return v;
+};
+function renderFbStars() {
+  const r = fbRating();
+  const box = $('fb-stars');
+  box.innerHTML = [1, 2, 3, 4, 5].map((i) => `<button class="fb-star${i <= r ? ' on' : ''}" data-r="${i}">★</button>`).join('');
+  box.querySelectorAll('.fb-star').forEach((b) => b.addEventListener('click', () => {
+    localStorage.setItem('rehab_fb_rating', b.dataset.r);
+    renderFbStars();
+    openFeedback();
+  }));
+}
+function submitFeedback() {
+  const env = aiEnv();
+  const report = buildFeedbackReport(env, fbRating(), $('fb-text').value);
+  aiFeedbackAdd({ rating: fbRating(), text: $('fb-text').value, report: report.body });
+  const url = 'https://github.com/xushengqin666-cell/rehab-ai/issues/new?title='
+    + encodeURIComponent(report.title) + '&body=' + encodeURIComponent(report.body);
+  window.open(url, '_blank');
+  toast(t('aiFbDone'));
+  $('fb-modal').classList.add('hidden');
+}
+function copyFeedback() {
+  const env = aiEnv();
+  const report = buildFeedbackReport(env, fbRating(), $('fb-text').value);
+  navigator.clipboard.writeText(report.title + '\n\n' + report.body).then(() => toast(t('aiFbCopied'))).catch(() => toast(t('shareFail')));
+}
+// 启动后 AI 管家主动提醒一次（仅当有警告级问题）
+function aiProactive() {
+  const hc = aiRun();
+  const warn = hc.items.find((i) => i.level === 'warn');
+  if (warn) setTimeout(() => { if (!$('feedback').classList.contains('hidden')) return; toast(t(warn.key, warn.args)); }, 9000);
+}
+function renderUpdMode() {
+  const sel = $('upd-mode');
+  if (!sel) return;
+  sel.value = updModeGet();
 }
 
 function renderCloud() {
@@ -2086,6 +2237,13 @@ async function selfTest() {
     const vc = verCmp('2.14.0', '2.13.9') === 1 && verCmp('v2.9.1', '2.10.0') === -1
       && verCmp('2.15.0', 'v2.15.0') === 0 && verCmp('2.3.10', '2.3.9') === 1 && verCmp('1.0', '1.0.1') === -1;
     log(t('stVerCmp'), vc, '5 组全部正确');
+    // 13. AI 系统管家：体检 + 反馈报告
+    const aiGood = healthCheck({ version: 'v2.16.0', latest: null, sessions: [{ ts: Date.now(), reps: 20 }], streak: 1, dist: [{ ex: 'squat', reps: 20 }], profile: { name: 'x', goal: 'knee' }, planCount: 1, errors: [], cameraFails: 0, modelFails: 0, daysSinceTrain: 0 });
+    log(t('stAiHealth'), aiGood.score === 100 && aiGood.items.length >= 1, `健康=${aiGood.score}`);
+    const aiBad = healthCheck({ version: 'v2.16.0', latest: null, sessions: [], streak: 0, dist: [], profile: {}, planCount: 0, errors: [{ t: 1, tag: 'js', msg: 'x' }, { t: 2, tag: 'camera', msg: 'y' }], cameraFails: 3, modelFails: 0, daysSinceTrain: 10 });
+    log(t('stAiHealth'), aiBad.score <= 60 && aiBad.items.some((i) => i.level === 'warn'), `健康=${aiBad.score} 建议=${aiBad.items.length}`);
+    const rep = buildFeedbackReport({ version: 'v2.16.0', platform: 'Web', lang: 'zh', sessions: [], streak: 0, dist: [], cameraFails: 0, modelFails: 0, errors: [] }, 5, '很好用');
+    log(t('stAiReport'), rep.body.includes('v2.16.0') && rep.body.includes('系统体检') && rep.body.includes('很好用'), rep.title);
     out.innerHTML += `<div class="st-pass" style="margin-top:8px;font-weight:800">${t('stAllPass')}</div>`;
     console.log('SELFTEST: ALL PASS');
   } catch (e) {
@@ -2127,6 +2285,18 @@ setStartBtn('btnStart', 'play');
 // 登录用户：启动后自动同步一次；自主更新检测（每天一次，空闲时网页版全自动）
 if (cloudCfg() && cloudSession()) setTimeout(() => cloudSync().catch(() => {}), 2500);
 setTimeout(() => checkUpdate(false), 6000);
+// AI 系统管家：启动体检 + 主动提醒 + 全局异常收集
+aiProactive();
+window.addEventListener('error', (ev) => logAiError('js', (ev && (ev.message || ev.type)) || 'unknown'));
+window.addEventListener('unhandledrejection', (ev) => logAiError('promise', (ev && ev.reason && (ev.reason.message || String(ev.reason))) || 'unknown'));
+renderUpdMode();
+$('upd-mode').addEventListener('change', () => { LS.set('rehab_upd_mode', $('upd-mode').value); toast(t('updModeLabel') + ': ' + $('upd-mode').selectedOptions[0].textContent); });
+renderFbStars();
+$('btn-fb-submit').addEventListener('click', submitFeedback);
+$('btn-fb-copy').addEventListener('click', copyFeedback);
+$('btn-fb-close').addEventListener('click', () => $('fb-modal').classList.add('hidden'));
+$('fb-modal').addEventListener('click', (ev) => { if (ev.target === $('fb-modal')) $('fb-modal').classList.add('hidden'); });
+$('fb-text').addEventListener('input', openFeedback);
 // 关于：版本号 + 分享
 $('about-version').textContent = t('versionLabel', { v: APP_VERSION });
 $('btn-check-update').addEventListener('click', () => checkUpdate(true));

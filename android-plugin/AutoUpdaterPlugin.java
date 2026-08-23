@@ -15,11 +15,17 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 
 // 自主更新：下载 APK（jsDelivr/GitHub）到缓存目录 → 唤起系统安装器
+// download()：仅静默下载；install()：打开已下载的包；downloadAndInstall()：两步合一
 @CapacitorPlugin(name = "AutoUpdater")
 public class AutoUpdaterPlugin extends Plugin {
 
-    @PluginMethod
-    public void downloadAndInstall(PluginCall call) {
+    private File apkFile() {
+        File dir = new File(getContext().getCacheDir(), "updates");
+        if (!dir.exists()) dir.mkdirs();
+        return new File(dir, "rehab-update.apk");
+    }
+
+    private void doDownload(PluginCall call, boolean andInstall) {
         String url = call.getString("url");
         if (url == null || url.isEmpty()) {
             call.reject("no url");
@@ -28,9 +34,7 @@ public class AutoUpdaterPlugin extends Plugin {
         new Thread(() -> {
             HttpURLConnection conn = null;
             try {
-                File dir = new File(getContext().getCacheDir(), "updates");
-                if (!dir.exists()) dir.mkdirs();
-                File apk = new File(dir, "rehab-update.apk");
+                File apk = apkFile();
                 conn = (HttpURLConnection) new URL(url).openConnection();
                 conn.setInstanceFollowRedirects(true);
                 conn.setConnectTimeout(15000);
@@ -59,13 +63,10 @@ public class AutoUpdaterPlugin extends Plugin {
                 out.close();
                 in.close();
                 conn.disconnect();
-                Uri uri = FileProvider.getUriForFile(getContext(), getContext().getPackageName() + ".fileprovider", apk);
-                Intent intent = new Intent(Intent.ACTION_VIEW);
-                intent.setDataAndType(uri, "application/vnd.android.package-archive");
-                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                getContext().startActivity(intent);
                 JSObject ret = new JSObject();
-                ret.put("started", true);
+                ret.put("ready", true);
+                ret.put("size", apk.length());
+                if (andInstall) ret.put("started", openInstaller());
                 call.resolve(ret);
             } catch (Exception e) {
                 call.reject(e.getMessage() == null ? "download failed" : e.getMessage());
@@ -73,5 +74,33 @@ public class AutoUpdaterPlugin extends Plugin {
                 if (conn != null) conn.disconnect();
             }
         }).start();
+    }
+
+    private boolean openInstaller() {
+        File apk = apkFile();
+        if (!apk.exists()) return false;
+        Uri uri = FileProvider.getUriForFile(getContext(), getContext().getPackageName() + ".fileprovider", apk);
+        Intent intent = new Intent(Intent.ACTION_VIEW);
+        intent.setDataAndType(uri, "application/vnd.android.package-archive");
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        getContext().startActivity(intent);
+        return true;
+    }
+
+    @PluginMethod
+    public void download(PluginCall call) {
+        doDownload(call, false);
+    }
+
+    @PluginMethod
+    public void install(PluginCall call) {
+        JSObject ret = new JSObject();
+        ret.put("started", openInstaller());
+        call.resolve(ret);
+    }
+
+    @PluginMethod
+    public void downloadAndInstall(PluginCall call) {
+        doDownload(call, true);
     }
 }

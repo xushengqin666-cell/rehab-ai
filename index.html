@@ -399,6 +399,11 @@
     </div>
 
     <div class="card">
+      <h3 data-i18n="aiTitle">AI 系统管家</h3>
+      <div id="ai-card"><div class="hint" data-i18n="aiSub">自动体检本系统，收集反馈，协调更新</div></div>
+    </div>
+
+    <div class="card">
       <h3 data-i18n="aboutTitle">关于</h3>
       <ul class="about">
         <li data-i18n="aboutAi">AI 模型：MediaPipe PoseLandmarker（本地运行，不上传视频）</li>
@@ -416,6 +421,15 @@
         <span class="btn-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 1 0-2.2 6.1M20 5v6h-6"/></svg></span>
         <span data-i18n="btnCheckUpdate">检查更新</span>
       </button>
+      <div class="form" style="margin-top:10px">
+        <label class="hint" for="upd-mode" data-i18n="updModeLabel">更新方式</label>
+        <select id="upd-mode">
+          <option value="auto" data-i18n="updModeAuto">全自动（推荐）</option>
+          <option value="prompt" data-i18n="updModePrompt">提示我选择</option>
+          <option value="off" data-i18n="updModeOff">关闭自动更新</option>
+        </select>
+        <p class="hint tiny" data-i18n="updModeHint">全自动：空闲时静默更新（安卓会先下载，空闲时唤起安装）。</p>
+      </div>
     </div>
 
     <div class="card">
@@ -512,6 +526,28 @@
     <canvas id="qr-canvas" class="qr-canvas"></canvas>
     <p id="qr-page" class="hint" style="text-align:center"></p>
     <button id="qr-close" class="btn block" data-i18n="qrClose">关闭</button>
+  </div>
+</div>
+
+<!-- 意见反馈弹窗（AI 管家自动附体检报告） -->
+<div id="fb-modal" class="modal-overlay hidden">
+  <div class="modal-card">
+    <h3 data-i18n="aiFeedbackTitle">意见反馈</h3>
+    <p class="hint" data-i18n="aiFeedbackHint">你的反馈会直接发给开发者（打开 GitHub 提交）。AI 管家已自动附上系统体检报告。</p>
+    <div class="form">
+      <label class="hint" data-i18n="aiRate">整体评价</label>
+      <div id="fb-stars" class="fb-stars"></div>
+      <textarea id="fb-text" rows="3" data-i18n-ph="aiFbPh" placeholder="说说你的建议、遇到的问题，或想要的新功能…（选填）"></textarea>
+      <details class="fb-report-box">
+        <summary class="hint" data-i18n="aiSub">系统体检报告（自动附带）</summary>
+        <p id="fb-title-preview" class="hint tiny"></p>
+        <pre id="fb-report" class="fb-report"></pre>
+      </details>
+      <button id="btn-fb-submit" class="btn primary block" data-i18n="aiFbSubmit">提交反馈（GitHub）</button>
+      <button id="btn-fb-copy" class="btn block" data-i18n="aiFbCopy">复制报告</button>
+      <button id="btn-fb-close" class="btn block" data-i18n="aiFbClose">关闭</button>
+      <p class="hint tiny" data-i18n="aiFbPrivacy">隐私承诺：只发送上方体检报告和你的评语，绝不包含视频、姓名、邮箱或任何身份信息。</p>
+    </div>
   </div>
 </div>
 

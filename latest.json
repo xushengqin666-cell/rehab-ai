@@ -1,5 +1,7 @@
 {
-  "version": "2.15.0",
-  "apk": "https://cdn.jsdelivr.net/gh/xushengqin666-cell/rehab-ai@main/downloads/RehabAI-v2.15.0.apk",
-  "releaseUrl": "https://github.com/xushengqin666-cell/rehab-ai/releases/latest"
+  "version": "2.16.0",
+  "apk": "https://cdn.jsdelivr.net/gh/xushengqin666-cell/rehab-ai@main/downloads/RehabAI-v2.16.0.apk",
+  "releaseUrl": "https://github.com/xushengqin666-cell/rehab-ai/releases/latest",
+  "notes": "新增 AI 系统管家：自动体检、智能建议、一键反馈；更新方式可自选（全自动/提示/关闭）。",
+  "important": false
 }
