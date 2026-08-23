@@ -74,7 +74,7 @@ function migrateDeviceData(email) {
 }
 const fmtDate = (ts) => new Date(ts).toLocaleString(locale(), { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-const APP_VERSION = 'v2.16.0';
+const APP_VERSION = 'v2.16.1';
 const exName = (e) => (e.custom ? e.name : t(e.nameKey));
 const exDesc = (e) => (e.custom ? e.desc : t(e.descKey));
 const depthTxt = (d) => t('depth' + (d ? d.charAt(0).toUpperCase() + d.slice(1) : 'Ok')) || d;
@@ -2236,12 +2236,12 @@ async function selfTest() {
     // 12. 自主更新：版本比较
     const vc = verCmp('2.14.0', '2.13.9') === 1 && verCmp('v2.9.1', '2.10.0') === -1
       && verCmp('2.15.0', 'v2.15.0') === 0 && verCmp('2.3.10', '2.3.9') === 1 && verCmp('1.0', '1.0.1') === -1;
-    log(t('stVerCmp'), vc, '5 组全部正确');
+    log(t('stVerCmp'), vc, '5/5');
     // 13. AI 系统管家：体检 + 反馈报告
     const aiGood = healthCheck({ version: 'v2.16.0', latest: null, sessions: [{ ts: Date.now(), reps: 20 }], streak: 1, dist: [{ ex: 'squat', reps: 20 }], profile: { name: 'x', goal: 'knee' }, planCount: 1, errors: [], cameraFails: 0, modelFails: 0, daysSinceTrain: 0 });
-    log(t('stAiHealth'), aiGood.score === 100 && aiGood.items.length >= 1, `健康=${aiGood.score}`);
+    log(t('stAiHealth'), aiGood.score === 100 && aiGood.items.length >= 1, `score=${aiGood.score}`);
     const aiBad = healthCheck({ version: 'v2.16.0', latest: null, sessions: [], streak: 0, dist: [], profile: {}, planCount: 0, errors: [{ t: 1, tag: 'js', msg: 'x' }, { t: 2, tag: 'camera', msg: 'y' }], cameraFails: 3, modelFails: 0, daysSinceTrain: 10 });
-    log(t('stAiHealth'), aiBad.score <= 60 && aiBad.items.some((i) => i.level === 'warn'), `健康=${aiBad.score} 建议=${aiBad.items.length}`);
+    log(t('stAiHealth'), aiBad.score <= 60 && aiBad.items.some((i) => i.level === 'warn'), `score=${aiBad.score} items=${aiBad.items.length}`);
     const rep = buildFeedbackReport({ version: 'v2.16.0', platform: 'Web', lang: 'zh', sessions: [], streak: 0, dist: [], cameraFails: 0, modelFails: 0, errors: [] }, 5, '很好用');
     log(t('stAiReport'), rep.body.includes('v2.16.0') && rep.body.includes('系统体检') && rep.body.includes('很好用'), rep.title);
     out.innerHTML += `<div class="st-pass" style="margin-top:8px;font-weight:800">${t('stAllPass')}</div>`;
@@ -2284,7 +2284,7 @@ $('btn-collect-label').textContent = t('btnCollect');
 setStartBtn('btnStart', 'play');
 // 登录用户：启动后自动同步一次；自主更新检测（每天一次，空闲时网页版全自动）
 if (cloudCfg() && cloudSession()) setTimeout(() => cloudSync().catch(() => {}), 2500);
-setTimeout(() => checkUpdate(false), 6000);
+if (!location.search.includes('updatetest')) setTimeout(() => checkUpdate(false), 6000);
 // AI 系统管家：启动体检 + 主动提醒 + 全局异常收集
 aiProactive();
 window.addEventListener('error', (ev) => logAiError('js', (ev && (ev.message || ev.type)) || 'unknown'));
@@ -2352,6 +2352,15 @@ if (/micromessenger/i.test(navigator.userAgent)) {
 }
 // ?autostart=1 → 页面加载后自动开始分析（测试 / 快捷进入用）
 if (location.search.includes('autostart')) setTimeout(() => toggleStart(), 800);
+// ?updatetest=1 → 模拟发现新版本（测试更新卡片 UI + AI 管家更新感知，不真实下载）
+if (location.search.includes('updatetest')) {
+  setTimeout(() => {
+    const fake = { version: '9.9.9', apk: '', releaseUrl: 'https://github.com/xushengqin666-cell/rehab-ai/releases/latest', notes: '测试更新说明 TestNotes', important: true };
+    updState.info = fake;
+    showUpdateCard(fake);
+    aiRun();
+  }, 800);
+}
 // ?modeltest=1 → 自检 AI 模型能否加载（wasm/MIME/路径，供部署验证用）
 if (location.search.includes('modeltest')) {
   (async () => {

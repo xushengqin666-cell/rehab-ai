@@ -52,7 +52,8 @@ export function healthCheck(env) {
   if (cam) score -= Math.min(15, cam * 3);
   if (model) score -= Math.min(15, model * 5);
   const days = e.daysSinceTrain;
-  if (days === null || days === undefined || days >= 7) score -= 15;
+  const noTrain = days === null || days === undefined || days >= 7;
+  if (noTrain) score -= 15;
   const prof = e.profile || {};
   const profOk = prof.name || prof.injury || (prof.goal && prof.goal !== 'other');
   if (!profOk) score -= 8;
@@ -70,7 +71,7 @@ export function healthCheck(env) {
   else if (cam === 1) items.push({ level: 'info', icon: 'camera', key: 'aiCamTip', args: { n: cam } });
   if (model >= 1) items.push({ level: 'warn', icon: 'loader', key: 'aiModelTip', args: {} });
   // 3) 训练习惯
-  if (days >= 7) items.push({ level: 'info', icon: 'flame', key: 'aiTrainEncourage', args: { n: Math.floor(days) } });
+  if (noTrain) items.push({ level: 'info', icon: 'flame', key: 'aiTrainEncourage', args: { n: Math.max(7, Math.floor(days || 0)) } });
   if (e.streak >= 7) items.push({ level: 'praise', icon: 'flame', key: 'aiStreak7', args: { n: e.streak } });
   else if (e.streak >= 3) items.push({ level: 'praise', icon: 'flame', key: 'aiStreak', args: { n: e.streak } });
   // 4) 成就临近

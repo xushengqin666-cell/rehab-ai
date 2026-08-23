@@ -1,5 +1,5 @@
 // 康复AI 端到端冒烟测试（CDP）：中文默认 + 英文切换 + 自测 + 模型加载验证
-const CDP_HTTP = 'http://127.0.0.1:' + (process.env.RH_CDP_PORT || '9223');
+const CDP_HTTP = 'http://127.0.0.1:' + (process.env.RH_CDP_PORT || '9228');
 const APP = 'http://127.0.0.1:8000/index.html';
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const fail = (msg) => { console.log(msg + ' -> FAIL'); process.exitCode = 1; };

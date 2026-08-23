@@ -266,6 +266,21 @@ await evl(`document.getElementById('upd-mode').value = 'prompt'; document.getEle
 await sleep(200);
 (await evl(`JSON.parse(localStorage.getItem('rehab_upd_mode')) === 'prompt'`)) ? ok('更新方式可切换并保存') : bad('更新方式保存失败');
 
+console.log('===== 15. 更新卡片 UI（模拟新版本） =====');
+await send('Page.navigate', { url: APP + '?updatetest=1' });
+await sleep(2500);
+(await evl(`document.getElementById('feedback').textContent.includes('9.9.9')`)) ? ok('更新卡片：新版本号显示') : bad('更新卡片版本号失败');
+(await evl(`document.getElementById('feedback').textContent.includes('TestNotes')`)) ? ok('更新卡片：版本说明显示') : bad('更新说明失败');
+(await evl(`!!document.getElementById('btn-upd-now') && !!document.getElementById('btn-upd-later')`)) ? ok('更新卡片：两个按钮齐全') : bad('更新按钮缺失');
+await evl(`document.getElementById('btn-upd-later').click()`);
+await sleep(200);
+(await evl(`document.getElementById('feedback').classList.contains('hidden')`)) ? ok('「稍后再说」关闭卡片') : bad('稍后按钮失败');
+await send('Page.navigate', { url: APP + '?updatetest=1' });
+await sleep(2500);
+await evl(`document.querySelector('.bottom-nav button[data-tab="settings"]').click()`);
+await sleep(300);
+(await evl(`document.getElementById('ai-card').textContent.includes('9.9.9')`)) ? ok('AI 管家感知新版本（重要更新）') : bad('AI 未感知新版本');
+
 console.log('===== 结果 =====');
 console.log('CONSOLE_ERRORS:', consoleErrors.length ? consoleErrors.join(' ||| ') : 'none');
 if (consoleErrors.length) failN++;
