@@ -73,7 +73,7 @@ function migrateDeviceData(email) {
 }
 const fmtDate = (ts) => new Date(ts).toLocaleString(locale(), { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-const APP_VERSION = 'v2.14.0';
+const APP_VERSION = 'v2.15.0';
 const exName = (e) => (e.custom ? e.name : t(e.nameKey));
 const exDesc = (e) => (e.custom ? e.desc : t(e.descKey));
 const depthTxt = (d) => t('depth' + (d ? d.charAt(0).toUpperCase() + d.slice(1) : 'Ok')) || d;
@@ -110,6 +110,8 @@ const ICONS = {
   flame: '<path d="M12 3.5c1 3-2.5 4.5-2.5 8a2.5 2.5 0 0 0 5 0c0-1.5-.5-2.5-.5-2.5 2.5 1 5 3.5 5 6.5a7 7 0 1 1-14 0c0-4.5 4-6.5 7-9.5Z"/>',
   flask: '<path d="M9.5 3.5h5M10.5 3.5v5L5.5 17a2.5 2.5 0 0 0 2.2 3.7h8.6a2.5 2.5 0 0 0 2.2-3.7L13.5 8.5v-5M7.5 14.5h9"/>',
   lock: '<rect x="5.5" y="10.5" width="13" height="9.5" rx="2.2"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"/>',
+  download: '<path d="M12 4v10m0 0-4-4m4 4 4-4M5 19h14"/>',
+  refresh: '<path d="M20 11a8 8 0 1 0-2.2 6.1M20 5v6h-6"/>',
   bell: '<path d="M6 9.5a6 6 0 0 1 12 0c0 4 1.5 5.5 1.5 5.5h-15S6 13.5 6 9.5Z"/><path d="M10 18.5a2 2 0 0 0 4 0"/>',
   cloud: '<path d="M7 18a4.5 4.5 0 0 1-.6-8.95A6 6 0 0 1 18 9.7 4 4 0 0 1 17.5 18Z"/>',
 };
@@ -1739,25 +1741,123 @@ $('btn-ob-next').addEventListener('click', () => {
   else closeOnboard();
 });
 $('btn-ob-skip').addEventListener('click', closeOnboard);
-// 新版本检测（每天一次，静默）
-async function checkUpdate() {
-  const last = LS.get('rehab_update_check', 0);
-  if (Date.now() - last < 86400000) return;
-  LS.set('rehab_update_check', Date.now());
+/* ============ 自主更新（自动检查 → 网页版自动重启 / 安卓版下载安装） ============ */
+function verCmp(a, b) {
+  const pa = String(a).replace(/^v/, '').split('.').map((n) => parseInt(n, 10) || 0);
+  const pb = String(b).replace(/^v/, '').split('.').map((n) => parseInt(n, 10) || 0);
+  const len = Math.max(pa.length, pb.length);
+  for (let i = 0; i < len; i++) {
+    const x = pa[i] || 0, y = pb[i] || 0;
+    if (x > y) return 1;
+    if (x < y) return -1;
+  }
+  return 0;
+}
+const UPDATE_JSON = 'https://cdn.jsdelivr.net/gh/xushengqin666-cell/rehab-ai@main/latest.json';
+const UPDATE_GH = 'https://api.github.com/repos/xushengqin666-cell/rehab-ai/releases/latest';
+const UPD_DAY = 86400000;
+const updState = { info: null, swReg: null, waiting: false, autoApply: false, applied: false };
+
+async function fetchLatest() {
+  // 优先 jsDelivr（国内可访问），失败回退 GitHub API
   try {
-    const r = await fetch('https://api.github.com/repos/xushengqin666-cell/rehab-ai/releases/latest');
-    if (!r.ok) return;
-    const j = await r.json();
-    const latest = String(j.tag_name || '').replace(/^v/, '');
-    const cur = APP_VERSION.replace(/^v/, '');
-    if (latest && latest !== cur && latest > cur) {
-      const fb = $('feedback');
-      fb.classList.remove('hidden');
-      fb.innerHTML = fbWrap('check', `<b>${t('updateAvailable', { v: latest })}</b> — <a href="${j.html_url}" target="_blank" rel="noopener">${t('updateGo')}</a>`);
-      fb.className = 'feedback';
-      fb._last = null;
+    const r = await fetch(UPDATE_JSON, { cache: 'no-store' });
+    if (r.ok) {
+      const j = await r.json();
+      if (j && j.version) return {
+        version: String(j.version).replace(/^v/, ''),
+        apk: j.apk || '',
+        releaseUrl: j.releaseUrl || 'https://github.com/xushengqin666-cell/rehab-ai/releases/latest',
+      };
     }
-  } catch { /* 网络失败忽略 */ }
+  } catch { /* 回退 */ }
+  try {
+    const r = await fetch(UPDATE_GH);
+    if (r.ok) {
+      const j = await r.json();
+      const tag = String(j.tag_name || '').replace(/^v/, '');
+      if (tag) {
+        const apkAsset = (j.assets || []).find((a) => /\.apk$/i.test(a.name || ''));
+        return { version: tag, apk: apkAsset ? apkAsset.browser_download_url : '', releaseUrl: j.html_url || '' };
+      }
+    }
+  } catch { /* 忽略 */ }
+  return null;
+}
+const isAndroidNative = () => !!(window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.AutoUpdater);
+
+function showUpdateCard(info) {
+  const fb = $('feedback');
+  fb.classList.remove('hidden');
+  fb.innerHTML = fbWrap('download', `
+    <b>${t('updTitle', { v: info.version })}</b>
+    <div class="hint">${t('updDesc')}</div>
+    <div class="upd-actions">
+      <button id="btn-upd-now" class="btn small primary"><span class="btn-ico">${icon('download')}</span><span>${t('updBtnNow')}</span></button>
+      <button id="btn-upd-later" class="btn small"><span>${t('updBtnLater')}</span></button>
+    </div>`);
+  fb.className = 'feedback';
+  fb._last = null;
+  $('btn-upd-later').addEventListener('click', () => fb.classList.add('hidden'));
+  $('btn-upd-now').addEventListener('click', () => applyUpdate(info, true));
+}
+
+async function applyUpdate(info, manual) {
+  const btn = $('btn-upd-now');
+  if (btn) { btn.disabled = true; btn.querySelector('span').textContent = '…'; }
+  if (isAndroidNative()) {                      // 安卓 App：下载 APK 并唤起系统安装
+    try {
+      if (!info.apk) throw new Error('no apk url');
+      const upd = window.Capacitor.Plugins.AutoUpdater;
+      try { upd.addListener('progress', (p) => toast(t('updDownloading', { p: p.percent }))); } catch { /* 无进度回调也兼容 */ }
+      toast(t('updDownloading', { p: 0 }));
+      const r = await upd.downloadAndInstall({ url: info.apk });
+      if (r && r.started) {
+        toast(t('updInstalling'));
+        setTimeout(() => toast(t('updNeedPerm')), 600);
+      } else {
+        toast(t('updFail'));
+        window.open(info.releaseUrl, '_blank');
+      }
+    } catch {
+      toast(t('updFail'));
+      if (info.releaseUrl) window.open(info.releaseUrl, '_blank');
+    }
+    return;
+  }
+  // 网页版：Service Worker 下载新版本 → 自动切换 → 自动重启
+  if (updState.swReg) {
+    toast(t('updRestarting'));
+    updState.autoApply = true;
+    try { await updState.swReg.update(); } catch { /* 忽略 */ }
+    setTimeout(() => {                          // 15 秒后仍未切换 → 打开下载页兜底
+      if (!updState.applied && info.releaseUrl) window.open(info.releaseUrl, '_blank');
+    }, 15000);
+  } else if (info.releaseUrl) {
+    window.open(info.releaseUrl, '_blank');
+  }
+}
+
+async function checkUpdate(manual) {
+  if (!manual) {
+    const last = LS.get('rehab_update_check', 0);
+    if (Date.now() - last < UPD_DAY) return;    // 自动检查：每天最多一次
+    LS.set('rehab_update_check', Date.now());
+  }
+  if (manual) toast(t('updChecking'));
+  const info = await fetchLatest();
+  if (!info) { if (manual) toast(t('updFail')); return; }
+  if (verCmp(info.version, APP_VERSION) <= 0) {
+    if (manual) toast(t('updLatest', { v: APP_VERSION.replace(/^v/, '') }));
+    return;
+  }
+  updState.info = info;
+  if (!manual && !isAndroidNative() && !state.running) {
+    // 网页版空闲时全自动：静默下载 + 自动重启（安卓版弹卡片，由用户点安装）
+    try { await applyUpdate(info, false); } catch { /* 下次再试 */ }
+    return;
+  }
+  showUpdateCard(info);
 }
 
 function renderCloud() {
@@ -1982,6 +2082,10 @@ async function selfTest() {
     const raiseP = mkPose((b) => { b[14].x = 0.58; b[14].y = 0.12; b[16].x = 0.58; b[16].y = 0.03; });
     const autoRes = [classifyAuto(squatP), classifyAuto(hingeP), classifyAuto(pushP), classifyAuto(stepP), classifyAuto(raiseP)];
     log(t('stAutoClass'), autoRes.join(',') === 'squat,hiphinge,pushup,stepup,shoulderraise', autoRes.join(','));
+    // 12. 自主更新：版本比较
+    const vc = verCmp('2.14.0', '2.13.9') === 1 && verCmp('v2.9.1', '2.10.0') === -1
+      && verCmp('2.15.0', 'v2.15.0') === 0 && verCmp('2.3.10', '2.3.9') === 1 && verCmp('1.0', '1.0.1') === -1;
+    log(t('stVerCmp'), vc, '5 组全部正确');
     out.innerHTML += `<div class="st-pass" style="margin-top:8px;font-weight:800">${t('stAllPass')}</div>`;
     console.log('SELFTEST: ALL PASS');
   } catch (e) {
@@ -2020,11 +2124,12 @@ if (location.search.includes('cfg')) {
 }
 $('btn-collect-label').textContent = t('btnCollect');
 setStartBtn('btnStart', 'play');
-// 登录用户：启动后自动同步一次；版本更新检测（每天一次）
+// 登录用户：启动后自动同步一次；自主更新检测（每天一次，空闲时网页版全自动）
 if (cloudCfg() && cloudSession()) setTimeout(() => cloudSync().catch(() => {}), 2500);
-setTimeout(checkUpdate, 6000);
+setTimeout(() => checkUpdate(false), 6000);
 // 关于：版本号 + 分享
 $('about-version').textContent = t('versionLabel', { v: APP_VERSION });
+$('btn-check-update').addEventListener('click', () => checkUpdate(true));
 $('btn-share').addEventListener('click', async () => {
   const url = location.href;
   try {
@@ -2039,18 +2144,31 @@ $('btn-share').addEventListener('click', async () => {
     catch { toast(t('shareFail')); }
   }
 });
-// PWA：可安装到主屏幕 + 离线可用 + 新版本提示
+// PWA：可安装到主屏幕 + 离线可用 + 自主更新（新版就绪 → 自动切换 → 自动重启）
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('./sw.js').then((reg) => {
+      updState.swReg = reg;
       reg.addEventListener('updatefound', () => {
         const nw = reg.installing;
         if (!nw) return;
+        updState.waiting = true;
         nw.addEventListener('statechange', () => {
-          if (nw.state === 'installed' && navigator.serviceWorker.controller) toast(t('swUpdate'));
+          if (nw.state !== 'installed' || !navigator.serviceWorker.controller) return;
+          if (updState.autoApply) {
+            nw.postMessage({ type: 'SKIP_WAITING' });   // 立即接管，马上生效
+          } else {
+            toast(t('swUpdate'));                        // 有更新但训练中 → 只提示
+          }
         });
       });
     }).catch(() => {});
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (!updState.autoApply) return;                   // 仅自主更新时自动重启
+      updState.applied = true;
+      toast(t('updAutoDone', { v: updState.info ? updState.info.version : '' }));
+      setTimeout(() => location.reload(), 800);
+    });
   });
 }
 if (location.hash === '#selftest') selfTest();

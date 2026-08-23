@@ -140,6 +140,8 @@ main { max-width: 560px; margin: 0 auto; }
 }
 .fb-action .btn-ico svg { width: 14px; height: 14px; }
 .feedback { flex-wrap: wrap; }
+.upd-actions { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+.upd-actions .btn-ico svg { width: 14px; height: 14px; }
 
 /* 按钮 */
 .controls { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }

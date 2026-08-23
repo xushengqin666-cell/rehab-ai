@@ -236,11 +236,17 @@ await send('Page.navigate', { url: APP });
 await sleep(2500);
 await evl(`document.querySelector('.bottom-nav button[data-tab="settings"]').click()`);
 await sleep(200);
-(await evl(`document.getElementById('about-version').textContent.includes('v2.14')`)) ? ok('版本号显示') : bad('版本号失败');
+(await evl(`document.getElementById('about-version').textContent.includes('v2.15')`)) ? ok('版本号显示') : bad('版本号失败');
 (await evl(`document.getElementById('tab-settings').textContent.includes('隐私政策') && document.getElementById('tab-settings').textContent.includes('免责声明')`)) ? ok('隐私政策 + 免责声明') : bad('法务文案缺失');
 await evl(`document.getElementById('btn-share').click()`);
 await sleep(400);
 (await evl(`document.getElementById('toast') ? document.getElementById('toast').textContent.includes('复制') : false`)) ? ok('分享按钮（复制链接）') : bad('分享失败');
+
+console.log('===== 13. 自主更新 =====');
+(await evl(`!!document.getElementById('btn-check-update')`)) ? ok('「检查更新」按钮存在') : bad('检查更新按钮缺失');
+await evl(`document.getElementById('btn-check-update').click()`);
+await sleep(4500);
+(await evl(`(() => { const t = document.getElementById('toast'); return t && /更新|最新|update|Update/i.test(t.textContent); })()`)) ? ok('检查更新有反馈（离线时优雅失败）') : bad('检查更新无反馈');
 
 console.log('===== 结果 =====');
 console.log('CONSOLE_ERRORS:', consoleErrors.length ? consoleErrors.join(' ||| ') : 'none');
