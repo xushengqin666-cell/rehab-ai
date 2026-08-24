@@ -213,6 +213,13 @@ await evl(`document.getElementById('auth-email').value='fulltest@t.com'; documen
 await sleep(2000);
 (await evl(`document.getElementById('auth-screen').classList.contains('hidden')`)) ? ok('重新登录直接进入主界面') : bad('重新登录失败');
 (await evl(`(() => { const u = JSON.parse(localStorage.getItem('rehab_current_user')); return JSON.parse(localStorage.getItem('u:' + u + ':rehab_sessions')).length; })() === 1`)) ? ok('登录后账号数据自动恢复(云端拉回)') : bad('账号数据未恢复');
+// 删除账号（Play 政策要求）：确认弹窗 → 数据清除 + 回登录页
+await evl(`document.querySelector('.bottom-nav button[data-tab="settings"]').click()`);
+await sleep(200);
+await evl(`document.getElementById('btn-delete-account').click()`);
+await sleep(800);
+(await evl(`(() => { const u = JSON.parse(localStorage.getItem('rehab_current_user') || 'null'); const acc = JSON.parse(localStorage.getItem('rehab_accounts') || '{}'); return u === null && localStorage.getItem('u:fulltest@t.com:rehab_sessions') === null && !acc['fulltest@t.com']; })()`)) ? ok('删除账号：数据清除 + 账号注销') : bad('删除账号失败');
+(await evl(`!document.getElementById('auth-screen').classList.contains('hidden')`)) ? ok('删除后回到登录页') : bad('删除后未回登录页');
 
 console.log('===== 11. 二维码同步 + 警报 UI + PWA + 微信提示 =====');
 await send('Page.navigate', { url: APP + '?synctest=1' });

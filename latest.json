@@ -1,7 +1,7 @@
 {
-  "version": "2.17.2",
-  "apk": "https://cdn.jsdelivr.net/gh/xushengqin666-cell/rehab-ai@main/downloads/RehabAI-v2.17.2.apk",
+  "version": "2.17.3",
+  "apk": "https://cdn.jsdelivr.net/gh/xushengqin666-cell/rehab-ai@main/downloads/RehabAI-v2.17.3.apk",
   "releaseUrl": "https://github.com/xushengqin666-cell/rehab-ai/releases/latest",
-  "notes": "识别更稳（投票防抖，不再来回跳）；腿伸直坐姿也能识别；训练提醒错过会补发；安卓通知权限修复。",
+  "notes": "上架合规：新增「删除账号」入口（Google Play 政策要求）、隐私政策删除链接、上架指南更新 2026 新规（12 人封闭测试）。",
   "important": false
 }

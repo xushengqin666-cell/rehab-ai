@@ -57,6 +57,24 @@ function accountLogout() {
   localStorage.removeItem('rehab_guest');
   setCustomKey(ukey('rehab_custom_ex'));
 }
+// 删除账号：清除该账号全部分区数据 + 账号条目（Google Play 政策要求提供账号删除入口）
+function accountDelete() {
+  const u = accountCurrent();
+  if (!u) return;
+  const prefix = 'u:' + u + ':';
+  Object.keys(localStorage).forEach((k) => { if (k.startsWith(prefix)) localStorage.removeItem(k); });
+  const list = accounts();
+  delete list[u];
+  LS.set('rehab_accounts', list);
+  localStorage.removeItem('rehab_migrated_to');
+  accountLogout();
+  localStorage.removeItem('rehab_cloud_session');
+  invalidateCustom();
+  renderCloud(); renderAuth();
+  renderRecords(); renderAssessments(); renderAppts(); renderCustomList(); renderExChips();
+  renderProfile(); renderTodayPlan(); renderPlanList(); renderAchievements(); renderCollectCount(); renderGoal();
+  toast(t('acctDeleted'));
+}
 // 首次注册账号时，把本机原有数据迁移进账号空间
 function migrateDeviceData(email) {
   if (LS.get('rehab_migrated_to', null)) return;
@@ -74,7 +92,7 @@ function migrateDeviceData(email) {
 }
 const fmtDate = (ts) => new Date(ts).toLocaleString(locale(), { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-const APP_VERSION = 'v2.17.2';
+const APP_VERSION = 'v2.17.3';
 const exName = (e) => (e.custom ? e.name : t(e.nameKey));
 const exDesc = (e) => (e.custom ? e.desc : t(e.descKey));
 const depthTxt = (d) => t('depth' + (d ? d.charAt(0).toUpperCase() + d.slice(1) : 'Ok')) || d;
@@ -2171,6 +2189,7 @@ function renderCloud() {
   $('btn-cloud-sync').classList.toggle('hidden', !s);
   $('btn-cloud-logout').classList.toggle('hidden', !(s || localUser));
   $('btn-open-login').classList.toggle('hidden', !!(s || localUser));
+  $('btn-delete-account').classList.toggle('hidden', !localUser);
   // 配置入口默认对用户隐藏：密钥写死后用户永远看不到；
   // 开发模式（?cfg=1）或云端未配置时由下方逻辑控制，普通用户界面保持纯净
 }
@@ -2254,6 +2273,12 @@ $('btn-cloud-logout').addEventListener('click', () => {
   renderProfile(); renderTodayPlan(); renderPlanList(); renderAchievements(); renderCollectCount(); renderGoal();
   renderAuth();
   toast(t('toastLogout'));
+});
+$('btn-delete-account').addEventListener('click', () => {
+  const u = accountCurrent();
+  if (!u) return;
+  if (!confirm(t('acctDeleteConfirm', { e: u }))) return;
+  accountDelete();
 });
 
 /* ============ 语音播报（系统 TTS，离线可用） ============ */

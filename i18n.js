@@ -296,6 +296,8 @@ const DICT = {
     updModeLabel: '更新方式', updModeAuto: '全自动（推荐）', updModePrompt: '提示我选择', updModeOff: '关闭自动更新',
     updModeHint: '全自动：空闲时静默更新（安卓会先下载，空闲时唤起安装）。',
     toastLogout: '已退出登录',
+    btnDeleteAccount: '删除账号', acctDeleteConfirm: '确定删除账号 {e} 吗？该账号在本机的全部数据（训练记录、计划、资料）将永久删除，无法恢复。',
+    acctDeleted: '账号已删除，数据已清除',
     // 自测
     stAngle: 'angle3 直角=90°', stSquat: '深蹲分析返回特征', stValgus: '内扣检测触发',
     stCounter: '计数状态机 down→up', stDebounce: '计数防抖（间隔内不重计）',
@@ -581,6 +583,8 @@ const DICT = {
     updModeLabel: 'Update mode', updModeAuto: 'Fully automatic (recommended)', updModePrompt: 'Ask me first', updModeOff: 'Off',
     updModeHint: 'Automatic: silent updates when idle (Android downloads first, installs when idle).',
     toastLogout: 'Logged out',
+    btnDeleteAccount: 'Delete account', acctDeleteConfirm: 'Delete account {e}? All local data for this account (sessions, plans, profile) will be permanently erased and cannot be recovered.',
+    acctDeleted: 'Account deleted and data erased',
     stAngle: 'angle3 right angle = 90°', stSquat: 'Squat analysis returns features', stValgus: 'Valgus detection triggers',
     stCounter: 'Rep state machine down→up', stDebounce: 'Rep debounce (no double-count in gap)',
     stLunge: 'Lunge analysis', stPushup: 'Push-up analysis', stCustom: 'Custom exercise analysis', stCustomRule: 'Custom rule bad triggers',
