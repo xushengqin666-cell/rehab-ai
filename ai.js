@@ -45,7 +45,9 @@ export function healthCheck(env) {
   const items = [];
   let score = 100;
 
-  const errs = e.errors || [];
+  // 错误只看近 7 天（老问题不应永久扣分；反馈报告仍附最近 5 条）
+  const week = Date.now() - 7 * 86400000;
+  const errs = (e.errors || []).filter((x) => x && x.t > week);
   const cam = e.cameraFails || 0;
   const model = e.modelFails || 0;
   if (errs.length) score -= Math.min(20, errs.length * 4);

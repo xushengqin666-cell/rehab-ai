@@ -74,7 +74,7 @@ function migrateDeviceData(email) {
 }
 const fmtDate = (ts) => new Date(ts).toLocaleString(locale(), { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-const APP_VERSION = 'v2.17.0';
+const APP_VERSION = 'v2.17.1';
 const exName = (e) => (e.custom ? e.name : t(e.nameKey));
 const exDesc = (e) => (e.custom ? e.desc : t(e.descKey));
 const depthTxt = (d) => t('depth' + (d ? d.charAt(0).toUpperCase() + d.slice(1) : 'Ok')) || d;
@@ -485,6 +485,7 @@ const ctx = $('overlay').getContext('2d');
 function resetAgg() {
   const ex = getEx(activeExId());
   state.counter = { state: 'up', reps: 0, ex: ex.id, d: ex.rep.downBelow, u: ex.rep.upAbove, belowT: 0, lastRepTs: 0, confirmMs: 120, minGapMs: 350, holdMs: 0, lastHoldTs: 0, wasBad: false };
+  state.autoHist = [];                 // 新会话清空运动历史（避免上一次训练的位移污染静止/运动判定）
   state.agg = { frames: 0, startTS: Date.now(), depth: {}, badFrames: 0, valgusFrames: 0, riskFrames: 0 };
   state.lastResult = null;
   state.statsKey = null;
@@ -510,13 +511,12 @@ function counterUpdate(c, value, ts = performance.now()) {
   }
   return c.reps;
 }
-// 保持型动作（站姿/坐姿）：姿态合格的时间才累计，满 30 秒计 1 次
+// 保持型动作（站姿/坐姿）：只有姿态合格的时间才累计，满 30 秒计 1 次（姿势崩了计时暂停）
 function counterHold(ex, res, ts) {
   const c = state.counter;
-  if (c.lastHoldTs) c.holdMs += ts - c.lastHoldTs;
-  c.lastHoldTs = ts;
   const bad = res.depth !== 'ok' || res.msgsIsBad;
-  if (bad && !c.wasBad) c.holdMs = Math.max(0, c.holdMs - 3000);   // 姿势崩了扣 3 秒（每次连续崩只扣一次）
+  if (c.lastHoldTs && !c.wasBad) c.holdMs += ts - c.lastHoldTs;
+  c.lastHoldTs = ts;
   c.wasBad = bad;
   if (c.holdMs >= ex.rep.holdMs) { c.holdMs -= ex.rep.holdMs; c.reps++; }
   return c.reps;
@@ -549,9 +549,11 @@ function partVisible(lms, i) {
   const inFrame = lm.x > 0.02 && lm.x < 0.98 && lm.y > 0.02 && lm.y < 0.98;
   return vis >= 0.4 && inFrame;
 }
-function bodyMissing(lms) {
+function bodyMissing(lms, ex) {
   const s = pickSide(lms);
-  const need = [[s.shoulder, 'jShoulder'], [s.hip, 'jHip'], [s.knee, 'jKnee'], [s.ankle, 'jAnkle']];
+  // 坐姿检查：脚常被书桌/办公桌挡住，不把脚踝算作缺失
+  const need = [[s.shoulder, 'jShoulder'], [s.hip, 'jHip'], [s.knee, 'jKnee']];
+  if (!ex || ex.id !== 'sitting') need.push([s.ankle, 'jAnkle']);
   const miss = new Set();
   for (const [i, k] of need) if (!partVisible(lms, i)) miss.add(t(k));
   return [...miss];
@@ -618,8 +620,10 @@ function loop() {
   drawStick(ctx, lms, cw, ch, true);
 
   // 身体完整性检测：关键部位没照全 → 持续 ~5 帧才提醒（防单帧误判闪烁），并暂停分析
-  const missingParts = bodyMissing(lms);
-  if (missingParts.length) {
+  // 智能识别模式例外：只有脚踝没照到时不暂停（坐姿时脚常在桌下），让投票切到坐姿分析
+  const missingParts = bodyMissing(lms, getEx(activeExId()));
+  const autoAnkleOnly = activeExId() === 'auto' && missingParts.length === 1 && missingParts[0] === t('jAnkle');
+  if (missingParts.length && !autoAnkleOnly) {
     state.missingFrames = (state.missingFrames || 0) + 1;
     if (state.missingFrames < 5) { kickLoop(); return; }
     const msg = fbWrap('alert', t('bodyCutOff', { parts: missingParts.join('、') }) + '<br>' + t('bodyCutOffHint'));
@@ -847,15 +851,20 @@ $('photo-input').addEventListener('change', async (ev) => {
     }
     const lms = result.landmarks[0];
     currentVG = kneeValgus(lms);
-    // 身体完整性：关键部位没照全 → 提醒，不做分析
-    const missingParts = bodyMissing(lms);
-    if (missingParts.length) {
+    // 身体完整性：关键部位没照全 → 提醒，不做分析（智能识别模式下仅缺脚踝可放行）
+    const missingParts = bodyMissing(lms, getEx(activeExId()));
+    const autoAnkleOnly = activeExId() === 'auto' && missingParts.length === 1 && missingParts[0] === t('jAnkle');
+    if (missingParts.length && !autoAnkleOnly) {
       $('feedback').innerHTML = fbWrap('alert', t('bodyCutOff', { parts: missingParts.join('、') }) + '<br>' + t('bodyCutOffHint'));
       $('feedback').className = 'feedback warn';
       return;
     }
-    // 智能识别模式：照片也自动分类一次
-    if (activeExId() === 'auto') state.autoEx = classifyAuto(lms);
+    // 智能识别模式：照片按「静止体态」分类一次（照片没有运动历史，站姿/坐姿检查才是照片的典型用途）
+    if (activeExId() === 'auto') {
+      const tN = performance.now();
+      const y = (lms[23].y + lms[24].y) / 2;
+      state.autoEx = classifyAuto(lms, [0, 1, 2, 3, 4].map((i) => ({ y, t: tN - 1000 + i * 200 })), tN);
+    }
     const ex = getEx(activeExId());
     const res = analyzeAny(lms, ex);
     state.lastResult = res;
@@ -2377,10 +2386,25 @@ async function selfTest() {
     // 13. AI 系统管家：体检 + 反馈报告
     const aiGood = healthCheck({ version: 'v2.16.0', latest: null, sessions: [{ ts: Date.now(), reps: 20 }], streak: 1, dist: [{ ex: 'squat', reps: 20 }], profile: { name: 'x', goal: 'knee' }, planCount: 1, errors: [], cameraFails: 0, modelFails: 0, daysSinceTrain: 0 });
     log(t('stAiHealth'), aiGood.score === 100 && aiGood.items.length >= 1, `score=${aiGood.score}`);
-    const aiBad = healthCheck({ version: 'v2.16.0', latest: null, sessions: [], streak: 0, dist: [], profile: {}, planCount: 0, errors: [{ t: 1, tag: 'js', msg: 'x' }, { t: 2, tag: 'camera', msg: 'y' }], cameraFails: 3, modelFails: 0, daysSinceTrain: 10 });
+    const aiBad = healthCheck({ version: 'v2.16.0', latest: null, sessions: [], streak: 0, dist: [], profile: {}, planCount: 0, errors: [{ t: Date.now(), tag: 'js', msg: 'x' }, { t: Date.now(), tag: 'camera', msg: 'y' }], cameraFails: 3, modelFails: 0, daysSinceTrain: 10 });
     log(t('stAiHealth'), aiBad.score <= 60 && aiBad.items.some((i) => i.level === 'warn'), `score=${aiBad.score} items=${aiBad.items.length}`);
     const rep = buildFeedbackReport({ version: 'v2.16.0', platform: 'Web', lang: 'zh', sessions: [], streak: 0, dist: [], cameraFails: 0, modelFails: 0, errors: [] }, 5, '很好用');
     log(t('stAiReport'), rep.body.includes('v2.16.0') && rep.body.includes('系统体检') && rep.body.includes('很好用'), rep.title);
+    // 14. 保持计时器：合格时间才累计 + 连续不合格暂停
+    const holdC = { reps: 0, holdMs: 29000, lastHoldTs: tN, wasBad: false };
+    const savedCounter = state.counter;
+    state.counter = holdC;
+    counterHold(EXERCISES.standing, { depth: 'ok', msgsIsBad: false }, tN + 1500);
+    const okHold = holdC.reps === 1 && holdC.holdMs === 500;
+    counterHold(EXERCISES.standing, { depth: 'bad', msgsIsBad: true }, tN + 1900);
+    const h1 = holdC.holdMs;
+    counterHold(EXERCISES.standing, { depth: 'bad', msgsIsBad: true }, tN + 2400);
+    const pauseHold = holdC.holdMs === h1;
+    state.counter = savedCounter;
+    log(t('stHoldTimer'), okHold && pauseHold, `reps=${holdC.reps} hold=${holdC.holdMs}`);
+    // 15. AI 错误 7 天窗口：老错误不再扣分
+    const oldErr = healthCheck({ version: APP_VERSION, latest: null, sessions: [{ ts: Date.now(), reps: 5 }], streak: 1, dist: [{ ex: 'squat', reps: 5 }], profile: { name: 'x', goal: 'knee' }, planCount: 1, errors: [{ t: Date.now() - 8 * 86400000, tag: 'js', msg: 'old' }], cameraFails: 0, modelFails: 0, daysSinceTrain: 0 });
+    log(t('stErrWindow'), oldErr.score === 100, `score=${oldErr.score}`);
     out.innerHTML += `<div class="st-pass" style="margin-top:8px;font-weight:800">${t('stAllPass')}</div>`;
     console.log('SELFTEST: ALL PASS');
   } catch (e) {
