@@ -74,7 +74,7 @@ function migrateDeviceData(email) {
 }
 const fmtDate = (ts) => new Date(ts).toLocaleString(locale(), { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-const APP_VERSION = 'v2.17.1';
+const APP_VERSION = 'v2.17.2';
 const exName = (e) => (e.custom ? e.name : t(e.nameKey));
 const exDesc = (e) => (e.custom ? e.desc : t(e.descKey));
 const depthTxt = (d) => t('depth' + (d ? d.charAt(0).toUpperCase() + d.slice(1) : 'Ok')) || d;
@@ -167,7 +167,7 @@ const state = {
   ex: null, collectBuf: sget('rehab_collect', []),
   cameras: null, pickCam: undefined,
   tab: 'train', statsKey: null, loopScheduled: false,
-  autoEx: 'squat', autoVotes: {}, autoVoteN: 0, autoHist: [],
+  autoEx: 'squat', autoVotes: {}, autoVoteN: 0, autoHist: [], autoLast4: [],
 };
 let _customCache = null;
 const customList = () => { if (_customCache === null) _customCache = loadCustomExercises(); return _customCache; };
@@ -382,8 +382,9 @@ function classifyAuto(lms, hist, now) {
     if (wristNearShoulder && kneeMin > 110) return 'pushup';   // 含平板支撑（直臂）
     return 'hiphinge';
   }
-  // —— 静止坐姿：髋在坐高、膝中等弯曲(80–130°)、躯干较直立 ——
-  if (yRange < 0.05 && hipY > 0.45 && hipY < 0.75 && kneeMin >= 80 && kneeMin <= 130 && lean < 25) return 'sitting';
+  // —— 静止坐姿：髋在坐高、膝中等弯曲(80–130°)或双腿前伸、躯干较直立 ——
+  const legsOut = kneeMin > 150 && Math.abs(lms[s.ankle].y - hipY) < 0.15;   // 腿伸直坐（踝接近髋高）
+  if (yRange < 0.05 && hipY > 0.45 && hipY < 0.75 && lean < 25 && ((kneeMin >= 80 && kneeMin <= 130) || legsOut)) return 'sitting';
   // —— 运动：动态动作 ——
   if (yRange >= 0.05) {
     if (kneeDiff > 35) return kneeMax > 150 ? 'stepup' : 'lunge';
@@ -395,6 +396,15 @@ function classifyAuto(lms, hist, now) {
   if (lean > 45 && kneeMin > 130) return 'hiphinge';   // 搬物静止保持
   if (kneeMin < 115) return 'squat';                   // 深蹲底部保持/椅子起坐停顿
   return 'standing';                                   // 自然站立/行走停顿
+}
+// 投票裁决：得票率 ≥66% 且最近 4 帧全是赢家 → 返回赢家 id，否则 null（防抖）
+function autoSwitchOk(votes, last4) {
+  if (!votes || !Object.keys(votes).length) return null;
+  const winner = Object.entries(votes).sort((a, b) => b[1] - a[1])[0][0];
+  const total = Object.values(votes).reduce((a, b) => a + b, 0);
+  const margin = votes[winner] / Math.max(1, total);
+  const streakOk = (last4 || []).length >= 4 && last4.every((c) => c === winner);
+  return margin >= 0.66 && streakOk ? winner : null;
 }
 
 /* ============ 界面：动作选择 + 统计 ============ */
@@ -635,6 +645,7 @@ function loop() {
   state.missingFrames = 0;
 
   // 智能识别模式：每帧投票，稳定后自动切换分析引擎（不重置计数）
+  // 防抖：得票率 ≥66% 且最近 4 帧连续一致才切换，避免动作交替时来回跳
   if (activeExId() === 'auto') {
     state.autoHist = state.autoHist || [];
     state.autoHist.push({ y: (lms[23].y + lms[24].y) / 2, t: ts });
@@ -642,9 +653,12 @@ function loop() {
     const cls = classifyAuto(lms, state.autoHist, ts);
     state.autoVotes[cls] = (state.autoVotes[cls] || 0) + 1;
     state.autoVoteN++;
+    state.autoLast4 = state.autoLast4 || [];
+    state.autoLast4.push(cls);
+    if (state.autoLast4.length > 4) state.autoLast4.shift();
     if (state.autoVoteN >= 12) {
-      const winner = Object.entries(state.autoVotes).sort((a, b) => b[1] - a[1])[0][0];
-      if (winner !== state.autoEx) {
+      const winner = autoSwitchOk(state.autoVotes, state.autoLast4);
+      if (winner && winner !== state.autoEx) {
         const prevHold = (EXERCISES[state.autoEx] || {}).rep?.hold;
         state.autoEx = winner;
         const nex = EXERCISES[winner];
@@ -1713,12 +1727,27 @@ setInterval(() => {
   const [h, m] = r.time.split(':').map(Number);
   if (now.getHours() === h && now.getMinutes() === m && LS.get('rehab_remind_today') !== now.toDateString()) {
     LS.set('rehab_remind_today', now.toDateString());
-    const left = planForToday().filter((p) => !(planDoneGet()[todayKeyStr()] || []).includes(p.ex)).length;
-    const msg = left ? t('remindMsgPlan', { n: left }) : t('remindMsg');
-    if (Notification.permission === 'granted') { try { new Notification(t('appTitle'), { body: msg }); } catch { /* ignore */ } }
-    toast(msg);
+    fireReminder();
   }
 }, 30000);
+function fireReminder() {
+  const left = planForToday().filter((p) => !(planDoneGet()[todayKeyStr()] || []).includes(p.ex)).length;
+  const msg = left ? t('remindMsgPlan', { n: left }) : t('remindMsg');
+  if ('Notification' in window && Notification.permission === 'granted') { try { new Notification(t('appTitle'), { body: msg }); } catch { /* ignore */ } }
+  toast(msg);
+}
+// 补发：今天错过了提醒时间，打开 App 时补一次（不再等到明天）
+function reminderCatchUp() {
+  const r = remGet();
+  if (!r.on || !r.time) return;
+  const now = new Date();
+  const [h, m] = r.time.split(':').map(Number);
+  const due = new Date(now); due.setHours(h, m, 0, 0);
+  if (now >= due && LS.get('rehab_remind_today') !== now.toDateString()) {
+    LS.set('rehab_remind_today', now.toDateString());
+    fireReminder();
+  }
+}
 
 /* ============ 云同步（Supabase 账号系统） ============ */
 // ★ 写死配置位：把 Supabase 项目信息填进这里（如 { url: 'https://xxx.supabase.co', anonKey: 'eyJ...' }），
@@ -2095,7 +2124,7 @@ function aiSessionEnd() {
   const reps = (state.counter && state.counter.reps) || 0;
   if (!(reps > 0 || secs >= 30)) return;              // 太短/没计数 → 不打扰
   const quality = frames > 30 ? Math.round((1 - (agg.badFrames || 0) / frames) * 100) : null;
-  const comment = aiSessionComment({ reps, quality, riskEvents: agg.riskFrames || 0, seconds: secs });
+  const comment = aiSessionComment({ reps, quality, riskEvents: agg.riskFrames || 0, seconds: secs }, !!(ex.rep && ex.rep.hold));
   const ex = state.counter && state.counter.ex ? getEx(state.counter.ex) : getEx(activeExId());
   const fb = $('feedback');
   fb.classList.remove('hidden');
@@ -2405,6 +2434,21 @@ async function selfTest() {
     // 15. AI 错误 7 天窗口：老错误不再扣分
     const oldErr = healthCheck({ version: APP_VERSION, latest: null, sessions: [{ ts: Date.now(), reps: 5 }], streak: 1, dist: [{ ex: 'squat', reps: 5 }], profile: { name: 'x', goal: 'knee' }, planCount: 1, errors: [{ t: Date.now() - 8 * 86400000, tag: 'js', msg: 'old' }], cameraFails: 0, modelFails: 0, daysSinceTrain: 0 });
     log(t('stErrWindow'), oldErr.score === 100, `score=${oldErr.score}`);
+    // 16. 智能识别投票防抖：66% 票数 + 连续 4 帧
+    const v1 = autoSwitchOk({ squat: 10, lunge: 2 }, ['squat', 'squat', 'squat', 'squat']) === 'squat';
+    const v2 = autoSwitchOk({ squat: 7, lunge: 5 }, ['lunge', 'squat', 'lunge', 'squat']) === null;
+    const v3 = autoSwitchOk({ squat: 10, lunge: 2 }, ['lunge', 'lunge', 'lunge', 'lunge']) === null;
+    log(t('stAutoVote'), v1 && v2 && v3, '3 组裁决');
+    // 17. 腿伸直坐姿识别 + 体态小结专属文案
+    const sitLegs = mkPose((b) => {
+      [23, 24].forEach((i) => { b[i].x = 0.42; b[i].y = 0.52; });
+      [25, 26].forEach((i) => { b[i].x = 0.55; b[i].y = 0.52; });
+      [27, 28].forEach((i) => { b[i].x = 0.66; b[i].y = 0.52; });
+      [11, 12].forEach((i) => { b[i].x = 0.44; b[i].y = 0.24; });
+    });
+    const sitLegsCls = classifyAuto(sitLegs, still(0.52), tN);
+    const holdComment = aiSessionComment({ reps: 0, quality: null, riskEvents: 0 }, true);
+    log(t('stAutoPosture'), sitLegsCls === 'sitting' && holdComment.key === 'aiSessHoldNone', `${sitLegsCls},${holdComment.key}`);
     out.innerHTML += `<div class="st-pass" style="margin-top:8px;font-weight:800">${t('stAllPass')}</div>`;
     console.log('SELFTEST: ALL PASS');
   } catch (e) {
@@ -2436,6 +2480,7 @@ renderProfile(); renderReminder(); renderCloud(); renderAuth();
 renderTodayPlan(); renderPlanList();
 renderVoice();
 showOnboard();
+setTimeout(reminderCatchUp, 4000);            // 错过提醒时间 → 打开时补一次
 // 开发模式：?cfg=1 显示配置入口（普通用户永远看不到；密钥写死后由 CLOUD_HARDCODED 生效）
 if (location.search.includes('cfg')) {
   $('btn-auth-cfg-toggle').classList.remove('hidden');

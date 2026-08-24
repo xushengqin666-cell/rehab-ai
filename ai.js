@@ -95,10 +95,10 @@ export function healthCheck(env) {
 }
 
 /* ============ 训练小结建议（停止分析后 AI 点评） ============ */
-// stats: { reps, quality(0-100|null), riskEvents, seconds }
-export function aiSessionComment(stats) {
+// stats: { reps, quality(0-100|null), riskEvents, seconds }；hold=true 为体态保持类动作
+export function aiSessionComment(stats, hold = false) {
   const s = stats || {};
-  if (!(s.reps > 0)) return { key: 'aiSessNone', args: {} };
+  if (!(s.reps > 0)) return { key: hold ? 'aiSessHoldNone' : 'aiSessNone', args: {} };
   if (s.riskEvents >= 3) return { key: 'aiSessRisk', args: { n: s.riskEvents } };
   if (s.quality != null && s.quality < 70) return { key: 'aiSessLowQ', args: { q: Math.round(s.quality) } };
   if (s.reps >= 30) return { key: 'aiSessGreat', args: { n: s.reps } };

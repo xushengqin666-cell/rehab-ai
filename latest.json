@@ -1,7 +1,7 @@
 {
-  "version": "2.17.1",
-  "apk": "https://cdn.jsdelivr.net/gh/xushengqin666-cell/rehab-ai@main/downloads/RehabAI-v2.17.1.apk",
+  "version": "2.17.2",
+  "apk": "https://cdn.jsdelivr.net/gh/xushengqin666-cell/rehab-ai@main/downloads/RehabAI-v2.17.2.apk",
   "releaseUrl": "https://github.com/xushengqin666-cell/rehab-ai/releases/latest",
-  "notes": "体验优化：坐姿桌下不误报、照片自动识别人物体态、保持计时只算合格时间、AI 错误按 7 天窗口计算、iPhone 安装支持。",
+  "notes": "识别更稳（投票防抖，不再来回跳）；腿伸直坐姿也能识别；训练提醒错过会补发；安卓通知权限修复。",
   "important": false
 }

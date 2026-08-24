@@ -33,6 +33,7 @@ const DICT = {
     stStanding: '站姿分析', stSitting: '坐姿分析', stAutoPosture: '智能识别·静止姿态（站/坐）',
     stAiHealth: 'AI 体检评分与建议', stAiReport: 'AI 反馈报告生成', stAiSess: 'AI 训练小结建议',
     stHoldTimer: '保持计时器（合格才累计）', stErrWindow: 'AI 错误 7 天窗口',
+    stAutoVote: '智能识别投票防抖',
     photoNoPerson: '图片里没检测到人，换一张试试',
     photoFail: '图片分析失败：{msg}',
     toastNeedPerson: '先让画面检测到人', toastLabeled: '已记录: {label}',
@@ -280,6 +281,7 @@ const DICT = {
     // 训练小结
     aiSessTitle: '本次训练小结', aiSessLine: '{ex} × {n} 次 · 质量 {q}%',
     aiSessNone: '这次没计数到动作——把全身放进画面、动作幅度做大一点再试一次',
+    aiSessHoldNone: '体态保持 30 秒才计 1 次——注意看要领提示，姿势合格的时间才会累计',
     aiSessRisk: '本次触发 {n} 次受伤风险警报！请放慢动作、减轻负重，疼痛立即停止并咨询理疗师',
     aiSessLowQ: '动作质量 {q}%，注意看画面里的要领提示，宁可少做几个也别做错',
     aiSessGreat: '本次 {n} 次，状态很棒！训练完记得放松拉伸',
@@ -328,6 +330,7 @@ const DICT = {
     stStanding: 'Standing analysis', stSitting: 'Sitting analysis', stAutoPosture: 'Auto detect · static poses (stand/sit)',
     stAiHealth: 'AI health check', stAiReport: 'AI feedback report', stAiSess: 'AI session comment',
     stHoldTimer: 'Hold timer (good time only)', stErrWindow: 'AI 7-day error window',
+    stAutoVote: 'Auto-vote debounce',
     photoNoPerson: 'No person found in this image — try another one',
     photoFail: 'Photo analysis failed: {msg}',
     toastNeedPerson: 'Step into the frame first', toastLabeled: 'Recorded: {label}',
@@ -563,6 +566,7 @@ const DICT = {
     // Session summary
     aiSessTitle: 'Session summary', aiSessLine: '{ex} × {n} reps · quality {q}%',
     aiSessNone: 'No reps counted this time — keep your whole body in frame and make bigger movements',
+    aiSessHoldNone: 'Hold 30 s for 1 rep — watch the on-screen cues; only good-posture time counts',
     aiSessRisk: '{n} injury-risk alarms this session! Slow down, reduce load, and see a physio if you feel pain',
     aiSessLowQ: 'Quality {q}% — watch the on-screen cues; better fewer correct reps than many wrong ones',
     aiSessGreat: '{n} reps — great job! Stretch and recover after training',
