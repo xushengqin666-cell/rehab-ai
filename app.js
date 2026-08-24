@@ -92,7 +92,7 @@ function migrateDeviceData(email) {
 }
 const fmtDate = (ts) => new Date(ts).toLocaleString(locale(), { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-const APP_VERSION = 'v2.17.3';
+const APP_VERSION = 'v2.17.4';
 const exName = (e) => (e.custom ? e.name : t(e.nameKey));
 const exDesc = (e) => (e.custom ? e.desc : t(e.descKey));
 const depthTxt = (d) => t('depth' + (d ? d.charAt(0).toUpperCase() + d.slice(1) : 'Ok')) || d;
@@ -1867,34 +1867,53 @@ const UPDATE_JSON = 'https://cdn.jsdelivr.net/gh/xushengqin666-cell/rehab-ai@mai
 const UPDATE_GH = 'https://api.github.com/repos/xushengqin666-cell/rehab-ai/releases/latest';
 const UPD_DAY = 86400000;
 const updState = { info: null, swReg: null, waiting: false, autoApply: false, applied: false };
+// 双源裁决：版本更高者胜；版本相同时优先 jsDelivr 的 APK 链接（国内可下载）
+function pickLatest(best, info) {
+  if (!info) return best;
+  if (!best) return info;
+  const c = verCmp(info.version, best.version);
+  if (c > 0) return info;
+  if (c === 0 && info.apk && info.apk.includes('jsdelivr') && !(best.apk || '').includes('jsdelivr')) return info;
+  return best;
+}
 
 async function fetchLatest() {
-  // 优先 jsDelivr（国内可访问），失败回退 GitHub API
-  try {
-    const r = await fetch(UPDATE_JSON, { cache: 'no-store' });
-    if (r.ok) {
-      const j = await r.json();
-      if (j && j.version) return {
-        version: String(j.version).replace(/^v/, ''),
-        apk: j.apk || '',
-        releaseUrl: j.releaseUrl || 'https://github.com/xushengqin666-cell/rehab-ai/releases/latest',
-        notes: j.notes || '',
-        important: !!j.important,
-      };
-    }
-  } catch { /* 回退 */ }
-  try {
-    const r = await fetch(UPDATE_GH);
-    if (r.ok) {
-      const j = await r.json();
-      const tag = String(j.tag_name || '').replace(/^v/, '');
-      if (tag) {
-        const apkAsset = (j.assets || []).find((a) => /\.apk$/i.test(a.name || ''));
-        return { version: tag, apk: apkAsset ? apkAsset.browser_download_url : '', releaseUrl: j.html_url || '', notes: String(j.body || '').split('\n')[0].slice(0, 120), important: false };
-      }
-    }
-  } catch { /* 忽略 */ }
-  return null;
+  // 双源并行取最新：jsDelivr（国内可访问，但边缘缓存偶尔陈旧）+ GitHub API（准确，国内可能连不上）
+  // 两者都成功时取版本号较大者——CDN 缓存回退不会漏更新
+  let best = null;
+  const take = (info) => { best = pickLatest(best, info); };
+  const jobs = [
+    (async () => {
+      try {
+        const r = await fetch(UPDATE_JSON, { cache: 'no-store' });
+        if (r.ok) {
+          const j = await r.json();
+          if (j && j.version) take({
+            version: String(j.version).replace(/^v/, ''),
+            apk: j.apk || '',
+            releaseUrl: j.releaseUrl || 'https://github.com/xushengqin666-cell/rehab-ai/releases/latest',
+            notes: j.notes || '',
+            important: !!j.important,
+          });
+        }
+      } catch { /* 忽略 */ }
+    })(),
+    (async () => {
+      try {
+        const r = await fetch(UPDATE_GH);
+        if (r.ok) {
+          const j = await r.json();
+          const tag = String(j.tag_name || '').replace(/^v/, '');
+          if (tag) {
+            const apkAsset = (j.assets || []).find((a) => /\.apk$/i.test(a.name || ''));
+            take({ version: tag, apk: apkAsset ? apkAsset.browser_download_url : '', releaseUrl: j.html_url || '', notes: String(j.body || '').split('\n')[0].slice(0, 120), important: false });
+          }
+        }
+      } catch { /* 忽略 */ }
+    })(),
+  ];
+  await Promise.all(jobs);
+  return best;
 }
 const isAndroidNative = () => !!(window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.AutoUpdater);
 
@@ -2464,6 +2483,12 @@ async function selfTest() {
     const v2 = autoSwitchOk({ squat: 7, lunge: 5 }, ['lunge', 'squat', 'lunge', 'squat']) === null;
     const v3 = autoSwitchOk({ squat: 10, lunge: 2 }, ['lunge', 'lunge', 'lunge', 'lunge']) === null;
     log(t('stAutoVote'), v1 && v2 && v3, '3 组裁决');
+    // 16b. 双源更新裁决：版本高者胜；等版本时保留 jsDelivr 链接
+    const p1 = pickLatest(null, { version: '2.17.3', apk: 'https://github.com/x.apk' });
+    const p2 = pickLatest(p1, { version: '2.17.3', apk: 'https://cdn.jsdelivr.net/x.apk' });
+    const p3 = pickLatest(p2, { version: '2.17.1', apk: 'https://y.apk' });
+    const p4 = pickLatest(p2, { version: '2.17.4', apk: 'https://github.com/z.apk' });
+    log(t('stPickLatest'), p1.version === '2.17.3' && p2.apk.includes('jsdelivr') && p3.version === '2.17.3' && p4.version === '2.17.4', `${p2.version}/${p4.version}`);
     // 17. 腿伸直坐姿识别 + 体态小结专属文案
     const sitLegs = mkPose((b) => {
       [23, 24].forEach((i) => { b[i].x = 0.42; b[i].y = 0.52; });

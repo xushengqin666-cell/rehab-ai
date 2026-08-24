@@ -1,7 +1,7 @@
 {
-  "version": "2.17.3",
-  "apk": "https://cdn.jsdelivr.net/gh/xushengqin666-cell/rehab-ai@main/downloads/RehabAI-v2.17.3.apk",
+  "version": "2.17.4",
+  "apk": "https://cdn.jsdelivr.net/gh/xushengqin666-cell/rehab-ai@main/downloads/RehabAI-v2.17.4.apk",
   "releaseUrl": "https://github.com/xushengqin666-cell/rehab-ai/releases/latest",
-  "notes": "上架合规：新增「删除账号」入口（Google Play 政策要求）、隐私政策删除链接、上架指南更新 2026 新规（12 人封闭测试）。",
-  "important": false
+  "notes": "更新检测双源并行（jsDelivr + GitHub 取最新），CDN 缓存陈旧也不会漏更新。",
+  "important": true
 }
