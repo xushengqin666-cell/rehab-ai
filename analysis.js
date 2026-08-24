@@ -311,6 +311,75 @@ export function analyzeShoulderRaise(lms) {
   };
 }
 
+/* ============ 站姿检查（日常体态，保持 30 秒计 1 次） ============ */
+export function analyzeStanding(lms) {
+  const s = pickSide(lms);
+  const lean = verticalAngle(lms[s.shoulder], lms[s.hip]);
+  const knee = angle3(lms[s.hip], lms[s.knee], lms[s.ankle]);
+  const hipW = Math.abs(lms[24].x - lms[23].x);
+  const frontal = hipW > 0.10;
+  const neck = angle3(lms[0], lms[s.shoulder], lms[s.hip]);   // 颈-躯干角：180°=头正
+  const shLevel = frontal ? Math.abs(lms[11].y - lms[12].y) : 0;
+  const leanBad = lean > 12;
+  const headBad = !frontal && neck < 155;                     // 侧面才能看头前伸
+  const shBad = frontal && shLevel > 0.05;                    // 高低肩
+  const good = [], bad = [];
+  (leanBad ? bad : good).push(leanBad ? t('stLeanBad') : t('stLeanOk'));
+  (headBad ? bad : good).push(headBad ? t('stHeadFwd') : t('stHeadOk'));
+  (shBad ? bad : good).push(shBad ? t('stShoulderLvl') : t('stShoulderOk'));
+  const depth = (leanBad || headBad || shBad) ? 'bad' : 'ok';
+  const risk = []; let riskLevel = 0;
+  if (lean > 30) { riskLevel = 2; risk.push(t('riskLeanSevere')); }
+  else if (lean > 20) riskLevel = 1;
+  return {
+    metrics: { lean, neck, knee, shLevel },
+    depth, goodMsgs: good, badMsgs: bad, msgsIsBad: depth === 'bad',
+    risk, riskLevel,
+    chips: [
+      { k: t('chipLean'), v: `${Math.round(lean)}°`, cls: leanBad ? 'bad' : 'ok' },
+      { k: t('chipNeck'), v: frontal ? '--' : `${Math.round(neck)}°`, cls: headBad ? 'bad' : 'ok' },
+      { k: t('chipShoulderLvl'), v: frontal ? (shBad ? t('shBad') : t('shOk')) : '--', cls: shBad ? 'bad' : 'ok' },
+    ],
+    features: [+lean.toFixed(1), +neck.toFixed(1), +(frontal ? shLevel * 100 : 0).toFixed(1)],
+    repValue: lean,
+    labelSet: ['good', 'bad'],
+  };
+}
+
+/* ============ 坐姿检查（久坐办公/学习，保持 30 秒计 1 次） ============ */
+export function analyzeSitting(lms) {
+  const s = pickSide(lms);
+  const lean = verticalAngle(lms[s.shoulder], lms[s.hip]);
+  const knee = angle3(lms[s.hip], lms[s.knee], lms[s.ankle]);
+  const hipW = Math.abs(lms[24].x - lms[23].x);
+  const frontal = hipW > 0.10;
+  const neck = angle3(lms[0], lms[s.shoulder], lms[s.hip]);
+  const slouch = lean > 18;
+  const headBad = !frontal && neck < 155;
+  const curlBad = knee < 65;                                  // 蜷腿
+  const good = [], bad = [];
+  (slouch ? bad : good).push(slouch ? t('siSlouch') : t('siGood'));
+  (headBad ? bad : good).push(headBad ? t('siHeadFwd') : t('stHeadOk'));
+  (curlBad ? bad : good).push(curlBad ? t('siKneeCurl') : t('siKneeOk'));
+  const depth = (slouch || headBad || curlBad) ? 'bad' : 'ok';
+  const risk = []; let riskLevel = 0;
+  if (lean > 32) { riskLevel = 2; risk.push(t('riskSlouchSevere')); }
+  else if (lean > 22) riskLevel = 1;
+  return {
+    metrics: { lean, neck, knee },
+    depth, goodMsgs: good, badMsgs: bad, msgsIsBad: depth === 'bad',
+    risk, riskLevel,
+    chips: [
+      { k: t('chipLean'), v: `${Math.round(lean)}°`, cls: slouch ? 'bad' : 'ok' },
+      { k: t('chipNeck'), v: frontal ? '--' : `${Math.round(neck)}°`, cls: headBad ? 'bad' : 'ok' },
+      { k: t('chipKnee'), v: `${Math.round(knee)}°`, cls: curlBad ? 'warn' : 'ok' },
+    ],
+    features: [+lean.toFixed(1), +neck.toFixed(1), +knee.toFixed(1)],
+    repValue: lean,
+    labelSet: ['good', 'bad'],
+  };
+}
+
 /* ============ 内置动作注册表 ============ */
 export const EXERCISES = {
   squat: { id: 'squat', nameKey: 'exSquat', icon: 'squat', analyze: analyzeSquat,
@@ -334,6 +403,12 @@ export const EXERCISES = {
   shoulderraise: { id: 'shoulderraise', nameKey: 'exShoulderRaise', icon: 'shoulderraise', analyze: analyzeShoulderRaise,
                    rep: { downBelow: 40, upAbove: 140 }, descKey: 'exShoulderRaiseDesc', stdKey: 'exShoulderRaiseStd',
                    labelSet: ['good', 'shallow', 'bad'] },
+  standing: { id: 'standing', nameKey: 'exStanding', icon: 'standing', analyze: analyzeStanding,
+              rep: { hold: true, holdMs: 30000 }, descKey: 'exStandingDesc', stdKey: 'exStandingStd',
+              labelSet: ['good', 'bad'] },
+  sitting: { id: 'sitting', nameKey: 'exSitting', icon: 'sitting', analyze: analyzeSitting,
+             rep: { hold: true, holdMs: 30000 }, descKey: 'exSittingDesc', stdKey: 'exSittingStd',
+             labelSet: ['good', 'bad'] },
 };
 
 /* ============ 自定义动作 ============ */

@@ -92,6 +92,18 @@ export function healthCheck(env) {
   return { score, items };
 }
 
+/* ============ 训练小结建议（停止分析后 AI 点评） ============ */
+// stats: { reps, quality(0-100|null), riskEvents, seconds }
+export function aiSessionComment(stats) {
+  const s = stats || {};
+  if (!(s.reps > 0)) return { key: 'aiSessNone', args: {} };
+  if (s.riskEvents >= 3) return { key: 'aiSessRisk', args: { n: s.riskEvents } };
+  if (s.quality != null && s.quality < 70) return { key: 'aiSessLowQ', args: { q: Math.round(s.quality) } };
+  if (s.reps >= 30) return { key: 'aiSessGreat', args: { n: s.reps } };
+  if (s.quality != null && s.quality >= 90) return { key: 'aiSessGood', args: { n: s.reps, q: Math.round(s.quality) } };
+  return { key: 'aiSessNice', args: { n: s.reps } };
+}
+
 /* ============ 反馈报告（隐私友好：只含技术统计，不含视频/身份） ============ */
 export function buildFeedbackReport(env, rating, text) {
   const e = env || {};

@@ -51,7 +51,7 @@ await evl(`localStorage.setItem('rehab_lang','zh'); location.reload()`);
 await sleep(2500);
 
 const chipsTxt = await evl(`[...document.querySelectorAll('#ex-chips .chip')].map(b=>b.textContent).join('|')`);
-(chipsTxt.includes('深蹲') && chipsTxt.includes('椅子起坐') && chipsTxt.includes('搬重物') && chipsTxt.includes('上台阶') && chipsTxt.includes('肩上举') && chipsTxt.includes('自定义')) ? ok('7 个内置动作 + 自定义') : bad('动作列表: ' + chipsTxt);
+(chipsTxt.includes('深蹲') && chipsTxt.includes('椅子起坐') && chipsTxt.includes('搬重物') && chipsTxt.includes('上台阶') && chipsTxt.includes('肩上举') && chipsTxt.includes('站姿') && chipsTxt.includes('坐姿') && chipsTxt.includes('自定义')) ? ok('9 个内置动作（含站姿/坐姿）+ 自定义') : bad('动作列表: ' + chipsTxt);
 (await evl(`document.getElementById('ex-desc').textContent.includes('标准')`)) ? ok('动作说明含统一标准') : bad('无统一标准说明');
 
 console.log('===== 2. 摄像头（假设备） =====');
@@ -236,7 +236,7 @@ await send('Page.navigate', { url: APP });
 await sleep(2500);
 await evl(`document.querySelector('.bottom-nav button[data-tab="settings"]').click()`);
 await sleep(200);
-(await evl(`document.getElementById('about-version').textContent.includes('v2.16')`)) ? ok('版本号显示') : bad('版本号失败');
+(await evl(`document.getElementById('about-version').textContent.includes('v2.17')`)) ? ok('版本号显示') : bad('版本号失败');
 (await evl(`document.getElementById('tab-settings').textContent.includes('隐私政策') && document.getElementById('tab-settings').textContent.includes('免责声明')`)) ? ok('隐私政策 + 免责声明') : bad('法务文案缺失');
 await evl(`document.getElementById('btn-share').click()`);
 await sleep(400);

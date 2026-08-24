@@ -1,7 +1,7 @@
 {
-  "version": "2.16.1",
-  "apk": "https://cdn.jsdelivr.net/gh/xushengqin666-cell/rehab-ai@main/downloads/RehabAI-v2.16.1.apk",
+  "version": "2.17.0",
+  "apk": "https://cdn.jsdelivr.net/gh/xushengqin666-cell/rehab-ai@main/downloads/RehabAI-v2.17.0.apk",
   "releaseUrl": "https://github.com/xushengqin666-cell/rehab-ai/releases/latest",
-  "notes": "修复：从未训练过的新用户也能收到鼓励建议；反馈报告标签文案；全面自检通过（55 项 + 翻译覆盖率 100%）。",
+  "notes": "智能识别大升级：静止/运动区分 + 坐姿/站姿体态检查，识别更准、更少误判。",
   "important": false
 }

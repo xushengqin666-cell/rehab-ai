@@ -7,7 +7,7 @@ import {
   customDefault, CUSTOM_JOINTS, angle3, kneeValgus, pickSide, setCustomKey,
   verticalAngle,
 } from './analysis.js';
-import { healthCheck, buildFeedbackReport, logAiError, aiErrors, aiStats, aiStatsGet, aiFeedbackAdd } from './ai.js';
+import { healthCheck, buildFeedbackReport, logAiError, aiErrors, aiStats, aiStatsGet, aiFeedbackAdd, aiSessionComment } from './ai.js';
 
 /* ============ 基础工具 ============ */
 const $ = (id) => document.getElementById(id);
@@ -74,7 +74,7 @@ function migrateDeviceData(email) {
 }
 const fmtDate = (ts) => new Date(ts).toLocaleString(locale(), { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-const APP_VERSION = 'v2.16.1';
+const APP_VERSION = 'v2.17.0';
 const exName = (e) => (e.custom ? e.name : t(e.nameKey));
 const exDesc = (e) => (e.custom ? e.desc : t(e.descKey));
 const depthTxt = (d) => t('depth' + (d ? d.charAt(0).toUpperCase() + d.slice(1) : 'Ok')) || d;
@@ -88,6 +88,8 @@ const ICONS = {
   hiphinge: '<circle cx="13" cy="4.8" r="2.1"/><path d="M13 6.9v4.6M13 11.5l-5.5 1.2M7.5 12.7l1.5 4M7.5 12.7l6.5 2.3M14 15l1 4M13 8.5l-4.5-.5"/>',
   stepup: '<circle cx="11" cy="4.4" r="2.1"/><path d="M11 6.5v4.2M11 10.7l3.6 2.4 1 3.6M11 10.7l-3 2.2-2.8 1M11 8l-4.4-1M11 8l4-1"/><path d="M2.5 20.5h19"/>',
   shoulderraise: '<circle cx="12" cy="4.4" r="2.1"/><path d="M12 6.5v6M12 12.5l-3 4M12 12.5l3 4M12 9l-4-1.2M12 9l4.5 1.8M16.5 10.8l1.5-4.5"/>',
+  standing: '<circle cx="12" cy="4.2" r="2.1"/><path d="M12 6.3v5.4M12 8l-4.2-1M12 8l4.2-1M12 11.7v4.6M12 16.3l-3.8-.2M12 16.3l3.8-.2"/>',
+  sitting: '<circle cx="12" cy="5.2" r="2.1"/><path d="M12 7.3v3.4M12 8.6l-4-1M12 8.6l4-1M12 10.7l4.2 2.6M16.2 13.3v5M12 10.7l-4.2 2.6M7.8 13.3v5M4 20.5h16"/>',
   custom: '<path d="M12 4.5l1.4 4.1 4.1 1.4-4.1 1.4L12 15.5l-1.4-4.1-4.1-1.4 4.1-1.4Z"/><path d="M18.5 15.5l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7Z"/>',
   play: '<path d="M8.2 5.6v12.8a.7.7 0 0 0 1.1.6l10.2-6.4a.7.7 0 0 0 0-1.2L9.3 5a.7.7 0 0 0-1.1.6Z" fill="currentColor" stroke="none"/>',
   stop: '<rect x="6.8" y="6.8" width="10.4" height="10.4" rx="2.4" fill="currentColor" stroke="none"/>',
@@ -165,7 +167,7 @@ const state = {
   ex: null, collectBuf: sget('rehab_collect', []),
   cameras: null, pickCam: undefined,
   tab: 'train', statsKey: null, loopScheduled: false,
-  autoEx: 'squat', autoVotes: {}, autoVoteN: 0,
+  autoEx: 'squat', autoVotes: {}, autoVoteN: 0, autoHist: [],
 };
 let _customCache = null;
 const customList = () => { if (_customCache === null) _customCache = loadCustomExercises(); return _customCache; };
@@ -350,7 +352,11 @@ function showCamPicker() {
 }
 
 /* ============ 智能动作识别（自动分类，无需手动选动作） ============ */
-function classifyAuto(lms) {
+// 两层判断：
+//   1) 运动层：髋部近 1.5 秒纵向位移幅度 → 区分「运动」(动态动作) 与「静止」(体态)
+//   2) 几何层：动态 → 按关节角度判深蹲/弓步/台阶/搬物/肩上举/俯卧撑；静止 → 站姿/坐姿/俯卧撑支撑/搬物保持
+// hist = [{ y, t }] 髋部中点高度历史（t 用 performance.now 同一时间轴）；now 供测试注入
+function classifyAuto(lms, hist, now) {
   const L = { shoulder: 11, hip: 23, knee: 25, ankle: 27, elbow: 13, wrist: 15 };
   const R = { shoulder: 12, hip: 24, knee: 26, ankle: 28, elbow: 14, wrist: 16 };
   const ka = (S) => angle3(lms[S.hip], lms[S.knee], lms[S.ankle]);
@@ -358,22 +364,37 @@ function classifyAuto(lms) {
   const kneeMin = Math.min(kL, kR), kneeMax = Math.max(kL, kR), kneeDiff = kneeMax - kneeMin;
   const s = pickSide(lms);
   const lean = verticalAngle(lms[s.shoulder], lms[s.hip]);
-  const hipA = angle3(lms[s.shoulder], lms[s.hip], lms[s.knee]);
   const elbow = angle3(lms[s.shoulder], lms[s.elbow], lms[s.wrist]);
   const armRaised = (lms[s.shoulder].y - lms[s.wrist].y) > 0.18;   // 手腕明显高于肩膀
   const wristNearShoulder = Math.abs(lms[s.wrist].x - lms[s.shoulder].x) < 0.18;
   const bodyLow = lms[s.hip].y > 0.58;
+  const hipY = (lms[23].y + lms[24].y) / 2;
+  const tNow = now === undefined ? performance.now() : now;
 
-  if (lean > 55) {                                   // 躯干接近水平
-    if (elbow < 140 && wristNearShoulder && bodyLow && kneeMin > 110) return 'pushup';
-    return 'hiphinge';                               // 弯腰搬物
+  // 静止/运动判定：最近 1.5 秒髋部高度变化幅度 <5% 画面高 → 静止
+  const win = (hist || []).filter((h) => h.t > tNow - 1500);
+  const yRange = win.length >= 5
+    ? Math.max(...win.map((h) => h.y)) - Math.min(...win.map((h) => h.y))
+    : 1;                                        // 样本不足按运动处理（安全：不误判体态）
+
+  // —— 俯身类：俯卧撑（手在肩下+髋低） / 搬重物髋铰链 ——
+  if (lean > 55 && bodyLow) {
+    if (wristNearShoulder && kneeMin > 110) return 'pushup';   // 含平板支撑（直臂）
+    return 'hiphinge';
   }
-  if (kneeDiff > 35) {                               // 单腿发力
-    return kneeMax > 150 ? 'stepup' : 'lunge';
+  // —— 静止坐姿：髋在坐高、膝中等弯曲(80–130°)、躯干较直立 ——
+  if (yRange < 0.05 && hipY > 0.45 && hipY < 0.75 && kneeMin >= 80 && kneeMin <= 130 && lean < 25) return 'sitting';
+  // —— 运动：动态动作 ——
+  if (yRange >= 0.05) {
+    if (kneeDiff > 35) return kneeMax > 150 ? 'stepup' : 'lunge';
+    if (kneeMin < 115) return 'squat';          // 深蹲/椅子起坐（屈膝下蹲）
+    if (lean > 45) return 'hiphinge';
+    if (armRaised && elbow > 150) return 'shoulderraise';
   }
-  if (kneeMin < 115) return 'squat';                 // 双腿下蹲（深蹲/椅子起坐）
-  if (armRaised && elbow > 150) return 'shoulderraise';
-  return 'squat';
+  // —— 静止保持 ——
+  if (lean > 45 && kneeMin > 130) return 'hiphinge';   // 搬物静止保持
+  if (kneeMin < 115) return 'squat';                   // 深蹲底部保持/椅子起坐停顿
+  return 'standing';                                   // 自然站立/行走停顿
 }
 
 /* ============ 界面：动作选择 + 统计 ============ */
@@ -385,12 +406,14 @@ function featureNames(ex) {
   if (ex.id === 'hiphinge') return ['hip', 'knee', 'lean'];
   if (ex.id === 'stepup') return ['knee', 'lean', 'valgus'];
   if (ex.id === 'shoulderraise') return ['arm', 'lean', 'elbow'];
+  if (ex.id === 'standing') return ['lean', 'neck', 'shLevel'];
+  if (ex.id === 'sitting') return ['lean', 'neck', 'knee'];
   return ex.angles.map((a) => a.key);
 }
 const exStd = (e) => (e.custom ? t('stdCustom') : t(e.stdKey || 'stdCustom'));
 function renderExChips() {
   const custom = customList();
-  const ids = ['auto', 'squat', 'lunge', 'pushup', 'sitstand', 'hiphinge', 'stepup', 'shoulderraise', ...custom.map((e) => e.id)];
+  const ids = ['auto', 'squat', 'lunge', 'pushup', 'sitstand', 'hiphinge', 'stepup', 'shoulderraise', 'standing', 'sitting', ...custom.map((e) => e.id)];
   $('ex-chips').innerHTML = ids.map((id) => {
     const e = id === 'auto' ? { nameKey: 'chipAuto', icon: 'target' } : (EXERCISES[id] || custom.find((x) => x.id === id));
     return `<button class="chip ${id === activeExId() ? 'on' : ''}" data-ex="${id}"><span class="chip-ico">${icon(e.icon)}</span><span>${exName(e)}</span></button>`;
@@ -422,10 +445,12 @@ function renderGoal() {
   el.innerHTML = `<span class="goal-ico">${icon(okv ? 'check' : 'target')}</span><span>${t('goalLine', { name: exName(ex), n: item.reps })} · ${t('goalProgress', { d: Math.min(done, item.reps), t: item.reps })}</span>`;
 }
 function renderChips(res) {
+  const ex = getEx(activeExId());
+  const hold = !!(ex && ex.rep && ex.rep.hold);
   const chips = res.chips.map((c, i) => `
     <div class="stat"><span class="s-label">${c.k}</span><span class="s-value ${c.cls}" data-stat="${i}">${c.v}</span></div>`).join('');
   $('chips').innerHTML = chips + `
-    <div class="stat big"><span class="s-label">${t('repsLabel')}</span><span class="s-value" id="st-reps">0</span></div>`;
+    <div class="stat big"><span class="s-label">${hold ? t('holdLabel') : t('repsLabel')}</span><span class="s-value" id="st-reps">0</span></div>`;
 }
 // 每帧只改数值，不重建 DOM（移动端省电）
 function updateStats(res) {
@@ -459,7 +484,7 @@ const ctx = $('overlay').getContext('2d');
 
 function resetAgg() {
   const ex = getEx(activeExId());
-  state.counter = { state: 'up', reps: 0, ex: ex.id, d: ex.rep.downBelow, u: ex.rep.upAbove, belowT: 0, lastRepTs: 0, confirmMs: 120, minGapMs: 350 };
+  state.counter = { state: 'up', reps: 0, ex: ex.id, d: ex.rep.downBelow, u: ex.rep.upAbove, belowT: 0, lastRepTs: 0, confirmMs: 120, minGapMs: 350, holdMs: 0, lastHoldTs: 0, wasBad: false };
   state.agg = { frames: 0, startTS: Date.now(), depth: {}, badFrames: 0, valgusFrames: 0, riskFrames: 0 };
   state.lastResult = null;
   state.statsKey = null;
@@ -483,6 +508,17 @@ function counterUpdate(c, value, ts = performance.now()) {
   } else if (c.state === 'down' && value > c.u) {
     c.state = 'up'; c.reps++; c.lastRepTs = ts; c.belowT = 0;
   }
+  return c.reps;
+}
+// 保持型动作（站姿/坐姿）：姿态合格的时间才累计，满 30 秒计 1 次
+function counterHold(ex, res, ts) {
+  const c = state.counter;
+  if (c.lastHoldTs) c.holdMs += ts - c.lastHoldTs;
+  c.lastHoldTs = ts;
+  const bad = res.depth !== 'ok' || res.msgsIsBad;
+  if (bad && !c.wasBad) c.holdMs = Math.max(0, c.holdMs - 3000);   // 姿势崩了扣 3 秒（每次连续崩只扣一次）
+  c.wasBad = bad;
+  if (c.holdMs >= ex.rep.holdMs) { c.holdMs -= ex.rep.holdMs; c.reps++; }
   return c.reps;
 }
 
@@ -596,17 +632,24 @@ function loop() {
 
   // 智能识别模式：每帧投票，稳定后自动切换分析引擎（不重置计数）
   if (activeExId() === 'auto') {
-    const cls = classifyAuto(lms);
+    state.autoHist = state.autoHist || [];
+    state.autoHist.push({ y: (lms[23].y + lms[24].y) / 2, t: ts });
+    if (state.autoHist.length > 90) state.autoHist.shift();
+    const cls = classifyAuto(lms, state.autoHist, ts);
     state.autoVotes[cls] = (state.autoVotes[cls] || 0) + 1;
     state.autoVoteN++;
     if (state.autoVoteN >= 12) {
       const winner = Object.entries(state.autoVotes).sort((a, b) => b[1] - a[1])[0][0];
       if (winner !== state.autoEx) {
+        const prevHold = (EXERCISES[state.autoEx] || {}).rep?.hold;
         state.autoEx = winner;
         const nex = EXERCISES[winner];
         state.counter.ex = winner;
-        state.counter.d = nex.rep.downBelow;
-        state.counter.u = nex.rep.upAbove;
+        if (nex.rep.downBelow != null) { state.counter.d = nex.rep.downBelow; state.counter.u = nex.rep.upAbove; }
+        if (nex.rep.hold || prevHold) {
+          // 进出保持型动作 → 重新计数（30 秒 1 次，不与动态次数混算）
+          state.counter.reps = 0; state.counter.holdMs = 0; state.counter.lastHoldTs = 0; state.voiceReps = 0;
+        }
         state.statsKey = null;                       // 统计卡下一帧按新动作重建
         renderExChips();
         renderCollectLabels(getEx('auto'));
@@ -619,10 +662,12 @@ function loop() {
   state.lastResult = res;
 
   recordFrame(res);
-  const reps = counterUpdate(state.counter, res.repValue, ts);
+  const reps = ex.rep.hold
+    ? counterHold(ex, res, ts)
+    : counterUpdate(state.counter, res.repValue, ts);
   if (state.statsKey !== ex.id) { renderChips(res); state.statsKey = ex.id; }
   else updateStats(res);
-  $('st-reps').textContent = String(reps);
+  $('st-reps').textContent = ex.rep.hold ? String(Math.round((state.counter.holdMs || 0) / 1000)) : String(reps);
   // 语音播报：每 5 次报一次数
   if (reps > 0 && reps % 5 === 0 && reps !== state.voiceReps) {
     state.voiceReps = reps;
@@ -688,7 +733,12 @@ function setStartBtn(key, ico) {
 async function toggleStart() {
   const btn = $('btn-start');
   ensureAudio();   // 用户点击手势内创建音频上下文（警报声用）
-  if (state.running) { state.running = false; stopCamera(); btn.disabled = false; setStartBtn('btnStart', 'play'); return; }
+  if (state.running) {
+    state.running = false; stopCamera(); releaseWake();
+    btn.disabled = false; setStartBtn('btnStart', 'play');
+    aiSessionEnd();
+    return;
+  }
   $('cam-retry').classList.add('hidden');
   try {
     btn.disabled = true;
@@ -704,6 +754,7 @@ async function toggleStart() {
     // 摄像头画面立刻显示（不再被黑色加载遮罩挡住）
     await bindStream(stream);
     state.running = true; state.photoMode = false;
+    acquireWake();                               // 训练中屏幕常亮，不自动锁屏
     resetAgg();
     btn.disabled = false;
     setStartBtn('btnStop', 'stop');
@@ -1583,7 +1634,7 @@ function renderPlanDayDots() {
   }));
 }
 function renderPlanPick() {
-  const all = ['squat', 'lunge', 'pushup', 'sitstand', 'hiphinge', 'stepup', 'shoulderraise', ...customList().map((e) => e.id)];
+  const all = ['squat', 'lunge', 'pushup', 'sitstand', 'hiphinge', 'stepup', 'shoulderraise', 'standing', 'sitting', ...customList().map((e) => e.id)];
   $('plan-ex-pick').innerHTML = all.map((id) => {
     const e = getEx(id);
     return `<button class="chip ${planEditEx === id ? 'on' : ''}" data-pick="${id}"><span class="chip-ico">${icon(e.icon)}</span><span>${exName(e)}</span></button>`;
@@ -1992,6 +2043,7 @@ function submitFeedback() {
     + encodeURIComponent(report.title) + '&body=' + encodeURIComponent(report.body);
   window.open(url, '_blank');
   toast(t('aiFbDone'));
+  $('fb-text').value = '';
   $('fb-modal').classList.add('hidden');
 }
 function copyFeedback() {
@@ -2010,6 +2062,66 @@ function renderUpdMode() {
   if (!sel) return;
   sel.value = updModeGet();
 }
+
+/* ============ 训练中屏幕常亮（Screen Wake Lock） ============ */
+let wakeLock = null;
+async function acquireWake() {
+  try {
+    if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen');
+  } catch { /* 部分浏览器不支持，忽略 */ }
+}
+async function releaseWake() {
+  try { if (wakeLock) await wakeLock.release(); } catch { /* 忽略 */ }
+  wakeLock = null;
+}
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && state.running) acquireWake();   // 切回前台时重新常亮
+});
+
+/* ============ 训练结束：AI 小结 ============ */
+function aiSessionEnd() {
+  const agg = state.agg || {};
+  const frames = agg.frames || 0;
+  const secs = Math.max(0, Math.round((Date.now() - (agg.startTS || Date.now())) / 1000));
+  const reps = (state.counter && state.counter.reps) || 0;
+  if (!(reps > 0 || secs >= 30)) return;              // 太短/没计数 → 不打扰
+  const quality = frames > 30 ? Math.round((1 - (agg.badFrames || 0) / frames) * 100) : null;
+  const comment = aiSessionComment({ reps, quality, riskEvents: agg.riskFrames || 0, seconds: secs });
+  const ex = state.counter && state.counter.ex ? getEx(state.counter.ex) : getEx(activeExId());
+  const fb = $('feedback');
+  fb.classList.remove('hidden');
+  fb.innerHTML = fbWrap('check', `
+    <b>${t('aiSessTitle')}</b>
+    <div class="hint">${t('aiSessLine', { ex: exName(ex), n: reps, q: quality == null ? '--' : quality })}</div>
+    <div class="hint">🤖 ${t(comment.key, comment.args)}</div>`);
+  fb.className = 'feedback';
+  fb._last = null;
+  aiRun();                                            // 训练数据变了 → 重新体检
+}
+
+/* ============ PWA：安装到桌面提示 ============ */
+let deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  if (isAndroidNative() || LS.get('rehab_pwa_prompt_closed', 0)) return;
+  const fb = $('feedback');
+  if (fb && !fb.classList.contains('hidden')) return; // 有更重要的提示时不抢
+  fb.classList.remove('hidden');
+  fb.innerHTML = fbWrap('download', `
+    <b>${t('pwaTitle')}</b>
+    <div class="upd-actions">
+      <button id="btn-pwa-install" class="btn small primary"><span class="btn-ico">${icon('download')}</span><span>${t('pwaBtn')}</span></button>
+      <button id="btn-pwa-later" class="btn small"><span>${t('updBtnLater')}</span></button>
+    </div>`);
+  fb.className = 'feedback';
+  fb._last = null;
+  $('btn-pwa-install').addEventListener('click', async () => {
+    fb.classList.add('hidden');
+    if (deferredPrompt) { deferredPrompt.prompt(); deferredPrompt = null; }
+  });
+  $('btn-pwa-later').addEventListener('click', () => { fb.classList.add('hidden'); LS.set('rehab_pwa_prompt_closed', Date.now()); });
+});
 
 function renderCloud() {
   const cfg = cloudCfg();
@@ -2233,6 +2345,31 @@ async function selfTest() {
     const raiseP = mkPose((b) => { b[14].x = 0.58; b[14].y = 0.12; b[16].x = 0.58; b[16].y = 0.03; });
     const autoRes = [classifyAuto(squatP), classifyAuto(hingeP), classifyAuto(pushP), classifyAuto(stepP), classifyAuto(raiseP)];
     log(t('stAutoClass'), autoRes.join(',') === 'squat,hiphinge,pushup,stepup,shoulderraise', autoRes.join(','));
+    // 11b. 智能识别·静止姿态：站姿/坐姿（稳定历史 → 静态判定）
+    const tN = performance.now();
+    const still = (y) => [0, 1, 2, 3, 4].map((i) => ({ y, t: tN - 1000 + i * 200 }));
+    const sitP = mkPose((b) => {
+      [23, 24].forEach((i) => { b[i].x = 0.42; b[i].y = 0.52; });
+      [25, 26].forEach((i) => { b[i].x = 0.56; b[i].y = 0.64; });
+      [27, 28].forEach((i) => { b[i].x = 0.50; b[i].y = 0.86; });
+      [11, 12].forEach((i) => { b[i].x = 0.44; b[i].y = 0.24; });
+    });
+    const standCls = classifyAuto(base(), still(0.45), tN);
+    const sitCls = classifyAuto(sitP, still(0.52), tN);
+    log(t('stAutoPosture'), standCls === 'standing' && sitCls === 'sitting', `${standCls},${sitCls}`);
+    // 11c. 站姿/坐姿分析
+    const stRes = EXERCISES.standing.analyze(base());
+    const stBad = EXERCISES.standing.analyze(mkPose((b) => { [11, 12].forEach((i) => { b[i].x = 0.40; b[i].y = 0.35; }); b[0].x = 0.35; b[0].y = 0.28; }));
+    log(t('stStanding'), stRes.depth === 'ok' && stBad.depth === 'bad', `lean=${stRes.metrics.lean.toFixed(1)}/${stBad.metrics.lean.toFixed(1)}`);
+    const siRes = EXERCISES.sitting.analyze(sitP);
+    const siBadP = mkPose((b) => {
+      [23, 24].forEach((i) => { b[i].x = 0.42; b[i].y = 0.52; });
+      [25, 26].forEach((i) => { b[i].x = 0.56; b[i].y = 0.64; });
+      [27, 28].forEach((i) => { b[i].x = 0.50; b[i].y = 0.86; });
+      [11, 12].forEach((i) => { b[i].x = 0.55; b[i].y = 0.40; });
+    });
+    const siBad = EXERCISES.sitting.analyze(siBadP);
+    log(t('stSitting'), siRes.depth === 'ok' && siBad.depth === 'bad', `lean=${siRes.metrics.lean.toFixed(1)}/${siBad.metrics.lean.toFixed(1)}`);
     // 12. 自主更新：版本比较
     const vc = verCmp('2.14.0', '2.13.9') === 1 && verCmp('v2.9.1', '2.10.0') === -1
       && verCmp('2.15.0', 'v2.15.0') === 0 && verCmp('2.3.10', '2.3.9') === 1 && verCmp('1.0', '1.0.1') === -1;
@@ -2287,6 +2424,10 @@ if (cloudCfg() && cloudSession()) setTimeout(() => cloudSync().catch(() => {}), 
 if (!location.search.includes('updatetest')) setTimeout(() => checkUpdate(false), 6000);
 // AI 系统管家：启动体检 + 主动提醒 + 全局异常收集
 aiProactive();
+// 标题随语言切换（中文 → 康复AI）
+const syncTitle = () => { document.title = t('pageTitle'); };
+syncTitle();
+onLangChanged(syncTitle);
 window.addEventListener('error', (ev) => logAiError('js', (ev && (ev.message || ev.type)) || 'unknown'));
 window.addEventListener('unhandledrejection', (ev) => logAiError('promise', (ev && ev.reason && (ev.reason.message || String(ev.reason))) || 'unknown'));
 renderUpdMode();
