@@ -70,6 +70,7 @@ function accountDelete() {
   accountLogout();
   localStorage.removeItem('rehab_cloud_session');
   invalidateCustom();
+  reloadCollectBuf();                               // 删除账号 → 重载缓冲区（访客空间）
   renderCloud(); renderAuth();
   renderRecords(); renderAssessments(); renderAppts(); renderCustomList(); renderExChips();
   renderProfile(); renderTodayPlan(); renderPlanList(); renderAchievements(); renderCollectCount(); renderGoal();
@@ -92,7 +93,7 @@ function migrateDeviceData(email) {
 }
 const fmtDate = (ts) => new Date(ts).toLocaleString(locale(), { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-const APP_VERSION = 'v2.17.4';
+const APP_VERSION = 'v2.17.5';
 const exName = (e) => (e.custom ? e.name : t(e.nameKey));
 const exDesc = (e) => (e.custom ? e.desc : t(e.descKey));
 const depthTxt = (d) => t('depth' + (d ? d.charAt(0).toUpperCase() + d.slice(1) : 'Ok')) || d;
@@ -492,6 +493,8 @@ function updateStats(res) {
   });
 }
 const renderCollectCount = () => { $('collect-count').textContent = t('collectCount', { n: state.collectBuf.length }); };
+// 账号切换后重载采集缓冲区（内存中的 collectBuf 属于上一个账号，必须重读，否则会串数据）
+const reloadCollectBuf = () => { state.collectBuf = sget('rehab_collect', []); renderCollectCount(); };
 function renderCollectLabels(ex) {
   $('collect-labels').innerHTML = ex.labelSet.map((l) =>
     `<button class="cbtn" data-label="${l}">${t('lb_' + l) || l}</button>`).join('');
@@ -2241,6 +2244,7 @@ async function authLogin(register) {
     }
     await accountLogin(email, pass);
     $('auth-screen').classList.add('hidden');
+    reloadCollectBuf();                              // 切到新账号 → 重载采集缓冲区
     renderCloud();
     renderRecords(); renderAssessments(); renderAppts(); renderCustomList(); renderExChips();
     renderProfile(); renderTodayPlan(); renderPlanList(); renderAchievements(); renderCollectCount(); renderGoal();
@@ -2287,6 +2291,7 @@ $('btn-cloud-logout').addEventListener('click', () => {
   accountLogout();
   localStorage.removeItem('rehab_cloud_session');
   invalidateCustom();
+  reloadCollectBuf();                               // 退出账号 → 重载缓冲区（访客空间）
   renderCloud();
   renderRecords(); renderAssessments(); renderAppts(); renderCustomList(); renderExChips();
   renderProfile(); renderTodayPlan(); renderPlanList(); renderAchievements(); renderCollectCount(); renderGoal();

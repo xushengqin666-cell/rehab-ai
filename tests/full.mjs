@@ -213,6 +213,16 @@ await evl(`document.getElementById('auth-email').value='fulltest@t.com'; documen
 await sleep(2000);
 (await evl(`document.getElementById('auth-screen').classList.contains('hidden')`)) ? ok('重新登录直接进入主界面') : bad('重新登录失败');
 (await evl(`(() => { const u = JSON.parse(localStorage.getItem('rehab_current_user')); return JSON.parse(localStorage.getItem('u:' + u + ':rehab_sessions')).length; })() === 1`)) ? ok('登录后账号数据自动恢复(云端拉回)') : bad('账号数据未恢复');
+// 采集缓冲区账号隔离（防串数据）：A 有 1 条 → 退出归零 → 重新登录恢复 1 条
+await evl(`(() => { const u = JSON.parse(localStorage.getItem('rehab_current_user')); localStorage.setItem('u:' + u + ':rehab_collect', JSON.stringify([{ex:'squat',feats:[1],label:'good'}])); location.reload(); })()`);
+await sleep(2500);
+(await evl(`document.getElementById('collect-count').textContent.includes('1')`)) ? ok('采集缓冲区随账号加载') : bad('缓冲区未加载');
+await evl(`document.getElementById('btn-cloud-logout').click()`);
+await sleep(300);
+(await evl(`document.getElementById('collect-count').textContent.includes('0')`)) ? ok('退出账号缓冲区归零（防串数据）') : bad('缓冲区串数据');
+await evl(`document.getElementById('auth-email').value='fulltest@t.com'; document.getElementById('auth-pass').value='pw123456'; document.getElementById('btn-auth-login').click()`);
+await sleep(2000);
+(await evl(`document.getElementById('collect-count').textContent.includes('1')`)) ? ok('重新登录缓冲区恢复') : bad('登录未恢复缓冲区');
 // 删除账号（Play 政策要求）：确认弹窗 → 数据清除 + 回登录页
 await evl(`document.querySelector('.bottom-nav button[data-tab="settings"]').click()`);
 await sleep(200);
