@@ -86,6 +86,8 @@ await sleep(200);
 (await evl(`document.querySelector('#today-plan .plan-progress-txt').textContent.includes('1 / 1')`)) ? ok('今日任务打卡 1/1') : bad('打卡失败');
 await evl(`document.querySelector('.bottom-nav button[data-tab="train"]').click()`);
 await sleep(200);
+await evl(`document.querySelector('.chip[data-ex="squat"]').click()`);   // 智能识别默认站姿，切到计划对应的深蹲
+await sleep(200);
 (await evl(`!document.getElementById('goal-line').classList.contains('hidden')`)) ? ok('训练页显示今日目标') : bad('目标条未显示');
 
 console.log('===== 5. 成就全矩阵（9/9 解锁） =====');

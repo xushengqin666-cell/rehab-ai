@@ -61,6 +61,8 @@ progTxt.includes('1 / 1') ? ok('今日任务打卡 1/1') : fail('进度: ' + pro
 // 训练页「今日目标」联动显示
 await evl(`document.querySelector('.bottom-nav button[data-tab="train"]').click()`);
 await sleep(200);
+await evl(`document.querySelector('.chip[data-ex="squat"]').click()`);   // 智能识别默认站姿，切到计划对应的深蹲
+await sleep(200);
 const goalTxt = await evl(`document.getElementById('goal-line').textContent.replace(/\\s+/g,' ').trim()`);
 goalTxt.includes('今日目标') ? ok('训练页显示今日目标: ' + goalTxt.slice(0, 40)) : fail('今日目标: ' + goalTxt);
 

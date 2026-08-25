@@ -1,7 +1,7 @@
 {
-  "version": "2.17.5",
-  "apk": "https://cdn.jsdelivr.net/gh/xushengqin666-cell/rehab-ai@main/downloads/RehabAI-v2.17.5.apk",
+  "version": "2.17.6",
+  "apk": "https://cdn.jsdelivr.net/gh/xushengqin666-cell/rehab-ai@main/downloads/RehabAI-v2.17.6.apk",
   "releaseUrl": "https://github.com/xushengqin666-cell/rehab-ai/releases/latest",
-  "notes": "修复账号切换时采集缓冲区串数据的问题（登录/退出/删除账号都会正确重载）。",
+  "notes": "重要修复：智能识别不再一直卡在深蹲——改用抗噪声的百分位运动判定，站/坐微晃也能正确识别。",
   "important": true
 }

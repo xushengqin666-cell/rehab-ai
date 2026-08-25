@@ -93,7 +93,7 @@ function migrateDeviceData(email) {
 }
 const fmtDate = (ts) => new Date(ts).toLocaleString(locale(), { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-const APP_VERSION = 'v2.17.5';
+const APP_VERSION = 'v2.17.6';
 const exName = (e) => (e.custom ? e.name : t(e.nameKey));
 const exDesc = (e) => (e.custom ? e.desc : t(e.descKey));
 const depthTxt = (d) => t('depth' + (d ? d.charAt(0).toUpperCase() + d.slice(1) : 'Ok')) || d;
@@ -186,7 +186,7 @@ const state = {
   ex: null, collectBuf: sget('rehab_collect', []),
   cameras: null, pickCam: undefined,
   tab: 'train', statsKey: null, loopScheduled: false,
-  autoEx: 'squat', autoVotes: {}, autoVoteN: 0, autoHist: [], autoLast4: [],
+  autoEx: 'standing', autoVotes: {}, autoVoteN: 0, autoHist: [], autoLast4: [],
 };
 let _customCache = null;
 const customList = () => { if (_customCache === null) _customCache = loadCustomExercises(); return _customCache; };
@@ -390,11 +390,14 @@ function classifyAuto(lms, hist, now) {
   const hipY = (lms[23].y + lms[24].y) / 2;
   const tNow = now === undefined ? performance.now() : now;
 
-  // 静止/运动判定：最近 1.5 秒髋部高度变化幅度 <5% 画面高 → 静止
+  // 静止/运动判定：最近 1.5 秒髋部高度 P90-P10 差 <6% 画面高 → 静止
+  // 用百分位差而非 max-min：摄像头噪声/身体自然晃动的个别跳点不会把「静止」误判成「运动」
   const win = (hist || []).filter((h) => h.t > tNow - 1500);
-  const yRange = win.length >= 5
-    ? Math.max(...win.map((h) => h.y)) - Math.min(...win.map((h) => h.y))
-    : 1;                                        // 样本不足按运动处理（安全：不误判体态）
+  let yRange = 1;                                        // 样本不足按运动处理（安全：不误判体态）
+  if (win.length >= 8) {
+    const ys = win.map((h) => h.y).sort((a, b) => a - b);
+    yRange = ys[Math.floor(ys.length * 0.9)] - ys[Math.floor(ys.length * 0.1)];
+  }
 
   // —— 俯身类：俯卧撑（手在肩下+髋低） / 搬重物髋铰链 ——
   if (lean > 55 && bodyLow) {
@@ -403,9 +406,9 @@ function classifyAuto(lms, hist, now) {
   }
   // —— 静止坐姿：髋在坐高、膝中等弯曲(80–130°)或双腿前伸、躯干较直立 ——
   const legsOut = kneeMin > 150 && Math.abs(lms[s.ankle].y - hipY) < 0.15;   // 腿伸直坐（踝接近髋高）
-  if (yRange < 0.05 && hipY > 0.45 && hipY < 0.75 && lean < 25 && ((kneeMin >= 80 && kneeMin <= 130) || legsOut)) return 'sitting';
+  if (yRange < 0.06 && hipY > 0.45 && hipY < 0.75 && lean < 25 && ((kneeMin >= 80 && kneeMin <= 130) || legsOut)) return 'sitting';
   // —— 运动：动态动作 ——
-  if (yRange >= 0.05) {
+  if (yRange >= 0.06) {
     if (kneeDiff > 35) return kneeMax > 150 ? 'stepup' : 'lunge';
     if (kneeMin < 115) return 'squat';          // 深蹲/椅子起坐（屈膝下蹲）
     if (lean > 45) return 'hiphinge';
@@ -2434,7 +2437,7 @@ async function selfTest() {
     log(t('stAutoClass'), autoRes.join(',') === 'squat,hiphinge,pushup,stepup,shoulderraise', autoRes.join(','));
     // 11b. 智能识别·静止姿态：站姿/坐姿（稳定历史 → 静态判定）
     const tN = performance.now();
-    const still = (y) => [0, 1, 2, 3, 4].map((i) => ({ y, t: tN - 1000 + i * 200 }));
+    const still = (y) => [0, 1, 2, 3, 4, 5, 6, 7].map((i) => ({ y, t: tN - 1000 + i * 100 }));
     const sitP = mkPose((b) => {
       [23, 24].forEach((i) => { b[i].x = 0.42; b[i].y = 0.52; });
       [25, 26].forEach((i) => { b[i].x = 0.56; b[i].y = 0.64; });
@@ -2444,6 +2447,11 @@ async function selfTest() {
     const standCls = classifyAuto(base(), still(0.45), tN);
     const sitCls = classifyAuto(sitP, still(0.52), tN);
     log(t('stAutoPosture'), standCls === 'standing' && sitCls === 'sitting', `${standCls},${sitCls}`);
+    // 11b2. 噪声晃动下仍判静止（修复「一直显示深蹲」：摄像头噪声+身体微晃不再误判为运动）
+    const noisy = (y, amp) => [0, 1, 2, 3, 4, 5, 6, 7].map((i) => ({ y: y + amp * (i % 3 - 1), t: tN - 1000 + i * 100 }));
+    const standNoisyCls = classifyAuto(base(), noisy(0.45, 0.02), tN);
+    const sitNoisyCls = classifyAuto(sitP, noisy(0.52, 0.02), tN);
+    log(t('stAutoNoise'), standNoisyCls === 'standing' && sitNoisyCls === 'sitting', `${standNoisyCls},${sitNoisyCls}`);
     // 11c. 站姿/坐姿分析
     const stRes = EXERCISES.standing.analyze(base());
     const stBad = EXERCISES.standing.analyze(mkPose((b) => { [11, 12].forEach((i) => { b[i].x = 0.40; b[i].y = 0.35; }); b[0].x = 0.35; b[0].y = 0.28; }));
