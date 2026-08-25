@@ -777,6 +777,8 @@ async function toggleStart() {
   ensureAudio();   // 用户点击手势内创建音频上下文（警报声用）
   if (state.running) {
     state.running = false; stopCamera(); releaseWake();
+    drawEmpty();                                   // 清掉火柴人，避免黑屏上残留
+    $('placeholder').classList.remove('hidden');   // 恢复「点击开始分析」占位图
     btn.disabled = false; setStartBtn('btnStart', 'play');
     aiSessionEnd();
     return;
@@ -817,9 +819,10 @@ async function toggleStart() {
         state.landmarker = await loadModel();
       } catch (e) {
         console.error('模型加载失败:', e);
-        stopCamera();
+        stopCamera(); releaseWake(); drawEmpty();
         state.running = false;
         setStartBtn('btnStart', 'play');
+        $('placeholder').classList.remove('hidden');
         showCameraError(e, true);   // 摄像头没问题，是模型/网络问题
         return;
       } finally {
@@ -838,7 +841,11 @@ async function toggleStart() {
 }
 function switchEx() {
   const wasRunning = state.running;
-  if (state.running) { state.running = false; stopCamera(); setStartBtn('btnStart', 'play'); $('btn-start').disabled = false; }
+  if (state.running) {
+    state.running = false; stopCamera(); releaseWake();
+    drawEmpty(); $('placeholder').classList.remove('hidden');
+    setStartBtn('btnStart', 'play'); $('btn-start').disabled = false;
+  }
   state.photoMode = false;
   renderExChips(); renderCollectLabels(getEx(activeExId()));
   resetAgg();
@@ -861,7 +868,7 @@ $('photo-input').addEventListener('change', async (ev) => {
   img.src = URL.createObjectURL(file);
   await img.decode();
   try {
-    if (state.running) { state.running = false; stopCamera(); setStartBtn('btnStart', 'play'); $('btn-start').disabled = false; }
+    if (state.running) { state.running = false; stopCamera(); releaseWake(); drawEmpty(); setStartBtn('btnStart', 'play'); $('btn-start').disabled = false; }
     if (!state.landmarker) {
       $('loading').classList.remove('hidden');
       state.landmarker = await loadModel();
@@ -1423,7 +1430,7 @@ function stopSyncShow() {
 async function startSyncScan() {
   if (syncState.scanning) return;
   try {
-    if (state.running) { state.running = false; stopCamera(); setStartBtn('btnStart', 'play'); $('btn-start').disabled = false; }
+    if (state.running) { state.running = false; stopCamera(); releaseWake(); drawEmpty(); setStartBtn('btnStart', 'play'); $('btn-start').disabled = false; }
     if (!state.videoOn) {
       const stream = await openCamera();
       await bindStream(stream);
@@ -1467,7 +1474,7 @@ function scanLoop() {
 }
 async function finishSyncScan() {
   syncState.scanning = false;
-  stopCamera();
+  stopCamera(); releaseWake(); drawEmpty();
   $('sync-panel').classList.add('hidden');
   $('placeholder').classList.remove('hidden');
   try {
@@ -1483,7 +1490,7 @@ async function finishSyncScan() {
 }
 function cancelSyncScan() {
   syncState.scanning = false;
-  stopCamera();
+  stopCamera(); releaseWake(); drawEmpty();
   $('sync-panel').classList.add('hidden');
   $('placeholder').classList.remove('hidden');
   setStartBtn('btnStart', 'play');
@@ -2529,7 +2536,8 @@ onLangChanged(() => {
   renderCollectCount();
   renderProfile(); renderReminder(); renderCloud();
   renderTodayPlan(); renderPlanList(); renderPlanPick(); renderPlanDayDots();
-  renderGoal(); renderVoice();
+  renderGoal(); renderVoice(); renderAchievements();   // 成就网格也随语言切换
+  aiRun();                                              // AI 管家卡片随语言切换
   setStartBtn(state.running ? 'btnStop' : 'btnStart', state.running ? 'stop' : 'play');
   $('btn-collect-label').textContent = state.collectMode ? t('btnCollectStop') : t('btnCollect');
   $('feedback')._last = null;

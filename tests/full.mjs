@@ -63,6 +63,14 @@ camOn ? ok('摄像头启动 → 模型加载 → 分析运行') : bad('摄像头
 await evl(`document.getElementById('btn-start').click()`);
 await sleep(300);
 (await evl(`document.getElementById('btn-start-label').textContent === '开始分析'`)) ? ok('停止恢复开始分析') : bad('停止失败');
+(await evl(`(() => { const c = document.getElementById('overlay'); const ctx = c.getContext('2d'); const d = ctx.getImageData(0, 0, c.width, c.height).data; let sum = 0; for (let i = 3; i < d.length; i += 4) sum += d[i]; return sum === 0 && !document.getElementById('placeholder').classList.contains('hidden'); })()`)) ? ok('停止后画面清空+占位图恢复（无残留火柴人）') : bad('停止后画面残留');
+// 语言切换后成就与 AI 卡片也切换
+await evl(`document.getElementById('btn-lang').click()`);
+await sleep(300);
+(await evl(`document.getElementById('ai-card').textContent.includes('AI System Manager')`)) ? ok('切英文后 AI 卡片同步翻译') : bad('AI 卡片未翻译');
+(await evl(`document.getElementById('ach-grid').textContent.includes('First session') || document.getElementById('ach-grid').textContent.includes('Completed your first')`)) ? ok('切英文后成就网格同步翻译') : bad('成就网格未翻译');
+await evl(`document.getElementById('btn-lang').click()`);   // 切回中文，恢复后续测试基线
+await sleep(300);
 
 console.log('===== 3. 语言切换 =====');
 await evl(`document.getElementById('btn-lang').click()`);
