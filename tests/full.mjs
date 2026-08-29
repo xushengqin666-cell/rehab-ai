@@ -263,7 +263,7 @@ await send('Page.navigate', { url: APP });
 await sleep(2500);
 await evl(`document.querySelector('.bottom-nav button[data-tab="settings"]').click()`);
 await sleep(200);
-(await evl(`document.getElementById('about-version').textContent.includes('v2.17')`)) ? ok('版本号显示') : bad('版本号失败');
+(await evl(`document.getElementById('about-version').textContent.includes('v2.18')`)) ? ok('版本号显示') : bad('版本号失败');
 (await evl(`document.getElementById('tab-settings').textContent.includes('隐私政策') && document.getElementById('tab-settings').textContent.includes('免责声明')`)) ? ok('隐私政策 + 免责声明') : bad('法务文案缺失');
 await evl(`document.getElementById('btn-share').click()`);
 await sleep(400);
@@ -307,6 +307,38 @@ await sleep(2500);
 await evl(`document.querySelector('.bottom-nav button[data-tab="settings"]').click()`);
 await sleep(300);
 (await evl(`document.getElementById('ai-card').textContent.includes('9.9.9')`)) ? ok('AI 管家感知新版本（重要更新）') : bad('AI 未感知新版本');
+
+console.log('===== 16. 新增功能（v2.18：倒计时/休息/久坐提醒/AI计划） =====');
+await send('Page.navigate', { url: APP });
+await sleep(2500);
+// AI 一键生成计划
+await evl(`document.querySelector('.bottom-nav button[data-tab="schedule"]').click()`);
+await sleep(200);
+await evl(`document.getElementById('btn-ai-plan').click()`);
+await sleep(300);
+(await evl(`document.querySelectorAll('#plan-list .item').length >= 3`)) ? ok('AI 一键生成康复计划') : bad('AI 计划失败');
+// 久坐提醒设置
+await evl(`document.querySelector('.bottom-nav button[data-tab="settings"]').click()`);
+await sleep(200);
+(await evl(`!!document.getElementById('btn-sed-toggle') && !!document.getElementById('sed-interval')`)) ? ok('久坐提醒设置存在') : bad('久坐设置缺失');
+await evl(`document.getElementById('btn-sed-toggle').click()`);
+await sleep(150);
+(await evl(`JSON.parse(localStorage.getItem('rehab_sedentary')).on === true`)) ? ok('久坐提醒可开启') : bad('久坐提醒开启失败');
+await evl(`document.getElementById('btn-sed-toggle').click()`);
+// 组间休息计时器
+await evl(`document.querySelector('.bottom-nav button[data-tab="train"]').click()`);
+await sleep(200);
+await evl(`document.getElementById('btn-rest').click()`);
+await sleep(300);
+(await evl(`document.getElementById('feedback').textContent.includes('休息')`)) ? ok('组间休息计时器') : bad('休息计时失败');
+await evl(`document.getElementById('btn-rest').click()`);   // 再次点击重置
+// 3-2-1 倒计时不影响开始流程
+await evl(`document.getElementById('btn-start').click()`);
+let started = false;
+for (let i = 0; i < 40; i++) { await sleep(1000); if (await evl(`document.getElementById('btn-start-label').textContent === '停止分析'`)) { started = true; break; } }
+started ? ok('开始流程（含3-2-1倒计时）正常') : bad('开始流程异常');
+await evl(`document.getElementById('btn-start').click()`);
+await sleep(400);
 
 console.log('===== 结果 =====');
 console.log('CONSOLE_ERRORS:', consoleErrors.length ? consoleErrors.join(' ||| ') : 'none');

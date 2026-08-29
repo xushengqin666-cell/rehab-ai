@@ -134,3 +134,17 @@ export function buildFeedbackReport(env, rating, text) {
     body,
   };
 }
+
+/* ============ AI 一键生成康复计划（按康复目标，Fitbod 式） ============ */
+// goal: knee | posture | fitness | other → [{ ex, reps, days:[0..6] }]
+export function generatePlan(goal) {
+  const PLANS = {
+    knee: [['squat', 20], ['sitstand', 15], ['standing', 2]],
+    posture: [['standing', 2], ['sitting', 2], ['shoulderraise', 15], ['hiphinge', 15]],
+    fitness: [['squat', 25], ['pushup', 15], ['lunge', 20], ['stepup', 20], ['shoulderraise', 15]],
+    other: [['squat', 20], ['hiphinge', 15], ['standing', 2], ['shoulderraise', 15]],
+  };
+  const items = PLANS[goal] || PLANS.other;
+  const days = goal === 'fitness' ? [0, 2, 4, 6] : [0, 1, 2, 3, 4, 5, 6];
+  return items.map(([ex, reps]) => ({ ex, reps, days: [...days] }));
+}

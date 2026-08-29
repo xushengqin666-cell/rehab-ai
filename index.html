@@ -100,6 +100,10 @@
         <span class="btn-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.8a8.2 8.2 0 1 1 0 16.4 8.2 8.2 0 0 1 0-16.4Z"/><path d="m8.2 12.2 2.6 2.6 5-5.4"/></svg></span>
         <span data-i18n="btnSave">保存本次记录</span>
       </button>
+      <button id="btn-rest" class="btn">
+        <span class="btn-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="7.4"/><path d="M12 9.6V13l2.4 1.6M9.8 2.6h4.4"/></svg></span>
+        <span data-i18n="restBtn">休息计时</span>
+      </button>
     </div>
     <p class="hint" data-i18n="trainHint">正面朝向镜头可检测膝盖内扣。采集的数据在「设置」页导出 CSV，用 Python 训练模型。</p>
   </section>
@@ -196,6 +200,10 @@
       <p class="hint" data-i18n="planHint">给每周的每天安排动作和目标次数，训练页打卡后自动计入进度。</p>
       <div id="plan-list" class="list"></div>
       <button id="btn-plan-add" class="btn block" data-i18n="btnPlanAdd">➕ 添加动作到计划</button>
+      <button id="btn-ai-plan" class="btn primary block" style="margin-top:8px">
+        <span class="btn-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4.5l1.4 4.1 4.1 1.4-4.1 1.4L12 15.5l-1.4-4.1-4.1-1.4 4.1-1.4Z"/><path d="M18.5 15.5l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7Z"/></svg></span>
+        <span data-i18n="aiPlanBtn">AI 一键生成计划</span>
+      </button>
       <div id="plan-editor" class="plan-editor hidden">
         <div id="plan-ex-pick" class="chips" style="margin-top:10px"></div>
         <div class="cf-rep" style="margin-top:8px">
@@ -217,6 +225,20 @@
         <button id="btn-rem-toggle" class="btn primary" data-i18n="btnRemEnable">开启提醒</button>
       </div>
       <p class="hint" id="rem-status"></p>
+    </div>
+
+    <div class="card">
+      <h3 data-i18n="sedTitle">久坐提醒</h3>
+      <p class="hint" data-i18n="sedHint">久坐一段时间提醒起来活动，保护腰椎和肩颈。</p>
+      <div class="rem-row">
+        <select id="sed-interval" style="flex:1">
+          <option value="30" data-i18n="sedOpt30">30 分钟</option>
+          <option value="45" selected data-i18n="sedOpt45">45 分钟</option>
+          <option value="60" data-i18n="sedOpt60">60 分钟</option>
+        </select>
+        <button id="btn-sed-toggle" class="btn primary" data-i18n="sedEnable">开启久坐提醒</button>
+      </div>
+      <p class="hint" id="sed-status"></p>
     </div>
 
     <div class="card">

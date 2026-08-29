@@ -7,7 +7,7 @@ import {
   customDefault, CUSTOM_JOINTS, angle3, kneeValgus, pickSide, setCustomKey,
   verticalAngle,
 } from './analysis.js';
-import { healthCheck, buildFeedbackReport, logAiError, aiErrors, aiStats, aiStatsGet, aiFeedbackAdd, aiSessionComment } from './ai.js';
+import { healthCheck, buildFeedbackReport, logAiError, aiErrors, aiStats, aiStatsGet, aiFeedbackAdd, aiSessionComment, generatePlan } from './ai.js';
 
 /* ============ 基础工具 ============ */
 const $ = (id) => document.getElementById(id);
@@ -93,7 +93,7 @@ function migrateDeviceData(email) {
 }
 const fmtDate = (ts) => new Date(ts).toLocaleString(locale(), { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-const APP_VERSION = 'v2.17.6';
+const APP_VERSION = 'v2.18.0';
 const exName = (e) => (e.custom ? e.name : t(e.nameKey));
 const exDesc = (e) => (e.custom ? e.desc : t(e.descKey));
 const depthTxt = (d) => t('depth' + (d ? d.charAt(0).toUpperCase() + d.slice(1) : 'Ok')) || d;
@@ -186,7 +186,7 @@ const state = {
   ex: null, collectBuf: sget('rehab_collect', []),
   cameras: null, pickCam: undefined,
   tab: 'train', statsKey: null, loopScheduled: false,
-  autoEx: 'standing', autoVotes: {}, autoVoteN: 0, autoHist: [], autoLast4: [],
+  autoEx: 'standing', autoVotes: {}, autoVoteN: 0, autoHist: [], autoLast4: [], restTimer: null,
 };
 let _customCache = null;
 const customList = () => { if (_customCache === null) _customCache = loadCustomExercises(); return _customCache; };
@@ -404,9 +404,9 @@ function classifyAuto(lms, hist, now) {
     if (wristNearShoulder && kneeMin > 110) return 'pushup';   // 含平板支撑（直臂）
     return 'hiphinge';
   }
-  // —— 静止坐姿：髋在坐高、膝中等弯曲(80–130°)或双腿前伸、躯干较直立 ——
+  // —— 静止坐姿：髋在坐高、膝中等弯曲(80–130°)或双腿前伸、躯干较直立/微前倾(<40°，桌前学习常见) ——
   const legsOut = kneeMin > 150 && Math.abs(lms[s.ankle].y - hipY) < 0.15;   // 腿伸直坐（踝接近髋高）
-  if (yRange < 0.06 && hipY > 0.45 && hipY < 0.75 && lean < 25 && ((kneeMin >= 80 && kneeMin <= 130) || legsOut)) return 'sitting';
+  if (yRange < 0.06 && hipY > 0.40 && hipY < 0.80 && lean < 40 && ((kneeMin >= 80 && kneeMin <= 130) || legsOut)) return 'sitting';
   // —— 运动：动态动作 ——
   if (yRange >= 0.06) {
     if (kneeDiff > 35) return kneeMax > 150 ? 'stepup' : 'lunge';
@@ -799,7 +799,9 @@ async function toggleStart() {
     await bindStream(stream);
     state.running = true; state.photoMode = false;
     acquireWake();                               // 训练中屏幕常亮，不自动锁屏
+    if (state.restTimer) { clearInterval(state.restTimer); state.restTimer = null; }   // 开始训练自动结束休息计时
     resetAgg();
+    await startCountdown();                      // 新增：3-2-1 开始倒计时（对标 NTC/Keep）
     btn.disabled = false;
     setStartBtn('btnStop', 'stop');
     $('stats-box').classList.remove('hidden');
@@ -839,6 +841,110 @@ async function toggleStart() {
     showCameraError(e);
   }
 }
+
+/* ============ 新增功能（v2.18）：3-2-1 倒计时 / 组间休息 / 久坐提醒 / AI 计划 ============ */
+// 3-2-1 开始倒计时：在画面上显示大数字，结束后清屏进入分析
+function startCountdown() {
+  return new Promise((resolve) => {
+    const c = $('overlay');
+    const cx = c.getContext('2d');
+    const nums = ['3', '2', '1'];
+    let i = 0;
+    const step = () => {
+      if (i >= nums.length) { drawEmpty(); resolve(); return; }
+      cx.clearRect(0, 0, c.width, c.height);
+      cx.fillStyle = 'rgba(20, 24, 31, .55)';
+      cx.fillRect(0, 0, c.width, c.height);
+      cx.fillStyle = '#4ade80';
+      cx.font = 'bold 72px system-ui, sans-serif';
+      cx.textAlign = 'center';
+      cx.textBaseline = 'middle';
+      cx.fillText(nums[i], c.width / 2, c.height / 2);
+      i++;
+      setTimeout(step, 600);
+    };
+    step();
+  });
+}
+// 组间休息计时器（默认 60 秒，结束响铃 + 提示）
+function startRest(seconds = 60) {
+  if (state.restTimer) clearInterval(state.restTimer);
+  let left = seconds;
+  const fb = $('feedback');
+  const render = () => {
+    fb.classList.remove('hidden');
+    fb.innerHTML = fbWrap('check', `<b>${t('restRunning', { s: left })}</b>`);
+    fb.className = 'feedback';
+    fb._last = 'rest';
+  };
+  render();
+  state.restTimer = setInterval(() => {
+    left--;
+    if (left <= 0) {
+      clearInterval(state.restTimer);
+      state.restTimer = null;
+      alarmBurst();
+      toast(t('restDone'));
+      speak(t('restDone'));
+      fb._last = null;
+    } else {
+      render();
+    }
+  }, 1000);
+}
+$('btn-rest').addEventListener('click', () => startRest(60));
+
+// 久坐提醒：按设置间隔（30/45/60 分钟）提醒起身活动
+const sedGet = () => LS.get('rehab_sedentary', { on: false, min: 45 });
+let sedLastActive = Date.now();
+document.addEventListener('click', () => { sedLastActive = Date.now(); }, true);   // 任何操作都算活动
+function renderSedentary() {
+  const s = sedGet();
+  $('sed-interval').value = String(s.min || 45);
+  $('btn-sed-toggle').textContent = s.on ? t('sedDisable') : t('sedEnable');
+  $('btn-sed-toggle').classList.toggle('primary', !s.on);
+  $('sed-status').textContent = s.on ? t('sedStatusOn', { n: s.min }) : '';
+}
+$('btn-sed-toggle').addEventListener('click', () => {
+  const s = sedGet();
+  s.on = !s.on;
+  LS.set('rehab_sedentary', s);
+  sedLastActive = Date.now();
+  renderSedentary();
+  if (s.on) toast(t('sedStatusOn', { n: s.min }));
+});
+$('sed-interval').addEventListener('change', () => {
+  const s = sedGet();
+  s.min = +$('sed-interval').value || 45;
+  LS.set('rehab_sedentary', s);
+  renderSedentary();
+});
+setInterval(() => {
+  const s = sedGet();
+  if (!s.on || document.hidden) return;
+  if (Date.now() - sedLastActive >= s.min * 60000) {
+    sedLastActive = Date.now();
+    toast(t('sedToast'));
+    if (navigator.vibrate) { try { navigator.vibrate(200); } catch { /* 忽略 */ } }
+  }
+}, 30000);
+
+// AI 一键生成康复计划（按个人资料里的康复目标）
+$('btn-ai-plan').addEventListener('click', () => {
+  const goal = profileGet().goal || 'other';
+  const items = generatePlan(goal);
+  const list = planGet();
+  let added = 0;
+  for (const it of items) {
+    if (!list.find((p) => p.ex === it.ex)) { list.push(it); added++; }
+  }
+  sset('rehab_plan', list);
+  renderPlanList(); renderTodayPlan(); renderGoal();
+  scheduleCloudSync();
+  toast(t('aiPlanDone', { n: added }));
+  if (added) speak(t('aiPlanDone', { n: added }));
+});
+
 function switchEx() {
   const wasRunning = state.running;
   if (state.running) {
@@ -2459,6 +2565,15 @@ async function selfTest() {
     const standNoisyCls = classifyAuto(base(), noisy(0.45, 0.02), tN);
     const sitNoisyCls = classifyAuto(sitP, noisy(0.52, 0.02), tN);
     log(t('stAutoNoise'), standNoisyCls === 'standing' && sitNoisyCls === 'sitting', `${standNoisyCls},${sitNoisyCls}`);
+    // 11b3. 桌前坐姿（躯干前倾 25–40°）也识别为坐姿（修复「坐着被认成站着」）
+    const sitLeanP = mkPose((b) => {
+      [23, 24].forEach((i) => { b[i].x = 0.40; b[i].y = 0.52; });
+      [25, 26].forEach((i) => { b[i].x = 0.56; b[i].y = 0.64; });
+      [27, 28].forEach((i) => { b[i].x = 0.50; b[i].y = 0.86; });
+      [11, 12].forEach((i) => { b[i].x = 0.52; b[i].y = 0.36; });
+    });
+    const sitLeanCls = classifyAuto(sitLeanP, still(0.52), tN);
+    log(t('stSitLean'), sitLeanCls === 'sitting', `${sitLeanCls} lean=${EXERCISES.sitting.analyze(sitLeanP).metrics.lean.toFixed(0)}`);
     // 11c. 站姿/坐姿分析
     const stRes = EXERCISES.standing.analyze(base());
     const stBad = EXERCISES.standing.analyze(mkPose((b) => { [11, 12].forEach((i) => { b[i].x = 0.40; b[i].y = 0.35; }); b[0].x = 0.35; b[0].y = 0.28; }));
@@ -2509,6 +2624,16 @@ async function selfTest() {
     const p3 = pickLatest(p2, { version: '2.17.1', apk: 'https://y.apk' });
     const p4 = pickLatest(p2, { version: '2.17.4', apk: 'https://github.com/z.apk' });
     log(t('stPickLatest'), p1.version === '2.17.3' && p2.apk.includes('jsdelivr') && p3.version === '2.17.3' && p4.version === '2.17.4', `${p2.version}/${p4.version}`);
+    // 16c. AI 一键生成计划（按康复目标）
+    const pk = generatePlan('knee');
+    const pp = generatePlan('posture');
+    const pf2 = generatePlan('fitness');
+    const po = generatePlan('other');
+    const planOk = pk.some((x) => x.ex === 'squat') && pk.some((x) => x.ex === 'sitstand')
+      && pp.some((x) => x.ex === 'standing') && pp.some((x) => x.ex === 'sitting')
+      && pf2.length >= 5 && po.length >= 3
+      && [pk, pp, pf2, po].every((pl) => pl.every((x) => x.reps > 0 && Array.isArray(x.days) && x.days.length >= 3 && x.days.every((d) => d >= 0 && d <= 6)));
+    log(t('stPlanGen'), planOk, `knee=${pk.length} posture=${pp.length} fitness=${pf2.length} other=${po.length}`);
     // 17. 腿伸直坐姿识别 + 体态小结专属文案
     const sitLegs = mkPose((b) => {
       [23, 24].forEach((i) => { b[i].x = 0.42; b[i].y = 0.52; });
@@ -2538,10 +2663,16 @@ onLangChanged(() => {
   renderTodayPlan(); renderPlanList(); renderPlanPick(); renderPlanDayDots();
   renderGoal(); renderVoice(); renderAchievements();   // 成就网格也随语言切换
   aiRun();                                              // AI 管家卡片随语言切换
+  renderSedentary();                                    // 久坐提醒设置随语言切换
   setStartBtn(state.running ? 'btnStop' : 'btnStart', state.running ? 'stop' : 'play');
   $('btn-collect-label').textContent = state.collectMode ? t('btnCollectStop') : t('btnCollect');
   $('feedback')._last = null;
   if (state.running) state.statsKey = null;   // 下一帧按新语言重建统计
+  else $('feedback').classList.add('hidden'); // 不训练时反馈条不残留旧语言文案
+  if (!$('onboard').classList.contains('hidden')) renderOnboard();        // 引导页随语言切换
+  if (!$('fb-modal').classList.contains('hidden')) openFeedback();         // 反馈弹窗报告随语言切换
+  if (!$('custom-form-card').classList.contains('hidden')) $('cf-title').textContent = editingCustomId ? t('cfTitleEdit') : t('cfTitleNew');
+  renderQrFrame();                                                          // 二维码同步帧（如可见）
   if (state._lastCamErr && !$('cam-retry').classList.contains('hidden')) showCameraError(state._lastCamErr, state._lastCamIsModel);
 });
 renderExChips(); renderCollectLabels(getEx(activeExId())); resetAgg();
@@ -2550,6 +2681,7 @@ renderCollectCount();
 renderProfile(); renderReminder(); renderCloud(); renderAuth();
 renderTodayPlan(); renderPlanList();
 renderVoice();
+renderSedentary();
 showOnboard();
 setTimeout(reminderCatchUp, 4000);            // 错过提醒时间 → 打开时补一次
 // 开发模式：?cfg=1 显示配置入口（普通用户永远看不到；密钥写死后由 CLOUD_HARDCODED 生效）

@@ -1,7 +1,7 @@
 {
-  "version": "2.17.6",
-  "apk": "https://cdn.jsdelivr.net/gh/xushengqin666-cell/rehab-ai@main/downloads/RehabAI-v2.17.6.apk",
+  "version": "2.18.0",
+  "apk": "https://cdn.jsdelivr.net/gh/xushengqin666-cell/rehab-ai@main/downloads/RehabAI-v2.18.0.apk",
   "releaseUrl": "https://github.com/xushengqin666-cell/rehab-ai/releases/latest",
-  "notes": "重要修复：智能识别不再一直卡在深蹲——改用抗噪声的百分位运动判定，站/坐微晃也能正确识别。",
-  "important": true
+  "notes": "新功能（对标 Keep/NTC/体态提醒类 App）：3-2-1 开始倒计时、组间休息计时器、久坐提醒、AI 一键生成康复计划。",
+  "important": false
 }
