@@ -108,6 +108,59 @@
     <p class="hint" data-i18n="trainHint">正面朝向镜头可检测膝盖内扣。采集的数据在「设置」页导出 CSV，用 Python 训练模型。</p>
   </section>
 
+  <!-- ============ 体态评估（v2.19 新增：整体体态识别 → 识别完整才评价 → 指导性报告） ============ -->
+  <section id="tab-posture" class="tab">
+    <div class="card">
+      <h3 data-i18n="paTitle">全身体态评估</h3>
+      <p class="hint" data-i18n="paIntro">选择一种体态 → 全身完整入镜并保持 → AI 确认「识别完整」后才开始评价 → 指出不足并给出改进建议。</p>
+      <div id="pa-kinds" class="pa-kinds">
+        <button class="pa-kind" data-pa="standing"><span class="pa-kind-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="4.8" r="2.2"/><path d="M12 7v5.6M12 12.6l-4 3M12 12.6l4 3M12 15.6l-3.2 4M12 15.6l3.2 4M12 9.6l-4.6-2M12 9.6l4.6-2"/></svg></span><span data-i18n="paKindStand">正常站立</span></button>
+        <button class="pa-kind" data-pa="single"><span class="pa-kind-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="4.8" r="2.2"/><path d="M12 7v8M12 11.5l-4 3M12 11.5l4 3M12 15l-3.2 4M12 15l3.2 4M12 9.5l-4.6-2M12 9.5l4.6-2M15.5 12.5l2.5-.5M15.5 14.5l2.5.5"/></svg></span><span data-i18n="paKindSingle">单腿站立</span></button>
+        <button class="pa-kind" data-pa="squat"><span class="pa-kind-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="2.2"/><path d="M12 7.2v3.6M12 10.8l-3 2M12 10.8l3 2M8.5 12.5 7 16M15.5 12.5 17 16M12 9.5l-4.6-2M12 9.5l4.6-2"/></svg></span><span data-i18n="paKindSquat">深蹲</span></button>
+        <button class="pa-kind" data-pa="walk"><span class="pa-kind-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="4.8" r="2.2"/><path d="M12 7v4.5M12 11.5l-3.5 2.5L7 16.5M12 11.5l3 1.5M10.5 16.5l2 2 3.5-2M12 9.5l-4-2M12 9.5l4-2"/></svg></span><span data-i18n="paKindWalk">走路</span></button>
+        <button class="pa-kind" data-pa="run"><span class="pa-kind-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="4.8" r="2.2"/><path d="M12 7v3.5M12 10.5l-4 2.5L6.5 15M12 10.5l3.5 2M9 15.5l2.5 3 4-1.5M12 9.5l-4.6-2M12 9.5l4.6-2M8.5 8.5 7 8M9.5 7l1.5-1.5"/></svg></span><span data-i18n="paKindRun">跑步</span></button>
+      </div>
+      <p class="hint tiny" id="pa-guide" data-i18n="paGuideStand">侧身或正面朝向镜头，全身入镜，自然站立 6 秒</p>
+    </div>
+
+    <div class="camera-box" id="pa-cam-box">
+      <video id="pa-video" playsinline muted autoplay></video>
+      <canvas id="pa-overlay"></canvas>
+      <div id="pa-placeholder">
+        <div class="ph-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="4.8" r="2.2"/><path d="M12 7v5.6M12 12.6l-4 3M12 12.6l4 3M12 15.6l-3.2 4M12 15.6l3.2 4M12 9.6l-4.6-2M12 9.6l4.6-2"/></svg>
+        </div>
+        <p id="pa-placeholder-text" data-i18n="paIntro">选择一种体态 → 全身完整入镜并保持 → AI 确认「识别完整」后才开始评价</p>
+      </div>
+      <div id="pa-loading" class="hidden"></div>
+    </div>
+
+    <div id="pa-gate" class="card hidden">
+      <h3 data-i18n="paGateTitle">识别完整性检查（先完整，再评价）</h3>
+      <div id="pa-checks" class="pa-checks"></div>
+      <div id="pa-progress" class="pa-progress"><div class="pa-progress-fill" id="pa-progress-fill"></div></div>
+      <p class="hint tiny" id="pa-hint"></p>
+    </div>
+
+    <div class="controls">
+      <button id="btn-pa-start" class="btn primary">
+        <span class="btn-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8.2 5.6v12.8a.7.7 0 0 0 1.1.6l10.2-6.4a.7.7 0 0 0 0-1.2L9.3 5a.7.7 0 0 0-1.1.6Z" fill="currentColor"/></svg></span>
+        <span id="btn-pa-start-label" data-i18n="paBtnStart">开始体态评估</span>
+      </button>
+      <button id="btn-pa-demo" class="btn">
+        <span class="btn-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 5.5h5l2-2h1l2 2h5v10h-15z"/><circle cx="12" cy="11" r="3.4"/></svg></span>
+        <span data-i18n="paBtnDemo">演示模式</span>
+      </button>
+    </div>
+
+    <div id="pa-report" class="card hidden"></div>
+
+    <div class="card">
+      <h3 data-i18n="paHistoryTitle">历史体态评估</h3>
+      <div id="pa-history" class="list"></div>
+    </div>
+  </section>
+
   <!-- ============ 记录打卡 ============ -->
   <section id="tab-record" class="tab">
     <div class="card">
@@ -472,6 +525,10 @@
   <button data-tab="train" class="active">
     <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6.7 7v10M17.3 7v10M6.7 10h10.6M6.7 14h10.6M4.2 12H6.7M17.3 12h2.5"/></svg>
     <span class="nav-label" data-i18n="navTrain">训练</span>
+  </button>
+  <button data-tab="posture">
+    <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="4.8" r="2.2"/><path d="M12 7v5.6M12 12.6l-4 3M12 12.6l4 3M12 15.6l-3.2 4M12 15.6l3.2 4M12 9.6l-4.6-2M12 9.6l4.6-2M7.4 6.8l-1 3.4M16.6 6.8l1 3.4"/></svg>
+    <span class="nav-label" data-i18n="paNav">体态</span>
   </button>
   <button data-tab="record">
     <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20v-8.5M12 20V4.5M19 20V11M3.8 20h16.4"/></svg>

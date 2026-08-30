@@ -263,7 +263,7 @@ await send('Page.navigate', { url: APP });
 await sleep(2500);
 await evl(`document.querySelector('.bottom-nav button[data-tab="settings"]').click()`);
 await sleep(200);
-(await evl(`document.getElementById('about-version').textContent.includes('v2.18')`)) ? ok('版本号显示') : bad('版本号失败');
+(await evl(`document.getElementById('about-version').textContent.includes('v2.19')`)) ? ok('版本号显示') : bad('版本号失败');
 (await evl(`document.getElementById('tab-settings').textContent.includes('隐私政策') && document.getElementById('tab-settings').textContent.includes('免责声明')`)) ? ok('隐私政策 + 免责声明') : bad('法务文案缺失');
 await evl(`document.getElementById('btn-share').click()`);
 await sleep(400);
@@ -339,6 +339,42 @@ for (let i = 0; i < 40; i++) { await sleep(1000); if (await evl(`document.getEle
 started ? ok('开始流程（含3-2-1倒计时）正常') : bad('开始流程异常');
 await evl(`document.getElementById('btn-start').click()`);
 await sleep(400);
+
+console.log('===== 17. 全身体态评估（v2.19：先完整识别再评价 + 指导性报告） =====');
+await send('Page.navigate', { url: APP });
+await sleep(2500);
+// 17a. 体态 tab + 五种体态
+await evl(`document.querySelector('.bottom-nav button[data-tab="posture"]').click()`);
+await sleep(300);
+(await evl(`document.querySelectorAll('.pa-kind').length === 5`)) ? ok('体态评估页 5 种体态（站立/单腿/深蹲/走路/跑步）') : bad('体态种类缺失');
+(await evl(`!!document.getElementById('btn-pa-start') && !!document.getElementById('btn-pa-demo') && !!document.getElementById('pa-gate')`)) ? ok('开始/演示按钮 + 完整性检查面板存在') : bad('体态控件缺失');
+// 17b. 演示模式·站立：门控通过 → 报告（评分 + 不足 + 建议）
+await evl(`document.querySelector('.pa-kind[data-pa="standing"]').click()`);
+await sleep(100);
+await evl(`document.getElementById('btn-pa-demo').click()`);
+let paReport = false;
+for (let i = 0; i < 15; i++) { await sleep(1000); if (await evl(`!document.getElementById('pa-report').classList.contains('hidden')`)) { paReport = true; break; } }
+paReport ? ok('演示模式·站立：识别完整后自动生成报告（6 秒稳定门控）') : bad('站立评估未出报告');
+(await evl(`(() => { const r = document.getElementById('pa-report'); return /\\d+/.test(r.querySelector('.pa-score-num').textContent) && r.querySelectorAll('.pa-item').length >= 5 && (r.textContent.includes('改进建议') || r.textContent.includes('How to improve')); })()`)) ? ok('报告含综合评分 + 逐项指标 + 改进建议') : bad('报告结构缺失');
+(await evl(`JSON.parse(localStorage.getItem('rehab_pa_history')).length === 1`)) ? ok('报告自动存入历史') : bad('历史未保存');
+// 17c. 演示模式·走路：步态节律门控（≥6 步）→ 报告含步频
+await evl(`document.querySelector('.pa-kind[data-pa="walk"]').click()`);
+await sleep(100);
+await evl(`document.getElementById('btn-pa-demo').click()`);
+let paWalk = false;
+for (let i = 0; i < 18; i++) { await sleep(1000); if (await evl(`!document.getElementById('pa-report').classList.contains('hidden')`)) { paWalk = true; break; } }
+paWalk ? ok('演示模式·走路：步态节律门控通过后生成报告') : bad('走路评估未出报告');
+(await evl(`JSON.parse(localStorage.getItem('rehab_pa_history')).length === 2`)) ? ok('历史累计 2 条') : bad('历史累计失败');
+// 17d. 语言切换：体态页文案随语言变化
+await evl(`document.getElementById('btn-lang').click()`);
+await sleep(400);
+(await evl(`document.getElementById('tab-posture').textContent.includes('Posture Assessment')`)) ? ok('体态页英文切换') : bad('体态页语言切换失败');
+await evl(`document.getElementById('btn-lang').click()`);
+await sleep(300);
+// 17e. 切走自动停止体态会话
+await evl(`document.querySelector('.bottom-nav button[data-tab="record"]').click()`);
+await sleep(300);
+(await evl(`document.getElementById('btn-pa-start-label').textContent !== '停止评估'`)) ? ok('离开体态页自动停止评估') : bad('离开体态页未停止');
 
 console.log('===== 结果 =====');
 console.log('CONSOLE_ERRORS:', consoleErrors.length ? consoleErrors.join(' ||| ') : 'none');

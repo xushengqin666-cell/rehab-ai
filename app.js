@@ -93,7 +93,7 @@ function migrateDeviceData(email) {
 }
 const fmtDate = (ts) => new Date(ts).toLocaleString(locale(), { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-const APP_VERSION = 'v2.18.0';
+const APP_VERSION = 'v2.19.0';
 const exName = (e) => (e.custom ? e.name : t(e.nameKey));
 const exDesc = (e) => (e.custom ? e.desc : t(e.descKey));
 const depthTxt = (d) => t('depth' + (d ? d.charAt(0).toUpperCase() + d.slice(1) : 'Ok')) || d;
@@ -1410,6 +1410,7 @@ function switchTab(name) {
   if (navBtn) navBtn.classList.add('active');
   $('tab-' + name).classList.add('active');
   if (name === 'train') kickLoop();          // 回到训练页立即恢复分析
+  if (name !== 'posture') paStop();          // v2.19：离开体态页自动停止体态评估（防摄像头占用）
 }
 document.querySelectorAll('.bottom-nav button').forEach((btn) => {
   btn.addEventListener('click', () => switchTab(btn.dataset.tab));
@@ -2644,12 +2645,520 @@ async function selfTest() {
     const sitLegsCls = classifyAuto(sitLegs, still(0.52), tN);
     const holdComment = aiSessionComment({ reps: 0, quality: null, riskEvents: 0 }, true);
     log(t('stAutoPosture'), sitLegsCls === 'sitting' && holdComment.key === 'aiSessHoldNone', `${sitLegsCls},${holdComment.key}`);
+    // 18. 全身体态评估引擎（v2.19）：好/坏骨架评分 + 指导性建议
+    const paGood = paBuildReport('standing', paEvalStanding(Array(30).fill(base())));
+    const paBadLms = (() => { const b = base(); b[0].x = 0.44; b[0].y = 0.14; [11, 12].forEach((i) => { b[i].x = 0.56; b[i].y = 0.31; }); b[11].y = 0.30; return b; })();
+    const paBad = paBuildReport('standing', paEvalStanding(Array(30).fill(paBadLms)));
+    const paAdviceOk = paBad.priorities.length >= 1 && paBad.priorities.every((i) => i.advice && i.advice.length > 2);
+    log(t('stPaStand'), paGood.score >= 80 && paBad.score < 80 && paAdviceOk, `good=${paGood.score} bad=${paBad.score} advice=${paAdviceOk}`);
+    // 18b. 单腿站立评价（含保持时间项）
+    const paSingleLms = (() => { const b = base(); b[28].y = 0.78; b[26].y = 0.70; return b; })();
+    const paSi = paBuildReport('single', paEvalSingle(Array(30).fill(paSingleLms)));
+    log(t('stPaSingle'), paSi.items.length >= 4 && paSi.items.some((i) => i.key === 'mSingleHold'), `items=${paSi.items.length}`);
+    // 18c. 深蹲评价：右膝内扣 → valgus 项 bad
+    const paSqLms = (() => { const b = base(); [23, 24].forEach((i) => { b[i].y = 0.50; }); [25, 26].forEach((i) => { b[i].x = 0.50; b[i].y = 0.68; }); return b; })();
+    const paSq = paBuildReport('squat', paEvalSquat(Array(30).fill(paSqLms)));
+    const paValgus = paSq.items.find((i) => i.key === 'mSquatValgus');
+    log(t('stPaSquat'), paValgus && paValgus.level !== 'good', `valgus=${paValgus ? paValgus.level : '?'}`);
+    // 18d. 步频检测：合成 1.83Hz 正弦髋部轨迹 → ≈110 步/分
+    paState.steps = []; paState.hipHist = [];
+    for (let i = 0; i < 300; i++) { const tt = tN - 10000 + i * 33; paState.hipHist.push({ y: 0.5 + 0.02 * Math.sin(2 * Math.PI * 1.833 * (tt - tN) / 1000), t: tt }); }
+    paDetectSteps(tN);
+    const paCad = paCadence();
+    log(t('stPaWalk'), paCad.cad > 100 && paCad.cad < 120, `cad=${paCad.cad.toFixed(0)} steps=${paState.steps.length}`);
+    // 18e. 完整性门控：缺右踝 → 不评价；脚出画 → 不评价
+    paState.hipHist = [];
+    const paInc = base(); paInc[28].visibility = 0;
+    const paGate1 = paCompleteness(paInc, 'standing', tN);
+    const paFar = (() => { const b = base(); [27, 28].forEach((i) => { b[i].y = 0.99; }); return b; })();
+    const paGate2 = paCompleteness(paFar, 'standing', tN);
+    const paGateOk = paGate1.ok === false && paGate1.items.some((i) => i.key === 'body' && !i.ok)
+      && paGate2.ok === false && paGate2.items.some((i) => i.key === 'frame' && !i.ok);
+    log(t('stPaGate'), paGateOk, `missing=${!paGate1.ok} outframe=${!paGate2.ok}`);
     out.innerHTML += `<div class="st-pass" style="margin-top:8px;font-weight:800">${t('stAllPass')}</div>`;
     console.log('SELFTEST: ALL PASS');
   } catch (e) {
     out.innerHTML += `<div class="st-fail">${t('stError', { msg: e.message })}</div>`;
     console.log('SELFTEST: ERROR', e);
   }
+}
+
+/* ============ 新增功能（v2.19）：全身体态评估 ============ */
+// 流程：选体态 → 采集（摄像头或演示模式）→ 识别完整性门控（人体/全身可见/画幅/姿势到位/稳定或节律）
+//      → 门控全部通过且保持达标时长 → 才开始评价 → 逐项指出不足 + 改进建议 + 综合评分 → 存历史
+// 纯新增：不修改任何旧功能逻辑；复用旧函数只调用不修改（loadModel/openCamera/drawStick/icon/toast）
+const PA_META = {
+  standing: { nameKey: 'paKindStand', guideKey: 'paGuideStand', hold: 6 },
+  single: { nameKey: 'paKindSingle', guideKey: 'paGuideSingle', hold: 8 },
+  squat: { nameKey: 'paKindSquat', guideKey: 'paGuideSquat', hold: 6 },
+  walk: { nameKey: 'paKindWalk', guideKey: 'paGuideWalk', need: 6 },
+  run: { nameKey: 'paKindRun', guideKey: 'paGuideRun', need: 8 },
+};
+const PA_REQUIRED = {
+  standing: [0, 11, 12, 13, 14, 15, 16, 23, 24, 25, 26, 27, 28],
+  single: [0, 11, 12, 13, 14, 15, 16, 23, 24, 25, 26, 27, 28],
+  squat: [0, 11, 12, 13, 14, 15, 16, 23, 24, 25, 26, 27, 28],
+  walk: [0, 11, 12, 15, 16, 23, 24, 25, 26],
+  run: [0, 11, 12, 15, 16, 23, 24, 25, 26],
+};
+const paState = {
+  active: false, demo: false, kind: 'standing',
+  samples: [], hipHist: [], steps: [], stableMs: 0, _lastOkT: 0, lastT: 0, raf: 0,
+  videoOn: false, stream: null, report: null, lastGate: null,
+};
+const paMid = (lms, a, b) => ({ x: (lms[a].x + lms[b].x) / 2, y: (lms[a].y + lms[b].y) / 2 });
+const paVis = (lms, i) => (lms[i] && (lms[i].visibility ?? 1) >= 0.5);
+const paTorso = (lms) => { const s = paMid(lms, 11, 12), h = paMid(lms, 23, 24); return Math.max(0.12, Math.hypot(s.x - h.x, s.y - h.y)); };
+const paMed = (arr) => { const s = [...arr].sort((a, b) => a - b); return s[Math.floor(s.length / 2)]; };
+const paMean = (arr) => (arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0);
+const paStd = (arr) => { if (arr.length < 2) return 0; const m = paMean(arr); return Math.sqrt(paMean(arr.map((x) => (x - m) * (x - m)))); };
+
+// 识别完整性门控：人体 → 关键点可见 → 画幅 → 姿势到位 → 稳定/节律
+function paCompleteness(lms, kind, ts) {
+  const items = [{ key: 'person', ok: !!lms, label: t('paCheckPerson') }];
+  if (!lms) return { ok: false, items };
+  const req = PA_REQUIRED[kind] || PA_REQUIRED.standing;
+  const missing = req.filter((i) => !paVis(lms, i));
+  if ((kind === 'walk' || kind === 'run') && !paVis(lms, 27) && !paVis(lms, 28)) missing.push(27, 28);
+  items.push({
+    key: 'body', ok: !missing.length, label: t('paCheckBody'),
+    note: missing.length ? t('paMissing', { parts: missing.map((i) => t('paPart' + i)).join('、') }) : '',
+  });
+  const xs = [], ys = [];
+  for (let i = 0; i < 33; i++) if (paVis(lms, i)) { xs.push(lms[i].x); ys.push(lms[i].y); }
+  const minX = Math.min(...xs), maxX = Math.max(...xs), minY = Math.min(...ys), maxY = Math.max(...ys);
+  let frameOk = true, frameHint = '';
+  if (maxY > 0.97 || minY < 0.02) { frameOk = false; frameHint = t('paFrameHintFar'); }
+  else if (maxY < 0.82 && (maxY - minY) < 0.5) { frameOk = false; frameHint = t('paFrameHintNear'); }
+  else if (minX < 0.02 || maxX > 0.98) { frameOk = false; frameHint = t('paFrameHintCenter'); }
+  items.push({ key: 'frame', ok: frameOk, label: t('paCheckFrame'), note: frameOk ? '' : frameHint });
+  if (kind === 'squat') {
+    const ka = Math.min(angle3(lms[23], lms[25], lms[27]), angle3(lms[24], lms[26], lms[28]));
+    items.push({ key: 'pose', ok: ka < 165, label: t('paCheckPose'), note: ka < 165 ? '' : t('paPoseSquatHint') });
+  } else if (kind === 'single') {
+    const lifted = Math.max(lms[27].y, lms[28].y) - Math.min(lms[27].y, lms[28].y) > 0.04;
+    items.push({ key: 'pose', ok: lifted, label: t('paCheckPose'), note: lifted ? '' : t('paPoseSingleHint') });
+  }
+  if (PA_META[kind].hold) {
+    const win = paState.hipHist.filter((h) => h.t > ts - 1500);
+    let stable = true;
+    if (win.length >= 8) {
+      const ys2 = win.map((h) => h.y).sort((a, b) => a - b);
+      stable = (ys2[Math.floor(ys2.length * 0.9)] - ys2[Math.floor(ys2.length * 0.1)]) < 0.025;
+    }
+    items.push({ key: 'stable', ok: stable, label: t('paCheckStable'), note: stable ? '' : t('paStableHint') });
+  } else {
+    items.push({ key: 'rhythm', ok: paState.steps.length >= PA_META[kind].need, label: t('paCheckRhythm'), note: '' });
+  }
+  return { ok: items.every((i) => i.ok), items };
+}
+function paResetStable() { paState.stableMs = 0; paState._lastOkT = 0; }
+
+// 步态节律：髋部高度振荡 → 步峰检测 → 步频 + 左右对称
+function paDetectSteps(ts) {
+  const hist = paState.hipHist.filter((h) => h.t > ts - 10000);
+  if (hist.length < 20) return;
+  const ys = hist.map((h) => h.y);
+  const amp = Math.max(...ys) - Math.min(...ys);
+  if (amp < 0.01) { paState.steps = []; return; }
+  const mid = paMed(ys);
+  const threshold = mid + amp * 0.22;   // 峰须明显高于中位（抗噪声）
+  const raw = [];
+  for (let i = 2; i < hist.length - 2; i++) {
+    if (hist[i].y <= threshold) continue;
+    if (hist[i].y < hist[i - 1].y || hist[i].y < hist[i + 1].y) continue;
+    raw.push(hist[i].t);
+  }
+  const merged = [];
+  for (const p of raw) {
+    if (!merged.length || p - merged[merged.length - 1] > 180) merged.push(p);
+    else if (p > merged[merged.length - 1]) merged[merged.length - 1] = p;
+  }
+  paState.steps = merged;
+}
+function paCadence() {
+  const steps = paState.steps;
+  if (steps.length < 2) return { cad: 0, sym: 0 };
+  const iv = [];
+  for (let i = 1; i < steps.length; i++) iv.push(steps[i] - steps[i - 1]);
+  const mean = paMean(iv);
+  const cad = 60000 / mean;
+  const evens = iv.filter((_, i) => i % 2 === 0), odds = iv.filter((_, i) => i % 2 === 1);
+  const me = paMean(evens), mo = paMean(odds);
+  const sym = (me && mo) ? Math.abs(me - mo) / ((me + mo) / 2) * 100 : 0;
+  return { cad, sym };
+}
+
+// 单项评分：good(100) / warn(65) / bad(30)，非良好项必带改进建议
+function paItem(key, v, level, fmt, advice, textKey) {
+  const texts = { good: key + 'G', warn: key + 'W', bad: key + 'B' };
+  return {
+    key, level, val: fmt ? fmt(v) : String(v), score: level === 'good' ? 100 : level === 'warn' ? 65 : 30,
+    label: t(key), text: t(texts[level], { v: fmt ? fmt(v) : String(v) }),
+    advice: level === 'good' ? '' : advice,
+  };
+}
+const paLevelOf = (v, a, b) => (v < a ? 'good' : v < b ? 'warn' : 'bad');
+
+// 五套体态评价（正面/侧面单摄像头 2D 视角下的可靠指标）
+function paEvalStanding(smps) {
+  const med = (f) => paMed(smps.map(f));
+  const items = [];
+  items.push(paItem('mStandHead', med((l) => verticalAngle(l[0], paMid(l, 11, 12))), paLevelOf(med((l) => verticalAngle(l[0], paMid(l, 11, 12))), 12, 20), (v) => v.toFixed(0) + '°', t('mStandHeadA')));
+  items.push(paItem('mStandShoulder', med((l) => Math.abs(l[11].y - l[12].y) / paTorso(l)), paLevelOf(med((l) => Math.abs(l[11].y - l[12].y) / paTorso(l)), 0.03, 0.06), (v) => v.toFixed(2), t('mStandShoulderA')));
+  items.push(paItem('mStandTrunk', med((l) => verticalAngle(paMid(l, 11, 12), paMid(l, 23, 24))), paLevelOf(med((l) => verticalAngle(paMid(l, 11, 12), paMid(l, 23, 24))), 8, 15), (v) => v.toFixed(0) + '°', t('mStandTrunkA')));
+  items.push(paItem('mStandPelvis', med((l) => Math.abs(l[23].y - l[24].y) / paTorso(l)), paLevelOf(med((l) => Math.abs(l[23].y - l[24].y) / paTorso(l)), 0.03, 0.06), (v) => v.toFixed(2), t('mStandPelvisA')));
+  items.push(paItem('mStandKnee', med((l) => Math.max(Math.abs(180 - angle3(l[23], l[25], l[27])), Math.abs(180 - angle3(l[24], l[26], l[28])))), paLevelOf(med((l) => Math.max(Math.abs(180 - angle3(l[23], l[25], l[27])), Math.abs(180 - angle3(l[24], l[26], l[28])))), 8, 15), (v) => v.toFixed(0) + '°', t('mStandKneeA')));
+  items.push(paItem('mStandWeight', med((l) => Math.abs(paMid(l, 23, 24).x - paMid(l, 27, 28).x) / Math.max(0.05, Math.abs(l[24].x - l[23].x))), paLevelOf(med((l) => Math.abs(paMid(l, 23, 24).x - paMid(l, 27, 28).x) / Math.max(0.05, Math.abs(l[24].x - l[23].x))), 0.3, 0.6), (v) => v.toFixed(2), t('mStandWeightA')));
+  return items;
+}
+function paEvalSingle(smps) {
+  const items = [];
+  const supKnee = smps.map((l) => {
+    const isL = l[27].y >= l[28].y;   // 支撑腿 = 踝更低的一侧
+    return angle3(l[isL ? 23 : 24], l[isL ? 25 : 26], l[isL ? 27 : 28]);
+  });
+  const sway = smps.map((l) => paMid(l, 23, 24).x / Math.max(0.05, paTorso(l)));
+  const lean = paMed(smps.map((l) => verticalAngle(paMid(l, 11, 12), paMid(l, 23, 24))));
+  const pel = paMed(smps.map((l) => Math.abs(l[23].y - l[24].y) / paTorso(l)));
+  const kStd = paStd(supKnee);
+  items.push(paItem('mSingleKnee', kStd, paLevelOf(kStd, 4, 8), (v) => v.toFixed(0) + '°', t('mSingleKneeA')));
+  items.push(paItem('mSinglePelvis', pel, paLevelOf(pel, 0.10, 0.16), (v) => v.toFixed(2), t('mSinglePelvisA')));
+  items.push(paItem('mSingleTrunk', lean, paLevelOf(lean, 10, 16), (v) => v.toFixed(0) + '°', t('mSingleTrunkA')));
+  items.push(paItem('mSingleSway', paStd(sway), paLevelOf(paStd(sway), 0.03, 0.06), (v) => v.toFixed(3), t('mSingleSwayA')));
+  items.push({ key: 'mSingleHold', level: 'good', val: t('mSingleHoldI', { s: PA_META.single.hold }), score: 100, label: t('mSingleHold'), text: t('mSingleHoldI', { s: PA_META.single.hold }), advice: t('mSingleHoldA') });
+  return items;
+}
+function paEvalSquat(smps) {
+  const items = [];
+  const kL = smps.map((l) => angle3(l[23], l[25], l[27])), kR = smps.map((l) => angle3(l[24], l[26], l[28]));
+  const depth = paMed(smps.map((l) => Math.min(angle3(l[23], l[25], l[27]), angle3(l[24], l[26], l[28]))));
+  const depthLv = depth <= 120 ? 'good' : depth <= 140 ? 'warn' : 'bad';
+  items.push(paItem('mSquatDepth', depth, depthLv, (v) => v.toFixed(0) + '°', t('mSquatDepthA')));
+  const sym = paMed(smps.map((_, i) => Math.abs(kL[i] - kR[i])));
+  items.push(paItem('mSquatSym', sym, paLevelOf(sym, 10, 20), (v) => v.toFixed(0) + '°', t('mSquatSymA')));
+  const valgus = paMed(smps.map((l) => { const vg = kneeValgus(l); return Math.max(vg.left, vg.right); }));
+  items.push(paItem('mSquatValgus', valgus, paLevelOf(valgus, 0.15, 0.30), (v) => v.toFixed(2), t('mSquatValgusA')));
+  const lean = paMed(smps.map((l) => verticalAngle(paMid(l, 11, 12), paMid(l, 23, 24))));
+  const leanLv = lean >= 10 && lean <= 35 ? 'good' : lean <= 50 ? 'warn' : 'bad';
+  items.push(paItem('mSquatTrunk', lean, leanLv, (v) => v.toFixed(0) + '°', t('mSquatTrunkA')));
+  const wob = paStd(kL);
+  items.push(paItem('mSquatHold', wob, paLevelOf(wob, 5, 9), (v) => v.toFixed(0) + '°', t('mSquatHoldA')));
+  return items;
+}
+function paEvalWalk(smps) {
+  const items = [];
+  const { cad, sym } = paCadence();
+  const cadLv = cad >= 100 && cad <= 130 ? 'good' : cad >= 90 && cad <= 140 ? 'warn' : 'bad';
+  const lowTxt = cad < 100 ? t('mWalkLow') : t('mWalkHigh');
+  items.push({
+    key: 'mWalkCadence', level: cadLv, val: cad.toFixed(0), score: cadLv === 'good' ? 100 : cadLv === 'warn' ? 65 : 30,
+    label: t('mWalkCadence'),
+    text: cadLv === 'good' ? t('mWalkCadenceG', { v: cad.toFixed(0) }) : cadLv === 'warn' ? t('mWalkCadenceW', { v: cad.toFixed(0), low: lowTxt }) : t('mWalkCadenceB', { v: cad.toFixed(0), low: lowTxt }),
+    advice: cadLv === 'good' ? '' : t('mWalkCadenceA'),
+  });
+  items.push(paItem('mWalkSym', sym, paLevelOf(sym, 10, 20), (v) => v.toFixed(0) + '%', t('mWalkSymA')));
+  const lean = paMed(smps.map((l) => verticalAngle(paMid(l, 11, 12), paMid(l, 23, 24))));
+  items.push(paItem('mWalkTrunk', lean, paLevelOf(lean, 8, 15), (v) => v.toFixed(0) + '°', t('mWalkTrunkA')));
+  const xs = smps.map((l) => paMid(l, 23, 24).x / Math.max(0.05, paTorso(l))).sort((a, b) => a - b);
+  const sway = xs[Math.floor(xs.length * 0.9)] - xs[Math.floor(xs.length * 0.1)];
+  items.push(paItem('mWalkSway', sway, paLevelOf(sway, 0.05, 0.09), (v) => v.toFixed(2), t('mWalkSwayA')));
+  const armS = smps.map((l) => ((l[15].y + l[16].y) / 2 - (l[23].y + l[24].y) / 2) / paTorso(l)).sort((a, b) => a - b);
+  const arm = armS[Math.floor(armS.length * 0.9)] - armS[Math.floor(armS.length * 0.1)];
+  const armLv = arm >= 0.06 && arm <= 0.35 ? 'good' : (arm >= 0.02 && arm <= 0.55 ? 'warn' : 'bad');
+  const armLow = arm < 0.06 ? t('paSmall') : t('paLarge');
+  items.push({
+    key: 'mWalkArm', level: armLv, val: arm.toFixed(2), score: armLv === 'good' ? 100 : armLv === 'warn' ? 65 : 30,
+    label: t('mWalkArm'),
+    text: armLv === 'good' ? t('mWalkArmG') : armLv === 'warn' ? t('mWalkArmW', { low: armLow, v: arm.toFixed(2) }) : t('mWalkArmB'),
+    advice: armLv === 'good' ? '' : t('mWalkArmA'),
+  });
+  return items;
+}
+function paEvalRun(smps) {
+  const items = [];
+  const { cad, sym } = paCadence();
+  const cadLv = cad >= 150 && cad <= 190 ? 'good' : cad >= 130 && cad <= 220 ? 'warn' : 'bad';
+  items.push(paItem('mRunCadence', cad, cadLv, (v) => v.toFixed(0), t('mRunCadenceA')));
+  const ys = smps.map((l) => l[0].y / Math.max(0.05, paTorso(l))).sort((a, b) => a - b);
+  const bounce = ys[Math.floor(ys.length * 0.9)] - ys[Math.floor(ys.length * 0.1)];
+  items.push(paItem('mRunBounce', bounce, paLevelOf(bounce, 0.12, 0.20), (v) => v.toFixed(2), t('mRunBounceA')));
+  const lean = paMed(smps.map((l) => verticalAngle(paMid(l, 11, 12), paMid(l, 23, 24))));
+  const leanLv = lean >= 5 && lean <= 15 ? 'good' : lean <= 25 ? 'warn' : 'bad';
+  items.push(paItem('mRunLean', lean, leanLv, (v) => v.toFixed(0) + '°', t('mRunLeanA')));
+  items.push(paItem('mRunSym', sym, paLevelOf(sym, 10, 20), (v) => v.toFixed(0) + '%', t('mRunSymA')));
+  const armS = smps.map((l) => ((l[15].y + l[16].y) / 2 - (l[23].y + l[24].y) / 2) / paTorso(l)).sort((a, b) => a - b);
+  const arm = armS[Math.floor(armS.length * 0.9)] - armS[Math.floor(armS.length * 0.1)];
+  const armLv = arm >= 0.08 && arm <= 0.40 ? 'good' : (arm >= 0.03 && arm <= 0.60 ? 'warn' : 'bad');
+  const armLow = arm < 0.08 ? t('paSmall') : t('paLarge');
+  items.push({
+    key: 'mRunArm', level: armLv, val: arm.toFixed(2), score: armLv === 'good' ? 100 : armLv === 'warn' ? 65 : 30,
+    label: t('mRunArm'),
+    text: armLv === 'good' ? t('mRunArmG') : armLv === 'warn' ? t('mRunArmW', { low: armLow, v: arm.toFixed(2) }) : t('mRunArmB'),
+    advice: armLv === 'good' ? '' : t('mRunArmA'),
+  });
+  return items;
+}
+const PA_EVAL = { standing: paEvalStanding, single: paEvalSingle, squat: paEvalSquat, walk: paEvalWalk, run: paEvalRun };
+
+function paBuildReport(kind, items) {
+  const score = Math.round(items.reduce((a, i) => a + i.score, 0) / Math.max(1, items.length));
+  const grade = score >= 85 ? 'A' : score >= 70 ? 'B' : score >= 55 ? 'C' : 'D';
+  const priorities = items.filter((i) => i.level !== 'good').sort((a, b) => a.score - b.score);
+  return { kind, ts: Date.now(), score, grade, items, priorities, demo: paState.demo };
+}
+function paHistory() { return sget('rehab_pa_history', []); }
+function paSaveReport(r) { const h = paHistory(); h.unshift(r); if (h.length > 30) h.length = 30; sset('rehab_pa_history', h); }
+
+const paItemHtml = (i) => `
+  <div class="pa-item">
+    <div class="pa-item-head">
+      <span class="pa-lv ${i.level}">${t(i.level === 'good' ? 'paGood' : i.level === 'warn' ? 'paWarn' : 'paBad')}</span>
+      <span class="pa-item-name">${i.label}</span>
+      <span class="pa-item-val">${i.val}</span>
+    </div>
+    <div class="pa-item-text">${i.text}</div>
+    ${i.advice ? `<div class="pa-item-advice"><b>${t('paAdvice')}</b>：${i.advice}</div>` : ''}
+  </div>`;
+function renderPaReport(r, scroll = true) {
+  const el = $('pa-report');
+  if (!el) return;
+  el.classList.remove('hidden');
+  const demoBadge = r.demo ? `<span class="pa-demo-badge">${t('paDemoNote')}</span>` : '';
+  el.innerHTML = `
+    ${demoBadge}
+    <h3>${t('paReportTitle')} · ${t(PA_META[r.kind].nameKey)}</h3>
+    <div class="pa-score">
+      <div class="pa-score-num">${r.score}</div>
+      <div>
+        <div class="pa-score-grade">${t('paScore')} · ${t('paGrade' + r.grade)}</div>
+        <div class="pa-score-sub">${t('paSafety')}</div>
+      </div>
+    </div>
+    <div class="pa-items">${r.items.map(paItemHtml).join('')}</div>
+    <div class="pa-priority">
+      <h4 style="margin-bottom:8px">${t('paPriority')}</h4>
+      ${r.priorities.length ? '<ul>' + r.priorities.map((i) => `<li><b>${i.label}</b> — ${i.advice}</li>`).join('') + '</ul>' : `<p class="hint">${t('paNoIssue')}</p>`}
+    </div>
+    <div class="controls"><button class="btn" id="btn-pa-redo"><span>${t('paRedo')}</span></button></div>`;
+  $('btn-pa-redo').addEventListener('click', () => { paStop(); el.classList.add('hidden'); paState.report = null; });
+  if (scroll) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+function renderPaHistory() {
+  const el = $('pa-history');
+  if (!el) return;
+  const h = paHistory();
+  if (!h.length) {
+    el.innerHTML = `<div class="empty">${icon('standing')}<span>${t('paHistoryEmpty')}</span></div>`;
+    return;
+  }
+  el.innerHTML = h.map((r) => {
+    const when = new Date(r.ts);
+    const date = when.toLocaleDateString(locale(), { month: 'numeric', day: 'numeric' }) + ' ' + when.toLocaleTimeString(locale(), { hour: '2-digit', minute: '2-digit' });
+    return `
+    <div class="item">
+      <div class="t">${icon('standing')}${t(PA_META[r.kind].nameKey)}${r.demo ? ' · ' + t('paBtnDemo') : ''} — ${date}</div>
+      <div class="d">${t('paScore')} ${r.score} · ${t('paGrade' + r.grade)}${r.priorities.length ? ' · ' + r.priorities.length + ' ' + t('paPriority') : ''}</div>
+      <div class="controls" style="margin-top:6px"><button class="btn small" data-pa-view="${r.ts}"><span>${t('paView')}</span></button></div>
+    </div>`;
+  }).join('');
+  el.querySelectorAll('[data-pa-view]').forEach((b) => b.addEventListener('click', () => {
+    const r = paHistory().find((x) => String(x.ts) === b.dataset.paView);
+    if (r) renderPaReport(r);
+  }));
+}
+function renderPaChecks(g) {
+  const el = $('pa-checks');
+  if (!el) return;
+  if (!g.items.length) { el.innerHTML = ''; return; }
+  el.innerHTML = g.items.map((i) => `
+    <div class="pa-check ${i.ok ? 'ok' : 'bad'}">
+      <span class="pa-check-dot">${i.ok ? '✓' : '✕'}</span>
+      <span>${i.label}</span>
+      ${i.note ? `<span class="pa-check-note">${i.note}</span>` : ''}
+    </div>`).join('');
+}
+function setPaStartBtn() { $('btn-pa-start-label').textContent = paState.active ? t('paBtnStop') : t('paBtnStart'); }
+function renderPaUI() {
+  if (!$('pa-guide')) return;
+  $('pa-guide').textContent = t(PA_META[paState.kind].guideKey);
+  document.querySelectorAll('.pa-kind').forEach((b) => b.classList.toggle('on', b.dataset.pa === paState.kind));
+  if (paState.active && paState.lastGate) renderPaChecks(paState.lastGate);
+  if (paState.report && !$('pa-report').classList.contains('hidden')) renderPaReport(paState.report, false);
+  renderPaHistory();
+  setPaStartBtn();
+}
+
+async function paStart(demo = false) {
+  if (!$('pa-video')) return;
+  if (paState.active) { paStop(); return; }
+  // 旧训练会话冲突 → 先停止旧会话（只调用旧函数，不改动）
+  if (state.running) { await toggleStart(); }
+  paState.active = true; paState.demo = demo;
+  paState.samples = []; paState.hipHist = []; paState.steps = [];
+  paResetStable(); paState.lastT = 0; paState.report = null;
+  $('pa-report').classList.add('hidden');
+  $('pa-gate').classList.remove('hidden');
+  $('pa-progress-fill').style.width = '0%';
+  $('pa-hint').textContent = '';
+  renderPaChecks({ items: [] });
+  setPaStartBtn();
+  if (demo) {
+    $('pa-video').classList.add('hidden');
+    $('pa-placeholder').classList.remove('hidden');
+    $('pa-placeholder-text').textContent = t('paDemoRunning');
+  } else {
+    $('pa-video').classList.remove('hidden');
+    try {
+      const stream = await openCamera();
+      const v = $('pa-video');
+      v.srcObject = stream;
+      await new Promise((res, rej) => {
+        if (v.readyState >= 1) return res();
+        const t0 = setTimeout(() => { v.srcObject = null; stream.getTracks().forEach((x) => x.stop()); rej(new DOMException('视频初始化超时', 'TimeoutError')); }, 6000);
+        v.onloadedmetadata = () => { clearTimeout(t0); res(); };
+      });
+      try { await v.play(); } catch { /* 自动播放被拦 */ }
+      paState.stream = stream; paState.videoOn = true;
+      $('pa-placeholder').classList.add('hidden');
+    } catch (e) {
+      paState.active = false; setPaStartBtn();
+      $('pa-placeholder-text').textContent = cameraErrorText(e);
+      return;
+    }
+    if (!state.landmarker) {
+      const t0 = Date.now();
+      $('pa-loading').innerHTML = icon('loader-spin') + '<span>' + t('loading') + ' 0s</span>';
+      $('pa-loading').classList.remove('hidden');
+      const tick = setInterval(() => {
+        $('pa-loading').innerHTML = icon('loader-spin') + '<span>' + t('loading') + ' ' + Math.round((Date.now() - t0) / 1000) + 's</span>';
+      }, 1000);
+      try { state.landmarker = await loadModel(); }
+      catch (e2) { clearInterval(tick); $('pa-loading').classList.add('hidden'); paStop(); toast(t('errUnknown', { msg: e2.message || '' })); return; }
+      clearInterval(tick); $('pa-loading').classList.add('hidden');
+    }
+  }
+  requestAnimationFrame(paLoop);
+}
+function paStop() {
+  paState.active = false;
+  cancelAnimationFrame(paState.raf);
+  if (paState.stream) { paState.stream.getTracks().forEach((tr) => tr.stop()); paState.stream = null; }
+  const v = $('pa-video');
+  if (v) { v.srcObject = null; v.classList.remove('hidden'); }
+  paState.videoOn = false;
+  const c = $('pa-overlay');
+  if (c) c.getContext('2d').clearRect(0, 0, c.width, c.height);
+  const ph = $('pa-placeholder');
+  if (ph) { ph.classList.remove('hidden'); $('pa-placeholder-text').textContent = t('paIntro'); }
+  paResetStable();
+  setPaStartBtn();
+}
+function paFinish() {
+  const kind = paState.kind;
+  const smps = paState.samples.slice(-30);
+  const r = paBuildReport(kind, PA_EVAL[kind](smps));
+  paState.report = r;
+  paSaveReport(r);
+  paStop();
+  renderPaReport(r);
+  renderPaHistory();
+  $('pa-gate').classList.add('hidden');
+  toast(t('paReportTitle'));
+}
+function paLoop() {
+  if (!paState.active) return;
+  if (state.tab !== 'posture' || document.hidden) { requestAnimationFrame(paLoop); return; }
+  const ts = performance.now();
+  if (ts - paState.lastT < 33) { requestAnimationFrame(paLoop); return; }
+  paState.lastT = ts;
+  let lms = null;
+  if (paState.demo) {
+    lms = paDemoFrame(paState.kind, ts);
+  } else {
+    const v = $('pa-video');
+    if (!paState.videoOn || v.readyState < 2) { requestAnimationFrame(paLoop); return; }
+    const result = state.landmarker.detectForVideo(v, ts);
+    if (result.landmarks && result.landmarks.length) lms = result.landmarks[0];
+  }
+  const c = $('pa-overlay');
+  const cw = c.clientWidth, ch = c.clientHeight;
+  if (c.width !== cw || c.height !== ch) { c.width = cw; c.height = ch; }
+  const ctx2 = c.getContext('2d');
+  ctx2.clearRect(0, 0, cw, ch);
+  if (lms) drawStick(ctx2, lms, cw, ch, !paState.demo);   // 真实摄像头镜像，演示不镜像
+  const g = paCompleteness(lms, paState.kind, ts);
+  paState.lastGate = g;
+  renderPaChecks(g);
+  if (!lms) { paResetStable(); requestAnimationFrame(paLoop); return; }
+  paState.hipHist.push({ y: (lms[23].y + lms[24].y) / 2, t: ts });
+  if (paState.hipHist.length > 600) paState.hipHist.shift();
+  paState.samples.push(lms);
+  if (paState.samples.length > 360) paState.samples.shift();
+  const meta = PA_META[paState.kind];
+  if (meta.hold) {
+    if (g.ok) {
+      paState.stableMs += ts - (paState._lastOkT || ts);
+      paState._lastOkT = ts;
+    } else paResetStable();
+    const need = meta.hold * 1000;
+    $('pa-progress-fill').style.width = Math.min(100, (paState.stableMs / need) * 100) + '%';
+    $('pa-hint').textContent = t('paProgressHold', { s: Math.min(meta.hold, +(paState.stableMs / 1000).toFixed(1)), n: meta.hold });
+    if (paState.stableMs >= need) { paFinish(); return; }
+  } else {
+    paDetectSteps(ts);
+    $('pa-progress-fill').style.width = Math.min(100, (paState.steps.length / meta.need) * 100) + '%';
+    $('pa-hint').textContent = t('paProgressSteps', { n: Math.min(paState.steps.length, meta.need), m: meta.need });
+    if (g.ok && paState.steps.length >= meta.need) { paFinish(); return; }
+  }
+  requestAnimationFrame(paLoop);
+}
+
+// 演示模式：模拟姿态骨架（无摄像头跑完整流程；站立带轻微头前倾/躯干前倾，深蹲带轻微内扣，走跑带轻微不对称）
+function paDemoFrame(kind, ts) {
+  const tSec = ts / 1000;
+  const mk = (x, y, vis = 1) => ({ x, y, z: 0, visibility: vis });
+  const lms = new Array(33).fill(null);
+  const set = (i, x, y) => { lms[i] = mk(x, y); };
+  const nz = (a) => a * Math.sin(tSec * 31) * 0.002;
+  const fill = () => { for (let i = 0; i < 33; i++) if (!lms[i]) lms[i] = mk(0.5, 0.5, 0); };
+  const body = (headX, headY, shY, hipY, kneeY, ankleY, shXL, shXR, hipXL, hipXR, kneeXL, kneeXR, ankXL, ankXR, elbowY, wristY) => {
+    set(0, headX, headY);
+    set(11, shXL, shY); set(12, shXR, shY);
+    set(13, shXL - 0.02, elbowY); set(14, shXR + 0.02, elbowY);
+    set(15, shXL - 0.03, wristY); set(16, shXR + 0.03, wristY);
+    set(23, hipXL, hipY); set(24, hipXR, hipY);
+    set(25, kneeXL, kneeY); set(26, kneeXR, kneeY);
+    set(27, ankXL, ankleY); set(28, ankXR, ankleY);
+  };
+  if (kind === 'standing') {
+    body(0.47 + nz(1), 0.12 + nz(1), 0.225 + nz(1), 0.45 + nz(1), 0.66 + nz(1), 0.87 + nz(1), 0.41, 0.59, 0.44, 0.56, 0.455, 0.545, 0.46, 0.54, 0.30, 0.38);
+    set(11, mk(0.41, 0.235));       // 轻微高低肩
+    set(12, mk(0.59, 0.225));
+  } else if (kind === 'single') {
+    body(0.5, 0.10, 0.22, 0.45, 0.66, 0.87, 0.41, 0.59, 0.44, 0.56, 0.46, 0.54, 0.47, 0.53, 0.30, 0.37);
+    set(28, mk(0.545, 0.80));      // 抬右腿
+    set(26, mk(0.55, 0.70));
+  } else if (kind === 'squat') {
+    body(0.475, 0.16, 0.30, 0.52, 0.68, 0.87, 0.40, 0.60, 0.44, 0.56, 0.475, 0.585, 0.46, 0.555, 0.40, 0.48);
+  } else if (kind === 'walk' || kind === 'run') {
+    const f = kind === 'walk' ? 1.83 : 2.83;   // 110 / 170 步/分
+    const ph = 2 * Math.PI * f * tSec;
+    const bounce = kind === 'walk' ? 0.02 : 0.018;
+    const hipY = 0.48 + Math.sin(ph) * bounce;
+    const step = Math.sin(ph);
+    const swingL = Math.sin(ph) * 0.045, swingR = -swingL;
+    const armL = -swingL * 0.8, armR = -swingR * 0.8;
+    const shX = kind === 'run' ? 0.035 : 0;    // 跑步前倾 8° 左右
+    body(0.5 + nz(1), 0.12 + Math.sin(ph) * bounce * 1.15, 0.245 + nz(1), hipY, 0.66 + nz(1), 0.87 + nz(1),
+      0.41 - shX, 0.59 - shX, 0.44, 0.56, 0.452 + step * 0.01, 0.548 - step * 0.01,
+      0.445 + swingL, 0.555 + swingR, 0.30 + armL, 0.385 + armL);
+    // 步行交替步幅（左右脚前后错位由踝/膝体现）
+    set(27, mk(0.44 + swingL, 0.87));
+    set(28, mk(0.56 + swingR, 0.87));
+  }
+  fill();
+  return lms;
 }
 
 /* ============ 启动 ============ */
@@ -2664,6 +3173,7 @@ onLangChanged(() => {
   renderGoal(); renderVoice(); renderAchievements();   // 成就网格也随语言切换
   aiRun();                                              // AI 管家卡片随语言切换
   renderSedentary();                                    // 久坐提醒设置随语言切换
+  renderPaUI();                                         // 体态评估页随语言切换
   setStartBtn(state.running ? 'btnStop' : 'btnStart', state.running ? 'stop' : 'play');
   $('btn-collect-label').textContent = state.collectMode ? t('btnCollectStop') : t('btnCollect');
   $('feedback')._last = null;
@@ -2682,6 +3192,16 @@ renderProfile(); renderReminder(); renderCloud(); renderAuth();
 renderTodayPlan(); renderPlanList();
 renderVoice();
 renderSedentary();
+// v2.19：体态评估页初始化（选择体态 / 开始与演示按钮）
+renderPaUI();
+document.querySelectorAll('.pa-kind').forEach((b) => b.addEventListener('click', () => {
+  paState.kind = b.dataset.pa;
+  paState.report = null;
+  $('pa-report').classList.add('hidden');
+  renderPaUI();
+}));
+$('btn-pa-start').addEventListener('click', () => { paStart(false); });
+$('btn-pa-demo').addEventListener('click', () => { paStart(true); });
 showOnboard();
 setTimeout(reminderCatchUp, 4000);            // 错过提醒时间 → 打开时补一次
 // 开发模式：?cfg=1 显示配置入口（普通用户永远看不到；密钥写死后由 CLOUD_HARDCODED 生效）

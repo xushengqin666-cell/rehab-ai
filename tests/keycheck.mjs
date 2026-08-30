@@ -33,8 +33,8 @@ const section = (name) => {
 const zh = section('zh');
 const en = section('en');
 
-const missingZh = [...used].filter((k) => !zh.has(k) && !['depth', 'lb_'].includes(k));
-const missingEn = [...used].filter((k) => !en.has(k) && !['depth', 'lb_'].includes(k));
+const missingZh = [...used].filter((k) => !zh.has(k) && !['depth', 'lb_', 'paPart', 'paGrade'].includes(k));
+const missingEn = [...used].filter((k) => !en.has(k) && !['depth', 'lb_', 'paPart', 'paGrade'].includes(k));
 const onlyZh = [...zh].filter((k) => !en.has(k) && !['depth', 'lb_', 'retry'].includes(k));
 const onlyEn = [...en].filter((k) => !zh.has(k) && !['depth', 'lb_', 'retry'].includes(k));
 
