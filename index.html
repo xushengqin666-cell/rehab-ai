@@ -161,6 +161,69 @@
     </div>
   </section>
 
+  <!-- ============ 功能测试（v2.20 新增：动态动作分析 · 运动学引擎 · 知识库训练 · 长期追踪） ============ -->
+  <section id="tab-ft" class="tab">
+    <div class="card">
+      <h3 data-i18n="ftTitle">运动功能测试（动态动作）</h3>
+      <p class="hint" data-i18n="ftIntro">5 项动态动作约 5 分钟：AI 分析整个动作过程——关节角度、左右对称、速度、稳定性、活动范围、一致性，与标准模板比对相似度，再按「问题→训练」知识库给出个性化方案；复测时自动对比上次进步。</p>
+      <p class="hint tiny" data-i18n="ftScoreWeights">评分权重：静态对称 20% · 关节排列 20% · 动态控制 25% · 稳定性 15% · 活动度 10% · 一致性 10%</p>
+      <div id="ft-moves" class="pa-kinds"></div>
+      <p class="hint tiny" id="ft-guide"></p>
+      <p class="hint tiny" data-i18n="ftWarmup">测试前请先活动关节 30 秒</p>
+    </div>
+
+    <div class="camera-box" id="ft-cam-box">
+      <video id="ft-video" playsinline muted autoplay></video>
+      <canvas id="ft-overlay"></canvas>
+      <div id="ft-placeholder">
+        <div class="ph-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="4.8" r="2.2"/><path d="M12 7v5.6M12 12.6l-4 3M12 12.6l4 3M12 15.6l-3.2 4M12 15.6l3.2 4M12 9.6l-4.6-2M12 9.6l4.6-2"/></svg>
+        </div>
+        <p id="ft-placeholder-text" data-i18n="ftIntro">选择动作 → 全身完整入镜 → AI 先检查识别完整性，再分析整个动作过程</p>
+      </div>
+      <div id="ft-loading" class="hidden"></div>
+    </div>
+
+    <div id="ft-gate" class="card hidden">
+      <h3 data-i18n="ftGateTitle">识别完整性检查（先完整，再分析）</h3>
+      <div id="ft-checks" class="pa-checks"></div>
+      <p class="hint tiny" id="ft-hint"></p>
+    </div>
+
+    <div id="ft-live" class="card hidden">
+      <h3 data-i18n="ftLive">实时数据</h3>
+      <div id="ft-live-metrics" class="stats"></div>
+      <div class="ft-cue" id="ft-cue"></div>
+    </div>
+
+    <div class="controls">
+      <button id="btn-ft-start" class="btn primary">
+        <span class="btn-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8.2 5.6v12.8a.7.7 0 0 0 1.1.6l10.2-6.4a.7.7 0 0 0 0-1.2L9.3 5a.7.7 0 0 0-1.1.6Z" fill="currentColor"/></svg></span>
+        <span id="btn-ft-start-label" data-i18n="ftBtnStart">开始测试</span>
+      </button>
+      <button id="btn-ft-battery" class="btn">
+        <span class="btn-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h11v10H4zM15 9.5h2l1.5 1.5v2L17 14.5h-2M8 10.5v3M6.5 12h3"/></svg></span>
+        <span data-i18n="ftBatteryBtn">完整测试（5 项连测）</span>
+      </button>
+      <button id="btn-ft-demo" class="btn">
+        <span class="btn-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 5.5h5l2-2h1l2 2h5v10h-15z"/><circle cx="12" cy="11" r="3.4"/></svg></span>
+        <span data-i18n="ftBtnDemo">演示模式</span>
+      </button>
+    </div>
+
+    <div id="ft-report" class="card hidden"></div>
+
+    <div class="card">
+      <h3 data-i18n="ftProfileTitle">数字人体档案</h3>
+      <div id="ft-profile"></div>
+    </div>
+
+    <div class="card">
+      <h3 data-i18n="ftHistoryTitle">测试记录</h3>
+      <div id="ft-history" class="list"></div>
+    </div>
+  </section>
+
   <!-- ============ 记录打卡 ============ -->
   <section id="tab-record" class="tab">
     <div class="card">
@@ -529,6 +592,10 @@
   <button data-tab="posture">
     <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="4.8" r="2.2"/><path d="M12 7v5.6M12 12.6l-4 3M12 12.6l4 3M12 15.6l-3.2 4M12 15.6l3.2 4M12 9.6l-4.6-2M12 9.6l4.6-2M7.4 6.8l-1 3.4M16.6 6.8l1 3.4"/></svg>
     <span class="nav-label" data-i18n="paNav">体态</span>
+  </button>
+  <button data-tab="ft">
+    <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20v-8.5M12 20V4.5M19 20V11M3.8 20h16.4"/><path d="M7.6 9h2M13.6 6.5h2"/></svg>
+    <span class="nav-label" data-i18n="ftNav">功能测试</span>
   </button>
   <button data-tab="record">
     <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20v-8.5M12 20V4.5M19 20V11M3.8 20h16.4"/></svg>

@@ -1,7 +1,7 @@
 {
-  "version": "2.19.0",
-  "apk": "https://cdn.jsdelivr.net/gh/xushengqin666-cell/rehab-ai@main/downloads/RehabAI-v2.19.0.apk",
+  "version": "2.20.0",
+  "apk": "https://cdn.jsdelivr.net/gh/xushengqin666-cell/rehab-ai@main/downloads/RehabAI-v2.20.0.apk",
   "releaseUrl": "https://github.com/xushengqin666-cell/rehab-ai/releases/latest",
-  "notes": "新功能（全身体态评估）：正常站立/单腿站立/深蹲/走路/跑步五类体态；先完整识别（全身入镜+稳定/节律门控）再评价；报告逐项指出不足并给出改进建议。",
+  "notes": "新功能（运动功能测试）：5 项动态动作（深蹲/弓步/单腿蹲/双臂上举/躯干前屈）全程运动学分析——关节角度、左右对称、速度、稳定性、活动范围、一致性六维加权评分 + 标准模板相似度 + 单错误实时教练 + 问题→训练知识库处方 + 复测对比 + 数字人体档案。",
   "important": false
 }

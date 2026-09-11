@@ -613,3 +613,60 @@ svg.spin { animation: spin 1.1s linear infinite; }
   display: inline-block; background: rgba(245, 158, 11, .15); color: #b45309;
   font-size: 11px; font-weight: 700; padding: 2px 9px; border-radius: 999px; margin-bottom: 8px;
 }
+
+/* ---------- v2.20 运动功能测试 ---------- */
+#ft-cam-box { margin-top: 12px; }
+#ft-video, #ft-overlay { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+#ft-video { transform: scaleX(-1); }
+#ft-overlay { z-index: 2; }
+#ft-placeholder {
+  position: absolute; inset: 0; z-index: 3; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 14px; text-align: center;
+  background:
+    radial-gradient(rgba(14, 124, 102, .07) 1px, transparent 1.4px) 0 0 / 22px 22px,
+    linear-gradient(180deg, #fbfaf6, #f0ede4);
+  color: var(--dim); font-size: 13.5px; padding: 22px;
+}
+#ft-loading {
+  position: absolute; left: 12px; top: 12px; z-index: 4;
+  display: flex; align-items: center; gap: 8px;
+  background: rgba(13, 17, 23, .72); color: #e7edf3; font-size: 12.5px;
+  padding: 8px 13px; border-radius: 999px; backdrop-filter: blur(6px);
+  max-width: calc(100% - 24px);
+}
+#ft-gate, #ft-live { margin-top: 12px; }
+.ft-cue {
+  margin-top: 12px; padding: 11px 13px; border-radius: 12px; font-size: 13.5px; font-weight: 600;
+  background: rgba(245, 158, 11, .12); border: 1px solid rgba(245, 158, 11, .35); color: #b45309;
+  display: flex; align-items: center; gap: 8px; line-height: 1.5;
+}
+.ft-cue.ok { background: rgba(14, 124, 102, .09); border-color: rgba(14, 124, 102, .3); color: var(--teal); }
+.ft-cue svg { width: 17px; height: 17px; flex: none; }
+.ft-delta { font-size: 11px; font-weight: 800; padding: 1px 7px; border-radius: 999px; flex: none; }
+.ft-delta.up { background: rgba(14, 124, 102, .14); color: var(--teal); }
+.ft-delta.down { background: rgba(239, 68, 68, .13); color: #dc2626; }
+.ft-sim { margin-top: 10px; }
+.ft-sim-head { display: flex; justify-content: space-between; font-size: 12.5px; color: var(--dim); margin-bottom: 4px; }
+.ft-sim-head b { color: var(--teal); }
+.ft-curve { width: 100%; height: 74px; background: #fbfaf6; border: 1px solid var(--line); border-radius: 10px; }
+.ft-presc { margin-top: 14px; border: 1px solid rgba(14, 124, 102, .25); border-radius: 14px; padding: 12px 13px; background: rgba(14, 124, 102, .04); }
+.ft-presc h4 { margin-bottom: 8px; color: var(--teal); }
+.ft-presc-item { margin-bottom: 12px; }
+.ft-presc-item:last-child { margin-bottom: 0; }
+.ft-presc-prob { font-weight: 700; font-size: 13px; margin-bottom: 4px; }
+.ft-presc-row { font-size: 12.5px; color: var(--text); line-height: 1.55; }
+.ft-presc-row b { color: var(--dim); font-weight: 600; }
+.ft-ex-list { margin-top: 4px; display: flex; flex-direction: column; gap: 4px; }
+.ft-ex { display: flex; justify-content: space-between; gap: 10px; font-size: 12.5px; background: #fff; border: 1px solid var(--line); border-radius: 9px; padding: 6px 10px; }
+.ft-ex b { font-weight: 650; }
+.ft-ex span { color: var(--dim); text-align: right; }
+.ft-mv-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.ft-mv-score { margin-left: auto; font-size: 22px; font-weight: 800; color: var(--teal); font-variant-numeric: tabular-nums; }
+.ft-mv-sim { font-size: 11.5px; color: var(--dim); }
+.ft-profile-last { display: flex; align-items: center; gap: 14px; padding: 12px; border: 1px solid var(--line); border-radius: 14px; background: #fbfaf6; }
+.ft-profile-score { font-size: 34px; font-weight: 800; color: var(--teal); font-variant-numeric: tabular-nums; }
+.ft-profile-meta { font-size: 12px; color: var(--dim); line-height: 1.6; }
+.ft-table { width: 100%; border-collapse: collapse; font-size: 12.5px; margin-top: 8px; }
+.ft-table th { text-align: left; color: var(--dim); font-weight: 600; font-size: 11px; padding: 4px 6px; border-bottom: 1px solid var(--line); }
+.ft-table td { padding: 5px 6px; border-bottom: 1px solid rgba(34, 38, 46, .05); font-variant-numeric: tabular-nums; }
+.ft-table td.num { text-align: right; }

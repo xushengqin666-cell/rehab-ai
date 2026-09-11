@@ -93,7 +93,7 @@ function migrateDeviceData(email) {
 }
 const fmtDate = (ts) => new Date(ts).toLocaleString(locale(), { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-const APP_VERSION = 'v2.19.0';
+const APP_VERSION = 'v2.20.0';
 const exName = (e) => (e.custom ? e.name : t(e.nameKey));
 const exDesc = (e) => (e.custom ? e.desc : t(e.descKey));
 const depthTxt = (d) => t('depth' + (d ? d.charAt(0).toUpperCase() + d.slice(1) : 'Ok')) || d;
@@ -1411,6 +1411,7 @@ function switchTab(name) {
   $('tab-' + name).classList.add('active');
   if (name === 'train') kickLoop();          // 回到训练页立即恢复分析
   if (name !== 'posture') paStop();          // v2.19：离开体态页自动停止体态评估（防摄像头占用）
+  if (name !== 'ft') ftStop();               // v2.20：离开功能测试页自动停止（防摄像头占用）
 }
 document.querySelectorAll('.bottom-nav button').forEach((btn) => {
   btn.addEventListener('click', () => switchTab(btn.dataset.tab));
@@ -2675,6 +2676,46 @@ async function selfTest() {
     const paGateOk = paGate1.ok === false && paGate1.items.some((i) => i.key === 'body' && !i.ok)
       && paGate2.ok === false && paGate2.items.some((i) => i.key === 'frame' && !i.ok);
     log(t('stPaGate'), paGateOk, `missing=${!paGate1.ok} outframe=${!paGate2.ok}`);
+    // 19. 运动功能测试引擎（v2.20）：动态深蹲合成 3 次 → 分割+全指标+评分
+    const ftFrames = [];
+    const ftSkel = (kneeL, kneeR, vgShift = 0) => {
+      const b = base();
+      const kneeOf = (hipX, ankleX, angDeg) => {
+        const H = { x: hipX, y: 0.52 }, A = { x: ankleX, y: 0.87 };
+        const mx = (H.x + A.x) / 2, my = (H.y + A.y) / 2, l = Math.hypot(H.x - A.x, H.y - A.y);
+        const d = Math.max(0, Math.min(0.20, (l / 2) / Math.tan((angDeg * Math.PI) / 360)));
+        return { x: mx + d, y: my };
+      };
+      const kL = kneeOf(0.44, 0.46, kneeL), kR = kneeOf(0.56, 0.54, kneeR);
+      [23, 24].forEach((i) => { b[i] = mk(0.44 + (i === 24 ? 0.12 : 0), 0.52); });
+      b[25] = mk(kL.x + vgShift, kL.y); b[26] = mk(kR.x - vgShift, kR.y);
+      b[27] = mk(0.46, 0.87); b[28] = mk(0.54, 0.87);
+      return b;
+    };
+    for (let i = 0; i < 120; i++) {
+      const tSec = i / 30;
+      const ph = (tSec % 1.2) / 1.2;
+      const ang = (x0, x1, a, b) => (ph < x0) ? a : (ph < x1) ? a + (b - a) * Math.sin(((ph - x0) / (x1 - x0)) * Math.PI / 2) : b;
+      const kneeL = ang(0.15, 0.6, 172, 96), kneeR = ang(0.15, 0.6, 172, 110);
+      const lms = ftSkel(kneeL, kneeR, kneeL < 120 ? 0.02 : 0);
+      const m = ftFrameMetrics(lms);
+      ftFrames.push({ t: tN - 4000 + i * 33, ...m });
+    }
+    const ftM = ftAnalyze('squat', ftFrames);
+    const ftS = ftScoreMovement('squat', ftM);
+    const ftSim = ftSimilarity('squat', ftFrames);
+    const ftIss = ftIssues('squat', ftM);
+    const ftAsymOk = ftM.asym > 10 && ftM.asym < 45;
+    log(t('stFtSquat'), ftM.reps === 3 && ftM.depth > 80 && ftM.depth < 130 && typeof ftS.total === 'number', `reps=${ftM.reps} depth=${ftM.depth.toFixed(0)} score=${ftS.total}`);
+    log(t('stFtSym'), ftAsymOk && ftIss.some((i) => i.kb === 'asym' && i.level !== 'good'), `asym=${ftM.asym.toFixed(0)}%`);
+    log(t('stFtSim'), ftSim.sim > 0 && ftSim.sim <= 100, `sim=${ftSim.sim}%`);
+    const ftValgusIss = ftIss.find((i) => i.kb === 'valgus');
+    const ftKb = FT_KB[ftValgusIss && ftValgusIss.level !== 'good' ? 'valgus' : 'asym'];
+    log(t('stFtKb'), ftKb && ftKb.ex.length >= 2 && ftKb.caution && ftKb.factor, `ex=${ftKb.ex.length} ${ftKb.problem}`);
+    const ftPrev = { depth: 135, asym: 14, valgus: 0.28 };
+    const ftNow = { depth: 118, asym: 9, valgus: 0.18 };
+    const ftD1 = ftDelta(ftPrev, ftNow, 'depth'), ftD2 = ftDelta(ftPrev, ftNow, 'valgus');
+    log(t('stFtVsLast'), ftD1 && ftD1.better === true && ftD2 && ftD2.better === true, `depth↓${ftD1.pct}% valgus↓${ftD2.pct}%`);
     out.innerHTML += `<div class="st-pass" style="margin-top:8px;font-weight:800">${t('stAllPass')}</div>`;
     console.log('SELFTEST: ALL PASS');
   } catch (e) {
@@ -3161,6 +3202,739 @@ function paDemoFrame(kind, ts) {
   return lms;
 }
 
+/* ============ 新增功能（v2.20）：运动功能测试（动态动作分析 · 运动学引擎 · 知识库 · 长期追踪） ============ */
+// 流程：选动作（或 5 项连测）→ 采集整个动作过程 → 运动学引擎（平滑→极值分割→ROM/对称/速度/稳定/一致）
+//      → 六维加权评分（静态对称20·排列20·动态25·稳定15·活动度10·一致10）→ 标准模板相似度
+//      → 「问题→训练」知识库处方 → 复测自动对比上次进步 → 数字人体档案。纯新增，旧功能零改动。
+const FT_MOVES = {
+  squat: { name: 'ftMvSquat', guide: 'ftGuideSquat', metric: 'knee', target: 'valley', thr: 25, need: 3, thrLow: 115, thrHigh: 150 },
+  lunge: { name: 'ftMvLunge', guide: 'ftGuideLunge', metric: 'knee', target: 'valley', thr: 25, need: 4, thrLow: 115, thrHigh: 150 },
+  single: { name: 'ftMvSingle', guide: 'ftGuideSingle', metric: 'knee', target: 'valley', thr: 25, need: 4, thrLow: 115, thrHigh: 150 },
+  arm: { name: 'ftMvArm', guide: 'ftGuideArm', metric: 'raise', target: 'peak', thr: 0.10, need: 3, thrLow: 0.09, thrHigh: 0.02 },
+  bend: { name: 'ftMvBend', guide: 'ftGuideBend', metric: 'trunk', target: 'valley', thr: 25, need: 2, thrLow: 135, thrHigh: 160 },
+};
+const FT_ORDER = ['squat', 'lunge', 'single', 'arm', 'bend'];
+const ftState = {
+  active: false, demo: false, mode: 'single', key: 'squat', queue: [], queueIdx: 0,
+  frames: [], lastT: 0, raf: 0, stream: null, videoOn: false, t0: 0,
+  lastGate: null, report: null, repState: null, cueLast: null, startFrame: null,
+};
+function ftFrameMetrics(lms) {
+  const sh = paMid(lms, 11, 12), hp = paMid(lms, 23, 24), kn = paMid(lms, 25, 26);
+  const kL = angle3(lms[23], lms[25], lms[27]), kR = angle3(lms[24], lms[26], lms[28]);
+  const vg = kneeValgus(lms);
+  return {
+    kL, kR, knee: Math.min(kL, kR),
+    raise: Math.min(lms[11].y - lms[15].y, lms[12].y - lms[16].y),
+    trunk: angle3(kn, hp, sh),
+    trunkLean: verticalAngle(sh, hp),
+    valgus: Math.max(vg.left, vg.right),
+    headLean: verticalAngle(lms[0], sh),
+    shoulderDiff: Math.abs(lms[11].y - lms[12].y) / paTorso(lms),
+    pelvisDiff: Math.abs(lms[23].y - lms[24].y) / paTorso(lms),
+    hipMidX: hp.x / Math.max(0.05, paTorso(lms)),
+    kneeExt: Math.max(Math.abs(180 - kL), Math.abs(180 - kR)),
+    lms,
+  };
+}
+function ftGate(lms) {
+  const items = [{ key: 'person', ok: !!lms, label: t('ftCheckPerson') }];
+  if (!lms) return { ok: false, items };
+  const req = [0, 11, 12, 13, 14, 15, 16, 23, 24, 25, 26, 27, 28];
+  const missing = req.filter((i) => !paVis(lms, i));
+  items.push({
+    key: 'body', ok: !missing.length, label: t('ftCheckBody'),
+    note: missing.length ? t('ftMissing', { parts: missing.map((i) => t('paPart' + i)).join('、') }) : '',
+  });
+  const xs = [], ys = [];
+  for (let i = 0; i < 33; i++) if (paVis(lms, i)) { xs.push(lms[i].x); ys.push(lms[i].y); }
+  const minX = Math.min(...xs), maxX = Math.max(...xs), minY = Math.min(...ys), maxY = Math.max(...ys);
+  let frameOk = true, frameHint = '';
+  if (maxY > 0.97 || minY < 0.02) { frameOk = false; frameHint = t('ftFrameHintFar'); }
+  else if (maxY < 0.82 && (maxY - minY) < 0.5) { frameOk = false; frameHint = t('ftFrameHintNear'); }
+  else if (minX < 0.02 || maxX > 0.98) { frameOk = false; frameHint = t('ftFrameHintCenter'); }
+  items.push({ key: 'frame', ok: frameOk, label: t('ftCheckFrame'), note: frameOk ? '' : frameHint });
+  return { ok: items.every((i) => i.ok), items };
+}
+const ftSmooth = (arr) => { const o = arr.slice(); for (let i = 1; i < arr.length - 1; i++) o[i] = (arr[i - 1] + arr[i] + arr[i + 1]) / 3; return o; };
+function ftExtrema(series, target, thr) {
+  const rawPeaks = [], rawValleys = [];
+  for (let i = 2; i < series.length - 2; i++) {
+    const down = series[i] <= series[i - 1] && series[i] <= series[i + 1] && series[i] <= series[i - 2] && series[i] <= series[i + 2]
+      && (series[i] < series[i - 2] || series[i] < series[i + 2]);
+    const up = series[i] >= series[i - 1] && series[i] >= series[i + 1] && series[i] >= series[i - 2] && series[i] >= series[i + 2]
+      && (series[i] > series[i - 2] || series[i] > series[i + 2]);
+    if (up && !down) rawPeaks.push(i);
+    if (down && !up) rawValleys.push(i);
+  }
+  const merge = (list, keepLow) => {   // 相邻平台期极值去重（谷留最低、峰留最高）
+    const out = [];
+    for (const i of list) {
+      const last = out[out.length - 1];
+      if (last != null && i - last <= 2) {
+        const better = keepLow ? series[i] < series[last] : series[i] > series[last];
+        if (better) out[out.length - 1] = i;
+      } else out.push(i);
+    }
+    return out;
+  };
+  const peaks = merge(rawPeaks, false), valleys = merge(rawValleys, true);
+  const near = (list, v) => { for (let i = list.length - 1; i >= 0; i--) if (list[i] < v) return list[i]; return null; };
+  const nearA = (list, v) => { for (let i = 0; i < list.length; i++) if (list[i] > v) return list[i]; return null; };
+  const out = [];
+  const src = target === 'valley' ? valleys : peaks;
+  const pick = target === 'valley' ? (v, p) => p - v : (v, p) => v - p;
+  const oppo = target === 'valley' ? peaks : valleys;
+  for (const v of src) {
+    const pB = near(oppo, v);
+    const pA = nearA(oppo, v);
+    const exc = Math.max(pB != null ? pick(series[v], series[pB]) : 0, pA != null ? pick(series[v], series[pA]) : 0);
+    if (exc > thr) out.push({ idx: v, pB, pA, exc });
+  }
+  return out;
+}
+function ftAnalyze(key, frames) {
+  const mv = FT_MOVES[key];
+  const sm = ftSmooth(frames.map((f) => f[mv.metric]));
+  const ex = ftExtrema(sm, mv.target, mv.thr);
+  const reps = ex.slice(0, mv.need);
+  const m = { key, reps: reps.length, need: mv.need, ts: Date.now(), issues: [], okItems: [] };
+  const roms = [], downMs = [], upMs = [], bottomStd = [], valgusAt = [], trunkAt = [], topStd = [];
+  for (const r of reps) {
+    const pB = r.pB ?? r.idx, pA = r.pA ?? r.idx;
+    roms.push(Math.abs(sm[pB] - sm[r.idx]));
+    if (r.pB != null) downMs.push(frames[r.idx].t - frames[r.pB].t);
+    if (r.pA != null) upMs.push(frames[r.pA].t - frames[r.idx].t);
+    const win = frames.filter((f) => Math.abs(f.t - frames[r.idx].t) < 150);
+    bottomStd.push(paStd(win.map((f) => f[mv.metric])));
+    valgusAt.push(paMed(win.map((f) => f.valgus)));
+    trunkAt.push(paMed(win.map((f) => f.trunkLean)));
+    const win2 = frames.filter((f) => Math.abs(f.t - frames[pB].t) < 150);
+    topStd.push(paStd(win2.map((f) => f[mv.metric])));
+  }
+  m.rom = paMed(roms);
+  m.downSec = paMed(downMs) / 1000;
+  m.upSec = paMed(upMs) / 1000;
+  m.stab = paMed(bottomStd);
+  m.cons = m.rom ? paStd(roms) / m.rom * 100 : 0;
+  m.valgus = paMed(valgusAt);
+  m.trunkLean = paMed(trunkAt);
+  if (mv.metric === 'knee') {
+    m.depth = Math.min(...sm);
+    const kLs = ftSmooth(frames.map((f) => f.kL)), kRs = ftSmooth(frames.map((f) => f.kR));
+    const dl = Math.min(...kLs), dr = Math.min(...kRs);
+    m.asym = Math.abs(dl - dr) / Math.max(10, (dl + dr) / 2) * 100;
+    m.asymL = dl; m.asymR = dr;
+  } else if (key === 'arm') {
+    m.raise = Math.max(...sm);
+    const rL = ftSmooth(frames.map((f) => f.lms[11].y - f.lms[15].y)), rR = ftSmooth(frames.map((f) => f.lms[12].y - f.lms[16].y));
+    m.asym = Math.abs(Math.max(...rL) - Math.max(...rR));
+    m.stab = paMed(topStd);
+  } else { // bend
+    m.flexion = 180 - Math.min(...sm);
+    m.kneeExt = paMed(frames.map((f) => f.kneeExt));
+    const xs = frames.map((f) => f.hipMidX).sort((a, b) => a - b);
+    m.center = xs[Math.floor(xs.length * 0.9)] - xs[Math.floor(xs.length * 0.1)];
+    m.stab = paMed(bottomStd);
+  }
+  m.cons = Math.min(m.cons, 100);
+  return m;
+}
+const ftWin = (v, lo, hi, wLo, wHi) => (v >= lo && v <= hi) ? 100 : (v >= wLo && v <= wHi) ? 70 : 35;
+const ftBand = (v, goodMax, badMax) => (v < goodMax ? 100 : v < badMax ? 70 : 35);
+const ftGood = (v, goodMin, badMin) => (v >= goodMin ? 100 : v >= badMin ? 70 : 35);
+function ftScoreMovement(key, m) {
+  let S;
+  if (key === 'bend') {
+    S = {
+      sym: ftBand(m.center, 0.05, 0.10),
+      align: ftGood(180 - m.kneeExt, 150, 135),
+      dyn: ftWin(m.downSec, 1.5, 3.5, 0.9, 5.5),
+      stab: ftBand(m.stab, 4, 8),
+      rom: ftGood(m.flexion, 60, 40),
+      cons: ftBand(m.cons, 12, 25),
+    };
+  } else if (key === 'arm') {
+    S = {
+      sym: ftBand(m.asym, 0.04, 0.09),
+      align: ftBand(m.trunkLean, 6, 12),
+      dyn: ftWin(m.upSec, 0.6, 1.6, 0.3, 2.6),
+      stab: ftBand(m.stab, 0.03, 0.06),
+      rom: ftGood(m.raise, 0.30, 0.22),
+      cons: ftBand(m.cons, 12, 25),
+    };
+  } else {
+    const trunkScore = (m.trunkLean >= 10 && m.trunkLean <= 35) ? 100 : (m.trunkLean <= 50 ? 70 : 35);
+    S = {
+      sym: ftBand(m.asym, 8, 15),
+      align: Math.min(ftBand(m.valgus, 0.15, 0.30), trunkScore),
+      dyn: ftWin(m.downSec, 0.6, 1.5, 0.35, 2.2),
+      stab: ftBand(m.stab, 4, 8),
+      rom: ftGood(m.rom, 40, 25),
+      cons: ftBand(m.cons, 12, 25),
+    };
+  }
+  S.total = Math.round(0.2 * S.sym + 0.2 * S.align + 0.25 * S.dyn + 0.15 * S.stab + 0.10 * S.rom + 0.10 * S.cons);
+  return S;
+}
+function ftIssues(key, m) {
+  const out = [];
+  const push = (kb, level, label, val, text, advice) => out.push({ kb, level, label, val, text, advice });
+  const ok = (kb, label, val, text) => out.push({ kb, level: 'good', label, val, text, advice: '' });
+  if (key === 'bend') {
+    if (m.center > 0.05) push('center', m.center > 0.10 ? 'bad' : 'warn', t('ftMetricCenter'), m.center.toFixed(2), t('ftIssueCenter', { v: m.center.toFixed(2) }), t('ftAdvCenter'));
+    else ok('center', t('ftMetricCenter'), m.center.toFixed(2), t('ftIssueCenterOk'));
+    if (180 - m.kneeExt > 25) push('kneeBend', (180 - m.kneeExt) > 45 ? 'bad' : 'warn', t('ftMetricKneeExt'), (180 - m.kneeExt).toFixed(0) + '°', t('ftIssueKneeExt', { v: (180 - m.kneeExt).toFixed(0) }), t('ftAdvKneeExt'));
+    else ok('kneeBend', t('ftMetricKneeExt'), (180 - m.kneeExt).toFixed(0) + '°', t('ftIssueKneeExtOk'));
+    if (m.flexion < 50) push('rom', m.flexion < 35 ? 'bad' : 'warn', t('ftMetricRom'), m.flexion.toFixed(0) + '°', t('ftIssueRom', { v: m.flexion.toFixed(0) }), t('ftAdvRom'));
+    else ok('rom', t('ftMetricRom'), m.flexion.toFixed(0) + '°', t('ftIssueRomOk', { v: m.flexion.toFixed(0) }));
+    if (m.downSec < 1.2) push('speed', m.downSec < 0.8 ? 'bad' : 'warn', t('ftMetricSpeed'), m.downSec.toFixed(1) + 's', t('ftIssueSpeed', { v: m.downSec.toFixed(1) }), t('ftAdvSpeed'));
+    else ok('speed', t('ftMetricSpeed'), m.downSec.toFixed(1) + 's', t('ftIssueSpeedOk', { v: m.downSec.toFixed(1) }));
+    if (m.cons > 15) push('cons', m.cons > 25 ? 'bad' : 'warn', t('ftMetricCons'), m.cons.toFixed(0) + '%', t('ftIssueCons', { v: m.cons.toFixed(0) }), t('ftAdvCons'));
+    else ok('cons', t('ftMetricCons'), m.cons.toFixed(0) + '%', t('ftIssueConsOk'));
+    return out;
+  }
+  if (key === 'arm') {
+    if (m.raise < 0.26) push('arm', m.raise < 0.18 ? 'bad' : 'warn', t('ftMetricRaise'), m.raise.toFixed(2), t('ftIssueRaise', { v: m.raise.toFixed(2) }), t('ftAdvRaise'));
+    else ok('arm', t('ftMetricRaise'), m.raise.toFixed(2), t('ftIssueRaiseOk', { v: m.raise.toFixed(2) }));
+    if (m.asym > 0.04) push('arm', m.asym > 0.09 ? 'bad' : 'warn', t('ftMetricSym'), m.asym.toFixed(2), t('ftIssueSym', { v: (m.asym * 100).toFixed(0), l: '', r: '' }), t('ftAdvSym'));
+    else ok('arm', t('ftMetricSym'), m.asym.toFixed(2), t('ftIssueSymOk', { v: (m.asym * 100).toFixed(0) }));
+    if (m.trunkLean > 10) push('trunk', m.trunkLean > 16 ? 'bad' : 'warn', t('ftMetricTrunk'), m.trunkLean.toFixed(0) + '°', t('ftIssueTrunk', { v: m.trunkLean.toFixed(0) }), t('ftAdvTrunk'));
+    else ok('trunk', t('ftMetricTrunk'), m.trunkLean.toFixed(0) + '°', t('ftIssueTrunkOk', { v: m.trunkLean.toFixed(0) }));
+    if (m.upSec < 0.45 || m.upSec > 1.8) push('speed', m.upSec < 0.3 || m.upSec > 2.4 ? 'bad' : 'warn', t('ftMetricSpeed'), m.upSec.toFixed(1) + 's', t('ftIssueSpeed', { v: m.upSec.toFixed(1) }), t('ftAdvSpeed'));
+    else ok('speed', t('ftMetricSpeed'), m.upSec.toFixed(1) + 's', t('ftIssueSpeedOk', { v: m.upSec.toFixed(1) }));
+    if (m.cons > 15) push('cons', m.cons > 25 ? 'bad' : 'warn', t('ftMetricCons'), m.cons.toFixed(0) + '%', t('ftIssueCons', { v: m.cons.toFixed(0) }), t('ftAdvCons'));
+    else ok('cons', t('ftMetricCons'), m.cons.toFixed(0) + '%', t('ftIssueConsOk'));
+    return out;
+  }
+  if (m.depth > 120) push('depth', m.depth > 140 ? 'bad' : 'warn', t('ftMetricDepth'), m.depth.toFixed(0) + '°', t('ftIssueDepth', { v: m.depth.toFixed(0) }), t('ftAdvDepth'));
+  else ok('depth', t('ftMetricDepth'), m.depth.toFixed(0) + '°', t('ftIssueDepthOk', { v: m.depth.toFixed(0) }));
+  if (m.asym > 8) push('asym', m.asym > 15 ? 'bad' : 'warn', t('ftMetricSym'), m.asym.toFixed(0) + '%', t('ftIssueSym', { v: m.asym.toFixed(0), l: m.asymL.toFixed(0), r: m.asymR.toFixed(0) }), t('ftAdvSym'));
+  else ok('asym', t('ftMetricSym'), m.asym.toFixed(0) + '%', t('ftIssueSymOk', { v: m.asym.toFixed(0) }));
+  if (m.valgus > 0.15) push('valgus', m.valgus > 0.30 ? 'bad' : 'warn', t('ftMetricValgus'), m.valgus.toFixed(2), t('ftIssueValgus', { v: m.valgus.toFixed(2) }), t('ftAdvValgus'));
+  else ok('valgus', t('ftMetricValgus'), m.valgus.toFixed(2), t('ftIssueValgusOk'));
+  if (m.trunkLean > 40) push('trunk', m.trunkLean > 55 ? 'bad' : 'warn', t('ftMetricTrunk'), m.trunkLean.toFixed(0) + '°', t('ftIssueTrunk', { v: m.trunkLean.toFixed(0) }), t('ftAdvTrunk'));
+  else ok('trunk', t('ftMetricTrunk'), m.trunkLean.toFixed(0) + '°', t('ftIssueTrunkOk', { v: m.trunkLean.toFixed(0) }));
+  if (m.downSec < 0.5 || m.downSec > 1.6) push('speed', m.downSec < 0.35 || m.downSec > 2.2 ? 'bad' : 'warn', t('ftMetricSpeed'), m.downSec.toFixed(1) + 's', t('ftIssueSpeed', { v: m.downSec.toFixed(1) }), t('ftAdvSpeed'));
+  else ok('speed', t('ftMetricSpeed'), m.downSec.toFixed(1) + 's', t('ftIssueSpeedOk', { v: m.downSec.toFixed(1) }));
+  if (m.stab > 5) push('stab', m.stab > 9 ? 'bad' : 'warn', t('ftMetricStab'), m.stab.toFixed(0) + '°', t('ftIssueStab', { v: m.stab.toFixed(0) }), t('ftAdvStab'));
+  else ok('stab', t('ftMetricStab'), m.stab.toFixed(0) + '°', t('ftIssueStabOk'));
+  if (m.rom < 30) push('rom', m.rom < 22 ? 'bad' : 'warn', t('ftMetricRom'), m.rom.toFixed(0) + '°', t('ftIssueRom', { v: m.rom.toFixed(0) }), t('ftAdvRom'));
+  else ok('rom', t('ftMetricRom'), m.rom.toFixed(0) + '°', t('ftIssueRomOk', { v: m.rom.toFixed(0) }));
+  if (m.cons > 15) push('cons', m.cons > 25 ? 'bad' : 'warn', t('ftMetricCons'), m.cons.toFixed(0) + '%', t('ftIssueCons', { v: m.cons.toFixed(0) }), t('ftAdvCons'));
+  else ok('cons', t('ftMetricCons'), m.cons.toFixed(0) + '%', t('ftIssueConsOk'));
+  return out;
+}
+// 专业知识库：问题 → 可能因素 → 推荐训练 → 注意事项 → 复测
+const FT_KB = {
+  valgus: { problem: 'ftMetricValgus', factor: 'ftFactorValgus', ex: ['ftExClam', 'ftExBandWalk', 'ftExBridge', 'ftExStepDown', 'ftExAssist'], caution: 'ftCautionValgus' },
+  depth: { problem: 'ftMetricDepth', factor: 'ftFactorDepth', ex: ['ftExWallSquat', 'ftExWallSit'], caution: 'ftCautionDepth' },
+  asym: { problem: 'ftMetricSym', factor: 'ftFactorAsym', ex: ['ftExAssist', 'ftExStepDown'], caution: 'ftCautionAsym' },
+  trunk: { problem: 'ftMetricTrunk', factor: 'ftFactorTrunk', ex: ['ftExPlank', 'ftExCatCow'], caution: 'ftCautionTrunk' },
+  speed: { problem: 'ftMetricSpeed', factor: 'ftFactorSpeed', ex: ['ftExWallSit'], caution: 'ftCautionSpeed' },
+  stab: { problem: 'ftMetricStab', factor: 'ftFactorStab', ex: ['ftExWallSit', 'ftExBridge'], caution: 'ftCautionStab' },
+  cons: { problem: 'ftMetricCons', factor: 'ftFactorCons', ex: ['ftExWallSquat'], caution: 'ftCautionCons' },
+  rom: { problem: 'ftMetricRom', factor: 'ftFactorCons', ex: ['ftExCatCow', 'ftExWallSquat'], caution: 'ftCautionCons' },
+  head: { problem: 'mStandHead', factor: 'ftFactorHead', ex: ['ftExAngel', 'ftExPlank'], caution: 'ftCautionHead' },
+  shoulder: { problem: 'mStandShoulder', factor: 'ftFactorShoulder', ex: ['ftExScap', 'ftExAngel'], caution: 'ftCautionShoulder' },
+  arm: { problem: 'ftMetricRaise', factor: 'ftFactorArm', ex: ['ftExAngel', 'ftExScap'], caution: 'ftCautionArm' },
+  kneeBend: { problem: 'ftMetricKneeExt', factor: 'ftFactorKneeBend', ex: ['ftExHam'], caution: 'ftCautionKneeBend' },
+  center: { problem: 'ftMetricCenter', factor: 'ftFactorCenter', ex: ['ftExPlank', 'ftExBridge'], caution: 'ftCautionCenter' },
+};
+// 标准动作模板（时间归一化参考曲线）
+function ftRefSeries(key, n = 100) {
+  const s = [];
+  const rampUp = (x, x0, x1, a, b) => Math.max(a, Math.min(b, a + (b - a) * Math.sin(((x - x0) / (x1 - x0)) * Math.PI / 2)));
+  const rampDn = (x, x0, x1, a, b) => Math.max(b, Math.min(a, a + (b - a) * Math.sin(((x - x0) / (x1 - x0)) * Math.PI / 2)));
+  for (let i = 0; i < n; i++) {
+    const x = i / (n - 1);
+    let v = 1;
+    if (key === 'arm') {
+      v = x < 0.12 ? 0 : x < 0.55 ? rampUp(x, 0.12, 0.55, 0, 1) : x < 0.68 ? 1 : rampDn(x, 0.68, 0.97, 1, 0);
+    } else {
+      v = x < 0.15 ? 1 : x < 0.50 ? rampDn(x, 0.15, 0.50, 1, 0.30) : x < 0.62 ? 0.30 : x < 0.97 ? rampUp(x, 0.62, 0.97, 0.30, 1) : 1;
+    }
+    s.push(v);
+  }
+  return s;
+}
+function ftSimilarity(key, frames) {
+  const mv = FT_MOVES[key];
+  const sm = ftSmooth(frames.map((f) => f[mv.metric]));
+  const ex = ftExtrema(sm, mv.target, mv.thr).slice(0, mv.need);
+  if (!ex.length) return { sim: 0, curve: null, ref: null };
+  const ref = ftRefSeries(key);
+  const curves = ex.map((r) => {
+    const pB = r.pB ?? r.idx, pA = r.pA ?? r.idx;
+    const lo = Math.min(sm[pB], sm[r.idx]), hi = Math.max(sm[pB], sm[r.idx]);
+    const span = Math.max(1e-6, hi - lo);
+    const n = 100, out = [];
+    for (let i = 0; i < n; i++) {
+      const t0 = pB + ((pA - pB) * i) / (n - 1);
+      const i0 = Math.max(0, Math.min(sm.length - 1, Math.floor(t0)));
+      const v = (sm[i0] - lo) / span;
+      out.push(Math.max(0, Math.min(1, v)));
+    }
+    return out;
+  });
+  const user = curves[0].map((_, i) => paMean(curves.map((c) => c[i])));
+  const err = paMean(user.map((v, i) => Math.abs(v - ref[i])));
+  return { sim: Math.max(0, Math.round(100 * (1 - err))), curve: user, ref };
+}
+const ftMetricBetterLow = ['depth', 'asym', 'valgus', 'trunkLean', 'downSec', 'upSec', 'stab', 'cons', 'center', 'kneeExt'];
+function ftDelta(prevM, m, metric) {
+  if (prevM == null || m[metric] == null || prevM[metric] == null || prevM[metric] === 0) return null;
+  const pct = Math.round(Math.abs(prevM[metric] - m[metric]) / Math.abs(prevM[metric]) * 100);
+  if (pct < 3) return null;
+  const better = ftMetricBetterLow.includes(metric) ? m[metric] < prevM[metric] : m[metric] > prevM[metric];
+  return { pct, better };
+}
+function ftHistory() { return sget('rehab_ft_history', []); }
+function ftSaveRecord(rec) { const h = ftHistory(); h.unshift(rec); if (h.length > 60) h.length = 60; sset('rehab_ft_history', h); }
+
+// 实时教练：每帧只挑一个最重要的错误（优先级：内扣 > 躯干 > 深度 > 速度 > 对称）
+function ftCueFor(key, m) {
+  if (key === 'bend') {
+    if (m.trunk < 150 && 180 - m.kneeExt > 25) return t('ftIssueKneeExt', { v: (180 - m.kneeExt).toFixed(0) });
+    if (m.trunk < 140 && m.trunkLean > 55) return t('ftIssueTrunk', { v: m.trunkLean.toFixed(0) });
+  } else if (key === 'arm') {
+    if (m.trunkLean > 14) return t('ftIssueTrunk', { v: m.trunkLean.toFixed(0) });
+    if (m.raise > 0.02 && Math.abs((m.lms[11].y - m.lms[15].y) - (m.lms[12].y - m.lms[16].y)) > 0.06) return t('ftIssueSym', { v: '', l: '', r: '' });
+  } else {
+    if (m.knee < 130 && m.valgus > 0.20) return t('ftIssueValgus', { v: m.valgus.toFixed(2) });
+    if (m.knee < 130 && m.trunkLean > 45) return t('ftIssueTrunk', { v: m.trunkLean.toFixed(0) });
+    if (m.knee < 150 && m.knee > 120) return t('ftIssueDepth', { v: m.knee.toFixed(0) });
+    if (Math.abs(m.kL - m.kR) > 25) return t('ftIssueSym', { v: '', l: '', r: '' });
+  }
+  return null;
+}
+function ftLiveReps(m, ts) {
+  const mv = FT_MOVES[ftState.key];
+  const v = m[mv.metric];
+  const st = ftState.repState;
+  if (!st) return 0;
+  if (st.phase === 'up' && v < mv.thrLow) st.phase = 'down';
+  else if (st.phase === 'down' && v > mv.thrHigh) {
+    if (ts - st.lastRepT > 700) { st.count++; st.lastRepT = ts; }
+    st.phase = 'up';
+  }
+  return st.count;
+}
+function renderFtChecks(g) {
+  const el = $('ft-checks');
+  if (!el) return;
+  if (!g.items.length) { el.innerHTML = ''; return; }
+  el.innerHTML = g.items.map((i) => `
+    <div class="pa-check ${i.ok ? 'ok' : 'bad'}">
+      <span class="pa-check-dot">${i.ok ? '✓' : '✕'}</span><span>${i.label}</span>
+      ${i.note ? `<span class="pa-check-note">${i.note}</span>` : ''}
+    </div>`).join('');
+}
+function renderFtLive(m, reps, need) {
+  const el = $('ft-live-metrics');
+  if (!el) return;
+  const mv = FT_MOVES[ftState.key];
+  const main = mv.metric === 'knee' ? [t('ftLiveKnee'), m.knee.toFixed(0) + '°'] : mv.metric === 'raise' ? [t('ftLiveRaise'), m.raise.toFixed(2)] : [t('ftLiveBend'), m.trunk.toFixed(0) + '°'];
+  el.innerHTML = `
+    <div class="stat big"><span class="s-label">${main[0]}</span><span class="s-value">${main[1]}</span></div>
+    <div class="stat"><span class="s-label">${t('ftLiveTrunk')}</span><span class="s-value">${m.trunkLean.toFixed(0)}°</span></div>
+    <div class="stat"><span class="s-label">${t('ftLiveValgus')}</span><span class="s-value">${m.valgus.toFixed(2)}</span></div>
+    <div class="stat"><span class="s-label">${t('ftCapturing')}</span><span class="s-value">${Math.min(reps, need)}/${need}</span></div>`;
+  const cue = ftCueFor(ftState.key, m);
+  const cueEl = $('ft-cue');
+  if (cue && cue !== ftState.cueLast) {
+    ftState.cueLast = cue;
+    cueEl.innerHTML = icon('alert') + '<span>' + t('ftCueTitle') + '：' + cue + '</span>';
+    cueEl.className = 'ft-cue';
+    speak(cue);
+  } else if (!cue && ftState.cueLast !== t('ftCueNone')) {
+    ftState.cueLast = t('ftCueNone');
+    cueEl.innerHTML = icon('check') + '<span>' + t('ftCueNone') + '</span>';
+    cueEl.className = 'ft-cue ok';
+  }
+  $('ft-hint').textContent = reps >= need ? t('ftAutoDone') : reps > 0 ? t('ftRepDone', { n: reps, m: need }) : t('ftMore', { n: need });
+}
+function setFtStartBtn() { $('btn-ft-start-label').textContent = ftState.active ? t('ftBtnStop') : t('ftBtnStart'); }
+
+async function ftStart(kind, demo = false) {
+  if (!$('ft-video')) return;
+  if (ftState.active) { ftStop(); return; }
+  if (state.running) { await toggleStart(); }          // 只调用旧函数，不改动
+  ftState.active = true; ftState.demo = demo;
+  ftState.mode = kind === 'battery' ? 'battery' : 'single';
+  ftState.queue = ftState.mode === 'battery' ? FT_ORDER.slice() : [kind];
+  ftState.queueIdx = 0; ftState.key = ftState.queue[0];
+  ftState.frames = []; ftState.repState = { phase: 'up', count: 0, lastRepT: 0 };
+  ftState.cueLast = null; ftState.report = null; ftState.lastT = 0; ftState.t0 = performance.now();
+  ftState.startFrame = null;
+  $('ft-report').classList.add('hidden');
+  $('ft-gate').classList.remove('hidden');
+  $('ft-live').classList.remove('hidden');
+  renderFtChecks({ items: [] });
+  renderFtMoves();
+  setFtStartBtn();
+  if (demo) {
+    $('ft-video').classList.add('hidden');
+    $('ft-placeholder').classList.remove('hidden');
+    $('ft-placeholder-text').textContent = t('ftDemoNote');
+  } else {
+    $('ft-video').classList.remove('hidden');
+    try {
+      const stream = await openCamera();
+      const v = $('ft-video');
+      v.srcObject = stream;
+      await new Promise((res, rej) => {
+        if (v.readyState >= 1) return res();
+        const t0 = setTimeout(() => { v.srcObject = null; stream.getTracks().forEach((x) => x.stop()); rej(new DOMException('视频初始化超时', 'TimeoutError')); }, 6000);
+        v.onloadedmetadata = () => { clearTimeout(t0); res(); };
+      });
+      try { await v.play(); } catch { /* ignore */ }
+      ftState.stream = stream; ftState.videoOn = true;
+      $('ft-placeholder').classList.add('hidden');
+    } catch (e) {
+      ftState.active = false; setFtStartBtn();
+      $('ft-placeholder-text').textContent = cameraErrorText(e);
+      return;
+    }
+    if (!state.landmarker) {
+      const t0 = Date.now();
+      $('ft-loading').innerHTML = icon('loader-spin') + '<span>' + t('loading') + ' 0s</span>';
+      $('ft-loading').classList.remove('hidden');
+      const tick = setInterval(() => { $('ft-loading').innerHTML = icon('loader-spin') + '<span>' + t('loading') + ' ' + Math.round((Date.now() - t0) / 1000) + 's</span>'; }, 1000);
+      try { state.landmarker = await loadModel(); }
+      catch (e2) { clearInterval(tick); $('ft-loading').classList.add('hidden'); ftStop(); toast(t('errUnknown', { msg: e2.message || '' })); return; }
+      clearInterval(tick); $('ft-loading').classList.add('hidden');
+    }
+  }
+  requestAnimationFrame(ftLoop);
+}
+function ftStop() {
+  ftState.active = false;
+  cancelAnimationFrame(ftState.raf);
+  if (ftState.stream) { ftState.stream.getTracks().forEach((tr) => tr.stop()); ftState.stream = null; }
+  const v = $('ft-video');
+  if (v) { v.srcObject = null; v.classList.remove('hidden'); }
+  ftState.videoOn = false;
+  const c = $('ft-overlay');
+  if (c) c.getContext('2d').clearRect(0, 0, c.width, c.height);
+  const ph = $('ft-placeholder');
+  if (ph) { ph.classList.remove('hidden'); $('ft-placeholder-text').textContent = t('ftIntro'); }
+  setFtStartBtn();
+}
+function ftLoop() {
+  if (!ftState.active) return;
+  if (state.tab !== 'ft' || document.hidden) { requestAnimationFrame(ftLoop); return; }
+  const ts = performance.now();
+  if (ts - ftState.lastT < 33) { requestAnimationFrame(ftLoop); return; }
+  ftState.lastT = ts;
+  let lms = null;
+  if (ftState.demo) {
+    lms = ftDemoFrame(ftState.key, ts);
+  } else {
+    const v = $('ft-video');
+    if (!ftState.videoOn || v.readyState < 2) { requestAnimationFrame(ftLoop); return; }
+    const result = state.landmarker.detectForVideo(v, ts);
+    if (result.landmarks && result.landmarks.length) lms = result.landmarks[0];
+  }
+  const c = $('ft-overlay');
+  const cw = c.clientWidth, ch = c.clientHeight;
+  if (c.width !== cw || c.height !== ch) { c.width = cw; c.height = ch; }
+  const ctx2 = c.getContext('2d');
+  ctx2.clearRect(0, 0, cw, ch);
+  if (lms) drawStick(ctx2, lms, cw, ch, !ftState.demo);
+  const g = ftGate(lms);
+  ftState.lastGate = g;
+  renderFtChecks(g);
+  if (!lms) { requestAnimationFrame(ftLoop); return; }
+  if (!g.ok) { requestAnimationFrame(ftLoop); return; }
+  const m = ftFrameMetrics(lms);
+  if (!ftState.startFrame) ftState.startFrame = m;
+  ftState.frames.push({ t: ts, ...m });
+  if (ftState.frames.length > 1800) ftState.frames.shift();
+  const reps = ftLiveReps(m, ts);
+  renderFtLive(m, reps, FT_MOVES[ftState.key].need);
+  const timeout = ts - ftState.t0 > 30000;
+  if (reps >= FT_MOVES[ftState.key].need || timeout) {
+    if (reps >= FT_MOVES[ftState.key].need) {
+      setTimeout(() => { if (ftState.active) ftFinish(ftState.key); }, 700);   // 稳定后再分析
+      return;
+    }
+    ftFinish(ftState.key);
+    return;
+  }
+  requestAnimationFrame(ftLoop);
+}
+function ftFinish(key) {
+  const frames = ftState.frames.slice();
+  const m = ftAnalyze(key, frames);
+  const S = ftScoreMovement(key, m);
+  const { sim, curve, ref } = ftSimilarity(key, frames);
+  const issues = ftIssues(key, m);
+  const staticSym = ftState.startFrame
+    ? { headLean: ftState.startFrame.headLean, shoulderDiff: ftState.startFrame.shoulderDiff, pelvisDiff: ftState.startFrame.pelvisDiff }
+    : null;
+  const rec = {
+    key, ts: Date.now(), demo: ftState.demo, score: S.total, dims: S, m, issues, sim,
+    curve: curve || [], ref: ref || [], staticSym, battery: false,
+  };
+  ftSaveRecord(rec);
+  const isBattery = ftState.mode === 'battery';
+  const next = isBattery ? ftState.queue[ftState.queueIdx + 1] : null;
+  if (next) {
+    ftState.queueIdx++; ftState.key = next;
+    ftState.frames = []; ftState.repState = { phase: 'up', count: 0, lastRepT: 0 };
+    ftState.cueLast = null; ftState.t0 = performance.now(); ftState.startFrame = null;
+    ftState.lastT = 0;
+    renderFtMoves();
+    if (!ftState.demo) $('ft-hint').textContent = t('ftCapturing');
+    requestAnimationFrame(ftLoop);
+    return;
+  }
+  if (isBattery) {
+    // 聚合 5 项为一条综合记录（六维加权 + 起始站姿静态对称性计入 20%）
+    const h2 = ftHistory();
+    const parts = FT_ORDER.map((k) => h2.find((r) => r.key === k)).filter(Boolean);
+    const n = Math.max(1, parts.length);
+    const dims = { sym: 0, align: 0, dyn: 0, stab: 0, rom: 0, cons: 0 };
+    parts.forEach((r) => { dims.sym += r.dims.sym; dims.align += r.dims.align; dims.dyn += r.dims.dyn; dims.stab += r.dims.stab; dims.rom += r.dims.rom; dims.cons += r.dims.cons; });
+    const st = parts[0] ? parts[0].staticSym : null;
+    const symPenalty = st
+      ? Math.max(0, Math.min(100, 100 - Math.max(0, (st.headLean - 12)) * 1.2 - Math.max(0, (st.shoulderDiff - 0.03)) * 200 - Math.max(0, (st.pelvisDiff - 0.03)) * 200))
+      : dims.sym / n;
+    const total = Math.round(0.2 * symPenalty + 0.2 * (dims.align / n) + 0.25 * (dims.dyn / n) + 0.15 * (dims.stab / n) + 0.10 * (dims.rom / n) + 0.10 * (dims.cons / n));
+    ftSaveRecord({ key: 'battery', battery: true, ts: Date.now(), demo: ftState.demo, score: total, sim: Math.round(parts.reduce((a, r) => a + r.sim, 0) / n), staticSym: st, m: {} });
+  }
+  ftStop();
+  renderFtReport(isBattery ? 'battery' : key);
+  renderFtHistory();
+  renderFtProfile();
+  $('ft-gate').classList.add('hidden');
+  $('ft-live').classList.add('hidden');
+  toast(t('ftReportTitle'));
+}
+function ftDrawCurve(canvas, user, ref) {
+  if (!canvas) return;
+  const ctx2 = canvas.getContext('2d');
+  const w = canvas.clientWidth || 300, h = canvas.clientHeight || 74;
+  canvas.width = w; canvas.height = h;
+  ctx2.clearRect(0, 0, w, h);
+  const plot = (arr, color) => {
+    ctx2.strokeStyle = color; ctx2.lineWidth = 2; ctx2.beginPath();
+    for (let i = 0; i < arr.length; i++) {
+      const x = (i / (arr.length - 1)) * w, y = h - 6 - arr[i] * (h - 12);
+      i ? ctx2.lineTo(x, y) : ctx2.moveTo(x, y);
+    }
+    ctx2.stroke();
+  };
+  if (ref) plot(ref, '#c9cdd4');
+  if (user) plot(user, '#0e7c66');
+}
+function renderFtReport(mode) {
+  const el = $('ft-report');
+  if (!el) return;
+  el.classList.remove('hidden');
+  const h = ftHistory();
+  const battery = mode === 'battery';
+  const keys = battery ? FT_ORDER : [ftState.key];
+  const recs = keys.map((k) => h.find((r) => r.key === k));
+  const demo = recs.some((r) => r && r.demo);
+  const demoBadge = demo ? `<span class="pa-demo-badge">${t('ftDemoNote')}</span>` : '';
+  let body = '';
+  if (battery) {
+    const rec = h.find((r) => r.battery);
+    const total = rec ? rec.score : 0;
+    const prevBattery = h.filter((r) => r.battery)[1];
+    const vsLast = prevBattery
+      ? `<span class="ft-delta ${total >= prevBattery.score ? 'up' : 'down'}">${total >= prevBattery.score ? t('ftImproved', { p: Math.round((total - prevBattery.score) / Math.max(1, prevBattery.score) * 100) }) : t('ftWorse', { p: Math.round((prevBattery.score - total) / Math.max(1, prevBattery.score) * 100) })}</span>`
+      : `<span class="hint tiny">${t('ftFirstTest')}</span>`;
+    body += `
+      <h3>${t('ftBatteryReport')}</h3>
+      <div class="pa-score">
+        <div class="pa-score-num">${total}</div>
+        <div><div class="pa-score-grade">${t('ftScore')} ${vsLast}</div><div class="pa-score-sub">${t('ftScoreWeights')}</div></div>
+      </div>
+      <div class="pa-items">${keys.map((k) => {
+        const r = h.find((x) => x.key === k);
+        return r ? `<div class="pa-item"><div class="ft-mv-head"><span class="pa-item-name">${t(FT_MOVES[k].name)}</span><span class="ft-mv-sim">${t('ftSimilarity')} ${r.sim}%</span><span class="ft-mv-score">${r.score}</span></div><div class="pa-item-text">${r.issues.filter((i) => i.level !== 'good').slice(0, 2).map((i) => i.text).join('<br>') || t('ftNoIssue')}</div></div>`
+          : `<div class="pa-item"><div class="pa-item-text">${t(FT_MOVES[k].name)} — ${t('ftMore', { n: 1 })}</div></div>`;
+      }).join('')}</div>`;
+  } else {
+    const rec = recs[0];
+    if (!rec) {
+      body += `<p class="hint">${t('ftProfileNone')}</p>`;
+    } else {
+      const prev = h.filter((r) => r.key === rec.key && r.ts < rec.ts)[0];
+      const vs = prev
+        ? `<span class="ft-delta ${rec.score >= prev.score ? 'up' : 'down'}">${rec.score >= prev.score ? t('ftImproved', { p: Math.round((rec.score - prev.score) / Math.max(1, prev.score) * 100) }) : t('ftWorse', { p: Math.round((prev.score - rec.score) / Math.max(1, prev.score) * 100) })}</span>`
+        : `<span class="hint tiny">${t('ftFirstTest')}</span>`;
+      body += `
+        <h3>${t('ftReportTitle')} · ${t(FT_MOVES[rec.key].name)}</h3>
+        <div class="pa-score"><div class="pa-score-num">${rec.score}</div><div><div class="pa-score-grade">${t('ftScore')} ${vs}</div><div class="pa-score-sub">${t('ftSafety')}</div></div></div>
+        <div class="pa-items"><h4 style="margin-bottom:8px">${t('ftMetrics')}</h4>
+          ${rec.issues.map((i) => `
+            <div class="pa-item">
+              <div class="pa-item-head"><span class="pa-lv ${i.level}">${t(i.level === 'good' ? 'paGood' : i.level === 'warn' ? 'paWarn' : 'paBad')}</span><span class="pa-item-name">${i.label}</span><span class="pa-item-val">${i.val}</span></div>
+              <div class="pa-item-text">${i.text}</div>
+              ${i.advice ? `<div class="pa-item-advice"><b>${t('paAdvice')}</b>：${i.advice}</div>` : ''}
+              ${prev && i.level !== 'good' ? ftDeltaHtml(prev.m, rec.m, i) : ''}
+            </div>`).join('')}
+        </div>`;
+      if (rec.sim) {
+        body += `<div class="ft-sim"><div class="ft-sim-head"><span>${t('ftSimilarity')}</span><b>${rec.sim}%</b></div><canvas class="ft-curve" id="ft-curve"></canvas></div>`;
+      }
+    }
+  }
+  // 知识库处方（聚合所有非良好问题的 kb，去重）
+  const allIssues = recs.flatMap((r) => (r ? r.issues : [])).filter((i) => i.level !== 'good');
+  const kbIds = [...new Set(allIssues.map((i) => i.kb))].filter((id) => FT_KB[id]);
+  if (kbIds.length) {
+    body += `<div class="ft-presc"><h4>${t('ftPrescTitle')}</h4>` + kbIds.map((id) => {
+      const kb = FT_KB[id];
+      return `<div class="ft-presc-item">
+        <div class="ft-presc-prob">${t(kb.problem)}</div>
+        <div class="ft-presc-row"><b>${t('ftPrescFactors')}</b>：${t(kb.factor)}</div>
+        <div class="ft-presc-row"><b>${t('ftPrescEx')}</b></div>
+        <div class="ft-ex-list">${kb.ex.map((e) => `<div class="ft-ex"><b>${t(e)}</b><span>${t(e + 'N')}</span></div>`).join('')}</div>
+        <div class="ft-presc-row"><b>${t('ftPrescCaution')}</b>：${t(kb.caution)}</div>
+        <div class="ft-presc-row"><b>${t('ftPrescRetest')}</b>：${t('ftRetestCommon')}</div>
+      </div>`;
+    }).join('') + `</div>`;
+  } else {
+    body += `<p class="hint" style="margin-top:12px">${t('ftNoIssue')}</p>`;
+  }
+  el.innerHTML = demoBadge + body + `<div class="controls" style="margin-top:12px"><button class="btn" id="btn-ft-redo"><span>${t('ftAgain')}</span></button></div>`;
+  $('btn-ft-redo').addEventListener('click', () => { el.classList.add('hidden'); ftStart(mode === 'battery' ? 'battery' : ftState.key, false); });
+  const cv = $('ft-curve');
+  if (cv) {
+    const r = recs[0];
+    if (r && r.curve && r.curve.length) ftDrawCurve(cv, r.curve, r.ref || []);
+  }
+  el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+function ftDeltaHtml(prevM, m, issue) {
+  const map = { [t('ftMetricDepth')]: 'depth', [t('ftMetricSym')]: 'asym', [t('ftMetricValgus')]: 'valgus', [t('ftMetricTrunk')]: 'trunkLean', [t('ftMetricSpeed')]: 'downSec', [t('ftMetricStab')]: 'stab', [t('ftMetricCons')]: 'cons', [t('ftMetricRom')]: 'rom', [t('ftMetricRaise')]: 'raise', [t('ftMetricCenter')]: 'center', [t('ftMetricKneeExt')]: 'kneeExt' };
+  const metric = map[issue.label];
+  if (!metric) return '';
+  const d = ftDelta(prevM, m, metric);
+  if (!d) return '';
+  return `<div class="pa-item-advice" style="color:#b45309"><b>${t('ftVsLast')}</b>：${d.better ? t('ftImproved', { p: d.pct }) : t('ftWorse', { p: d.pct })}</div>`;
+}
+function renderFtMoves() {
+  const el = $('ft-moves');
+  if (!el) return;
+  el.innerHTML = Object.entries(FT_MOVES).map(([k, mv]) => `
+    <button class="pa-kind ${ftState.key === k && ftState.mode === 'single' ? 'on' : ''}" data-ft="${k}">
+      <span class="pa-kind-ico">${icon(k === 'arm' ? 'shoulderraise' : k === 'bend' ? 'hiphinge' : k === 'lunge' ? 'lunge' : k === 'single' ? 'standing' : 'squat')}</span>
+      <span>${t(mv.name)}</span>
+    </button>`).join('');
+  el.querySelectorAll('[data-ft]').forEach((b) => b.addEventListener('click', () => {
+    ftState.key = b.dataset.ft; ftState.mode = 'single';
+    $('ft-report').classList.add('hidden');
+    renderFtMoves();
+  }));
+  $('ft-guide').textContent = t(FT_MOVES[ftState.key].guide);
+  const batBtn = $('btn-ft-battery');
+  if (batBtn) batBtn.classList.toggle('on', ftState.mode === 'battery' && ftState.active);
+}
+function renderFtHistory() {
+  const el = $('ft-history');
+  if (!el) return;
+  const h = ftHistory();
+  if (!h.length) { el.innerHTML = `<div class="empty">${icon('record')}<span>${t('paHistoryEmpty')}</span></div>`; return; }
+  el.innerHTML = h.slice(0, 12).map((r) => {
+    const when = new Date(r.ts);
+    const date = when.toLocaleDateString(locale(), { month: 'numeric', day: 'numeric' }) + ' ' + when.toLocaleTimeString(locale(), { hour: '2-digit', minute: '2-digit' });
+    return `<div class="item">
+      <div class="t">${icon('record')}${r.battery ? t('ftBatteryReport') : t(FT_MOVES[r.key].name)}${r.demo ? ' · ' + t('ftBtnDemo') : ''} — ${date}</div>
+      <div class="d">${t('ftScore')} ${r.score} · ${t('ftSimilarity')} ${r.sim}%</div>
+      <div class="controls" style="margin-top:6px"><button class="btn small" data-ft-view="${r.ts}"><span>${t('ftView')}</span></button></div>
+    </div>`;
+  }).join('');
+  el.querySelectorAll('[data-ft-view]').forEach((b) => b.addEventListener('click', () => {
+    const r = ftHistory().find((x) => String(x.ts) === b.dataset.ftView);
+    if (r) { ftState.key = r.key; renderFtReport(r.battery ? 'battery' : r.key); }
+  }));
+}
+function renderFtProfile() {
+  const el = $('ft-profile');
+  if (!el) return;
+  const h = ftHistory();
+  if (!h.length) { el.innerHTML = `<p class="hint">${t('ftProfileNone')}</p>`; return; }
+  const battery = h.find((r) => r.battery);
+  const last = battery || h[0];
+  const when = new Date(last.ts);
+  const date = when.toLocaleDateString(locale(), { month: 'numeric', day: 'numeric' });
+  const sessions = sget('rehab_sessions', []).length;
+  const rows = FT_ORDER.map((k) => {
+    const r = h.find((x) => x.key === k);
+    if (!r) return null;
+    const m = r.m;
+    const val = k === 'arm' ? (m.raise ? '↑' + m.raise.toFixed(2) : '—') : k === 'bend' ? (m.flexion ? m.flexion.toFixed(0) + '°' : '—') : (m.depth ? m.depth.toFixed(0) + '°' : '—');
+    const asym = k === 'arm' ? m.asym.toFixed(2) : k === 'bend' ? m.center.toFixed(2) : m.asym ? m.asym.toFixed(0) + '%' : '—';
+    return `<tr><td>${t(FT_MOVES[k].name)}</td><td class="num">${r.score}</td><td class="num">${val}</td><td class="num">${asym}</td><td class="num">${r.sim}%</td></tr>`;
+  }).filter(Boolean).join('');
+  el.innerHTML = `
+    <div class="ft-profile-last">
+      <div class="ft-profile-score">${last.score}</div>
+      <div class="ft-profile-meta">
+        <b>${t('ftProfileLast')}</b>：${date}（${last.battery ? t('ftBatteryReport') : t(FT_MOVES[last.key].name)}）<br>
+        ${t('navRecord')}：${sessions} · ${t('ftSafety')}
+      </div>
+    </div>
+    <table class="ft-table">
+      <tr><th>${t('ftMetrics')}</th><th class="num">${t('ftScore')}</th><th class="num">${t('ftProfileRom')}</th><th class="num">${t('ftProfileAsym')}</th><th class="num">${t('ftSimilarity')}</th></tr>
+      ${rows}
+    </table>`;
+}
+function renderFtUI() {
+  renderFtMoves();
+  if (ftState.active && ftState.lastGate) renderFtChecks(ftState.lastGate);
+  renderFtHistory();
+  renderFtProfile();
+  setFtStartBtn();
+}
+// 演示模式：按动作合成整段运动（含轻度缺陷：右腿浅 12° + 轻微内扣），走与真实一致的管线
+function ftDemoFrame(key, ts) {
+  const tSec = ts / 1000;
+  const mk = (x, y, vis = 1) => ({ x, y, z: 0, visibility: vis });
+  const lms = new Array(33).fill(null);
+  const set = (i, x, y) => { lms[i] = mk(x, y); };
+  const fill = () => { for (let i = 0; i < 33; i++) if (!lms[i]) lms[i] = mk(0.5, 0.5, 0); };
+  const cycle = { squat: 4.2, lunge: 4.2, single: 5.0, arm: 3.2, bend: 5.5 }[key];
+  const ph = (tSec % cycle) / cycle;
+  const curve = (x0, x1, hold, a, b) => (ph < x0) ? a : (ph < x0 + hold) ? a + (b - a) * Math.sin(((ph - x0) / hold) * Math.PI / 2) : (ph < x1) ? b : (ph < x1 + hold) ? b + (a - b) * Math.sin(((ph - x1) / hold) * Math.PI / 2) : a;
+  let kneeL = 172, kneeR = 172, raise = 0.02, bendAng = 172;
+  if (key === 'squat' || key === 'lunge' || key === 'single') {
+    kneeL = curve(0.12, 0.55, 0.14, 172, key === 'single' ? 108 : 96);
+    kneeR = curve(0.12, 0.55, 0.14, 172, key === 'single' ? 172 : 108);   // 右腿浅 → 不对称 ~12%
+  } else if (key === 'arm') {
+    raise = curve(0.12, 0.55, 0.14, 0.02, 0.26);
+  } else {
+    bendAng = curve(0.12, 0.55, 0.16, 172, 88);
+  }
+  const bendRad = ((180 - bendAng) * Math.PI) / 180;                       // 前屈角（0=直立）
+  const kneeOf = (hipX, ankleX, angDeg) => {                               // 由膝角反推膝位置（等腰三角形垂距）
+    const H = { x: hipX, y: 0.52 }, A = { x: ankleX, y: 0.87 };
+    const mx = (H.x + A.x) / 2, my = (H.y + A.y) / 2, l = Math.hypot(H.x - A.x, H.y - A.y);
+    const d = Math.max(0, Math.min(0.20, (l / 2) / Math.tan((angDeg * Math.PI) / 360)));
+    return { x: mx + d, y: my };
+  };
+  const kL = kneeOf(0.44, 0.46, kneeL), kR = kneeOf(0.56, 0.54, kneeR);
+  const valgusShift = kneeL < 130 ? 0.02 : 0;                              // 底部轻微内扣
+  const shX = 0.5 + 0.23 * Math.sin(bendRad);
+  const shY = 0.52 - 0.23 * Math.cos(bendRad);
+  set(0, shX + 0.09 * Math.sin(bendRad), shY - 0.09 * Math.cos(bendRad));
+  set(11, shX - 0.09, shY); set(12, shX + 0.09, shY);
+  set(13, shX - 0.11, shY - raise * 0.55 + (1 - Math.cos(bendRad)) * 0.1);
+  set(14, shX + 0.11, shY - raise * 0.55 + (1 - Math.cos(bendRad)) * 0.1);
+  set(15, shX - 0.10, shY - raise); set(16, shX + 0.10, shY - raise);
+  set(23, 0.44, 0.52); set(24, 0.56, 0.52);
+  set(25, kL.x + valgusShift, kL.y); set(26, kR.x - valgusShift, kR.y);
+  set(27, 0.46, 0.87); set(28, 0.54, 0.87);
+  fill();
+  return lms;
+}
+
 /* ============ 启动 ============ */
 initI18n();
 setCustomKey(ukey('rehab_custom_ex'));   // 账号分区：自定义动作按当前账号隔离
@@ -3174,6 +3948,7 @@ onLangChanged(() => {
   aiRun();                                              // AI 管家卡片随语言切换
   renderSedentary();                                    // 久坐提醒设置随语言切换
   renderPaUI();                                         // 体态评估页随语言切换
+  renderFtUI();                                         // 功能测试页随语言切换
   setStartBtn(state.running ? 'btnStop' : 'btnStart', state.running ? 'stop' : 'play');
   $('btn-collect-label').textContent = state.collectMode ? t('btnCollectStop') : t('btnCollect');
   $('feedback')._last = null;
@@ -3202,6 +3977,12 @@ document.querySelectorAll('.pa-kind').forEach((b) => b.addEventListener('click',
 }));
 $('btn-pa-start').addEventListener('click', () => { paStart(false); });
 $('btn-pa-demo').addEventListener('click', () => { paStart(true); });
+// v2.20：功能测试页初始化
+renderFtUI();
+$('btn-ft-start').addEventListener('click', () => { ftStart(ftState.key, false); });
+$('btn-ft-demo').addEventListener('click', () => { ftStart(ftState.key, true); });
+$('btn-ft-battery').addEventListener('click', () => { ftStart('battery', false); });
+window.__ftBatteryDemo = () => ftStart('battery', true);   // 测试钩子：完整测试演示模式
 showOnboard();
 setTimeout(reminderCatchUp, 4000);            // 错过提醒时间 → 打开时补一次
 // 开发模式：?cfg=1 显示配置入口（普通用户永远看不到；密钥写死后由 CLOUD_HARDCODED 生效）

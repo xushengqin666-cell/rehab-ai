@@ -263,7 +263,7 @@ await send('Page.navigate', { url: APP });
 await sleep(2500);
 await evl(`document.querySelector('.bottom-nav button[data-tab="settings"]').click()`);
 await sleep(200);
-(await evl(`document.getElementById('about-version').textContent.includes('v2.19')`)) ? ok('版本号显示') : bad('版本号失败');
+(await evl(`document.getElementById('about-version').textContent.includes('v2.20')`)) ? ok('版本号显示') : bad('版本号失败');
 (await evl(`document.getElementById('tab-settings').textContent.includes('隐私政策') && document.getElementById('tab-settings').textContent.includes('免责声明')`)) ? ok('隐私政策 + 免责声明') : bad('法务文案缺失');
 await evl(`document.getElementById('btn-share').click()`);
 await sleep(400);
@@ -346,7 +346,7 @@ await sleep(2500);
 // 17a. 体态 tab + 五种体态
 await evl(`document.querySelector('.bottom-nav button[data-tab="posture"]').click()`);
 await sleep(300);
-(await evl(`document.querySelectorAll('.pa-kind').length === 5`)) ? ok('体态评估页 5 种体态（站立/单腿/深蹲/走路/跑步）') : bad('体态种类缺失');
+(await evl(`document.querySelectorAll('#pa-kinds .pa-kind').length === 5`)) ? ok('体态评估页 5 种体态（站立/单腿/深蹲/走路/跑步）') : bad('体态种类缺失');
 (await evl(`!!document.getElementById('btn-pa-start') && !!document.getElementById('btn-pa-demo') && !!document.getElementById('pa-gate')`)) ? ok('开始/演示按钮 + 完整性检查面板存在') : bad('体态控件缺失');
 // 17b. 演示模式·站立：门控通过 → 报告（评分 + 不足 + 建议）
 await evl(`document.querySelector('.pa-kind[data-pa="standing"]').click()`);
@@ -375,6 +375,34 @@ await sleep(300);
 await evl(`document.querySelector('.bottom-nav button[data-tab="record"]').click()`);
 await sleep(300);
 (await evl(`document.getElementById('btn-pa-start-label').textContent !== '停止评估'`)) ? ok('离开体态页自动停止评估') : bad('离开体态页未停止');
+
+console.log('===== 18. 运动功能测试（v2.20：动态动作运动学 + 知识库 + 档案） =====');
+await send('Page.navigate', { url: APP });
+await sleep(2500);
+await evl(`document.querySelector('.bottom-nav button[data-tab="ft"]').click()`);
+await sleep(300);
+(await evl(`document.querySelectorAll('#ft-moves .pa-kind').length === 5 && !!document.getElementById('btn-ft-start') && !!document.getElementById('btn-ft-battery') && !!document.getElementById('btn-ft-demo')`)) ? ok('功能测试页：5 动作 + 开始/连测/演示按钮') : bad('功能测试控件缺失');
+await evl(`document.querySelector('#ft-moves [data-ft="squat"]').click()`);
+await sleep(100);
+await evl(`document.getElementById('btn-ft-demo').click()`);
+let ftReport = false;
+for (let i = 0; i < 20; i++) { await sleep(1000); if (await evl(`!document.getElementById('ft-report').classList.contains('hidden')`)) { ftReport = true; break; } }
+ftReport ? ok('演示模式·动态深蹲：全程分析后自动出报告') : bad('深蹲测试未出报告');
+(await evl(`(() => { const r = document.getElementById('ft-report'); return /\\d+/.test(r.querySelector('.pa-score-num').textContent) && r.querySelectorAll('.pa-item').length >= 4 && r.textContent.includes('%') && !!r.querySelector('.ft-curve'); })()`)) ? ok('报告含评分+逐项指标+相似度曲线') : bad('报告结构缺失');
+(await evl(`document.getElementById('ft-report').textContent.includes('蚌式开合')`)) ? ok('知识库处方（膝内扣→蚌式开合等训练）') : bad('知识库处方缺失');
+(await evl(`JSON.parse(localStorage.getItem('rehab_ft_history')).filter(r => r.key === 'squat').length === 1`)) ? ok('测试记录已存（每动作一条）') : bad('记录未保存');
+(await evl(`document.getElementById('ft-profile').textContent.includes('动态深蹲') && !!document.getElementById('ft-profile').querySelector('.ft-table')`)) ? ok('数字人体档案（最新评分+ROM/对称性表）') : bad('人体档案缺失');
+await evl(`document.getElementById('btn-lang').click()`);
+await sleep(400);
+(await evl(`document.getElementById('ft-moves').textContent.includes('Squat') && document.getElementById('ft-moves').textContent.includes('Forward bend')`)) ? ok('功能测试页英文切换') : bad('功能测试语言切换失败');
+await evl(`document.getElementById('btn-lang').click()`);
+await sleep(300);
+await evl(`window.__ftBatteryDemo()`);
+let ftBatt = false;
+for (let i = 0; i < 110; i++) { await sleep(1000); if (await evl(`JSON.parse(localStorage.getItem('rehab_ft_history') || '[]').some(r => r.battery)`)) { ftBatt = true; break; } }
+ftBatt ? ok('完整测试 5 项连测 → 聚合综合记录（六维加权）') : bad('连测未出综合记录');
+(await evl(`(() => { const h = JSON.parse(localStorage.getItem('rehab_ft_history') || '[]'); const b = h.find(r => r.battery); return b && b.score >= 0 && b.score <= 100 && !document.getElementById('ft-report').classList.contains('hidden'); })()`)) ? ok('综合报告显示（总分+5 项明细）') : bad('综合报告失败');
+(await evl(`document.getElementById('ft-profile').textContent.includes('完整测试报告')`)) ? ok('档案显示最近一次完整测试') : bad('档案未更新');
 
 console.log('===== 结果 =====');
 console.log('CONSOLE_ERRORS:', consoleErrors.length ? consoleErrors.join(' ||| ') : 'none');
