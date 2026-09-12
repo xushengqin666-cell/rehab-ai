@@ -93,7 +93,7 @@ function migrateDeviceData(email) {
 }
 const fmtDate = (ts) => new Date(ts).toLocaleString(locale(), { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-const APP_VERSION = 'v2.21.6';
+const APP_VERSION = 'v2.21.7';
 const exName = (e) => (e.custom ? e.name : t(e.nameKey));
 const exDesc = (e) => (e.custom ? e.desc : t(e.descKey));
 const depthTxt = (d) => t('depth' + (d ? d.charAt(0).toUpperCase() + d.slice(1) : 'Ok')) || d;
@@ -1167,10 +1167,17 @@ $('btn-assess').addEventListener('click', () => {
   if (score <= 1) adviceKeys.push('adviseGood');
   const report = { id: uid(), ts: Date.now(), answers, score, adviceKeys };
   const list = sget('rehab_assessments', []);
+  const prev = list[0];
   list.unshift(report);
   sset('rehab_assessments', list);
+  const gradeKey = score <= 1 ? 'assessGrade0' : score <= 3 ? 'assessGrade1' : 'assessGrade2';   // v2.21.7：结果分级
+  let deltaHtml = '';
+  if (prev) {
+    const d = score - prev.score;
+    if (d !== 0) deltaHtml = '<span class="hint tiny">' + t('paHistoryDelta', { v: d < 0 ? t('assessBetter', { d: -d }) : t('assessWorse', { d }) }) + '</span><br>';
+  }
   const el = $('assess-result');
-  el.innerHTML = `<b>${t('assessScore', { s: score })}</b><br>${adviceKeys.map((k) => t(k)).join('<br>')}`;
+  el.innerHTML = `<b>${t('assessScore', { s: score })} · ${t(gradeKey)}</b><br>${deltaHtml}${adviceKeys.map((k) => t(k)).join('<br>')}`;
   el.classList.remove('hidden');
   renderAssessments();
   scheduleCloudSync();
@@ -1189,6 +1196,7 @@ function renderAssessments() {
       <button class="del" data-id="${r.id}">✕</button>
     </div>`).join('');
   el.querySelectorAll('.del').forEach((btn) => btn.addEventListener('click', () => {
+    if (!confirm(t('confirmDelAssess'))) return;   // v2.21.7：删除前确认
     sset('rehab_assessments', list.filter((r) => r.id !== btn.dataset.id));
     renderAssessments();
     scheduleCloudSync();

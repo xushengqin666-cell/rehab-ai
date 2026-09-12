@@ -133,11 +133,20 @@ await sleep(150);
 await evl(`document.getElementById('btn-assess').click()`);
 await sleep(250);
 (await evl(`!document.getElementById('assess-result').classList.contains('hidden')`)) ? ok('评估报告生成') : bad('评估报告失败');
+(await evl(`document.getElementById('assess-result').textContent.includes('状态良好')`)) ? ok('评估报告带等级（状态良好）') : bad('评估等级缺失');
 (await evl(`document.querySelectorAll('#assess-list .item').length === 1`)) ? ok('历史评估 1 条') : bad('历史评估失败');
+// 第二次评估（改动疼痛答案 0→1）→ 与上次对比
+await evl(`(() => { const seg = document.querySelector('#tab-assess .seg[data-q="pain"]'); seg.querySelector('button[data-v="1"]').click(); return true; })()`);
+await evl(`document.getElementById('btn-assess').click()`);
+await sleep(250);
+(await evl(`document.getElementById('assess-result').textContent.includes('较上次')`)) ? ok('评估报告与上次对比（↑需关注）') : bad('评估对比缺失');
+(await evl(`document.querySelectorAll('#assess-list .item').length === 2`)) ? ok('历史评估 2 条') : bad('历史评估计数失败');
 (await evl(`document.querySelectorAll('#assess-trend svg').length === 1`)) ? ok('评估趋势图') : bad('趋势图失败');
 await evl(`document.querySelector('#assess-list .del').click()`);
 await sleep(200);
-(await evl(`document.querySelectorAll('#assess-list .item').length === 0`)) ? ok('删除评估') : bad('删除评估失败');
+await evl(`document.querySelector('#assess-list .del').click()`);
+await sleep(200);
+(await evl(`document.querySelectorAll('#assess-list .item').length === 0`)) ? ok('删除评估（带确认）') : bad('删除评估失败');
 
 console.log('===== 7. 预约：今天/明天/已过期 + 删除 =====');
 await evl(`document.querySelector('.bottom-nav button[data-tab="schedule"]').click()`);
