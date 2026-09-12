@@ -295,19 +295,23 @@ main { max-width: 560px; margin: 0 auto; }
 /* ---------- 底部导航 ---------- */
 .bottom-nav {
   position: fixed; bottom: 0; left: 0; right: 0; z-index: 30;
-  display: grid; grid-template-columns: repeat(5, 1fr);
+  display: grid; grid-template-columns: repeat(7, 1fr);
   background: rgba(255, 255, 255, .94);
   backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
   border-top: 1px solid var(--line);
-  padding: 6px 4px calc(6px + env(safe-area-inset-bottom));
+  padding: 6px 2px calc(6px + env(safe-area-inset-bottom));
 }
 .bottom-nav button {
   background: none; border: none; color: var(--dim);
   display: flex; flex-direction: column; align-items: center; gap: 2px;
   padding: 4px 0; cursor: pointer;
 }
-.nav-ico { width: 23px; height: 23px; padding: 2px 9px; border-radius: 10px; transition: background .15s; box-sizing: content-box; }
-.nav-label { font-size: 10.5px; font-weight: 600; line-height: 1.3; }
+.nav-ico { width: 23px; height: 23px; padding: 2px 7px; border-radius: 10px; transition: background .15s; box-sizing: content-box; }
+.nav-label { font-size: 10px; font-weight: 600; line-height: 1.3; white-space: nowrap; }
+@media (max-width: 400px) {
+  .nav-ico { width: 20px; height: 20px; padding: 1px 5px; }
+  .nav-label { font-size: 9px; }
+}
 .bottom-nav button.active { color: var(--teal); }
 .bottom-nav button.active .nav-ico { background: rgba(14, 124, 102, .12); }
 .bottom-nav button.active .nav-label { font-weight: 800; }

@@ -93,7 +93,7 @@ function migrateDeviceData(email) {
 }
 const fmtDate = (ts) => new Date(ts).toLocaleString(locale(), { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-const APP_VERSION = 'v2.20.0';
+const APP_VERSION = 'v2.20.1';
 const exName = (e) => (e.custom ? e.name : t(e.nameKey));
 const exDesc = (e) => (e.custom ? e.desc : t(e.descKey));
 const depthTxt = (d) => t('depth' + (d ? d.charAt(0).toUpperCase() + d.slice(1) : 'Ok')) || d;
@@ -2716,6 +2716,13 @@ async function selfTest() {
     const ftNow = { depth: 118, asym: 9, valgus: 0.18 };
     const ftD1 = ftDelta(ftPrev, ftNow, 'depth'), ftD2 = ftDelta(ftPrev, ftNow, 'valgus');
     log(t('stFtVsLast'), ftD1 && ftD1.better === true && ftD2 && ftD2.better === true, `depth↓${ftD1.pct}% valgus↓${ftD2.pct}%`);
+    // 19b. 零次数保护：超时/空数据 → 分析、评分、报告项全部安全
+    const ftZero = ftAnalyze('squat', []);
+    const ftZeroS = ftScoreMovement('squat', ftZero);
+    const ftZeroIss = ftIssues('squat', ftZero);
+    const ftZeroOk = ftZero.reps === 0 && typeof ftZeroS.total === 'number' && ftZeroIss.length > 0
+      && ftZeroIss.every((i) => typeof i.val === 'string' && typeof i.text === 'string');
+    log(t('stFtZeroRep'), ftZeroOk, `reps=0 score=${ftZeroS.total} items=${ftZeroIss.length}`);
     out.innerHTML += `<div class="st-pass" style="margin-top:8px;font-weight:800">${t('stAllPass')}</div>`;
     console.log('SELFTEST: ALL PASS');
   } catch (e) {
@@ -3005,7 +3012,7 @@ function renderPaHistory() {
   }).join('');
   el.querySelectorAll('[data-pa-view]').forEach((b) => b.addEventListener('click', () => {
     const r = paHistory().find((x) => String(x.ts) === b.dataset.paView);
-    if (r) renderPaReport(r);
+    if (r) { paState.report = r; renderPaReport(r); }   // 记录当前查看的报告，语言切换时可重渲染
   }));
 }
 function renderPaChecks(g) {
@@ -3217,7 +3224,8 @@ const FT_ORDER = ['squat', 'lunge', 'single', 'arm', 'bend'];
 const ftState = {
   active: false, demo: false, mode: 'single', key: 'squat', queue: [], queueIdx: 0,
   frames: [], lastT: 0, raf: 0, stream: null, videoOn: false, t0: 0,
-  lastGate: null, report: null, repState: null, cueLast: null, startFrame: null,
+  lastGate: null, report: null, repState: null, cueLast: null, cueSpokeAt: 0,
+  startFrame: null, lastView: null,
 };
 function ftFrameMetrics(lms) {
   const sh = paMid(lms, 11, 12), hp = paMid(lms, 23, 24), kn = paMid(lms, 25, 26);
@@ -3338,6 +3346,12 @@ function ftAnalyze(key, frames) {
     m.stab = paMed(bottomStd);
   }
   m.cons = Math.min(m.cons, 100);
+  // 零次数/超时保护：所有指标归一化为安全数值，防止报告渲染时 toFixed 崩溃
+  const norm = (v, d = 0) => (v == null || Number.isNaN(v)) ? d : v;
+  m.rom = norm(m.rom); m.downSec = norm(m.downSec); m.upSec = norm(m.upSec); m.stab = norm(m.stab);
+  m.cons = norm(m.cons); m.valgus = norm(m.valgus); m.trunkLean = norm(m.trunkLean);
+  m.depth = norm(m.depth, 180); m.asym = norm(m.asym); m.asymL = norm(m.asymL, 180); m.asymR = norm(m.asymR, 180);
+  m.raise = norm(m.raise); m.flexion = norm(m.flexion); m.kneeExt = norm(m.kneeExt, 180); m.center = norm(m.center);
   return m;
 }
 const ftWin = (v, lo, hi, wLo, wHi) => (v >= lo && v <= hi) ? 100 : (v >= wLo && v <= wHi) ? 70 : 35;
@@ -3397,8 +3411,8 @@ function ftIssues(key, m) {
   if (key === 'arm') {
     if (m.raise < 0.26) push('arm', m.raise < 0.18 ? 'bad' : 'warn', t('ftMetricRaise'), m.raise.toFixed(2), t('ftIssueRaise', { v: m.raise.toFixed(2) }), t('ftAdvRaise'));
     else ok('arm', t('ftMetricRaise'), m.raise.toFixed(2), t('ftIssueRaiseOk', { v: m.raise.toFixed(2) }));
-    if (m.asym > 0.04) push('arm', m.asym > 0.09 ? 'bad' : 'warn', t('ftMetricSym'), m.asym.toFixed(2), t('ftIssueSym', { v: (m.asym * 100).toFixed(0), l: '', r: '' }), t('ftAdvSym'));
-    else ok('arm', t('ftMetricSym'), m.asym.toFixed(2), t('ftIssueSymOk', { v: (m.asym * 100).toFixed(0) }));
+    if (m.asym > 0.04) push('arm', m.asym > 0.09 ? 'bad' : 'warn', t('ftMetricSym'), m.asym.toFixed(2), t('ftIssueArmSym', { v: m.asym.toFixed(2) }), t('ftAdvSym'));
+    else ok('arm', t('ftMetricSym'), m.asym.toFixed(2), t('ftIssueArmSymOk', { v: m.asym.toFixed(2) }));
     if (m.trunkLean > 10) push('trunk', m.trunkLean > 16 ? 'bad' : 'warn', t('ftMetricTrunk'), m.trunkLean.toFixed(0) + '°', t('ftIssueTrunk', { v: m.trunkLean.toFixed(0) }), t('ftAdvTrunk'));
     else ok('trunk', t('ftMetricTrunk'), m.trunkLean.toFixed(0) + '°', t('ftIssueTrunkOk', { v: m.trunkLean.toFixed(0) }));
     if (m.upSec < 0.45 || m.upSec > 1.8) push('speed', m.upSec < 0.3 || m.upSec > 2.4 ? 'bad' : 'warn', t('ftMetricSpeed'), m.upSec.toFixed(1) + 's', t('ftIssueSpeed', { v: m.upSec.toFixed(1) }), t('ftAdvSpeed'));
@@ -3496,15 +3510,19 @@ function ftSaveRecord(rec) { const h = ftHistory(); h.unshift(rec); if (h.length
 function ftCueFor(key, m) {
   if (key === 'bend') {
     if (m.trunk < 150 && 180 - m.kneeExt > 25) return t('ftIssueKneeExt', { v: (180 - m.kneeExt).toFixed(0) });
-    if (m.trunk < 140 && m.trunkLean > 55) return t('ftIssueTrunk', { v: m.trunkLean.toFixed(0) });
+    if (m.trunk < 150 && ftState.startFrame && Math.abs(m.hipMidX - ftState.startFrame.hipMidX) > 0.08) return t('ftCueBendCenter');
   } else if (key === 'arm') {
+    const armDiff = Math.abs((m.lms[11].y - m.lms[15].y) - (m.lms[12].y - m.lms[16].y));
     if (m.trunkLean > 14) return t('ftIssueTrunk', { v: m.trunkLean.toFixed(0) });
-    if (m.raise > 0.02 && Math.abs((m.lms[11].y - m.lms[15].y) - (m.lms[12].y - m.lms[16].y)) > 0.06) return t('ftIssueSym', { v: '', l: '', r: '' });
+    if (m.raise > 0.02 && armDiff > 0.06) return t('ftCueArmSym', { v: armDiff.toFixed(2) });
   } else {
     if (m.knee < 130 && m.valgus > 0.20) return t('ftIssueValgus', { v: m.valgus.toFixed(2) });
     if (m.knee < 130 && m.trunkLean > 45) return t('ftIssueTrunk', { v: m.trunkLean.toFixed(0) });
     if (m.knee < 150 && m.knee > 120) return t('ftIssueDepth', { v: m.knee.toFixed(0) });
-    if (Math.abs(m.kL - m.kR) > 25) return t('ftIssueSym', { v: '', l: '', r: '' });
+    if (Math.abs(m.kL - m.kR) > 25) {
+      const symPct = Math.abs(m.kL - m.kR) / Math.max(10, (m.kL + m.kR) / 2) * 100;
+      return t('ftIssueSym', { v: symPct.toFixed(0), l: m.kL.toFixed(0), r: m.kR.toFixed(0) });
+    }
   }
   return null;
 }
@@ -3530,7 +3548,7 @@ function renderFtChecks(g) {
       ${i.note ? `<span class="pa-check-note">${i.note}</span>` : ''}
     </div>`).join('');
 }
-function renderFtLive(m, reps, need) {
+function renderFtLive(m, reps, need, ts) {
   const el = $('ft-live-metrics');
   if (!el) return;
   const mv = FT_MOVES[ftState.key];
@@ -3542,17 +3560,21 @@ function renderFtLive(m, reps, need) {
     <div class="stat"><span class="s-label">${t('ftCapturing')}</span><span class="s-value">${Math.min(reps, need)}/${need}</span></div>`;
   const cue = ftCueFor(ftState.key, m);
   const cueEl = $('ft-cue');
+  const now = ts || performance.now();
   if (cue && cue !== ftState.cueLast) {
     ftState.cueLast = cue;
     cueEl.innerHTML = icon('alert') + '<span>' + t('ftCueTitle') + '：' + cue + '</span>';
     cueEl.className = 'ft-cue';
-    speak(cue);
+    if (!ftState.cueSpokeAt || now - ftState.cueSpokeAt > 3500) { speak(cue); ftState.cueSpokeAt = now; }   // 语音防刷屏
   } else if (!cue && ftState.cueLast !== t('ftCueNone')) {
     ftState.cueLast = t('ftCueNone');
     cueEl.innerHTML = icon('check') + '<span>' + t('ftCueNone') + '</span>';
     cueEl.className = 'ft-cue ok';
   }
-  $('ft-hint').textContent = reps >= need ? t('ftAutoDone') : reps > 0 ? t('ftRepDone', { n: reps, m: need }) : t('ftMore', { n: need });
+  const battPrefix = ftState.mode === 'battery' ? t('ftBatteryProgress', { i: ftState.queueIdx + 1, n: ftState.queue.length }) + ' · ' : '';
+  $('ft-hint').textContent = reps >= need ? t('ftAutoDone')
+    : reps > 0 ? t('ftRepDone', { n: reps, m: need })
+      : battPrefix + t(FT_MOVES[ftState.key].guide);
 }
 function setFtStartBtn() { $('btn-ft-start-label').textContent = ftState.active ? t('ftBtnStop') : t('ftBtnStart'); }
 
@@ -3565,7 +3587,7 @@ async function ftStart(kind, demo = false) {
   ftState.queue = ftState.mode === 'battery' ? FT_ORDER.slice() : [kind];
   ftState.queueIdx = 0; ftState.key = ftState.queue[0];
   ftState.frames = []; ftState.repState = { phase: 'up', count: 0, lastRepT: 0 };
-  ftState.cueLast = null; ftState.report = null; ftState.lastT = 0; ftState.t0 = performance.now();
+  ftState.cueLast = null; ftState.cueSpokeAt = 0; ftState.report = null; ftState.lastT = 0; ftState.t0 = performance.now();
   ftState.startFrame = null;
   $('ft-report').classList.add('hidden');
   $('ft-gate').classList.remove('hidden');
@@ -3652,7 +3674,7 @@ function ftLoop() {
   ftState.frames.push({ t: ts, ...m });
   if (ftState.frames.length > 1800) ftState.frames.shift();
   const reps = ftLiveReps(m, ts);
-  renderFtLive(m, reps, FT_MOVES[ftState.key].need);
+  renderFtLive(m, reps, FT_MOVES[ftState.key].need, ts);
   const timeout = ts - ftState.t0 > 30000;
   if (reps >= FT_MOVES[ftState.key].need || timeout) {
     if (reps >= FT_MOVES[ftState.key].need) {
@@ -3683,10 +3705,10 @@ function ftFinish(key) {
   if (next) {
     ftState.queueIdx++; ftState.key = next;
     ftState.frames = []; ftState.repState = { phase: 'up', count: 0, lastRepT: 0 };
-    ftState.cueLast = null; ftState.t0 = performance.now(); ftState.startFrame = null;
+    ftState.cueLast = null; ftState.cueSpokeAt = 0; ftState.t0 = performance.now(); ftState.startFrame = null;
     ftState.lastT = 0;
     renderFtMoves();
-    if (!ftState.demo) $('ft-hint').textContent = t('ftCapturing');
+    $('ft-hint').textContent = ftState.demo ? t('ftNext', { name: t(FT_MOVES[next].name) }) : t('ftCapturing');
     requestAnimationFrame(ftLoop);
     return;
   }
@@ -3729,10 +3751,11 @@ function ftDrawCurve(canvas, user, ref) {
   if (ref) plot(ref, '#c9cdd4');
   if (user) plot(user, '#0e7c66');
 }
-function renderFtReport(mode) {
+function renderFtReport(mode, scroll = true) {
   const el = $('ft-report');
   if (!el) return;
   el.classList.remove('hidden');
+  ftState.lastView = { mode };                       // 语言切换时可按此重渲染
   const h = ftHistory();
   const battery = mode === 'battery';
   const keys = battery ? FT_ORDER : [ftState.key];
@@ -3770,6 +3793,7 @@ function renderFtReport(mode) {
       body += `
         <h3>${t('ftReportTitle')} · ${t(FT_MOVES[rec.key].name)}</h3>
         <div class="pa-score"><div class="pa-score-num">${rec.score}</div><div><div class="pa-score-grade">${t('ftScore')} ${vs}</div><div class="pa-score-sub">${t('ftSafety')}</div></div></div>
+        ${rec.m && rec.m.reps === 0 ? `<p class="hint" style="margin-top:10px;color:#b45309">${t('ftNoReps')}</p>` : ''}
         <div class="pa-items"><h4 style="margin-bottom:8px">${t('ftMetrics')}</h4>
           ${rec.issues.map((i) => `
             <div class="pa-item">
@@ -3809,7 +3833,7 @@ function renderFtReport(mode) {
     const r = recs[0];
     if (r && r.curve && r.curve.length) ftDrawCurve(cv, r.curve, r.ref || []);
   }
-  el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  if (scroll) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 function ftDeltaHtml(prevM, m, issue) {
   const map = { [t('ftMetricDepth')]: 'depth', [t('ftMetricSym')]: 'asym', [t('ftMetricValgus')]: 'valgus', [t('ftMetricTrunk')]: 'trunkLean', [t('ftMetricSpeed')]: 'downSec', [t('ftMetricStab')]: 'stab', [t('ftMetricCons')]: 'cons', [t('ftMetricRom')]: 'rom', [t('ftMetricRaise')]: 'raise', [t('ftMetricCenter')]: 'center', [t('ftMetricKneeExt')]: 'kneeExt' };
@@ -3889,6 +3913,7 @@ function renderFtProfile() {
 function renderFtUI() {
   renderFtMoves();
   if (ftState.active && ftState.lastGate) renderFtChecks(ftState.lastGate);
+  if (ftState.lastView && !$('ft-report').classList.contains('hidden')) renderFtReport(ftState.lastView.mode, false);   // 语言切换时刷新可见报告
   renderFtHistory();
   renderFtProfile();
   setFtStartBtn();

@@ -1,7 +1,7 @@
 {
-  "version": "2.20.0",
-  "apk": "https://cdn.jsdelivr.net/gh/xushengqin666-cell/rehab-ai@main/downloads/RehabAI-v2.20.0.apk",
+  "version": "2.20.1",
+  "apk": "https://cdn.jsdelivr.net/gh/xushengqin666-cell/rehab-ai@main/downloads/RehabAI-v2.20.1.apk",
   "releaseUrl": "https://github.com/xushengqin666-cell/rehab-ai/releases/latest",
-  "notes": "新功能（运动功能测试）：5 项动态动作（深蹲/弓步/单腿蹲/双臂上举/躯干前屈）全程运动学分析——关节角度、左右对称、速度、稳定性、活动范围、一致性六维加权评分 + 标准模板相似度 + 单错误实时教练 + 问题→训练知识库处方 + 复测对比 + 数字人体档案。",
+  "notes": "细节优化：修复臂举对称文案空变量、前屈误导提示、零次数超时保护、实时教练语音防刷屏；报告随语言切换实时刷新；底部导航适配 7 个入口；连测显示第 N/M 项与下一项过渡。",
   "important": false
 }
