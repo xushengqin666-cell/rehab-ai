@@ -60,9 +60,11 @@ let camOn = false;
 for (let i = 0; i < 30; i++) { await sleep(1000); if (await evl(`document.getElementById('btn-start-label').textContent === '停止分析'`)) { camOn = true; break; } }
 camOn ? ok('摄像头启动 → 模型加载 → 分析运行') : bad('摄像头流程失败');
 (await evl(`document.getElementById('btn-start-label').textContent === '停止分析'`)) ? ok('按钮状态=停止分析') : bad('按钮状态异常');
+(await evl(`!document.getElementById('train-timer').classList.contains('hidden') && document.getElementById('train-timer').textContent.includes('⏱')`)) ? ok('训练时长计时器显示（画面角标）') : bad('计时器缺失');
 await evl(`document.getElementById('btn-start').click()`);
 await sleep(300);
 (await evl(`document.getElementById('btn-start-label').textContent === '开始分析'`)) ? ok('停止恢复开始分析') : bad('停止失败');
+(await evl(`document.getElementById('train-timer').classList.contains('hidden')`)) ? ok('停止后计时器隐藏') : bad('计时器未隐藏');
 (await evl(`document.getElementById('stats-box').classList.contains('hidden') && document.getElementById('feedback').classList.contains('hidden')`)) ? ok('停止后统计与提示面板清空（无过期残留）') : bad('停止后残留面板');
 (await evl(`(() => { const c = document.getElementById('overlay'); const ctx = c.getContext('2d'); const d = ctx.getImageData(0, 0, c.width, c.height).data; let sum = 0; for (let i = 3; i < d.length; i += 4) sum += d[i]; return sum === 0 && !document.getElementById('placeholder').classList.contains('hidden'); })()`)) ? ok('停止后画面清空+占位图恢复（无残留火柴人）') : bad('停止后画面残留');
 // 语言切换后成就与 AI 卡片也切换
@@ -454,6 +456,16 @@ await evl(`document.querySelector('.bottom-nav button[data-tab="home"]').click()
 await sleep(300);
 (await evl(`document.getElementById('home-index').textContent.includes('上升') || document.getElementById('home-index').textContent.includes('下降') || document.getElementById('home-index').textContent.includes('up') || document.getElementById('home-index').textContent.includes('down')`)) ? ok('指数趋势：与上次对比显示') : bad('趋势缺失');
 (await evl(`document.getElementById('home-heat').textContent.includes('近 30 天') || document.getElementById('home-heat').textContent.includes('of 30 days')`)) ? ok('热力图汇总：近 30 天/本周训练天数') : bad('热力图汇总缺失');
+
+console.log('===== 20. 训练页细化（v2.21.5：今日任务小条 + 打卡串联） =====');
+await evl(`document.querySelector('.bottom-nav button[data-tab="train"]').click()`);
+await sleep(300);
+(await evl(`!document.getElementById('train-today').classList.contains('hidden') && document.getElementById('train-today').querySelector('.todo-check') != null`)) ? ok('训练页今日任务小条（与日程同源）') : bad('训练页任务条缺失');
+const ttBefore = await evl(`(() => { const dd = JSON.parse(localStorage.getItem('rehab_plan_done') || '{}'); const k = Object.keys(dd)[0]; return !!(dd[k] && dd[k].includes('squat')); })()`);
+await evl(`document.getElementById('train-today').querySelector('.todo-check').click()`);
+await sleep(300);
+const ttAfter = await evl(`(() => { const dd = JSON.parse(localStorage.getItem('rehab_plan_done') || '{}'); const k = Object.keys(dd)[0]; return !!(dd[k] && dd[k].includes('squat')); })()`);
+(ttBefore !== ttAfter) ? ok('训练页任务一键打卡（状态切换，写入计划完成）') : bad('训练页打卡失败');
 
 console.log('===== 结果 =====');
 console.log('CONSOLE_ERRORS:', consoleErrors.length ? consoleErrors.join(' ||| ') : 'none');

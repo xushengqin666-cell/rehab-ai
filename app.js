@@ -93,7 +93,7 @@ function migrateDeviceData(email) {
 }
 const fmtDate = (ts) => new Date(ts).toLocaleString(locale(), { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-const APP_VERSION = 'v2.21.4';
+const APP_VERSION = 'v2.21.5';
 const exName = (e) => (e.custom ? e.name : t(e.nameKey));
 const exDesc = (e) => (e.custom ? e.desc : t(e.descKey));
 const depthTxt = (d) => t('depth' + (d ? d.charAt(0).toUpperCase() + d.slice(1) : 'Ok')) || d;
@@ -1416,7 +1416,7 @@ function switchTab(name) {
   const navBtn = document.querySelector(`.bottom-nav button[data-tab="${name}"]`);
   if (navBtn) navBtn.classList.add('active');
   $('tab-' + name).classList.add('active');
-  if (name === 'train') kickLoop();          // 回到训练页立即恢复分析
+  if (name === 'train') { kickLoop(); renderTrainToday(); }   // 回到训练页立即恢复分析 + 刷新今日任务小条
   if (name !== 'posture') paStop();          // v2.19：离开体态页自动停止体态评估（防摄像头占用）
   if (name !== 'ft') ftStop();               // v2.20：离开功能测试页自动停止（防摄像头占用）
   if (name === 'home') renderHome();         // v2.21：进入今日页刷新总览
@@ -4476,6 +4476,51 @@ function ftDrawTraj(canvas, user, ref) {
   if (user) plot(user, '#0e7c66', false);
 }
 
+/* ============ 新增功能（v2.21.5）：训练模块细化 ============ */
+// 纯新增（不动旧分析循环）：①训练页「今日任务」小条（与日程/今日同源，可一键打卡）
+// ②训练时长计时器（画面右上角，轮询 state.running 状态，零侵入）
+function renderTrainToday() {
+  const el = $('train-today');
+  if (!el) return;
+  const todays = planForToday();
+  const doneArr = planDoneGet()[todayKeyStr()] || [];
+  if (!todays.length) { el.classList.add('hidden'); return; }
+  el.classList.remove('hidden');
+  const doneCount = todays.filter((p) => doneArr.includes(p.ex)).length;
+  el.innerHTML = `<h3 style="margin-bottom:8px">${t('homeToday')}</h3>` + todays.slice(0, 5).map((p) => {
+    const e = getEx(p.ex);
+    const isDone = doneArr.includes(p.ex);
+    return `<div class="item">
+      <button class="todo-check ${isDone ? 'on' : ''}" data-tex="${p.ex}">${isDone ? icon('check') : ''}</button>
+      <div style="flex:1"><div class="t"><span class="t-ico">${icon(e ? e.icon : 'custom')}</span>${e ? exName(e) : p.ex} · ${t('repsN', { n: p.reps })}</div></div>
+    </div>`;
+  }).join('') + `<div class="plan-progress"><div class="plan-progress-txt">${t('planProgress', { d: doneCount, t: todays.length })}</div><div class="plan-bar"><div class="plan-fill" style="width:${(100 * doneCount / todays.length).toFixed(0)}%"></div></div></div>`;
+  el.querySelectorAll('.todo-check').forEach((b) => b.addEventListener('click', () => {
+    togglePlanDone(b.dataset.tex);   // 旧函数只调用不修改
+    renderTrainToday();
+    renderHome();
+  }));
+}
+const trainTimer = { on: false, start: 0, acc: 0 };
+function trainTimerTick() {
+  const el = $('train-timer');
+  if (!el) return;
+  const running = !!state.running;
+  if (running !== trainTimer.on) {
+    if (running) trainTimer.start = performance.now();
+    else { trainTimer.acc += performance.now() - trainTimer.start; trainTimer.start = 0; trainTimer.acc = 0; }
+    trainTimer.on = running;
+  }
+  if (running) {
+    const s = Math.floor((trainTimer.acc + (performance.now() - trainTimer.start)) / 1000);
+    el.textContent = '⏱ ' + String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
+    el.classList.remove('hidden');
+  } else {
+    el.classList.add('hidden');
+  }
+}
+setInterval(trainTimerTick, 500);
+
 /* ============ 启动 ============ */
 initI18n();
 setCustomKey(ukey('rehab_custom_ex'));   // 账号分区：自定义动作按当前账号隔离
@@ -4492,6 +4537,7 @@ onLangChanged(() => {
   renderFtUI();                                         // 功能测试页随语言切换
   renderHome();                                         // v2.21：今日总览随语言切换
   renderGuide();                                        // v2.21：跟练页随语言切换
+  renderTrainToday();                                   // v2.21.5：训练页今日任务小条随语言切换
   setStartBtn(state.running ? 'btnStop' : 'btnStart', state.running ? 'stop' : 'play');
   $('btn-collect-label').textContent = state.collectMode ? t('btnCollectStop') : t('btnCollect');
   $('feedback')._last = null;
@@ -4529,6 +4575,7 @@ window.__ftBatteryDemo = () => ftStart('battery', true);   // 测试钩子：完
 // v2.21：今日总览 + 跟练初始化
 renderHome();
 renderGuide();
+renderTrainToday();
 window.__gwSkip = () => gwFinish(true);                   // 测试钩子：直接完成当前跟练
 showOnboard();
 setTimeout(reminderCatchUp, 4000);            // 错过提醒时间 → 打开时补一次
