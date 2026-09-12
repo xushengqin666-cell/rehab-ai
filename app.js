@@ -93,7 +93,7 @@ function migrateDeviceData(email) {
 }
 const fmtDate = (ts) => new Date(ts).toLocaleString(locale(), { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-const APP_VERSION = 'v2.21.2';
+const APP_VERSION = 'v2.21.3';
 const exName = (e) => (e.custom ? e.name : t(e.nameKey));
 const exDesc = (e) => (e.custom ? e.desc : t(e.descKey));
 const depthTxt = (d) => t('depth' + (d ? d.charAt(0).toUpperCase() + d.slice(1) : 'Ok')) || d;
@@ -2741,6 +2741,10 @@ async function selfTest() {
     // 20b. 跟练难度自适应：进阶（2 级）每节 +2 次，保持类不变
     const gwLvOk = gwStepReps({ reps: 10 }, 1) === 10 && gwStepReps({ reps: 10 }, 2) === 12 && gwStepReps({ hold: 30 }, 2) === 30;
     log(t('stGwLevel'), gwLvOk, `10/12/30 got ${gwStepReps({ reps: 10 }, 1)}/${gwStepReps({ reps: 10 }, 2)}/${gwStepReps({ hold: 30 }, 2)}`);
+    // 20c. 功能测试阶段判定：站直/过渡/底部，峰值型（上举）同样成立
+    const ftPh1 = ftPhaseOf('squat', 170) === 0 && ftPhaseOf('squat', 130) === 1 && ftPhaseOf('squat', 100) === 2;
+    const ftPh2 = ftPhaseOf('arm', 0.02) === 0 && ftPhaseOf('arm', 0.05) === 1 && ftPhaseOf('arm', 0.2) === 2;
+    log(t('stFtPhase'), ftPh1 && ftPh2, `squat 170/130/100=${ftPhaseOf('squat', 170)}/${ftPhaseOf('squat', 130)}/${ftPhaseOf('squat', 100)} arm 0.02/0.05/0.2=${ftPhaseOf('arm', 0.02)}/${ftPhaseOf('arm', 0.05)}/${ftPhaseOf('arm', 0.2)}`);
     out.innerHTML += `<div class="st-pass" style="margin-top:8px;font-weight:800">${t('stAllPass')}</div>`;
     console.log('SELFTEST: ALL PASS');
   } catch (e) {
@@ -3575,6 +3579,12 @@ function ftLiveReps(m, ts) {
   }
   return st.count;
 }
+// v2.21.3：阶段判定（0 站直/放下 · 1 下降或上升 · 2 底部或顶部），纯函数供自测
+function ftPhaseOf(key, v) {
+  const mv = FT_MOVES[key];
+  if (mv.target === 'peak') return v >= mv.thrHigh ? 2 : v <= mv.thrLow ? 0 : 1;   // 峰值型：高阈=举起，低阈=放下
+  return v > mv.thrHigh ? 0 : v < mv.thrLow ? 2 : 1;
+}
 function renderFtChecks(g) {
   const el = $('ft-checks');
   if (!el) return;
@@ -3612,6 +3622,19 @@ function renderFtLive(m, reps, need, ts) {
   $('ft-hint').textContent = reps >= need ? t('ftAutoDone')
     : reps > 0 ? t('ftRepDone', { n: reps, m: need })
       : battPrefix + t(FT_MOVES[ftState.key].guide);
+  // v2.21.3：阶段指示 + 次数进度条
+  const subEl = $('ft-live-sub');
+  if (subEl) {
+    const ph = ftPhaseOf(ftState.key, m[mv.metric]);
+    const phaseKey = mv.target === 'peak' ? (ph === 1 ? 'ftPhaseUpL' : ph === 2 ? 'ftPhaseBottomL' : 'ftPhaseIdle') : (ph === 1 ? 'ftPhaseDownL' : ph === 2 ? 'ftPhaseBottomL' : 'ftPhaseIdle');
+    subEl.classList.remove('hidden');
+    subEl.innerHTML = `
+      <div style="display:flex;align-items:center;gap:8px;margin-top:10px">
+        <span style="flex:none">${t('ftPhase')}：<b>${t(phaseKey)}</b></span>
+        <div class="gw-bar" style="flex:1"><div class="gw-bar-fill" style="width:${Math.min(100, (reps / Math.max(1, need)) * 100).toFixed(0)}%"></div></div>
+        <span style="flex:none">${Math.min(reps, need)}/${need}</span>
+      </div>`;
+  }
 }
 function setFtStartBtn() { $('btn-ft-start-label').textContent = ftState.active ? t('ftBtnStop') : t('ftBtnStart'); }
 
@@ -3677,7 +3700,7 @@ function ftStop() {
   const c = $('ft-overlay');
   if (c) c.getContext('2d').clearRect(0, 0, c.width, c.height);
   const ph = $('ft-placeholder');
-  if (ph) { ph.classList.remove('hidden'); $('ft-placeholder-text').textContent = t('ftIntro'); }
+  if (ph) { ph.classList.remove('hidden'); $('ft-placeholder-text').textContent = t('ftPlaceholderShort'); }
   const gate = $('ft-gate'), live = $('ft-live');
   if (gate) gate.classList.add('hidden');          // v2.20.2：手动停止后收起门控与实时面板，不留过期数据
   if (live) live.classList.add('hidden');
@@ -3850,10 +3873,13 @@ function renderFtReport(mode, scroll = true) {
             </div>`).join('')}
         </div>`;
       if (rec.sim) {
-        body += `<div class="ft-sim"><div class="ft-sim-head"><span>${t('ftSimilarity')}</span><b>${rec.sim}%</b></div><canvas class="ft-curve" id="ft-curve"></canvas></div>`;
+        const simGrade = rec.sim >= 85 ? 'A' : rec.sim >= 70 ? 'B' : rec.sim >= 55 ? 'C' : 'D';
+        body += `<div class="ft-sim"><div class="ft-sim-head"><span>${t('ftSimilarity')}</span><b>${rec.sim}% · ${t('paGrade' + simGrade)}</b></div><canvas class="ft-curve" id="ft-curve"></canvas>
+          <div class="hint tiny" style="margin-top:4px">${t('ftLegendYou')} <span style="color:#0e7c66;font-weight:800">——</span> · ${t('ftLegendStd')} <span style="color:#c9cdd4;font-weight:800">- -</span></div></div>`;
       }
       if (rec.traj && rec.traj.length) {
-        body += `<div class="ft-sim"><div class="ft-sim-head"><span>${t('ftTrajTitle')}</span></div><canvas class="ft-traj" id="ft-traj"></canvas></div>`;
+        body += `<div class="ft-sim"><div class="ft-sim-head"><span>${t('ftTrajTitle')}</span></div><canvas class="ft-traj" id="ft-traj"></canvas>
+          <div class="hint tiny" style="margin-top:4px">${t('ftLegendYou')} <span style="color:#0e7c66;font-weight:800">——</span> · ${t('ftLegendStd')} <span style="color:#c9cdd4;font-weight:800">- -</span></div></div>`;
       }
     }
   }
@@ -3911,7 +3937,7 @@ function renderFtMoves() {
     $('ft-report').classList.add('hidden');
     renderFtMoves();
   }));
-  $('ft-guide').textContent = t(FT_MOVES[ftState.key].guide);
+  $('ft-guide').textContent = t(FT_MOVES[ftState.key].guide) + '（' + t('ftTargetN', { n: FT_MOVES[ftState.key].need }) + '）';
   const batBtn = $('btn-ft-battery');
   if (batBtn) batBtn.classList.toggle('on', ftState.mode === 'battery' && ftState.active);
 }
@@ -3925,7 +3951,7 @@ function renderFtHistory() {
     const date = when.toLocaleDateString(locale(), { month: 'numeric', day: 'numeric' }) + ' ' + when.toLocaleTimeString(locale(), { hour: '2-digit', minute: '2-digit' });
     return `<div class="item">
       <div class="t">${icon('record')}${r.battery ? t('ftBatteryReport') : t(FT_MOVES[r.key].name)}${r.demo ? ' · ' + t('ftBtnDemo') : ''} — ${date}</div>
-      <div class="d">${t('ftScore')} ${r.score} · ${t('ftSimilarity')} ${r.sim}%</div>
+      <div class="d">${t('ftScore')} ${r.score} · ${t('ftSimilarity')} ${r.sim}%${r.m ? ' · ' + t('ftRepsDone', { n: r.m.reps, m: r.m.need }) : ''}</div>
       <div class="controls" style="margin-top:6px"><button class="btn small" data-ft-view="${r.ts}"><span>${t('ftView')}</span></button></div>
     </div>`;
   }).join('');

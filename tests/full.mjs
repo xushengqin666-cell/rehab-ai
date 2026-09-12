@@ -389,7 +389,9 @@ await evl(`document.getElementById('btn-ft-demo').click()`);
 let ftReport = false;
 for (let i = 0; i < 20; i++) { await sleep(1000); if (await evl(`!document.getElementById('ft-report').classList.contains('hidden')`)) { ftReport = true; break; } }
 ftReport ? ok('演示模式·动态深蹲：全程分析后自动出报告') : bad('深蹲测试未出报告');
-(await evl(`(() => { const r = document.getElementById('ft-report'); return /\\d+/.test(r.querySelector('.pa-score-num').textContent) && r.querySelectorAll('.pa-item').length >= 4 && r.textContent.includes('%') && !!r.querySelector('.ft-curve'); })()`)) ? ok('报告含评分+逐项指标+相似度曲线') : bad('报告结构缺失');
+(await evl(`(() => { const r = document.getElementById('ft-report'); return /\\d+/.test(r.querySelector('.pa-score-num').textContent) && r.querySelectorAll('.pa-item').length >= 4 && r.textContent.includes('%') && !!r.querySelector('.ft-curve') && r.textContent.includes('你') && r.textContent.includes('标准'); })()`)) ? ok('报告含评分+逐项指标+相似度曲线+图例（你/标准）') : bad('报告结构缺失');
+(await evl(`document.getElementById('ft-report').textContent.includes('良好') || document.getElementById('ft-report').textContent.includes('优秀') || document.getElementById('ft-report').textContent.includes('一般') || document.getElementById('ft-report').textContent.includes('需改进')`)) ? ok('相似度带等级评价（优秀/良好/一般/需改进）') : bad('相似度等级缺失');
+(await evl(`document.getElementById('ft-history').textContent.includes('/3')`)) ? ok('测试历史显示完成次数（3/3）') : bad('历史次数缺失');
 (await evl(`document.getElementById('ft-report').textContent.includes('蚌式开合')`)) ? ok('知识库处方（膝内扣→蚌式开合等训练）') : bad('知识库处方缺失');
 (await evl(`JSON.parse(localStorage.getItem('rehab_ft_history')).filter(r => r.key === 'squat').length === 1`)) ? ok('测试记录已存（每动作一条）') : bad('记录未保存');
 (await evl(`document.getElementById('ft-profile').textContent.includes('动态深蹲') && !!document.getElementById('ft-profile').querySelector('.ft-table')`)) ? ok('数字人体档案（最新评分+ROM/对称性表）') : bad('人体档案缺失');

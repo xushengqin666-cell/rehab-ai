@@ -1,7 +1,7 @@
 {
-  "version": "2.21.2",
-  "apk": "https://cdn.jsdelivr.net/gh/xushengqin666-cell/rehab-ai@main/downloads/RehabAI-v2.21.2.apk",
+  "version": "2.21.3",
+  "apk": "https://cdn.jsdelivr.net/gh/xushengqin666-cell/rehab-ai@main/downloads/RehabAI-v2.21.3.apk",
   "releaseUrl": "https://github.com/xushengqin666-cell/rehab-ai/releases/latest",
-  "notes": "全模块逐个精细化 · 第 2 模块「跟练」：难度自适应真正生效（进阶每节次数+2）；课程卡显示节数/组数与本周跟练次数；练习界面加节进度点与进度条；换节语音播报节名；休息结束提示音；完成卡（再练一次/回今日）。",
+  "notes": "全模块逐个精细化 · 第 3 模块「功能测试」：实时面板加阶段指示（站直/下降/底部/上升）与次数进度条；动作引导显示目标次数；摄像头占位文案精简；相似度带等级评价；曲线/轨迹加「你/标准」图例；测试历史显示完成次数。",
   "important": false
 }
