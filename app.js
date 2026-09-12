@@ -93,7 +93,7 @@ function migrateDeviceData(email) {
 }
 const fmtDate = (ts) => new Date(ts).toLocaleString(locale(), { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-const APP_VERSION = 'v2.21.0';
+const APP_VERSION = 'v2.21.1';
 const exName = (e) => (e.custom ? e.name : t(e.nameKey));
 const exDesc = (e) => (e.custom ? e.desc : t(e.descKey));
 const depthTxt = (d) => t('depth' + (d ? d.charAt(0).toUpperCase() + d.slice(1) : 'Ok')) || d;
@@ -4220,52 +4220,99 @@ function homeIndex() {
   const level = score == null ? null : score >= 90 ? 4 : score >= 75 ? 3 : score >= 60 ? 2 : 1;
   return { score, level, pa: pa ? pa.score : null, ft: ftB ? ftB.score : null, consist, days30 };
 }
+function homeIndexHist() { return sget('rehab_home_idx', []); }
+function homeRecordIndex(score) {
+  const h = homeIndexHist();
+  const k = todayKeyStr();
+  if (h.length && h[0].d === k) h[0].v = score;
+  else { h.unshift({ d: k, v: score }); if (h.length > 30) h.length = 30; }
+  sset('rehab_home_idx', h);
+}
 function homeAdvice(idx) {
   const sessions = sget('rehab_sessions', []);
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const trainedToday = sessions.some((s) => new Date(s.ts) >= today);
-  if (trainedToday) return t('gwAdvDone');
-  if (idx.score == null) return t('gwAdvFirst');
+  if (trainedToday) return { text: t('gwAdvDone'), action: null };
+  if (idx.score == null) return { text: t('gwAdvFirst'), action: 'posture' };
   const last = sessions.reduce((m, s) => Math.max(m, s.ts), 0);
   const daysSince = last ? Math.floor((today.getTime() - new Date(new Date(last).toDateString()).getTime()) / 86400000) : 99;
-  if (daysSince >= 2) return t('gwAdvRest', { d: daysSince });
-  if (idx.score < 60) return t('gwAdvLight');
-  return t('gwAdvGo');
+  if (daysSince >= 2) return { text: t('gwAdvRest', { d: daysSince }), action: 'guide' };
+  if (idx.score < 60) return { text: t('gwAdvLight'), action: 'guide' };
+  return { text: t('gwAdvGo'), action: 'train' };
 }
 function renderHome() {
   const el = $('home-index');
   if (!el) return;
   const idx = homeIndex();
+  const advice = homeAdvice(idx);
   if (idx.score == null) {
-    el.innerHTML = `<p class="hint">${t('homeIndexNone')}</p>`;
+    el.innerHTML = `
+      <p class="hint">${t('homeIndexNone')}</p>
+      <div class="controls" style="margin-top:10px">
+        <button class="btn small" id="hm-posture"><span>${t('homeQuickPosture')}</span></button>
+        <button class="btn small" id="hm-ft"><span>${t('homeQuickFt')}</span></button>
+      </div>`;
+    $('hm-posture').addEventListener('click', () => switchTab('posture'));
+    $('hm-ft').addEventListener('click', () => switchTab('ft'));
   } else {
+    homeRecordIndex(idx.score);
+    const h = homeIndexHist();
+    const prev = h.length > 1 ? h[1] : null;
+    const delta = prev ? idx.score - prev.v : null;
+    const nextLv = idx.level >= 4 ? null : idx.level + 1;
+    const nextThreshold = [0, 60, 75, 90][nextLv] ?? null;
+    const toNext = nextLv && nextThreshold != null ? Math.max(1, nextThreshold - idx.score) : null;
     el.innerHTML = `
       <div class="hm-index">
         <div class="hm-score">${idx.score}</div>
         <div>
           <span class="hm-lv">${t('homeLevel')} · ${t('gwLv' + idx.level)}</span>
+          ${delta != null ? `<span class="hm-lv" style="margin-left:6px;background:rgba(245,158,11,.15);color:#b45309">${t('homeIdxTrend', { v: delta >= 0 ? t('homeUp', { d: delta }) : t('homeDown', { d: -delta }) })}</span>` : ''}
           <div class="hm-parts">
             ${idx.pa != null ? `<div class="hm-part"><span>${t('paTitle')}</span><b>${idx.pa}</b><div class="hm-bar"><div class="hm-bar-fill" style="width:${idx.pa}%"></div></div></div>` : ''}
             ${idx.ft != null ? `<div class="hm-part"><span>${t('ftTitle')}</span><b>${idx.ft}</b><div class="hm-bar"><div class="hm-bar-fill" style="width:${idx.ft}%"></div></div></div>` : ''}
             <div class="hm-part"><span>${t('homeConsist')}</span><b>${t('homeDays', { d: idx.days30 })}</b><div class="hm-bar"><div class="hm-bar-fill" style="width:${idx.consist}%"></div></div></div>
           </div>
+          ${toNext ? `<div class="hint tiny" style="margin-top:6px">${t('homeToNext', { l: t('gwLv' + nextLv), d: toNext })}</div>` : ''}
         </div>
       </div>
-      <div class="hm-advice">💡 ${homeAdvice(idx)}</div>`;
+      <div class="hm-advice">💡 ${advice.text}${advice.action ? ` <a class="link-btn" id="hm-adv-btn" style="margin-left:6px">${advice.action === 'guide' ? t('homeAdvGuideBtn') : advice.action === 'train' ? t('homeAdvGoBtn') : t('homeQuickPosture')} →</a>` : ''}</div>`;
+    if (advice.action) {
+      $('hm-adv-btn').addEventListener('click', () => switchTab(advice.action === 'posture' ? 'posture' : advice.action));
+    }
   }
-  // 今日任务（读取计划数据，只读不写）
-  const plan = sget('rehab_plan', []);
-  const done = sget('rehab_plan_done', {});
-  const todayKey = new Date().toDateString();
-  const todays = plan.filter((p) => (p.days || []).includes(new Date().getDay()) || (p.date && new Date(p.date).toDateString() === todayKey));
+  // 今日任务：与日程页同一数据源（planForToday + 按 p.ex 打卡），可一键完成
+  const todays = planForToday();
+  const doneArr = planDoneGet()[todayKeyStr()] || [];
   const listEl = $('home-today');
-  if (!todays.length) listEl.innerHTML = `<div class="empty">${icon('schedule')}<span>${t('homeTodayNone')}</span></div>`;
-  else listEl.innerHTML = todays.slice(0, 4).map((p) => {
-    const d = done[todayKey] || [];
-    const ok = d.includes(p.id);
-    return `<div class="item"><div class="t">${icon('check')}${p.name || p.exName || p.ex || '—'} × ${p.reps ?? p.goal ?? ''}${ok ? ' ✓' : ''}</div></div>`;
-  }).join('');
-  // 30 天热力图
+  if (!todays.length) {
+    listEl.innerHTML = `
+      <div class="empty">${icon('schedule')}<span>${t('homeTodayNone')}</span></div>
+      <div class="controls" style="margin-top:10px">
+        <button class="btn small" id="hm-sched"><span>${t('navSchedule')} →</span></button>
+        <button class="btn small" id="hm-guide2"><span>${t('navGuide')} →</span></button>
+      </div>`;
+    $('hm-sched').addEventListener('click', () => switchTab('schedule'));
+    $('hm-guide2').addEventListener('click', () => switchTab('guide'));
+  } else {
+    const doneCount = todays.filter((p) => doneArr.includes(p.ex)).length;
+    listEl.innerHTML = todays.slice(0, 5).map((p) => {
+      const e = getEx(p.ex);
+      const isDone = doneArr.includes(p.ex);
+      return `<div class="item">
+        <button class="todo-check ${isDone ? 'on' : ''}" data-hex="${p.ex}">${isDone ? icon('check') : ''}</button>
+        <div style="flex:1"><div class="t"><span class="t-ico">${icon(e ? e.icon : 'custom')}</span>${e ? exName(e) : p.ex} · ${t('repsN', { n: p.reps })}</div></div>
+      </div>`;
+    }).join('') + `<div class="plan-progress">
+      <div class="plan-progress-txt">${t('planProgress', { d: doneCount, t: todays.length })}</div>
+      <div class="plan-bar"><div class="plan-fill" style="width:${(100 * doneCount / todays.length).toFixed(0)}%"></div></div>
+    </div>`;
+    listEl.querySelectorAll('.todo-check').forEach((b) => b.addEventListener('click', () => {
+      togglePlanDone(b.dataset.hex);   // 旧函数只调用不修改：写计划完成 + 刷新旧日程页
+      renderHome();                    // 刷新今日页自身
+    }));
+  }
+  // 30 天热力图 + 汇总
   const sessions = sget('rehab_sessions', []);
   const counts = {};
   sessions.forEach((s) => { const k = new Date(s.ts).toDateString(); counts[k] = (counts[k] || 0) + 1; });
@@ -4277,15 +4324,27 @@ function renderHome() {
     const lvl = n >= 3 ? 3 : n >= 2 ? 2 : n >= 1 ? 1 : 0;
     cells.push(`<div class="hm-cell hm${lvl}${i === 0 ? ' today' : ''}" title="${d.toLocaleDateString(locale())} · ${n}"></div>`);
   }
-  $('home-heat').innerHTML = cells.join('');
-  // 本周小结
-  const wk = new Date(); wk.setHours(0, 0, 0, 0); wk.setDate(wk.getDate() - 6);
-  const weekS = sessions.filter((s) => new Date(s.ts) >= wk);
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const from30 = new Date(today); from30.setDate(from30.getDate() - 29);
+  const d30 = new Set(sessions.filter((s) => new Date(s.ts) >= from30).map((s) => new Date(s.ts).toDateString())).size;
+  const wkStart = new Date(today); wkStart.setDate(wkStart.getDate() - 6);
+  const d7 = new Set(sessions.filter((s) => new Date(s.ts) >= wkStart).map((s) => new Date(s.ts).toDateString())).size;
+  $('home-heat').innerHTML = cells.join('') + `<div class="hint tiny" style="margin-top:6px">${t('homeHeatSum', { d30, d7 })}</div>`;
+  // 本周小结 + 上周对比 + 风险
+  const weekS = sessions.filter((s) => new Date(s.ts) >= wkStart);
   const rTotal = weekS.reduce((a, s) => a + (s.reps || 0), 0);
   const qAvg = weekS.length ? Math.round(100 - weekS.reduce((a, s) => a + (s.badPct || 0), 0) / weekS.length) : null;
+  const riskN = weekS.reduce((a, s) => a + ((s.riskPct || 0) > 0 ? 1 : 0), 0);
+  const wkPrevStart = new Date(wkStart); wkPrevStart.setDate(wkPrevStart.getDate() - 7);
+  const weekPrev = sessions.filter((s) => new Date(s.ts) >= wkPrevStart && new Date(s.ts) < wkStart).length;
+  const deltaW = weekS.length - weekPrev;
   $('home-week').innerHTML = weekS.length
-    ? `<div class="summary-line">${t('homeWeekLine', { n: weekS.length, r: rTotal, q: qAvg })}</div>`
+    ? `<div class="summary-line">${t('homeWeekLine', { n: weekS.length, r: rTotal, q: qAvg })}${riskN ? ' · ' + t('homeRisk', { n: riskN }) : ''}
+        <span class="hint tiny" style="display:block">${t('homeWeekDelta', { v: (deltaW >= 0 ? '+' : '') + deltaW })}</span>
+        <button class="btn small" id="hm-record" style="margin-top:6px"><span>${t('homeGoRecord')} →</span></button>
+      </div>`
     : `<div class="empty">${icon('record')}<span>${t('homeWeekNone')}</span></div>`;
+  if ($('hm-record')) $('hm-record').addEventListener('click', () => switchTab('record'));
 }
 
 /* ---- 动作轨迹（Tempo 式轨迹回放：你 vs 标准） ---- */

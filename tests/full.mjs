@@ -430,6 +430,20 @@ await evl(`document.getElementById('btn-ft-demo').click()`);
 let ft21 = false;
 for (let i = 0; i < 20; i++) { await sleep(1000); if (await evl(`!document.getElementById('ft-report').classList.contains('hidden')`)) { ft21 = true; break; } }
 (ft21 && await evl(`!!document.getElementById('btn-ft-guide') && !!document.getElementById('ft-traj')`)) ? ok('测试报告：动作轨迹回放图 + 「去跟练巩固」入口') : bad('轨迹/跟练入口缺失');
+// 19d. 今日任务：与日程页同一数据源 + 一键打卡（v2.21.1 细化）
+await evl(`(() => { const today = new Date().getDay(); localStorage.setItem('rehab_plan', JSON.stringify([{ id: 'h1', ex: 'squat', reps: 10, days: [today] }])); localStorage.setItem('rehab_plan_done', '{}'); return true; })()`);
+await evl(`document.querySelector('.bottom-nav button[data-tab="home"]').click()`);
+await sleep(300);
+(await evl(`document.getElementById('home-today').querySelector('.todo-check') != null`)) ? ok('今日任务：读取计划并显示打卡按钮') : bad('今日任务缺失');
+await evl(`document.getElementById('home-today').querySelector('.todo-check').click()`);
+await sleep(300);
+(await evl(`(() => { const dd = JSON.parse(localStorage.getItem('rehab_plan_done') || '{}'); const k = Object.keys(dd)[0]; return k && dd[k].includes('squat'); })()`)) ? ok('今日任务：一键打卡写入计划完成') : bad('打卡未写入');
+// 19e. 指数历史趋势（v2.21.1 细化）
+await evl(`(() => { const d = new Date(); const k = (x) => { const t = new Date(d); t.setDate(t.getDate() - x); return t.getFullYear() + '-' + String(t.getMonth() + 1).padStart(2, '0') + '-' + String(t.getDate()).padStart(2, '0'); }; localStorage.setItem('rehab_home_idx', JSON.stringify([{ d: k(1), v: 60 }, { d: k(2), v: 55 }])); return true; })()`);
+await evl(`document.querySelector('.bottom-nav button[data-tab="home"]').click()`);
+await sleep(300);
+(await evl(`document.getElementById('home-index').textContent.includes('上升') || document.getElementById('home-index').textContent.includes('下降') || document.getElementById('home-index').textContent.includes('up') || document.getElementById('home-index').textContent.includes('down')`)) ? ok('指数趋势：与上次对比显示') : bad('趋势缺失');
+(await evl(`document.getElementById('home-heat').textContent.includes('近 30 天') || document.getElementById('home-heat').textContent.includes('of 30 days')`)) ? ok('热力图汇总：近 30 天/本周训练天数') : bad('热力图汇总缺失');
 
 console.log('===== 结果 =====');
 console.log('CONSOLE_ERRORS:', consoleErrors.length ? consoleErrors.join(' ||| ') : 'none');
