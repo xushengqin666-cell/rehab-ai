@@ -122,7 +122,10 @@ await evl(`document.querySelector('.bottom-nav button[data-tab="record"]').click
 await sleep(300);
 const achOn = await evl(`document.querySelectorAll('#ach-grid .ach-item.on').length`);
 achOn === 9 ? ok('成就 9/9 全部解锁') : bad('成就解锁 ' + achOn + '/9');
+(await evl(`document.getElementById('ach-count').textContent.includes('9/9')`)) ? ok('成就解锁进度显示 9/9') : bad('成就进度缺失');
 (await evl(`document.querySelectorAll('#dist-chart .dist-row').length === 3`)) ? ok('动作分布 3 个动作') : bad('分布图异常');
+(await evl(`document.getElementById('dist-chart').textContent.includes('%')`)) ? ok('动作分布显示占比') : bad('占比缺失');
+(await evl(`document.getElementById('week-best').textContent.includes('最多') || document.getElementById('week-best').textContent.includes('Best')`)) ? ok('本周单日最佳显示') : bad('周最佳缺失');
 
 console.log('===== 6. 评估 + 趋势 + 删除 =====');
 await evl(`document.querySelector('.bottom-nav button[data-tab="assess"]').click()`);

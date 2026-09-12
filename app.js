@@ -93,7 +93,7 @@ function migrateDeviceData(email) {
 }
 const fmtDate = (ts) => new Date(ts).toLocaleString(locale(), { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-const APP_VERSION = 'v2.21.5';
+const APP_VERSION = 'v2.21.6';
 const exName = (e) => (e.custom ? e.name : t(e.nameKey));
 const exDesc = (e) => (e.custom ? e.desc : t(e.descKey));
 const depthTxt = (d) => t('depth' + (d ? d.charAt(0).toUpperCase() + d.slice(1) : 'Ok')) || d;
@@ -1111,6 +1111,10 @@ function renderRecords() {
   $('summary-line').textContent = sessions.length
     ? t('summaryLine', { n: sessions.length, r: totalReps, s: streak })
     : t('noSessions');
+  // v2.21.6：本周单日最佳
+  const bestDay = Math.max(0, ...days.map((d) => d.reps));
+  const bestEl = $('week-best');
+  if (bestEl) bestEl.textContent = bestDay > 0 ? t('weekBest', { d: bestDay }) : '';
   const list = $('session-list');
   if (!sessions.length) {
     list.innerHTML = emptyBox('record', 'emptyList');
@@ -1128,6 +1132,7 @@ function renderRecords() {
       </div>`;
     }).join('');
     list.querySelectorAll('.del').forEach((btn) => btn.addEventListener('click', () => {
+      if (!confirm(t('confirmDelSession'))) return;   // v2.21.6：删除前确认，防误删训练记录
       sset('rehab_sessions', sessions.filter((s) => s.id !== btn.dataset.id));
       renderRecords();
     }));
@@ -1674,12 +1679,13 @@ function renderDist() {
   const entries = Object.entries(totals).sort((a, b) => b[1] - a[1]);
   if (!entries.length) { $('dist-chart').innerHTML = emptyBox('record', 'emptyList'); return; }
   const max = entries[0][1];
+  const total = entries.reduce((a, [, n]) => a + n, 0);   // v2.21.6：占比
   $('dist-chart').innerHTML = entries.map(([id, n]) => {
     const e = EXERCISES[id];
     return `<div class="dist-row">
       <span class="dist-name"><span class="t-ico">${icon(e ? e.icon : 'custom')}</span>${e ? exName(e) : id}</span>
       <div class="dist-bar"><div class="dist-fill" style="width:${(100 * n / max).toFixed(1)}%"></div></div>
-      <span class="dist-num">${n}</span>
+      <span class="dist-num">${n}<span class="hint tiny" style="display:block">${Math.round(100 * n / total)}%</span></span>
     </div>`;
   }).join('');
 }
@@ -1724,6 +1730,9 @@ function renderAchievements() {
       <div class="ach-desc">${t(a.descKey)}</div>
     </div>`;
   }).join('');
+  const unlocked = ACHIEVEMENTS.filter((a) => a.test(stats)).length;   // v2.21.6：解锁进度
+  const acEl = $('ach-count');
+  if (acEl) acEl.textContent = t('achCount', { n: unlocked, t: ACHIEVEMENTS.length });
 }
 
 /* ============ 康复计划 ============ */
