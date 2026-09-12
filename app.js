@@ -93,7 +93,7 @@ function migrateDeviceData(email) {
 }
 const fmtDate = (ts) => new Date(ts).toLocaleString(locale(), { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-const APP_VERSION = 'v2.20.2';
+const APP_VERSION = 'v2.21.0';
 const exName = (e) => (e.custom ? e.name : t(e.nameKey));
 const exDesc = (e) => (e.custom ? e.desc : t(e.descKey));
 const depthTxt = (d) => t('depth' + (d ? d.charAt(0).toUpperCase() + d.slice(1) : 'Ok')) || d;
@@ -109,6 +109,10 @@ const ICONS = {
   shoulderraise: '<circle cx="12" cy="4.4" r="2.1"/><path d="M12 6.5v6M12 12.5l-3 4M12 12.5l3 4M12 9l-4-1.2M12 9l4.5 1.8M16.5 10.8l1.5-4.5"/>',
   standing: '<circle cx="12" cy="4.2" r="2.1"/><path d="M12 6.3v5.4M12 8l-4.2-1M12 8l4.2-1M12 11.7v4.6M12 16.3l-3.8-.2M12 16.3l3.8-.2"/>',
   sitting: '<circle cx="12" cy="5.2" r="2.1"/><path d="M12 7.3v3.4M12 8.6l-4-1M12 8.6l4-1M12 10.7l4.2 2.6M16.2 13.3v5M12 10.7l-4.2 2.6M7.8 13.3v5M4 20.5h16"/>',
+  wallsit: '<circle cx="12" cy="4.6" r="2.1"/><path d="M12 6.7v4.2M12 10.9l4.6 3M16.6 13.9v6M12 10.9l-4.6 3M7.4 13.9v6M5 20.5h14"/>',
+  plank: '<circle cx="9" cy="4.6" r="2.1"/><path d="M9 6.7l11.2 3.4M9 6.7l-4.2 4.4M9.6 8l3.4 5.2L17.2 20M13 13.2l3.8 6.4"/>',
+  bend: '<circle cx="12" cy="4.4" r="2.1"/><path d="M12 6.5v3.6M12 10.1l-3 3.2-1.8 6M12 10.1l3 3.2 1.8 6M12 8.6l-4.4-1.2M12 8.6l4.4-1.2M10 20h4"/>',
+  bridge: '<circle cx="6" cy="5" r="2.1"/><path d="M6 7.1v4.8M6 11.9l8.4 1.6 5 3.2M6 11.9l6.8-3.4M12.8 8.5l4.8-2.4"/>',
   custom: '<path d="M12 4.5l1.4 4.1 4.1 1.4-4.1 1.4L12 15.5l-1.4-4.1-4.1-1.4 4.1-1.4Z"/><path d="M18.5 15.5l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7Z"/>',
   play: '<path d="M8.2 5.6v12.8a.7.7 0 0 0 1.1.6l10.2-6.4a.7.7 0 0 0 0-1.2L9.3 5a.7.7 0 0 0-1.1.6Z" fill="currentColor" stroke="none"/>',
   stop: '<rect x="6.8" y="6.8" width="10.4" height="10.4" rx="2.4" fill="currentColor" stroke="none"/>',
@@ -1415,6 +1419,8 @@ function switchTab(name) {
   if (name === 'train') kickLoop();          // 回到训练页立即恢复分析
   if (name !== 'posture') paStop();          // v2.19：离开体态页自动停止体态评估（防摄像头占用）
   if (name !== 'ft') ftStop();               // v2.20：离开功能测试页自动停止（防摄像头占用）
+  if (name === 'home') renderHome();         // v2.21：进入今日页刷新总览
+  if (name !== 'guide') gwStop();            // v2.21：离开跟练页自动结束跟练计时
 }
 document.querySelectorAll('.bottom-nav button').forEach((btn) => {
   btn.addEventListener('click', () => switchTab(btn.dataset.tab));
@@ -2726,6 +2732,12 @@ async function selfTest() {
     const ftZeroOk = ftZero.reps === 0 && typeof ftZeroS.total === 'number' && ftZeroIss.length > 0
       && ftZeroIss.every((i) => typeof i.val === 'string' && typeof i.text === 'string');
     log(t('stFtZeroRep'), ftZeroOk, `reps=0 score=${ftZeroS.total} items=${ftZeroIss.length}`);
+    // 20. 今日总览与跟练（v2.21）：指数加权 + 课程完整性 + 记录生成
+    const hIdx1 = gwCalcIndex(90, null, 50), hIdx2 = gwCalcIndex(80, 70, 100), hIdx3 = gwCalcIndex(null, null, 50);
+    const gwProgOk = Object.values(GW_PROGRAMS).every((p) => p.steps.length >= 2 && p.steps.every((s) => s.sets > 0 && ((s.reps > 0) || (s.hold > 0)) && s.cue && s.name && s.icon));
+    const gwRec = gwMakeSession(GW_PROGRAMS.knee, 30, 600);
+    log(t('stHomeIndex'), hIdx1 === 67 && hIdx2 === 85 && hIdx3 === 50, `${hIdx1}/${hIdx2}/${hIdx3}（期望 67/85/50）`);
+    log(t('stGwProg'), gwProgOk && gwRec.id && gwRec.ex === 'guided' && gwRec.reps === 30 && gwRec.dur === 600, `steps ok rec=${gwRec.ex}/${gwRec.reps}×${gwRec.dur}s`);
     out.innerHTML += `<div class="st-pass" style="margin-top:8px;font-weight:800">${t('stAllPass')}</div>`;
     console.log('SELFTEST: ALL PASS');
   } catch (e) {
@@ -3247,6 +3259,7 @@ function ftFrameMetrics(lms) {
     shoulderDiff: Math.abs(lms[11].y - lms[12].y) / paTorso(lms),
     pelvisDiff: Math.abs(lms[23].y - lms[24].y) / paTorso(lms),
     hipMidX: hp.x / Math.max(0.05, paTorso(lms)),
+    hipX: hp.x, hipY: hp.y,
     kneeExt: Math.max(Math.abs(180 - kL), Math.abs(180 - kR)),
     lms,
   };
@@ -3352,6 +3365,21 @@ function ftAnalyze(key, frames) {
     m.stab = paMed(bottomStd);
   }
   m.cons = Math.min(m.cons, 100);
+  // v2.21：动作轨迹（Tempo 式回放）：取第一次动作的关键点路径，13 点采样
+  m.traj = null;
+  if (reps.length) {
+    const r = reps[0];
+    const pB = r.pB ?? r.idx, pA = r.pA ?? r.idx;
+    const n = 13, pts = [];
+    for (let i = 0; i < n; i++) {
+      const f = frames[Math.min(frames.length - 1, Math.round(pB + ((pA - pB) * i) / (n - 1)))];
+      if (!f) continue;
+      if (key === 'arm') pts.push([(f.lms[15].x + f.lms[16].x) / 2, (f.lms[15].y + f.lms[16].y) / 2]);
+      else if (key === 'bend') pts.push([(f.lms[11].x + f.lms[12].x) / 2, (f.lms[11].y + f.lms[12].y) / 2]);
+      else pts.push([f.hipX, f.hipY]);
+    }
+    if (pts.length >= 5) m.traj = pts;
+  }
   // 零次数/超时保护：所有指标归一化为安全数值，防止报告渲染时 toFixed 崩溃
   const norm = (v, d = 0) => (v == null || Number.isNaN(v)) ? d : v;
   m.rom = norm(m.rom); m.downSec = norm(m.downSec); m.upSec = norm(m.upSec); m.stab = norm(m.stab);
@@ -3711,7 +3739,7 @@ function ftFinish(key) {
     : null;
   const rec = {
     key, ts: Date.now(), demo: ftState.demo, score: S.total, dims: S, m, issues, sim,
-    curve: curve || [], ref: ref || [], staticSym, battery: false,
+    curve: curve || [], ref: ref || [], staticSym, battery: false, traj: m.traj || null,
   };
   ftSaveRecord(rec);
   const isBattery = ftState.mode === 'battery';
@@ -3821,6 +3849,9 @@ function renderFtReport(mode, scroll = true) {
       if (rec.sim) {
         body += `<div class="ft-sim"><div class="ft-sim-head"><span>${t('ftSimilarity')}</span><b>${rec.sim}%</b></div><canvas class="ft-curve" id="ft-curve"></canvas></div>`;
       }
+      if (rec.traj && rec.traj.length) {
+        body += `<div class="ft-sim"><div class="ft-sim-head"><span>${t('ftTrajTitle')}</span></div><canvas class="ft-traj" id="ft-traj"></canvas></div>`;
+      }
     }
   }
   // 知识库处方（聚合所有非良好问题的 kb，去重）
@@ -3841,12 +3872,18 @@ function renderFtReport(mode, scroll = true) {
   } else {
     body += `<p class="hint" style="margin-top:12px">${t('ftNoIssue')}</p>`;
   }
-  el.innerHTML = demoBadge + body + `<div class="controls" style="margin-top:12px"><button class="btn" id="btn-ft-redo"><span>${t('ftAgain')}</span></button></div>`;
+  el.innerHTML = demoBadge + body + `<div class="controls" style="margin-top:12px"><button class="btn" id="btn-ft-guide"><span>${t('ftGoGuide')}</span></button><button class="btn" id="btn-ft-redo"><span>${t('ftAgain')}</span></button></div>`;
+  $('btn-ft-guide').addEventListener('click', () => { switchTab('guide'); });
   $('btn-ft-redo').addEventListener('click', () => { el.classList.add('hidden'); ftStart(mode === 'battery' ? 'battery' : ftState.key, false); });
   const cv = $('ft-curve');
   if (cv) {
     const r = recs[0];
     if (r && r.curve && r.curve.length) ftDrawCurve(cv, r.curve, r.ref || []);
+  }
+  const tv = $('ft-traj');
+  if (tv) {
+    const r = recs[0];
+    if (r && r.traj && r.traj.length) ftDrawTraj(tv, r.traj, ftRefTraj(r.key));
   }
   if (scroll) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
@@ -3979,6 +4016,323 @@ function ftDemoFrame(key, ts) {
   return lms;
 }
 
+/* ============ 新增功能（v2.21）：今日总览 + AI 跟练 + 动作轨迹（对标 Tonal 分数体系/课程、Tempo 轨迹回放） ============ */
+// 全部纯新增：不修改旧功能；跟练完成后写入标准 rehab_sessions 记录，自动流入旧有的记录/趋势/成就（数据级串联，旧代码零改动）
+const GW_PROGRAMS = {
+  knee: {
+    name: 'gwKnee', desc: 'gwKneeD', mins: 10, tag: 'knee',
+    steps: [
+      { name: 'gwStepSquat', icon: 'squat', sets: 3, reps: 10, rest: 30, metro: true, cue: 'gwCueKnee' },
+      { name: 'gwStepLunge', icon: 'lunge', sets: 2, reps: 8, rest: 30, metro: true, cue: 'gwCueLunge' },
+      { name: 'gwStepWallSit', icon: 'wallsit', sets: 3, hold: 30, rest: 30, metro: false, cue: 'gwCueWall' },
+    ],
+  },
+  posture: {
+    name: 'gwPosture', desc: 'gwPostureD', mins: 8, tag: 'posture',
+    steps: [
+      { name: 'gwStepPlank', icon: 'plank', sets: 3, hold: 30, rest: 25, metro: false, cue: 'gwCuePlank' },
+      { name: 'gwStepRaise', icon: 'shoulderraise', sets: 3, reps: 10, rest: 25, metro: true, cue: 'gwCueRaise' },
+      { name: 'gwStepBend', icon: 'bend', sets: 2, reps: 8, rest: 25, metro: true, cue: 'gwCueBend' },
+    ],
+  },
+  full: {
+    name: 'gwFull', desc: 'gwFullD', mins: 12, tag: 'fitness',
+    steps: [
+      { name: 'gwStepSquat', icon: 'squat', sets: 3, reps: 12, rest: 30, metro: true, cue: 'gwCueKnee' },
+      { name: 'gwStepStepUp', icon: 'stepup', sets: 2, reps: 10, rest: 30, metro: true, cue: 'gwCueStep' },
+      { name: 'gwStepHinge', icon: 'hiphinge', sets: 3, reps: 10, rest: 30, metro: true, cue: 'gwCueHinge' },
+      { name: 'gwStepBridge', icon: 'bridge', sets: 3, reps: 12, rest: 30, metro: true, cue: 'gwCueBridge' },
+    ],
+  },
+};
+const gwState = {
+  active: false, progId: null, stepIdx: 0, setIdx: 0, phase: 'idle',
+  repN: 0, holdLeft: 0, restLeft: 0, prepLeft: 0, metroTick: 0, metroDown: true,
+  repsTotal: 0, startedAt: 0, tick: null, level: 1, beepCtx: null,
+};
+const gwLevel = () => { const ftB = ftHistory().find((r) => r.battery); const s = ftB ? ftB.score : null; return s == null ? 1 : s >= 75 ? 2 : 1; };
+const gwCalcIndex = (paS, ftS, consist) => {
+  const parts = [];
+  if (paS != null) parts.push({ w: 0.3, v: paS });
+  if (ftS != null) parts.push({ w: 0.3, v: ftS });
+  parts.push({ w: 0.4, v: consist });
+  const totW = parts.reduce((a, p) => a + p.w, 0);
+  return totW ? Math.round(parts.reduce((a, p) => a + p.w * p.v, 0) / totW) : null;
+};
+function gwMakeSession(prog, reps, durSec) {
+  return { id: 'gw' + Date.now(), ts: Date.now(), ex: 'guided', exName: t(prog.name), reps, dur: durSec, depth: 'ok', badPct: 0 };
+}
+function gwBeepInit() {
+  try { if (!gwState.beepCtx) gwState.beepCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch { /* ignore */ }
+}
+function gwBeep(freq = 880) {
+  const ctx = gwState.beepCtx;
+  if (!ctx) return;
+  try {
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.frequency.value = freq; o.type = 'sine';
+    g.gain.setValueAtTime(0.001, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.18, ctx.currentTime + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.09);
+    o.connect(g); g.connect(ctx.destination);
+    o.start(); o.stop(ctx.currentTime + 0.1);
+  } catch { /* ignore */ }
+}
+function gwStart(progId) {
+  if (gwState.active) { gwStop(); return; }
+  const prog = GW_PROGRAMS[progId];
+  if (!prog) return;
+  ensureAudio();
+  gwState.active = true; gwState.progId = progId;
+  gwState.phase = 'prep';
+  gwState.stepIdx = 0; gwState.setIdx = 0; gwState.repN = 0;
+  gwState.holdLeft = 0; gwState.restLeft = 0; gwState.prepLeft = 3; gwState.metroTick = 0;
+  gwState.repsTotal = 0; gwState.startedAt = performance.now(); gwState.level = gwLevel();
+  gwBeepInit();
+  speak(t('gwPrep'));
+  renderGuide();
+  gwState.tick = setInterval(gwTick, 1000);
+}
+function gwTick() {
+  const st = gwState;
+  const prog = GW_PROGRAMS[st.progId];
+  const step = prog.steps[st.stepIdx];
+  if (st.phase === 'prep') {
+    st.prepLeft--;
+    if (st.prepLeft <= 0) { st.phase = step.hold ? 'hold' : 'rep'; st.holdLeft = step.hold || 0; if (step.hold) speak(t('gwHold', { n: step.hold })); else speak(t('gwGo')); }
+  } else if (st.phase === 'rep') {
+    st.metroTick++;
+    if (st.metroTick % 2 === 1) {
+      st.metroDown = !st.metroDown;
+      if (step.metro) gwBeep(st.metroDown ? 660 : 880);
+      if (!st.metroDown) {
+        st.repN++; st.repsTotal++;
+        if (st.repN % 5 === 0 || st.repN >= step.reps) speak(t('gwRep', { n: st.repN, m: step.reps }));
+      }
+    }
+    if (st.repN >= step.reps) { st.setIdx++; st.repN = 0; st.metroTick = 0; st.phase = 'rest'; st.restLeft = step.rest; speak(t('gwRest', { n: step.rest })); }
+  } else if (st.phase === 'hold') {
+    st.holdLeft--;
+    if (st.holdLeft % 10 === 0) gwBeep(1040);
+    if (st.holdLeft <= 0) { st.repsTotal++; st.setIdx++; st.phase = 'rest'; st.restLeft = step.rest; speak(t('gwRest', { n: step.rest })); }
+  } else if (st.phase === 'rest') {
+    st.restLeft--;
+    if (st.restLeft <= 0) {
+      if (st.setIdx >= step.sets) {
+        st.setIdx = 0; st.stepIdx++;
+        if (st.stepIdx >= prog.steps.length) { gwFinish(true); return; }
+        st.phase = 'prep'; st.prepLeft = 3;
+        speak(t('gwPrep'));
+      } else {
+        st.phase = 'prep'; st.prepLeft = 3;
+        speak(t('gwPrep'));
+      }
+    }
+  }
+  renderGuide();
+}
+function gwTap() {   // 手动 +1（自动计数不准时用手点）
+  if (!gwState.active || gwState.phase !== 'rep') return;
+  gwState.repN++; gwState.repsTotal++;
+  if (gwState.repN >= GW_PROGRAMS[gwState.progId].steps[gwState.stepIdx].reps) {
+    gwState.setIdx++; gwState.repN = 0; gwState.phase = 'rest';
+    const step = GW_PROGRAMS[gwState.progId].steps[gwState.stepIdx];
+    gwState.restLeft = step.rest; speak(t('gwRest', { n: step.rest }));
+  }
+  renderGuide();
+}
+function gwStop() {
+  if (gwState.tick) { clearInterval(gwState.tick); gwState.tick = null; }
+  gwState.active = false; gwState.phase = 'idle';
+  renderGuide();
+}
+function gwFinish(completed) {
+  const prog = GW_PROGRAMS[gwState.progId];
+  const durSec = Math.round((performance.now() - gwState.startedAt) / 1000);
+  const reps = gwState.repsTotal;
+  if (gwState.tick) { clearInterval(gwState.tick); gwState.tick = null; }
+  gwState.active = false; gwState.phase = 'idle';
+  if (reps > 0) {
+    const rec = gwMakeSession(prog, reps, durSec);
+    sset('rehab_sessions', [rec, ...sget('rehab_sessions', [])]);   // 写入标准训练记录：自动流入记录/趋势/成就/热力图
+  }
+  renderGuide();
+  if (completed) { renderRecords(); renderHome(); gwBeep(1320); setTimeout(() => gwBeep(1760), 160); toast(t('gwSessionSaved')); }
+  else { renderHome(); toast(t('gwFinishEarly')); }
+}
+function renderGuide() {
+  const listEl = $('gw-list');
+  const activeEl = $('gw-active');
+  const stageEl = $('gw-stage');
+  if (!listEl) return;
+  if (!gwState.active) {
+    listEl.innerHTML = Object.entries(GW_PROGRAMS).map(([id, p]) => `
+      <div class="gw-card">
+        <div class="gw-card-head">
+          <span class="gw-card-ico">${icon(p.steps[0].icon)}</span>
+          <div style="flex:1;min-width:0">
+            <div class="gw-card-name">${t(p.name)}</div>
+            <div class="gw-card-desc">${t(p.desc)}</div>
+          </div>
+          <span class="hm-lv">${t('gwLv' + gwLevel())}</span>
+        </div>
+        <div class="controls"><button class="btn primary small" data-gw="${id}"><span>${t('gwStartBtn')}</span></button></div>
+      </div>`).join('');
+    listEl.querySelectorAll('[data-gw]').forEach((b) => b.addEventListener('click', () => gwStart(b.dataset.gw)));
+    activeEl.classList.add('hidden');
+    return;
+  }
+  listEl.innerHTML = '';
+  activeEl.classList.remove('hidden');
+  const prog = GW_PROGRAMS[gwState.progId];
+  const step = prog.steps[gwState.stepIdx];
+  let big, sub;
+  if (gwState.phase === 'prep') { big = gwState.prepLeft > 0 ? gwState.prepLeft : t('gwGo'); sub = `${t('gwPrep')} · ${t(step.name)}`; }
+  else if (gwState.phase === 'rep') { big = gwState.repN + '/' + step.reps; sub = `${t('gwSet', { s: gwState.setIdx + 1, S: step.sets })} · ${gwState.metroDown ? t('gwDown') : t('gwUp')}`; }
+  else if (gwState.phase === 'hold') { big = gwState.holdLeft; sub = `${t('gwSet', { s: gwState.setIdx + 1, S: step.sets })} · ${t('gwHold', { n: step.hold })}`; }
+  else { big = gwState.restLeft; sub = t('gwRest', { n: step.rest }); }
+  stageEl.innerHTML = `
+    <div class="gw-set-line">${t(prog.name)} · ${t('gwLevel')}：${t('gwLv' + gwState.level)}（${t('gwLevelAuto')}）</div>
+    <div class="gw-step-name">${icon(step.icon)} ${t(step.name)}</div>
+    <div class="gw-big">${big}</div>
+    <div class="gw-set-line">${sub}</div>
+    <span class="gw-pulse ${gwState.metroDown ? '' : 'down'}"></span>
+    <div class="gw-cue">${t(step.cue)}</div>
+    <div class="controls">
+      <button class="btn" id="btn-gw-stop"><span>${t('gwStop')}</span></button>
+      <button class="gw-btn-big" id="btn-gw-tap"><span>+1</span></button>
+    </div>
+    <p class="hint tiny" data-i18n="gwTap">点一下 +1（自动计数不准时用手点）</p>`;
+  $('btn-gw-stop').addEventListener('click', () => gwFinish(false));
+  $('btn-gw-tap').addEventListener('click', gwTap);
+}
+
+/* ---- 今日总览：综合运动指数（体态 30% + 功能 30% + 坚持 40%）+ 恢复建议 + 热力图 + 周小结 ---- */
+function homeIndex() {
+  const pa = paHistory()[0];
+  const ftB = ftHistory().find((r) => r.battery) || ftHistory()[0];
+  const sessions = sget('rehab_sessions', []);
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const from = new Date(today); from.setDate(from.getDate() - 29);
+  const days30 = new Set(sessions.filter((s) => new Date(s.ts) >= from).map((s) => new Date(s.ts).toDateString())).size;
+  const consist = Math.min(100, Math.round(days30 / 12 * 100));
+  const score = gwCalcIndex(pa ? pa.score : null, ftB ? ftB.score : null, consist);
+  const level = score == null ? null : score >= 90 ? 4 : score >= 75 ? 3 : score >= 60 ? 2 : 1;
+  return { score, level, pa: pa ? pa.score : null, ft: ftB ? ftB.score : null, consist, days30 };
+}
+function homeAdvice(idx) {
+  const sessions = sget('rehab_sessions', []);
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const trainedToday = sessions.some((s) => new Date(s.ts) >= today);
+  if (trainedToday) return t('gwAdvDone');
+  if (idx.score == null) return t('gwAdvFirst');
+  const last = sessions.reduce((m, s) => Math.max(m, s.ts), 0);
+  const daysSince = last ? Math.floor((today.getTime() - new Date(new Date(last).toDateString()).getTime()) / 86400000) : 99;
+  if (daysSince >= 2) return t('gwAdvRest', { d: daysSince });
+  if (idx.score < 60) return t('gwAdvLight');
+  return t('gwAdvGo');
+}
+function renderHome() {
+  const el = $('home-index');
+  if (!el) return;
+  const idx = homeIndex();
+  if (idx.score == null) {
+    el.innerHTML = `<p class="hint">${t('homeIndexNone')}</p>`;
+  } else {
+    el.innerHTML = `
+      <div class="hm-index">
+        <div class="hm-score">${idx.score}</div>
+        <div>
+          <span class="hm-lv">${t('homeLevel')} · ${t('gwLv' + idx.level)}</span>
+          <div class="hm-parts">
+            ${idx.pa != null ? `<div class="hm-part"><span>${t('paTitle')}</span><b>${idx.pa}</b><div class="hm-bar"><div class="hm-bar-fill" style="width:${idx.pa}%"></div></div></div>` : ''}
+            ${idx.ft != null ? `<div class="hm-part"><span>${t('ftTitle')}</span><b>${idx.ft}</b><div class="hm-bar"><div class="hm-bar-fill" style="width:${idx.ft}%"></div></div></div>` : ''}
+            <div class="hm-part"><span>${t('homeConsist')}</span><b>${t('homeDays', { d: idx.days30 })}</b><div class="hm-bar"><div class="hm-bar-fill" style="width:${idx.consist}%"></div></div></div>
+          </div>
+        </div>
+      </div>
+      <div class="hm-advice">💡 ${homeAdvice(idx)}</div>`;
+  }
+  // 今日任务（读取计划数据，只读不写）
+  const plan = sget('rehab_plan', []);
+  const done = sget('rehab_plan_done', {});
+  const todayKey = new Date().toDateString();
+  const todays = plan.filter((p) => (p.days || []).includes(new Date().getDay()) || (p.date && new Date(p.date).toDateString() === todayKey));
+  const listEl = $('home-today');
+  if (!todays.length) listEl.innerHTML = `<div class="empty">${icon('schedule')}<span>${t('homeTodayNone')}</span></div>`;
+  else listEl.innerHTML = todays.slice(0, 4).map((p) => {
+    const d = done[todayKey] || [];
+    const ok = d.includes(p.id);
+    return `<div class="item"><div class="t">${icon('check')}${p.name || p.exName || p.ex || '—'} × ${p.reps ?? p.goal ?? ''}${ok ? ' ✓' : ''}</div></div>`;
+  }).join('');
+  // 30 天热力图
+  const sessions = sget('rehab_sessions', []);
+  const counts = {};
+  sessions.forEach((s) => { const k = new Date(s.ts).toDateString(); counts[k] = (counts[k] || 0) + 1; });
+  const cells = [];
+  for (let i = 29; i >= 0; i--) {
+    const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - i);
+    const k = d.toDateString();
+    const n = counts[k] || 0;
+    const lvl = n >= 3 ? 3 : n >= 2 ? 2 : n >= 1 ? 1 : 0;
+    cells.push(`<div class="hm-cell hm${lvl}${i === 0 ? ' today' : ''}" title="${d.toLocaleDateString(locale())} · ${n}"></div>`);
+  }
+  $('home-heat').innerHTML = cells.join('');
+  // 本周小结
+  const wk = new Date(); wk.setHours(0, 0, 0, 0); wk.setDate(wk.getDate() - 6);
+  const weekS = sessions.filter((s) => new Date(s.ts) >= wk);
+  const rTotal = weekS.reduce((a, s) => a + (s.reps || 0), 0);
+  const qAvg = weekS.length ? Math.round(100 - weekS.reduce((a, s) => a + (s.badPct || 0), 0) / weekS.length) : null;
+  $('home-week').innerHTML = weekS.length
+    ? `<div class="summary-line">${t('homeWeekLine', { n: weekS.length, r: rTotal, q: qAvg })}</div>`
+    : `<div class="empty">${icon('record')}<span>${t('homeWeekNone')}</span></div>`;
+}
+
+/* ---- 动作轨迹（Tempo 式轨迹回放：你 vs 标准） ---- */
+function ftRefTraj(key, n = 13) {
+  const pts = [];
+  for (let i = 0; i < n; i++) {
+    const t = i / (n - 1);
+    const d = Math.sin(t * Math.PI);   // 0→1→0
+    if (key === 'arm') pts.push([0.5, 0.36 - 0.30 * d]);
+    else if (key === 'bend') pts.push([0.5 + 0.12 * d, 0.30 + 0.20 * d]);
+    else pts.push([0.5, 0.46 + 0.06 * d]);
+  }
+  return pts;
+}
+function ftDrawTraj(canvas, user, ref) {
+  if (!canvas) return;
+  const ctx2 = canvas.getContext('2d');
+  const w = canvas.clientWidth || 300, h = canvas.clientHeight || 96;
+  canvas.width = w; canvas.height = h;
+  ctx2.clearRect(0, 0, w, h);
+  const all = [...(user || []), ...(ref || [])];
+  if (!all.length) return;
+  const xs = all.map((p) => p[0]), ys = all.map((p) => p[1]);
+  const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
+  const sx = (x1 - x0) || 1, sy = (y1 - y0) || 1;
+  const plot = (arr, color, dash) => {
+    ctx2.strokeStyle = color; ctx2.lineWidth = 2;
+    ctx2.setLineDash(dash ? [4, 3] : []);
+    ctx2.beginPath();
+    arr.forEach((p, i) => {
+      const x = 14 + ((p[0] - x0) / sx) * (w - 28), y = 10 + ((p[1] - y0) / sy) * (h - 20);
+      i ? ctx2.lineTo(x, y) : ctx2.moveTo(x, y);
+    });
+    ctx2.stroke();
+    ctx2.setLineDash([]);
+    if (arr.length) {
+      const p = arr[0], q = arr[arr.length - 1];
+      ctx2.fillStyle = color;
+      ctx2.beginPath(); ctx2.arc(14 + ((p[0] - x0) / sx) * (w - 28), 10 + ((p[1] - y0) / sy) * (h - 20), 3.2, 0, Math.PI * 2); ctx2.fill();
+      ctx2.fillStyle = '#0e7c66';
+      ctx2.beginPath(); ctx2.arc(14 + ((q[0] - x0) / sx) * (w - 28), 10 + ((q[1] - y0) / sy) * (h - 20), 3.2, 0, Math.PI * 2); ctx2.fill();
+    }
+  };
+  if (ref) plot(ref, '#c9cdd4', true);
+  if (user) plot(user, '#0e7c66', false);
+}
+
 /* ============ 启动 ============ */
 initI18n();
 setCustomKey(ukey('rehab_custom_ex'));   // 账号分区：自定义动作按当前账号隔离
@@ -3993,6 +4347,8 @@ onLangChanged(() => {
   renderSedentary();                                    // 久坐提醒设置随语言切换
   renderPaUI();                                         // 体态评估页随语言切换
   renderFtUI();                                         // 功能测试页随语言切换
+  renderHome();                                         // v2.21：今日总览随语言切换
+  renderGuide();                                        // v2.21：跟练页随语言切换
   setStartBtn(state.running ? 'btnStop' : 'btnStart', state.running ? 'stop' : 'play');
   $('btn-collect-label').textContent = state.collectMode ? t('btnCollectStop') : t('btnCollect');
   $('feedback')._last = null;
@@ -4027,6 +4383,10 @@ $('btn-ft-start').addEventListener('click', () => { ftStart(ftState.key, false);
 $('btn-ft-demo').addEventListener('click', () => { ftStart(ftState.key, true); });
 $('btn-ft-battery').addEventListener('click', () => { ftStart('battery', false); });
 window.__ftBatteryDemo = () => ftStart('battery', true);   // 测试钩子：完整测试演示模式
+// v2.21：今日总览 + 跟练初始化
+renderHome();
+renderGuide();
+window.__gwSkip = () => gwFinish(true);                   // 测试钩子：直接完成当前跟练
 showOnboard();
 setTimeout(reminderCatchUp, 4000);            // 错过提醒时间 → 打开时补一次
 // 开发模式：?cfg=1 显示配置入口（普通用户永远看不到；密钥写死后由 CLOUD_HARDCODED 生效）

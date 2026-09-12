@@ -224,6 +224,38 @@
     </div>
   </section>
 
+  <!-- ============ 今日（v2.21 新增：综合运动指数 · 恢复建议 · 坚持热力图 · 周小结） ============ -->
+  <section id="tab-home" class="tab">
+    <div class="card">
+      <h3 data-i18n="homeTitle">今日总览</h3>
+      <div id="home-index"></div>
+    </div>
+    <div class="card">
+      <h3 data-i18n="homeToday">今日任务</h3>
+      <div id="home-today" class="list"></div>
+    </div>
+    <div class="card">
+      <h3 data-i18n="homeStreak30">30 天坚持</h3>
+      <div id="home-heat" class="hm-heat"></div>
+    </div>
+    <div class="card">
+      <h3 data-i18n="homeWeek">本周小结</h3>
+      <div id="home-week"></div>
+    </div>
+  </section>
+
+  <!-- ============ 跟练（v2.21 新增：引导式训练 · 节拍器 · 语音 · 组间休息 · 计入训练记录） ============ -->
+  <section id="tab-guide" class="tab">
+    <div class="card">
+      <h3 data-i18n="guideTitle">AI 跟练（引导式训练）</h3>
+      <p class="hint" data-i18n="guideIntro">选一节康复跟练课：节拍器打节奏、语音报组次、组间自动休息，完成后自动计入训练记录（无需摄像头）。</p>
+      <div id="gw-list" class="gw-list"></div>
+    </div>
+    <div id="gw-active" class="card hidden">
+      <div class="gw-stage" id="gw-stage"></div>
+    </div>
+  </section>
+
   <!-- ============ 记录打卡 ============ -->
   <section id="tab-record" class="tab">
     <div class="card">
@@ -585,6 +617,10 @@
 </main>
 
 <nav class="bottom-nav">
+  <button data-tab="home">
+    <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 11.2 12 4.8l7.5 6.4M6.2 10.2V19a1 1 0 0 0 1 1h9.6a1 1 0 0 0 1-1v-8.8"/></svg>
+    <span class="nav-label" data-i18n="navHome">今日</span>
+  </button>
   <button data-tab="train" class="active">
     <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6.7 7v10M17.3 7v10M6.7 10h10.6M6.7 14h10.6M4.2 12H6.7M17.3 12h2.5"/></svg>
     <span class="nav-label" data-i18n="navTrain">训练</span>
@@ -596,6 +632,10 @@
   <button data-tab="ft">
     <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20v-8.5M12 20V4.5M19 20V11M3.8 20h16.4"/><path d="M7.6 9h2M13.6 6.5h2"/></svg>
     <span class="nav-label" data-i18n="ftNav">功能测试</span>
+  </button>
+  <button data-tab="guide">
+    <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.4"/><path d="M10 9.2v5.6l4.6-2.8Z" fill="currentColor" stroke="none"/></svg>
+    <span class="nav-label" data-i18n="navGuide">跟练</span>
   </button>
   <button data-tab="record">
     <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20v-8.5M12 20V4.5M19 20V11M3.8 20h16.4"/></svg>

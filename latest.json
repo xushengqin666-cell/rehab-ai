@@ -1,7 +1,7 @@
 {
-  "version": "2.20.2",
-  "apk": "https://cdn.jsdelivr.net/gh/xushengqin666-cell/rehab-ai@main/downloads/RehabAI-v2.20.2.apk",
+  "version": "2.21.0",
+  "apk": "https://cdn.jsdelivr.net/gh/xushengqin666-cell/rehab-ai@main/downloads/RehabAI-v2.21.0.apk",
   "releaseUrl": "https://github.com/xushengqin666-cell/rehab-ai/releases/latest",
-  "notes": "全块细审打磨：停止训练清空残留统计/提示；训练中休息先停分析；演示单腿蹲修复抬腿门控；真人连测换姿势缓冲 3 秒；体态历史按类型图标；测试页空状态文案；连测按钮高亮样式；键盘焦点无障碍样式。",
+  "notes": "对标 Tonal/Tempo 新功能：①「今日」总览——综合运动指数（体态30%+功能30%+坚持40%）+等级+恢复建议+30天坚持热力图+本周小结，把体态/功能/训练全部串联；②「跟练」AI 引导训练——3 节康复课、节拍器、语音、组间休息、难度按功能测试自适应，完成后自动计入训练记录；③功能测试报告新增「动作轨迹（你 vs 标准）」回放。",
   "important": false
 }

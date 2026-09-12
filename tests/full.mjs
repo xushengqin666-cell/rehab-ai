@@ -264,7 +264,7 @@ await send('Page.navigate', { url: APP });
 await sleep(2500);
 await evl(`document.querySelector('.bottom-nav button[data-tab="settings"]').click()`);
 await sleep(200);
-(await evl(`document.getElementById('about-version').textContent.includes('v2.20')`)) ? ok('版本号显示') : bad('版本号失败');
+(await evl(`document.getElementById('about-version').textContent.includes('v2.21')`)) ? ok('版本号显示') : bad('版本号失败');
 (await evl(`document.getElementById('tab-settings').textContent.includes('隐私政策') && document.getElementById('tab-settings').textContent.includes('免责声明')`)) ? ok('隐私政策 + 免责声明') : bad('法务文案缺失');
 await evl(`document.getElementById('btn-share').click()`);
 await sleep(400);
@@ -405,6 +405,31 @@ ftBatt ? ok('完整测试 5 项连测 → 聚合综合记录（六维加权）')
 (await evl(`(() => { const h = JSON.parse(localStorage.getItem('rehab_ft_history') || '[]'); const b = h.find(r => r.battery); return b && b.score >= 0 && b.score <= 100 && !document.getElementById('ft-report').classList.contains('hidden'); })()`)) ? ok('综合报告显示（总分+5 项明细）') : bad('综合报告失败');
 (await evl(`document.getElementById('ft-profile').textContent.includes('完整测试报告')`)) ? ok('档案显示最近一次完整测试') : bad('档案未更新');
 (await evl(`(() => { const h = JSON.parse(localStorage.getItem('rehab_ft_history') || '[]'); const s = h.find(r => r.key === 'single'); const a = h.find(r => r.key === 'arm'); return s && s.m && s.m.reps === 4 && a && a.m && a.m.reps === 3; })()`)) ? ok('连测·单腿蹲 4 次 + 双臂上举 3 次完整完成（演示缺陷修复）') : bad('连测演示次数异常');
+
+console.log('===== 19. 今日总览 + AI 跟练（v2.21：Tonal/Tempo 对标） =====');
+await send('Page.navigate', { url: APP });
+await sleep(2500);
+await evl(`document.querySelector('.bottom-nav button[data-tab="home"]').click()`);
+await sleep(300);
+(await evl(`document.getElementById('home-index').textContent.length > 20`)) ? ok('今日页：综合运动指数卡渲染（含数据或引导文案）') : bad('指数卡缺失');
+(await evl(`document.querySelectorAll('#home-heat .hm-cell').length === 30`)) ? ok('30 天坚持热力图（30 格）') : bad('热力图缺失');
+await evl(`document.querySelector('.bottom-nav button[data-tab="guide"]').click()`);
+await sleep(300);
+(await evl(`document.querySelectorAll('#gw-list .gw-card').length === 3`)) ? ok('跟练页：3 节课程（膝盖/体态/全身）') : bad('课程缺失');
+await evl(`document.querySelector('#gw-list [data-gw="knee"]').click()`);
+await sleep(4600);   // 准备 3 秒 + 第一个动作节拍（4 秒处 +1）
+(await evl(`!document.getElementById('gw-active').classList.contains('hidden') && document.getElementById('gw-stage').textContent.includes('深蹲')`)) ? ok('跟练开始：节拍器计数界面（准备→计数）') : bad('跟练未开始');
+await evl(`window.__gwSkip()`);
+await sleep(400);
+(await evl(`JSON.parse(localStorage.getItem('rehab_sessions') || '[]').some(s => s.ex === 'guided' && s.reps > 0)`)) ? ok('跟练完成 → 写入标准训练记录（流入记录/趋势/成就）') : bad('训练记录未写入');
+await evl(`document.querySelector('.bottom-nav button[data-tab="ft"]').click()`);
+await sleep(300);
+await evl(`document.querySelector('#ft-moves [data-ft="squat"]').click()`);
+await sleep(100);
+await evl(`document.getElementById('btn-ft-demo').click()`);
+let ft21 = false;
+for (let i = 0; i < 20; i++) { await sleep(1000); if (await evl(`!document.getElementById('ft-report').classList.contains('hidden')`)) { ft21 = true; break; } }
+(ft21 && await evl(`!!document.getElementById('btn-ft-guide') && !!document.getElementById('ft-traj')`)) ? ok('测试报告：动作轨迹回放图 + 「去跟练巩固」入口') : bad('轨迹/跟练入口缺失');
 
 console.log('===== 结果 =====');
 console.log('CONSOLE_ERRORS:', consoleErrors.length ? consoleErrors.join(' ||| ') : 'none');
