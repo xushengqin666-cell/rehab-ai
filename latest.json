@@ -1,7 +1,7 @@
 {
-  "version": "2.21.3",
-  "apk": "https://cdn.jsdelivr.net/gh/xushengqin666-cell/rehab-ai@main/downloads/RehabAI-v2.21.3.apk",
+  "version": "2.21.4",
+  "apk": "https://cdn.jsdelivr.net/gh/xushengqin666-cell/rehab-ai@main/downloads/RehabAI-v2.21.4.apk",
   "releaseUrl": "https://github.com/xushengqin666-cell/rehab-ai/releases/latest",
-  "notes": "全模块逐个精细化 · 第 3 模块「功能测试」：实时面板加阶段指示（站直/下降/底部/上升）与次数进度条；动作引导显示目标次数；摄像头占位文案精简；相似度带等级评价；曲线/轨迹加「你/标准」图例；测试历史显示完成次数。",
+  "notes": "全模块逐个精细化 · 第 4 模块「体态」：报告数值统一加单位（肩/骨盆/重心/膝内扣/摆臂/弹跳→百分比）；单腿站立报告识别抬起的是哪条腿；走路/跑步实时显示步频；历史记录显示与上次同体态的分数变化；占位文案精简。",
   "important": false
 }

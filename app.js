@@ -93,7 +93,7 @@ function migrateDeviceData(email) {
 }
 const fmtDate = (ts) => new Date(ts).toLocaleString(locale(), { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-const APP_VERSION = 'v2.21.3';
+const APP_VERSION = 'v2.21.4';
 const exName = (e) => (e.custom ? e.name : t(e.nameKey));
 const exDesc = (e) => (e.custom ? e.desc : t(e.descKey));
 const depthTxt = (d) => t('depth' + (d ? d.charAt(0).toUpperCase() + d.slice(1) : 'Ok')) || d;
@@ -2685,6 +2685,10 @@ async function selfTest() {
     const paGateOk = paGate1.ok === false && paGate1.items.some((i) => i.key === 'body' && !i.ok)
       && paGate2.ok === false && paGate2.items.some((i) => i.key === 'frame' && !i.ok);
     log(t('stPaGate'), paGateOk, `missing=${!paGate1.ok} outframe=${!paGate2.ok}`);
+    // 18f. 单腿站立抬起侧识别（v2.21.4：踝更高一侧 = 抬起侧）
+    const paLiftLms = (() => { const b = base(); b[28].y = 0.78; b[26].y = 0.70; return b; })();
+    const paLiftHold = paEvalSingle(Array(30).fill(paLiftLms)).find((i) => i.key === 'mSingleHold');
+    log(t('stPaLift'), paLiftHold && paLiftHold.text.includes(t('paLiftR')), paLiftHold ? paLiftHold.text : '?');
     // 19. 运动功能测试引擎（v2.20）：动态深蹲合成 3 次 → 分割+全指标+评分
     const ftFrames = [];
     const ftSkel = (kneeL, kneeR, vgShift = 0) => {
@@ -2875,11 +2879,11 @@ function paEvalStanding(smps) {
   const med = (f) => paMed(smps.map(f));
   const items = [];
   items.push(paItem('mStandHead', med((l) => verticalAngle(l[0], paMid(l, 11, 12))), paLevelOf(med((l) => verticalAngle(l[0], paMid(l, 11, 12))), 12, 20), (v) => v.toFixed(0) + '°', t('mStandHeadA')));
-  items.push(paItem('mStandShoulder', med((l) => Math.abs(l[11].y - l[12].y) / paTorso(l)), paLevelOf(med((l) => Math.abs(l[11].y - l[12].y) / paTorso(l)), 0.03, 0.06), (v) => v.toFixed(2), t('mStandShoulderA')));
+  items.push(paItem('mStandShoulder', med((l) => Math.abs(l[11].y - l[12].y) / paTorso(l)), paLevelOf(med((l) => Math.abs(l[11].y - l[12].y) / paTorso(l)), 0.03, 0.06), (v) => (v * 100).toFixed(0) + '%', t('mStandShoulderA')));
   items.push(paItem('mStandTrunk', med((l) => verticalAngle(paMid(l, 11, 12), paMid(l, 23, 24))), paLevelOf(med((l) => verticalAngle(paMid(l, 11, 12), paMid(l, 23, 24))), 8, 15), (v) => v.toFixed(0) + '°', t('mStandTrunkA')));
-  items.push(paItem('mStandPelvis', med((l) => Math.abs(l[23].y - l[24].y) / paTorso(l)), paLevelOf(med((l) => Math.abs(l[23].y - l[24].y) / paTorso(l)), 0.03, 0.06), (v) => v.toFixed(2), t('mStandPelvisA')));
+  items.push(paItem('mStandPelvis', med((l) => Math.abs(l[23].y - l[24].y) / paTorso(l)), paLevelOf(med((l) => Math.abs(l[23].y - l[24].y) / paTorso(l)), 0.03, 0.06), (v) => (v * 100).toFixed(0) + '%', t('mStandPelvisA')));
   items.push(paItem('mStandKnee', med((l) => Math.max(Math.abs(180 - angle3(l[23], l[25], l[27])), Math.abs(180 - angle3(l[24], l[26], l[28])))), paLevelOf(med((l) => Math.max(Math.abs(180 - angle3(l[23], l[25], l[27])), Math.abs(180 - angle3(l[24], l[26], l[28])))), 8, 15), (v) => v.toFixed(0) + '°', t('mStandKneeA')));
-  items.push(paItem('mStandWeight', med((l) => Math.abs(paMid(l, 23, 24).x - paMid(l, 27, 28).x) / Math.max(0.05, Math.abs(l[24].x - l[23].x))), paLevelOf(med((l) => Math.abs(paMid(l, 23, 24).x - paMid(l, 27, 28).x) / Math.max(0.05, Math.abs(l[24].x - l[23].x))), 0.3, 0.6), (v) => v.toFixed(2), t('mStandWeightA')));
+  items.push(paItem('mStandWeight', med((l) => Math.abs(paMid(l, 23, 24).x - paMid(l, 27, 28).x) / Math.max(0.05, Math.abs(l[24].x - l[23].x))), paLevelOf(med((l) => Math.abs(paMid(l, 23, 24).x - paMid(l, 27, 28).x) / Math.max(0.05, Math.abs(l[24].x - l[23].x))), 0.3, 0.6), (v) => (v * 100).toFixed(0) + '%', t('mStandWeightA')));
   return items;
 }
 function paEvalSingle(smps) {
@@ -2893,10 +2897,12 @@ function paEvalSingle(smps) {
   const pel = paMed(smps.map((l) => Math.abs(l[23].y - l[24].y) / paTorso(l)));
   const kStd = paStd(supKnee);
   items.push(paItem('mSingleKnee', kStd, paLevelOf(kStd, 4, 8), (v) => v.toFixed(0) + '°', t('mSingleKneeA')));
-  items.push(paItem('mSinglePelvis', pel, paLevelOf(pel, 0.10, 0.16), (v) => v.toFixed(2), t('mSinglePelvisA')));
+  items.push(paItem('mSinglePelvis', pel, paLevelOf(pel, 0.10, 0.16), (v) => (v * 100).toFixed(0) + '%', t('mSinglePelvisA')));
   items.push(paItem('mSingleTrunk', lean, paLevelOf(lean, 10, 16), (v) => v.toFixed(0) + '°', t('mSingleTrunkA')));
-  items.push(paItem('mSingleSway', paStd(sway), paLevelOf(paStd(sway), 0.03, 0.06), (v) => v.toFixed(3), t('mSingleSwayA')));
-  items.push({ key: 'mSingleHold', level: 'good', val: t('mSingleHoldI', { s: PA_META.single.hold }), score: 100, label: t('mSingleHold'), text: t('mSingleHoldI', { s: PA_META.single.hold }), advice: t('mSingleHoldA') });
+  items.push(paItem('mSingleSway', paStd(sway), paLevelOf(paStd(sway), 0.03, 0.06), (v) => (v * 100).toFixed(0) + '%', t('mSingleSwayA')));
+  // v2.21.4：识别抬起的是哪条腿（踝更高的一侧 = 抬起侧）
+  const liftRight = smps.reduce((a, l) => a + (l[28].y < l[27].y ? 1 : -1), 0) > 0;
+  items.push({ key: 'mSingleHold', level: 'good', val: t('mSingleHoldI', { s: PA_META.single.hold }) + ' · ' + t(liftRight ? 'paLiftR' : 'paLiftL'), score: 100, label: t('mSingleHold'), text: t('mSingleHoldI', { s: PA_META.single.hold }) + ' · ' + t(liftRight ? 'paLiftR' : 'paLiftL'), advice: t('mSingleHoldA') });
   return items;
 }
 function paEvalSquat(smps) {
@@ -2908,7 +2914,7 @@ function paEvalSquat(smps) {
   const sym = paMed(smps.map((_, i) => Math.abs(kL[i] - kR[i])));
   items.push(paItem('mSquatSym', sym, paLevelOf(sym, 10, 20), (v) => v.toFixed(0) + '°', t('mSquatSymA')));
   const valgus = paMed(smps.map((l) => { const vg = kneeValgus(l); return Math.max(vg.left, vg.right); }));
-  items.push(paItem('mSquatValgus', valgus, paLevelOf(valgus, 0.15, 0.30), (v) => v.toFixed(2), t('mSquatValgusA')));
+  items.push(paItem('mSquatValgus', valgus, paLevelOf(valgus, 0.15, 0.30), (v) => (v * 100).toFixed(0) + '%', t('mSquatValgusA')));
   const lean = paMed(smps.map((l) => verticalAngle(paMid(l, 11, 12), paMid(l, 23, 24))));
   const leanLv = lean >= 10 && lean <= 35 ? 'good' : lean <= 50 ? 'warn' : 'bad';
   items.push(paItem('mSquatTrunk', lean, leanLv, (v) => v.toFixed(0) + '°', t('mSquatTrunkA')));
@@ -2932,15 +2938,15 @@ function paEvalWalk(smps) {
   items.push(paItem('mWalkTrunk', lean, paLevelOf(lean, 8, 15), (v) => v.toFixed(0) + '°', t('mWalkTrunkA')));
   const xs = smps.map((l) => paMid(l, 23, 24).x / Math.max(0.05, paTorso(l))).sort((a, b) => a - b);
   const sway = xs[Math.floor(xs.length * 0.9)] - xs[Math.floor(xs.length * 0.1)];
-  items.push(paItem('mWalkSway', sway, paLevelOf(sway, 0.05, 0.09), (v) => v.toFixed(2), t('mWalkSwayA')));
+  items.push(paItem('mWalkSway', sway, paLevelOf(sway, 0.05, 0.09), (v) => (v * 100).toFixed(0) + '%', t('mWalkSwayA')));
   const armS = smps.map((l) => ((l[15].y + l[16].y) / 2 - (l[23].y + l[24].y) / 2) / paTorso(l)).sort((a, b) => a - b);
   const arm = armS[Math.floor(armS.length * 0.9)] - armS[Math.floor(armS.length * 0.1)];
   const armLv = arm >= 0.06 && arm <= 0.35 ? 'good' : (arm >= 0.02 && arm <= 0.55 ? 'warn' : 'bad');
   const armLow = arm < 0.06 ? t('paSmall') : t('paLarge');
   items.push({
-    key: 'mWalkArm', level: armLv, val: arm.toFixed(2), score: armLv === 'good' ? 100 : armLv === 'warn' ? 65 : 30,
+    key: 'mWalkArm', level: armLv, val: (arm * 100).toFixed(0) + '%', score: armLv === 'good' ? 100 : armLv === 'warn' ? 65 : 30,
     label: t('mWalkArm'),
-    text: armLv === 'good' ? t('mWalkArmG') : armLv === 'warn' ? t('mWalkArmW', { low: armLow, v: arm.toFixed(2) }) : t('mWalkArmB'),
+    text: armLv === 'good' ? t('mWalkArmG') : armLv === 'warn' ? t('mWalkArmW', { low: armLow, v: (arm * 100).toFixed(0) + '%' }) : t('mWalkArmB'),
     advice: armLv === 'good' ? '' : t('mWalkArmA'),
   });
   return items;
@@ -2952,7 +2958,7 @@ function paEvalRun(smps) {
   items.push(paItem('mRunCadence', cad, cadLv, (v) => v.toFixed(0), t('mRunCadenceA')));
   const ys = smps.map((l) => l[0].y / Math.max(0.05, paTorso(l))).sort((a, b) => a - b);
   const bounce = ys[Math.floor(ys.length * 0.9)] - ys[Math.floor(ys.length * 0.1)];
-  items.push(paItem('mRunBounce', bounce, paLevelOf(bounce, 0.12, 0.20), (v) => v.toFixed(2), t('mRunBounceA')));
+  items.push(paItem('mRunBounce', bounce, paLevelOf(bounce, 0.12, 0.20), (v) => (v * 100).toFixed(0) + '%', t('mRunBounceA')));
   const lean = paMed(smps.map((l) => verticalAngle(paMid(l, 11, 12), paMid(l, 23, 24))));
   const leanLv = lean >= 5 && lean <= 15 ? 'good' : lean <= 25 ? 'warn' : 'bad';
   items.push(paItem('mRunLean', lean, leanLv, (v) => v.toFixed(0) + '°', t('mRunLeanA')));
@@ -2962,9 +2968,9 @@ function paEvalRun(smps) {
   const armLv = arm >= 0.08 && arm <= 0.40 ? 'good' : (arm >= 0.03 && arm <= 0.60 ? 'warn' : 'bad');
   const armLow = arm < 0.08 ? t('paSmall') : t('paLarge');
   items.push({
-    key: 'mRunArm', level: armLv, val: arm.toFixed(2), score: armLv === 'good' ? 100 : armLv === 'warn' ? 65 : 30,
+    key: 'mRunArm', level: armLv, val: (arm * 100).toFixed(0) + '%', score: armLv === 'good' ? 100 : armLv === 'warn' ? 65 : 30,
     label: t('mRunArm'),
-    text: armLv === 'good' ? t('mRunArmG') : armLv === 'warn' ? t('mRunArmW', { low: armLow, v: arm.toFixed(2) }) : t('mRunArmB'),
+    text: armLv === 'good' ? t('mRunArmG') : armLv === 'warn' ? t('mRunArmW', { low: armLow, v: (arm * 100).toFixed(0) + '%' }) : t('mRunArmB'),
     advice: armLv === 'good' ? '' : t('mRunArmA'),
   });
   return items;
@@ -3026,9 +3032,11 @@ function renderPaHistory() {
     const when = new Date(r.ts);
     const date = when.toLocaleDateString(locale(), { month: 'numeric', day: 'numeric' }) + ' ' + when.toLocaleTimeString(locale(), { hour: '2-digit', minute: '2-digit' });
     const kindIcon = { standing: 'standing', single: 'standing', squat: 'squat', walk: 'stepup', run: 'stepup' }[r.kind] || 'standing';
+    const prev = h.find((x) => x.kind === r.kind && x.ts < r.ts);   // v2.21.4：与上次同体态对比
+    const delta = prev ? `<span class="ft-delta ${r.score >= prev.score ? 'up' : 'down'}">${t('paHistoryDelta', { v: (r.score >= prev.score ? '↑' : '↓') + Math.abs(r.score - prev.score) })}</span>` : '';
     return `
     <div class="item">
-      <div class="t">${icon(kindIcon)}${t(PA_META[r.kind].nameKey)}${r.demo ? ' · ' + t('paBtnDemo') : ''} — ${date}</div>
+      <div class="t">${icon(kindIcon)}${t(PA_META[r.kind].nameKey)}${r.demo ? ' · ' + t('paBtnDemo') : ''} — ${date} ${delta}</div>
       <div class="d">${t('paScore')} ${r.score} · ${t('paGrade' + r.grade)}${r.priorities.length ? ' · ' + r.priorities.length + ' ' + t('paPriority') : ''}</div>
       <div class="controls" style="margin-top:6px"><button class="btn small" data-pa-view="${r.ts}"><span>${t('paView')}</span></button></div>
     </div>`;
@@ -3121,7 +3129,7 @@ function paStop() {
   const c = $('pa-overlay');
   if (c) c.getContext('2d').clearRect(0, 0, c.width, c.height);
   const ph = $('pa-placeholder');
-  if (ph) { ph.classList.remove('hidden'); $('pa-placeholder-text').textContent = t('paIntro'); }
+  if (ph) { ph.classList.remove('hidden'); $('pa-placeholder-text').textContent = t('paPlaceholderShort'); }
   const gate = $('pa-gate');
   if (gate) gate.classList.add('hidden');          // v2.20.2：手动停止后收起完整性检查面板，不留过期勾选
   paResetStable();
@@ -3181,7 +3189,8 @@ function paLoop() {
   } else {
     paDetectSteps(ts);
     $('pa-progress-fill').style.width = Math.min(100, (paState.steps.length / meta.need) * 100) + '%';
-    $('pa-hint').textContent = t('paProgressSteps', { n: Math.min(paState.steps.length, meta.need), m: meta.need });
+    $('pa-hint').textContent = t('paProgressSteps', { n: Math.min(paState.steps.length, meta.need), m: meta.need })
+      + (paState.steps.length >= 4 ? ' · ' + t('paCadenceLive', { c: Math.round(paCadence().cad) }) : '');   // v2.21.4：实时步频
     if (g.ok && paState.steps.length >= meta.need) { paFinish(); return; }
   }
   requestAnimationFrame(paLoop);
@@ -3210,8 +3219,8 @@ function paDemoFrame(kind, ts) {
     set(12, mk(0.59, 0.225));
   } else if (kind === 'single') {
     body(0.5, 0.10, 0.22, 0.45, 0.66, 0.87, 0.41, 0.59, 0.44, 0.56, 0.46, 0.54, 0.47, 0.53, 0.30, 0.37);
-    set(28, mk(0.545, 0.80));      // 抬右腿
-    set(26, mk(0.55, 0.70));
+    set(28, 0.545, 0.80);      // v2.21.4：抬右腿（修复 mk 嵌套坐标 bug，此前踝 y 为 undefined 导致门控永不通过）
+    set(26, 0.55, 0.70);
   } else if (kind === 'squat') {
     body(0.475, 0.16, 0.30, 0.52, 0.68, 0.87, 0.40, 0.60, 0.44, 0.56, 0.475, 0.585, 0.46, 0.555, 0.40, 0.48);
   } else if (kind === 'walk' || kind === 'run') {

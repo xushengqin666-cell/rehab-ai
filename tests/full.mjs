@@ -356,7 +356,7 @@ await evl(`document.getElementById('btn-pa-demo').click()`);
 let paReport = false;
 for (let i = 0; i < 15; i++) { await sleep(1000); if (await evl(`!document.getElementById('pa-report').classList.contains('hidden')`)) { paReport = true; break; } }
 paReport ? ok('演示模式·站立：识别完整后自动生成报告（6 秒稳定门控）') : bad('站立评估未出报告');
-(await evl(`(() => { const r = document.getElementById('pa-report'); return /\\d+/.test(r.querySelector('.pa-score-num').textContent) && r.querySelectorAll('.pa-item').length >= 5 && (r.textContent.includes('改进建议') || r.textContent.includes('How to improve')); })()`)) ? ok('报告含综合评分 + 逐项指标 + 改进建议') : bad('报告结构缺失');
+(await evl(`(() => { const r = document.getElementById('pa-report'); return /\\d+/.test(r.querySelector('.pa-score-num').textContent) && r.querySelectorAll('.pa-item').length >= 5 && (r.textContent.includes('改进建议') || r.textContent.includes('How to improve')) && r.textContent.includes('%'); })()`)) ? ok('报告含综合评分 + 逐项指标 + 改进建议 + 百分比单位') : bad('报告结构缺失');
 (await evl(`JSON.parse(localStorage.getItem('rehab_pa_history')).length === 1`)) ? ok('报告自动存入历史') : bad('历史未保存');
 // 17c. 演示模式·走路：步态节律门控（≥6 步）→ 报告含步频
 await evl(`document.querySelector('.pa-kind[data-pa="walk"]').click()`);
@@ -366,6 +366,13 @@ let paWalk = false;
 for (let i = 0; i < 18; i++) { await sleep(1000); if (await evl(`!document.getElementById('pa-report').classList.contains('hidden')`)) { paWalk = true; break; } }
 paWalk ? ok('演示模式·走路：步态节律门控通过后生成报告') : bad('走路评估未出报告');
 (await evl(`JSON.parse(localStorage.getItem('rehab_pa_history')).length === 2`)) ? ok('历史累计 2 条') : bad('历史累计失败');
+// 17f. 单腿站立：报告识别抬起侧（v2.21.4）
+await evl(`document.querySelector('.pa-kind[data-pa="single"]').click()`);
+await sleep(100);
+await evl(`document.getElementById('btn-pa-demo').click()`);
+let paSingle = false;
+for (let i = 0; i < 15; i++) { await sleep(1000); if (await evl(`!document.getElementById('pa-report').classList.contains('hidden')`)) { paSingle = true; break; } }
+(paSingle && await evl(`document.getElementById('pa-report').textContent.includes('抬右腿')`)) ? ok('单腿站立报告识别抬起侧（抬右腿）') : bad('抬起侧识别缺失');
 // 17d. 语言切换：体态页文案随语言变化
 await evl(`document.getElementById('btn-lang').click()`);
 await sleep(400);

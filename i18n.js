@@ -328,6 +328,9 @@ const DICT = {
     paHistoryTitle: '历史体态评估', paHistoryEmpty: '还没有体态评估记录', paRedo: '再测一次', paView: '查看报告',
     paSafety: '体态评估仅供运动参考，不构成医疗建议；如有疼痛请停止并咨询专业理疗师。', paDemoNote: '演示模式：使用模拟姿态数据跑完整流程，无需摄像头。',
     paNoCamera: '未检测到摄像头：请用手机打开，或点「演示模式」体验',
+    paPlaceholderShort: '选一种体态 → 全身入镜保持稳定，AI 确认识别完整后自动评价',
+    paLiftL: '抬左腿', paLiftR: '抬右腿',
+    paCadenceLive: '步频 {c} 步/分', paHistoryDelta: '较上次 {v}',
     // 站立
     mStandHead: '头部位置', mStandHeadW: '头部略前倾（{v}°），颈椎压力增大', mStandHeadB: '头部明显前倾（{v}°），长期易致颈痛和「乌龟颈」', mStandHeadG: '头部中立，耳肩对位良好',
     mStandHeadA: '收下巴：想象头顶有根绳子向上拉；靠墙站立（后脑勺贴墙）每天 3 组 × 1 分钟',
@@ -500,6 +503,7 @@ const DICT = {
     stHomeIndex: '综合运动指数计算（权重 3/3/4）', stGwProg: '跟练课程完整性 + 训练记录生成',
     stGwLevel: '跟练难度自适应（进阶每节 +2 次）',
     stFtPhase: '功能测试·阶段判定（站直/下降/底部/上升）',
+    stPaLift: '体态评估·单腿站立左右侧识别',
     stAllPass: '🎉 全部自测通过', stError: '❌ 异常: {msg}',
   },
   en: {
@@ -811,6 +815,9 @@ const DICT = {
     paHistoryTitle: 'Posture assessment history', paHistoryEmpty: 'No posture assessments yet', paRedo: 'Try again', paView: 'View report',
     paSafety: 'Posture assessment is for exercise reference only, not medical advice. Stop and see a physio if anything hurts.', paDemoNote: 'Demo mode: runs the full flow on simulated pose data, no camera needed.',
     paNoCamera: 'No camera found — open on a phone, or tap Demo mode to explore',
+    paPlaceholderShort: 'Pick a posture → step fully into frame and hold — AI scores once recognition is complete',
+    paLiftL: 'left leg lifted', paLiftR: 'right leg lifted',
+    paCadenceLive: 'cadence {c} steps/min', paHistoryDelta: 'vs last {v}',
     mStandHead: 'Head position', mStandHeadW: 'Head slightly forward ({v}°) — more load on your neck', mStandHeadB: 'Head clearly forward ({v}°) — risk of neck pain and "text neck"', mStandHeadG: 'Head neutral, ears over shoulders',
     mStandHeadA: 'Tuck your chin: imagine a string pulling your head up; wall stands (head touching wall) 3 × 1 min daily',
     mStandShoulder: 'Shoulder level', mStandShoulderW: 'Shoulders uneven (diff {v}) — could be bag habits or early scoliosis', mStandShoulderB: 'Shoulders clearly uneven (diff {v}) — worth a scoliosis check', mStandShoulderG: 'Shoulders level',
@@ -977,6 +984,7 @@ const DICT = {
     stHomeIndex: 'Movement index calc (3/3/4 weights)', stGwProg: 'Guided program integrity + session record',
     stGwLevel: 'Guided difficulty adaptation (+2 reps per section)',
     stFtPhase: 'Func test·phase detection (stand/descend/bottom/rise)',
+    stPaLift: 'Posture eval·single-leg lifted-side detection',
     stAllPass: '🎉 All tests passed', stError: '❌ Error: {msg}',
   },
 };
