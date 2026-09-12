@@ -1,7 +1,7 @@
 {
-  "version": "2.20.1",
-  "apk": "https://cdn.jsdelivr.net/gh/xushengqin666-cell/rehab-ai@main/downloads/RehabAI-v2.20.1.apk",
+  "version": "2.20.2",
+  "apk": "https://cdn.jsdelivr.net/gh/xushengqin666-cell/rehab-ai@main/downloads/RehabAI-v2.20.2.apk",
   "releaseUrl": "https://github.com/xushengqin666-cell/rehab-ai/releases/latest",
-  "notes": "细节优化：修复臂举对称文案空变量、前屈误导提示、零次数超时保护、实时教练语音防刷屏；报告随语言切换实时刷新；底部导航适配 7 个入口；连测显示第 N/M 项与下一项过渡。",
+  "notes": "全块细审打磨：停止训练清空残留统计/提示；训练中休息先停分析；演示单腿蹲修复抬腿门控；真人连测换姿势缓冲 3 秒；体态历史按类型图标；测试页空状态文案；连测按钮高亮样式；键盘焦点无障碍样式。",
   "important": false
 }

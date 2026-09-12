@@ -63,6 +63,7 @@ camOn ? ok('摄像头启动 → 模型加载 → 分析运行') : bad('摄像头
 await evl(`document.getElementById('btn-start').click()`);
 await sleep(300);
 (await evl(`document.getElementById('btn-start-label').textContent === '开始分析'`)) ? ok('停止恢复开始分析') : bad('停止失败');
+(await evl(`document.getElementById('stats-box').classList.contains('hidden') && document.getElementById('feedback').classList.contains('hidden')`)) ? ok('停止后统计与提示面板清空（无过期残留）') : bad('停止后残留面板');
 (await evl(`(() => { const c = document.getElementById('overlay'); const ctx = c.getContext('2d'); const d = ctx.getImageData(0, 0, c.width, c.height).data; let sum = 0; for (let i = 3; i < d.length; i += 4) sum += d[i]; return sum === 0 && !document.getElementById('placeholder').classList.contains('hidden'); })()`)) ? ok('停止后画面清空+占位图恢复（无残留火柴人）') : bad('停止后画面残留');
 // 语言切换后成就与 AI 卡片也切换
 await evl(`document.getElementById('btn-lang').click()`);
@@ -374,7 +375,7 @@ await sleep(300);
 // 17e. 切走自动停止体态会话
 await evl(`document.querySelector('.bottom-nav button[data-tab="record"]').click()`);
 await sleep(300);
-(await evl(`document.getElementById('btn-pa-start-label').textContent !== '停止评估'`)) ? ok('离开体态页自动停止评估') : bad('离开体态页未停止');
+(await evl(`document.getElementById('btn-pa-start-label').textContent !== '停止评估' && document.getElementById('pa-gate').classList.contains('hidden')`)) ? ok('离开体态页自动停止评估+收起检查面板') : bad('离开体态页未停止');
 
 console.log('===== 18. 运动功能测试（v2.20：动态动作运动学 + 知识库 + 档案） =====');
 await send('Page.navigate', { url: APP });
@@ -403,6 +404,7 @@ for (let i = 0; i < 110; i++) { await sleep(1000); if (await evl(`JSON.parse(loc
 ftBatt ? ok('完整测试 5 项连测 → 聚合综合记录（六维加权）') : bad('连测未出综合记录');
 (await evl(`(() => { const h = JSON.parse(localStorage.getItem('rehab_ft_history') || '[]'); const b = h.find(r => r.battery); return b && b.score >= 0 && b.score <= 100 && !document.getElementById('ft-report').classList.contains('hidden'); })()`)) ? ok('综合报告显示（总分+5 项明细）') : bad('综合报告失败');
 (await evl(`document.getElementById('ft-profile').textContent.includes('完整测试报告')`)) ? ok('档案显示最近一次完整测试') : bad('档案未更新');
+(await evl(`(() => { const h = JSON.parse(localStorage.getItem('rehab_ft_history') || '[]'); const s = h.find(r => r.key === 'single'); const a = h.find(r => r.key === 'arm'); return s && s.m && s.m.reps === 4 && a && a.m && a.m.reps === 3; })()`)) ? ok('连测·单腿蹲 4 次 + 双臂上举 3 次完整完成（演示缺陷修复）') : bad('连测演示次数异常');
 
 console.log('===== 结果 =====');
 console.log('CONSOLE_ERRORS:', consoleErrors.length ? consoleErrors.join(' ||| ') : 'none');

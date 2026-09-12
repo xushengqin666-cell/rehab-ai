@@ -93,7 +93,7 @@ function migrateDeviceData(email) {
 }
 const fmtDate = (ts) => new Date(ts).toLocaleString(locale(), { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-const APP_VERSION = 'v2.20.1';
+const APP_VERSION = 'v2.20.2';
 const exName = (e) => (e.custom ? e.name : t(e.nameKey));
 const exDesc = (e) => (e.custom ? e.desc : t(e.descKey));
 const depthTxt = (d) => t('depth' + (d ? d.charAt(0).toUpperCase() + d.slice(1) : 'Ok')) || d;
@@ -779,6 +779,8 @@ async function toggleStart() {
     state.running = false; stopCamera(); releaseWake();
     drawEmpty();                                   // 清掉火柴人，避免黑屏上残留
     $('placeholder').classList.remove('hidden');   // 恢复「点击开始分析」占位图
+    $('stats-box').classList.add('hidden');        // v2.20.2：清掉残留统计，不留过期数字
+    $('feedback').classList.add('hidden');         // v2.20.2：清掉残留提示，不留旧文案
     btn.disabled = false; setStartBtn('btnStart', 'play');
     aiSessionEnd();
     return;
@@ -892,7 +894,8 @@ function startRest(seconds = 60) {
     }
   }, 1000);
 }
-$('btn-rest').addEventListener('click', () => startRest(60));
+// v2.20.2：训练中先停止分析再进入休息，避免休息倒计时被分析循环覆盖
+$('btn-rest').addEventListener('click', () => { if (state.running) toggleStart(); startRest(60); });
 
 // 久坐提醒：按设置间隔（30/45/60 分钟）提醒起身活动
 const sedGet = () => LS.get('rehab_sedentary', { on: false, min: 45 });
@@ -3003,9 +3006,10 @@ function renderPaHistory() {
   el.innerHTML = h.map((r) => {
     const when = new Date(r.ts);
     const date = when.toLocaleDateString(locale(), { month: 'numeric', day: 'numeric' }) + ' ' + when.toLocaleTimeString(locale(), { hour: '2-digit', minute: '2-digit' });
+    const kindIcon = { standing: 'standing', single: 'standing', squat: 'squat', walk: 'stepup', run: 'stepup' }[r.kind] || 'standing';
     return `
     <div class="item">
-      <div class="t">${icon('standing')}${t(PA_META[r.kind].nameKey)}${r.demo ? ' · ' + t('paBtnDemo') : ''} — ${date}</div>
+      <div class="t">${icon(kindIcon)}${t(PA_META[r.kind].nameKey)}${r.demo ? ' · ' + t('paBtnDemo') : ''} — ${date}</div>
       <div class="d">${t('paScore')} ${r.score} · ${t('paGrade' + r.grade)}${r.priorities.length ? ' · ' + r.priorities.length + ' ' + t('paPriority') : ''}</div>
       <div class="controls" style="margin-top:6px"><button class="btn small" data-pa-view="${r.ts}"><span>${t('paView')}</span></button></div>
     </div>`;
@@ -3099,6 +3103,8 @@ function paStop() {
   if (c) c.getContext('2d').clearRect(0, 0, c.width, c.height);
   const ph = $('pa-placeholder');
   if (ph) { ph.classList.remove('hidden'); $('pa-placeholder-text').textContent = t('paIntro'); }
+  const gate = $('pa-gate');
+  if (gate) gate.classList.add('hidden');          // v2.20.2：手动停止后收起完整性检查面板，不留过期勾选
   paResetStable();
   setPaStartBtn();
 }
@@ -3217,7 +3223,7 @@ const FT_MOVES = {
   squat: { name: 'ftMvSquat', guide: 'ftGuideSquat', metric: 'knee', target: 'valley', thr: 25, need: 3, thrLow: 115, thrHigh: 150 },
   lunge: { name: 'ftMvLunge', guide: 'ftGuideLunge', metric: 'knee', target: 'valley', thr: 25, need: 4, thrLow: 115, thrHigh: 150 },
   single: { name: 'ftMvSingle', guide: 'ftGuideSingle', metric: 'knee', target: 'valley', thr: 25, need: 4, thrLow: 115, thrHigh: 150 },
-  arm: { name: 'ftMvArm', guide: 'ftGuideArm', metric: 'raise', target: 'peak', thr: 0.10, need: 3, thrLow: 0.09, thrHigh: 0.02 },
+  arm: { name: 'ftMvArm', guide: 'ftGuideArm', metric: 'raise', target: 'peak', thr: 0.10, need: 3, thrLow: 0.03, thrHigh: 0.08 },
   bend: { name: 'ftMvBend', guide: 'ftGuideBend', metric: 'trunk', target: 'valley', thr: 25, need: 2, thrLow: 135, thrHigh: 160 },
 };
 const FT_ORDER = ['squat', 'lunge', 'single', 'arm', 'bend'];
@@ -3225,7 +3231,7 @@ const ftState = {
   active: false, demo: false, mode: 'single', key: 'squat', queue: [], queueIdx: 0,
   frames: [], lastT: 0, raf: 0, stream: null, videoOn: false, t0: 0,
   lastGate: null, report: null, repState: null, cueLast: null, cueSpokeAt: 0,
-  startFrame: null, lastView: null,
+  startFrame: null, lastView: null, gapUntil: 0,
 };
 function ftFrameMetrics(lms) {
   const sh = paMid(lms, 11, 12), hp = paMid(lms, 23, 24), kn = paMid(lms, 25, 26);
@@ -3588,7 +3594,7 @@ async function ftStart(kind, demo = false) {
   ftState.queueIdx = 0; ftState.key = ftState.queue[0];
   ftState.frames = []; ftState.repState = { phase: 'up', count: 0, lastRepT: 0 };
   ftState.cueLast = null; ftState.cueSpokeAt = 0; ftState.report = null; ftState.lastT = 0; ftState.t0 = performance.now();
-  ftState.startFrame = null;
+  ftState.startFrame = null; ftState.gapUntil = 0;
   $('ft-report').classList.add('hidden');
   $('ft-gate').classList.remove('hidden');
   $('ft-live').classList.remove('hidden');
@@ -3641,6 +3647,9 @@ function ftStop() {
   if (c) c.getContext('2d').clearRect(0, 0, c.width, c.height);
   const ph = $('ft-placeholder');
   if (ph) { ph.classList.remove('hidden'); $('ft-placeholder-text').textContent = t('ftIntro'); }
+  const gate = $('ft-gate'), live = $('ft-live');
+  if (gate) gate.classList.add('hidden');          // v2.20.2：手动停止后收起门控与实时面板，不留过期数据
+  if (live) live.classList.add('hidden');
   setFtStartBtn();
 }
 function ftLoop() {
@@ -3670,6 +3679,11 @@ function ftLoop() {
   if (!lms) { requestAnimationFrame(ftLoop); return; }
   if (!g.ok) { requestAnimationFrame(ftLoop); return; }
   const m = ftFrameMetrics(lms);
+  if (ftState.gapUntil && ts < ftState.gapUntil) {   // v2.20.2：连测换姿势缓冲期内不采集
+    $('ft-hint').textContent = t('ftNext', { name: t(FT_MOVES[ftState.key].name) }) + ' · ' + Math.max(1, Math.ceil((ftState.gapUntil - ts) / 1000));
+    requestAnimationFrame(ftLoop);
+    return;
+  }
   if (!ftState.startFrame) ftState.startFrame = m;
   ftState.frames.push({ t: ts, ...m });
   if (ftState.frames.length > 1800) ftState.frames.shift();
@@ -3707,6 +3721,7 @@ function ftFinish(key) {
     ftState.frames = []; ftState.repState = { phase: 'up', count: 0, lastRepT: 0 };
     ftState.cueLast = null; ftState.cueSpokeAt = 0; ftState.t0 = performance.now(); ftState.startFrame = null;
     ftState.lastT = 0;
+    ftState.gapUntil = ftState.demo ? 0 : performance.now() + 3000;   // v2.20.2：真人连测换姿势缓冲 3 秒
     renderFtMoves();
     $('ft-hint').textContent = ftState.demo ? t('ftNext', { name: t(FT_MOVES[next].name) }) : t('ftCapturing');
     requestAnimationFrame(ftLoop);
@@ -3864,7 +3879,7 @@ function renderFtHistory() {
   const el = $('ft-history');
   if (!el) return;
   const h = ftHistory();
-  if (!h.length) { el.innerHTML = `<div class="empty">${icon('record')}<span>${t('paHistoryEmpty')}</span></div>`; return; }
+  if (!h.length) { el.innerHTML = `<div class="empty">${icon('record')}<span>${t('ftProfileNone')}</span></div>`; return; }
   el.innerHTML = h.slice(0, 12).map((r) => {
     const when = new Date(r.ts);
     const date = when.toLocaleDateString(locale(), { month: 'numeric', day: 'numeric' }) + ' ' + when.toLocaleTimeString(locale(), { hour: '2-digit', minute: '2-digit' });
@@ -3956,6 +3971,10 @@ function ftDemoFrame(key, ts) {
   set(23, 0.44, 0.52); set(24, 0.56, 0.52);
   set(25, kL.x + valgusShift, kL.y); set(26, kR.x - valgusShift, kR.y);
   set(27, 0.46, 0.87); set(28, 0.54, 0.87);
+  if (key === 'single') {          // v2.20.2：单腿蹲演示须抬起右腿，否则过不了「姿势到位」门控
+    set(28, 0.545, 0.80);
+    set(26, 0.55, 0.70);
+  }
   fill();
   return lms;
 }
