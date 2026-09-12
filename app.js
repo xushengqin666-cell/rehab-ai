@@ -93,7 +93,7 @@ function migrateDeviceData(email) {
 }
 const fmtDate = (ts) => new Date(ts).toLocaleString(locale(), { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-const APP_VERSION = 'v2.21.1';
+const APP_VERSION = 'v2.21.2';
 const exName = (e) => (e.custom ? e.name : t(e.nameKey));
 const exDesc = (e) => (e.custom ? e.desc : t(e.descKey));
 const depthTxt = (d) => t('depth' + (d ? d.charAt(0).toUpperCase() + d.slice(1) : 'Ok')) || d;
@@ -2738,6 +2738,9 @@ async function selfTest() {
     const gwRec = gwMakeSession(GW_PROGRAMS.knee, 30, 600);
     log(t('stHomeIndex'), hIdx1 === 67 && hIdx2 === 85 && hIdx3 === 50, `${hIdx1}/${hIdx2}/${hIdx3}（期望 67/85/50）`);
     log(t('stGwProg'), gwProgOk && gwRec.id && gwRec.ex === 'guided' && gwRec.reps === 30 && gwRec.dur === 600, `steps ok rec=${gwRec.ex}/${gwRec.reps}×${gwRec.dur}s`);
+    // 20b. 跟练难度自适应：进阶（2 级）每节 +2 次，保持类不变
+    const gwLvOk = gwStepReps({ reps: 10 }, 1) === 10 && gwStepReps({ reps: 10 }, 2) === 12 && gwStepReps({ hold: 30 }, 2) === 30;
+    log(t('stGwLevel'), gwLvOk, `10/12/30 got ${gwStepReps({ reps: 10 }, 1)}/${gwStepReps({ reps: 10 }, 2)}/${gwStepReps({ hold: 30 }, 2)}`);
     out.innerHTML += `<div class="st-pass" style="margin-top:8px;font-weight:800">${t('stAllPass')}</div>`;
     console.log('SELFTEST: ALL PASS');
   } catch (e) {
@@ -4049,8 +4052,11 @@ const gwState = {
   active: false, progId: null, stepIdx: 0, setIdx: 0, phase: 'idle',
   repN: 0, holdLeft: 0, restLeft: 0, prepLeft: 0, metroTick: 0, metroDown: true,
   repsTotal: 0, startedAt: 0, tick: null, level: 1, beepCtx: null,
+  stepReps: 0, lastDone: null,
 };
 const gwLevel = () => { const ftB = ftHistory().find((r) => r.battery); const s = ftB ? ftB.score : null; return s == null ? 1 : s >= 75 ? 2 : 1; };
+// v2.21.2：难度真正生效——进阶（白银+）每节次数 +2，保持类动作时长不变
+const gwStepReps = (step, level) => (step.reps ? step.reps + (level - 1) * 2 : step.hold);
 const gwCalcIndex = (paS, ftS, consist) => {
   const parts = [];
   if (paS != null) parts.push({ w: 0.3, v: paS });
@@ -4088,8 +4094,10 @@ function gwStart(progId) {
   gwState.stepIdx = 0; gwState.setIdx = 0; gwState.repN = 0;
   gwState.holdLeft = 0; gwState.restLeft = 0; gwState.prepLeft = 3; gwState.metroTick = 0;
   gwState.repsTotal = 0; gwState.startedAt = performance.now(); gwState.level = gwLevel();
+  gwState.lastDone = null;
+  gwState.stepReps = gwStepReps(prog.steps[0], gwState.level);
   gwBeepInit();
-  speak(t('gwPrep'));
+  speak(t('gwStepOf', { s: 1, S: prog.steps.length }) + ' · ' + t(prog.steps[0].name));
   renderGuide();
   gwState.tick = setInterval(gwTick, 1000);
 }
@@ -4099,7 +4107,11 @@ function gwTick() {
   const step = prog.steps[st.stepIdx];
   if (st.phase === 'prep') {
     st.prepLeft--;
-    if (st.prepLeft <= 0) { st.phase = step.hold ? 'hold' : 'rep'; st.holdLeft = step.hold || 0; if (step.hold) speak(t('gwHold', { n: step.hold })); else speak(t('gwGo')); }
+    if (st.prepLeft <= 0) {
+      st.phase = step.hold ? 'hold' : 'rep';
+      st.holdLeft = step.hold || 0;
+      if (step.hold) speak(t('gwHold', { n: step.hold })); else speak(t('gwGo'));
+    }
   } else if (st.phase === 'rep') {
     st.metroTick++;
     if (st.metroTick % 2 === 1) {
@@ -4107,25 +4119,33 @@ function gwTick() {
       if (step.metro) gwBeep(st.metroDown ? 660 : 880);
       if (!st.metroDown) {
         st.repN++; st.repsTotal++;
-        if (st.repN % 5 === 0 || st.repN >= step.reps) speak(t('gwRep', { n: st.repN, m: step.reps }));
+        if (st.repN % 5 === 0 || st.repN >= st.stepReps) speak(t('gwRep', { n: st.repN, m: st.stepReps }));
       }
     }
-    if (st.repN >= step.reps) { st.setIdx++; st.repN = 0; st.metroTick = 0; st.phase = 'rest'; st.restLeft = step.rest; speak(t('gwRest', { n: step.rest })); }
+    if (st.repN >= st.stepReps) {
+      st.setIdx++; st.repN = 0; st.metroTick = 0; st.phase = 'rest'; st.restLeft = step.rest;
+      speak(t('gwRest', { n: step.rest }));
+    }
   } else if (st.phase === 'hold') {
     st.holdLeft--;
-    if (st.holdLeft % 10 === 0) gwBeep(1040);
-    if (st.holdLeft <= 0) { st.repsTotal++; st.setIdx++; st.phase = 'rest'; st.restLeft = step.rest; speak(t('gwRest', { n: step.rest })); }
+    if (st.holdLeft > 0 && st.holdLeft % 10 === 0) gwBeep(1040);
+    if (st.holdLeft <= 0) {
+      st.repsTotal++; st.setIdx++; st.phase = 'rest'; st.restLeft = step.rest;
+      gwBeep(880); speak(t('gwRest', { n: step.rest }));
+    }
   } else if (st.phase === 'rest') {
     st.restLeft--;
     if (st.restLeft <= 0) {
+      gwBeep(1320);   // 休息结束提示音
       if (st.setIdx >= step.sets) {
         st.setIdx = 0; st.stepIdx++;
         if (st.stepIdx >= prog.steps.length) { gwFinish(true); return; }
         st.phase = 'prep'; st.prepLeft = 3;
-        speak(t('gwPrep'));
+        st.stepReps = gwStepReps(prog.steps[st.stepIdx], st.level);
+        speak(t('gwStepOf', { s: st.stepIdx + 1, S: prog.steps.length }) + ' · ' + t(prog.steps[st.stepIdx].name));
       } else {
         st.phase = 'prep'; st.prepLeft = 3;
-        speak(t('gwPrep'));
+        speak(t('gwGo'));
       }
     }
   }
@@ -4134,7 +4154,7 @@ function gwTick() {
 function gwTap() {   // 手动 +1（自动计数不准时用手点）
   if (!gwState.active || gwState.phase !== 'rep') return;
   gwState.repN++; gwState.repsTotal++;
-  if (gwState.repN >= GW_PROGRAMS[gwState.progId].steps[gwState.stepIdx].reps) {
+  if (gwState.repN >= gwState.stepReps) {
     gwState.setIdx++; gwState.repN = 0; gwState.phase = 'rest';
     const step = GW_PROGRAMS[gwState.progId].steps[gwState.stepIdx];
     gwState.restLeft = step.rest; speak(t('gwRest', { n: step.rest }));
@@ -4156,6 +4176,7 @@ function gwFinish(completed) {
     const rec = gwMakeSession(prog, reps, durSec);
     sset('rehab_sessions', [rec, ...sget('rehab_sessions', [])]);   // 写入标准训练记录：自动流入记录/趋势/成就/热力图
   }
+  gwState.lastDone = { completed, progId: gwState.progId, reps, durSec };
   renderGuide();
   if (completed) { renderRecords(); renderHome(); gwBeep(1320); setTimeout(() => gwBeep(1760), 160); toast(t('gwSessionSaved')); }
   else { renderHome(); toast(t('gwFinishEarly')); }
@@ -4166,19 +4187,44 @@ function renderGuide() {
   const stageEl = $('gw-stage');
   if (!listEl) return;
   if (!gwState.active) {
-    listEl.innerHTML = Object.entries(GW_PROGRAMS).map(([id, p]) => `
-      <div class="gw-card">
+    const wk = new Date(); wk.setHours(0, 0, 0, 0); wk.setDate(wk.getDate() - 6);
+    const gwWeek = sget('rehab_sessions', []).filter((s) => s.ex === 'guided' && new Date(s.ts) >= wk).length;
+    let doneCard = '';
+    if (gwState.lastDone) {
+      const d = gwState.lastDone;
+      doneCard = `
+      <div class="gw-done">
+        <div class="gw-done-ico">${icon(d.completed ? 'check' : 'stop')}</div>
+        <div style="flex:1;min-width:0">
+          <div class="gw-card-name">${d.completed ? t('gwDone') : t('gwFinishEarly')}</div>
+          <div class="gw-card-desc">${t('gwComplete', { n: d.reps, m: Math.max(1, Math.round(d.durSec / 60)) })}${d.reps > 0 ? ' · ' + t('gwSavedCard') : ''}</div>
+        </div>
+      </div>
+      <div class="controls" style="margin-top:8px">
+        <button class="btn small" id="gw-again"><span>${t('gwAgain2')}</span></button>
+        <button class="btn small" id="gw-home"><span>${t('gwBackHome')}</span></button>
+      </div>`;
+    }
+    const cards = Object.entries(GW_PROGRAMS).map(([id, p]) => {
+      const sets = p.steps.reduce((a, s) => a + s.sets, 0);
+      return `<div class="gw-card">
         <div class="gw-card-head">
           <span class="gw-card-ico">${icon(p.steps[0].icon)}</span>
           <div style="flex:1;min-width:0">
             <div class="gw-card-name">${t(p.name)}</div>
-            <div class="gw-card-desc">${t(p.desc)}</div>
+            <div class="gw-card-desc">${t(p.desc)}<br>${p.steps.length} ${t('gwSections')} · ${sets} ${t('gwSets')}</div>
           </div>
           <span class="hm-lv">${t('gwLv' + gwLevel())}</span>
         </div>
         <div class="controls"><button class="btn primary small" data-gw="${id}"><span>${t('gwStartBtn')}</span></button></div>
-      </div>`).join('');
+      </div>`;
+    }).join('');
+    listEl.innerHTML = (gwWeek ? `<div class="hint tiny" style="margin:0 0 8px">${t('gwBanner', { n: gwWeek })}</div>` : '') + doneCard + cards;
     listEl.querySelectorAll('[data-gw]').forEach((b) => b.addEventListener('click', () => gwStart(b.dataset.gw)));
+    const againBtn = $('gw-again');
+    if (againBtn) againBtn.addEventListener('click', () => gwStart(gwState.lastDone.progId));
+    const homeBtn = $('gw-home');
+    if (homeBtn) homeBtn.addEventListener('click', () => switchTab('home'));
     activeEl.classList.add('hidden');
     return;
   }
@@ -4186,16 +4232,19 @@ function renderGuide() {
   activeEl.classList.remove('hidden');
   const prog = GW_PROGRAMS[gwState.progId];
   const step = prog.steps[gwState.stepIdx];
-  let big, sub;
-  if (gwState.phase === 'prep') { big = gwState.prepLeft > 0 ? gwState.prepLeft : t('gwGo'); sub = `${t('gwPrep')} · ${t(step.name)}`; }
-  else if (gwState.phase === 'rep') { big = gwState.repN + '/' + step.reps; sub = `${t('gwSet', { s: gwState.setIdx + 1, S: step.sets })} · ${gwState.metroDown ? t('gwDown') : t('gwUp')}`; }
-  else if (gwState.phase === 'hold') { big = gwState.holdLeft; sub = `${t('gwSet', { s: gwState.setIdx + 1, S: step.sets })} · ${t('gwHold', { n: step.hold })}`; }
-  else { big = gwState.restLeft; sub = t('gwRest', { n: step.rest }); }
+  let big, sub, barPct;
+  if (gwState.phase === 'prep') { big = gwState.prepLeft > 0 ? gwState.prepLeft : t('gwGo'); sub = `${t('gwPrep')} · ${t(step.name)}`; barPct = 0; }
+  else if (gwState.phase === 'rep') { big = gwState.repN + '/' + gwState.stepReps; sub = `${t('gwSet', { s: gwState.setIdx + 1, S: step.sets })} · ${gwState.metroDown ? t('gwDown') : t('gwUp')}`; barPct = (100 * gwState.repN / Math.max(1, gwState.stepReps)).toFixed(0); }
+  else if (gwState.phase === 'hold') { big = gwState.holdLeft; sub = `${t('gwSet', { s: gwState.setIdx + 1, S: step.sets })} · ${t('gwHold', { n: step.hold })}`; barPct = (100 * (1 - gwState.holdLeft / Math.max(1, step.hold))).toFixed(0); }
+  else { big = gwState.restLeft; sub = t('gwRest', { n: step.rest }); barPct = (100 * (1 - gwState.restLeft / Math.max(1, step.rest))).toFixed(0); }
+  const dots = prog.steps.map((s, i) => `<span class="gw-dot ${i === gwState.stepIdx ? 'on' : ''} ${i < gwState.stepIdx ? 'done' : ''}"></span>`).join('');
   stageEl.innerHTML = `
-    <div class="gw-set-line">${t(prog.name)} · ${t('gwLevel')}：${t('gwLv' + gwState.level)}（${t('gwLevelAuto')}）</div>
-    <div class="gw-step-name">${icon(step.icon)} ${t(step.name)}</div>
+    <div class="gw-set-line">${t(prog.name)} · ${t('gwLevel')}：${t('gwLv' + gwState.level)}</div>
+    <div class="gw-dots">${dots}</div>
+    <div class="gw-step-name">${icon(step.icon)} ${t(step.name)}<span class="gw-set-line" style="display:block">${t('gwStepOf', { s: gwState.stepIdx + 1, S: prog.steps.length })}</span></div>
     <div class="gw-big">${big}</div>
     <div class="gw-set-line">${sub}</div>
+    <div class="gw-bar"><div class="gw-bar-fill" style="width:${barPct}%"></div></div>
     <span class="gw-pulse ${gwState.metroDown ? '' : 'down'}"></span>
     <div class="gw-cue">${t(step.cue)}</div>
     <div class="controls">

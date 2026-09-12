@@ -719,3 +719,12 @@ svg.spin { animation: spin 1.1s linear infinite; }
 @keyframes gwPulse { 0%, 100% { transform: scale(.7); opacity: .6; } 50% { transform: scale(1.25); opacity: 1; } }
 .gw-btn-big { width: 76px; height: 76px; border-radius: 50%; border: 1px solid rgba(14, 124, 102, .4); background: rgba(14, 124, 102, .1); color: var(--teal); font-size: 13px; font-weight: 800; cursor: pointer; }
 .gw-btn-big:active { transform: scale(.93); }
+.gw-dots { display: flex; justify-content: center; gap: 7px; }
+.gw-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--bg2); }
+.gw-dot.done { background: rgba(14, 124, 102, .45); }
+.gw-dot.on { background: var(--teal); transform: scale(1.3); }
+.gw-bar { height: 8px; background: var(--bg2); border-radius: 999px; overflow: hidden; width: 100%; max-width: 260px; }
+.gw-bar-fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--teal), #2ba48a); transition: width .3s linear; }
+.gw-done { display: flex; align-items: center; gap: 12px; border: 1px solid rgba(14, 124, 102, .35); background: rgba(14, 124, 102, .06); border-radius: 14px; padding: 12px 14px; margin-bottom: 10px; }
+.gw-done-ico { width: 38px; height: 38px; border-radius: 50%; background: rgba(14, 124, 102, .14); color: var(--teal); display: flex; align-items: center; justify-content: center; flex: none; }
+.gw-done-ico svg { width: 20px; height: 20px; }

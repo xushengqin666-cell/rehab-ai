@@ -418,10 +418,11 @@ await sleep(300);
 (await evl(`document.querySelectorAll('#gw-list .gw-card').length === 3`)) ? ok('跟练页：3 节课程（膝盖/体态/全身）') : bad('课程缺失');
 await evl(`document.querySelector('#gw-list [data-gw="knee"]').click()`);
 await sleep(4600);   // 准备 3 秒 + 第一个动作节拍（4 秒处 +1）
-(await evl(`!document.getElementById('gw-active').classList.contains('hidden') && document.getElementById('gw-stage').textContent.includes('深蹲')`)) ? ok('跟练开始：节拍器计数界面（准备→计数）') : bad('跟练未开始');
+(await evl(`!document.getElementById('gw-active').classList.contains('hidden') && document.getElementById('gw-stage').textContent.includes('深蹲') && document.getElementById('gw-stage').querySelector('.gw-dots') != null && document.getElementById('gw-stage').querySelector('.gw-bar') != null`)) ? ok('跟练开始：节拍器计数界面（准备→计数）+ 节进度点 + 进度条') : bad('跟练未开始');
 await evl(`window.__gwSkip()`);
 await sleep(400);
 (await evl(`JSON.parse(localStorage.getItem('rehab_sessions') || '[]').some(s => s.ex === 'guided' && s.reps > 0)`)) ? ok('跟练完成 → 写入标准训练记录（流入记录/趋势/成就）') : bad('训练记录未写入');
+(await evl(`!!document.getElementById('gw-again') && document.getElementById('gw-list').textContent.includes('已计入训练记录')`)) ? ok('跟练完成卡：再练一次/回今日 + 已保存提示') : bad('完成卡缺失');
 await evl(`document.querySelector('.bottom-nav button[data-tab="ft"]').click()`);
 await sleep(300);
 await evl(`document.querySelector('#ft-moves [data-ft="squat"]').click()`);

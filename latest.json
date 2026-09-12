@@ -1,7 +1,7 @@
 {
-  "version": "2.21.1",
-  "apk": "https://cdn.jsdelivr.net/gh/xushengqin666-cell/rehab-ai@main/downloads/RehabAI-v2.21.1.apk",
+  "version": "2.21.2",
+  "apk": "https://cdn.jsdelivr.net/gh/xushengqin666-cell/rehab-ai@main/downloads/RehabAI-v2.21.2.apk",
   "releaseUrl": "https://github.com/xushengqin666-cell/rehab-ai/releases/latest",
-  "notes": "全模块逐个精细化 · 第 1 模块「今日」：指数卡加等级进度与历史趋势对比、空状态快捷入口、今日建议带跳转按钮、今日任务与日程页同源并可一键打卡（修复 p.ex 判定）、热力图加训练天数汇总、周小结加风险与上周对比。",
+  "notes": "全模块逐个精细化 · 第 2 模块「跟练」：难度自适应真正生效（进阶每节次数+2）；课程卡显示节数/组数与本周跟练次数；练习界面加节进度点与进度条；换节语音播报节名；休息结束提示音；完成卡（再练一次/回今日）。",
   "important": false
 }
