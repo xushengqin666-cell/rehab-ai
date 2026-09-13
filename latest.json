@@ -1,7 +1,7 @@
 {
-  "version": "2.21.7",
-  "apk": "https://cdn.jsdelivr.net/gh/xushengqin666-cell/rehab-ai@main/downloads/RehabAI-v2.21.7.apk",
+  "version": "2.21.8",
+  "apk": "https://cdn.jsdelivr.net/gh/xushengqin666-cell/rehab-ai@main/downloads/RehabAI-v2.21.8.apk",
   "releaseUrl": "https://github.com/xushengqin666-cell/rehab-ai/releases/latest",
-  "notes": "全模块逐个精细化 · 第 7 模块「评估」：评估报告加等级（状态良好/建议关注/建议进一步评估）与上次对比（↓改善/↑需关注）；删除评估加确认。",
+  "notes": "全模块逐个精细化 · 第 8 模块「日程」：康复计划条目显示本周完成进度条（本周 X/Y 次）；未来预约显示「N 天后」倒计时标签；计划与预约删除加确认。",
   "important": false
 }

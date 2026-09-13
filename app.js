@@ -93,7 +93,7 @@ function migrateDeviceData(email) {
 }
 const fmtDate = (ts) => new Date(ts).toLocaleString(locale(), { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-const APP_VERSION = 'v2.21.7';
+const APP_VERSION = 'v2.21.8';
 const exName = (e) => (e.custom ? e.name : t(e.nameKey));
 const exDesc = (e) => (e.custom ? e.desc : t(e.descKey));
 const depthTxt = (d) => t('depth' + (d ? d.charAt(0).toUpperCase() + d.slice(1) : 'Ok')) || d;
@@ -1234,9 +1234,11 @@ function renderAppts() {
   el.innerHTML = list.map((a) => {
     // 修复：之前用 < 23:59 比较，导致今天还没到的预约也被标成已过期
     const past = a.date < todayStr || (a.date === todayStr && a.time <= nowTime);
+    const daysUntil = Math.round((new Date(a.date + 'T00:00:00') - new Date(todayStr + 'T00:00:00')) / 86400000);
     const tag = past ? `<b style="color:var(--red)">${t('tagPast')}</b>`
       : a.date === todayStr ? `<b style="color:var(--green)">${t('tagToday')}</b>`
-      : a.date === tomorrowStr ? `<b style="color:var(--yellow)">${t('tagTomorrow')}</b>` : '';
+      : a.date === tomorrowStr ? `<b style="color:var(--yellow)">${t('tagTomorrow')}</b>`
+      : `<b style="color:var(--teal)">${t('apptIn', { n: daysUntil })}</b>`;   // v2.21.8：未来预约倒计时
     return `
     <div class="item" style="${past ? 'opacity:.55' : ''}">
       <div>
@@ -1247,6 +1249,7 @@ function renderAppts() {
     </div>`;
   }).join('');
   el.querySelectorAll('.del').forEach((btn) => btn.addEventListener('click', () => {
+    if (!confirm(t('confirmDelAppt'))) return;   // v2.21.8：删除确认
     sset('rehab_appts', list.filter((a) => a.id !== btn.dataset.id));
     renderAppts();
     scheduleCloudSync();
@@ -1792,17 +1795,25 @@ function renderPlanList() {
   const list = planGet();
   const el = $('plan-list');
   if (!list.length) { el.innerHTML = emptyBox('sliders', 'planEmpty'); return; }
+  const wk = new Date(); wk.setHours(0, 0, 0, 0); wk.setDate(wk.getDate() - 6);
+  const weekS = sget('rehab_sessions', []).filter((s) => new Date(s.ts) >= wk);
   el.innerHTML = list.map((p) => {
     const e = getEx(p.ex);
+    const g = p.reps * (p.days || []).length;                       // v2.21.8：周目标
+    const done = weekS.filter((s) => s.ex === p.ex).reduce((a, s) => a + s.reps, 0);
+    const pct = Math.min(100, Math.round(100 * done / Math.max(1, g)));
     return `<div class="item">
-      <div>
+      <div style="flex:1">
         <div class="t"><span class="t-ico">${icon(e ? e.icon : 'custom')}</span>${e ? exName(e) : p.ex} · ${t('repsN', { n: p.reps })}</div>
         <div class="d">${(p.days || []).map((d) => new Date(2024, 0, 7 + d).toLocaleDateString(locale(), { weekday: 'short' })).join(' · ')}</div>
+        <div class="plan-bar" style="margin-top:6px"><div class="plan-fill" style="width:${pct}%"></div></div>
+        <div class="hint tiny" style="margin-top:3px">${t('planWeekProg', { d: Math.min(done, g), g })}</div>
       </div>
       <button class="mini del" data-plan-del="${p.ex}">${icon('trash')}</button>
     </div>`;
   }).join('');
   el.querySelectorAll('[data-plan-del]').forEach((b) => b.addEventListener('click', () => {
+    if (!confirm(t('confirmDelPlan'))) return;   // v2.21.8：删除确认
     sset('rehab_plan', planGet().filter((p) => p.ex !== b.dataset.planDel));
     renderPlanList(); renderTodayPlan();
     scheduleCloudSync();
