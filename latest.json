@@ -1,7 +1,7 @@
 {
-  "version": "2.21.8",
-  "apk": "https://cdn.jsdelivr.net/gh/xushengqin666-cell/rehab-ai@main/downloads/RehabAI-v2.21.8.apk",
+  "version": "2.29.0",
+  "apk": "https://cdn.jsdelivr.net/gh/xushengqin666-cell/rehab-ai@main/downloads/RehabAI-v2.29.0.apk",
   "releaseUrl": "https://github.com/xushengqin666-cell/rehab-ai/releases/latest",
-  "notes": "全模块逐个精细化 · 第 8 模块「日程」：康复计划条目显示本周完成进度条（本周 X/Y 次）；未来预约显示「N 天后」倒计时标签；计划与预约删除加确认。",
+  "notes": "v2.29.0 新模块「康复路径（分阶段）」—— 延续「智能且可改变」原则：①三条路径（腰痛 / 膝痛 / 肩颈圆肩）× 三个阶段（急性期·疼痛与活动度 → 恢复期·动作控制 → 强化期·力量与功能），每条路径只给「起点」，不是写死的模板；②系统按你自己的数据推荐路径并给出理由（最近疼痛记录部位 → 已填写的量表 → 功能测试对称性），可一键采用也可随时手动切换；③进阶条件完全由你设定：训练后疼痛上限、需要连续几次、对称性阈值，改完立即影响「已满足/未满足」判定；满足才提示升级，也可以手动强制进阶（会记入进阶日志）；④本期动作一键写入今日计划，与今日任务、训练页小条同步；⑤数据接入备份/导入/清除/二维码同步（v9）。同版含自适应智能引擎、PROMs 量表、ROM 活动度、治疗师报告、康复小课堂、疼痛管理、设置、全局等积压版本。",
   "important": false
 }

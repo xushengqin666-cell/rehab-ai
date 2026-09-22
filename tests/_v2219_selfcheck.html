@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="zh"><head><meta charset="utf-8"><title>v2.21.9 设置模块自检</title>
+<style>body{font-family:Consolas,monospace;margin:14px}h1{font-size:15px}pre{font-size:14px;line-height:1.45}</style>
+</head><body><h1>v2.21.9 设置模块自检（需通过本地服务器打开，如 http://127.0.0.1:8000/tests/_v2219_selfcheck.html）</h1><pre id="out">running...</pre>
+<script>// v2.21.9 离线自检（浏览器打开本文件即可；需通过本地服务器访问，如 tests/start-servers.ps1 的 8000 端口）
+// 校验：① app.js / i18n.js 语法可解析 ② 数据占用统计（含账号分区键）③ 三类历史合并去重 ④ DATA_KEYS 清单
+async function main() {
+  const R = []; let P = 0, F = 0;
+  const T = (n, fn) => { try { fn(); R.push("PASS  " + n); P++; } catch (e) { R.push("FAIL  " + n + " :: " + (e.message || e)); F++; } };
+  const eq = (a, b, m) => { if (a !== b) throw new Error((m || "") + " exp=" + b + " got=" + a); };
+  const get = async (p) => (await fetch(p)).text();
+  const A = await get("../app.js"), I = await get("../i18n.js");
+  const AF = (async function () {}).constructor;
+  T("app.js 语法", () => new AF(A.replace(/^import .*$/gm, "")));
+  T("i18n.js 语法", () => new AF(I.replace(/^export /gm, "")));
+  const STG = A.slice(A.indexOf("const STG_APP_KEY"), A.indexOf("// v2.21.9：备份卡"));
+  const DK = A.slice(A.indexOf("const DATA_KEYS"), A.indexOf("const bakData"));
+  const MK = A.slice(A.indexOf("function makeSyncData"), A.indexOf("// 按 id 合并"));
+  const rsi = A.indexOf("return { s: (data.sessions");
+  const MG = A.slice(A.indexOf("function mergeSyncData(data) {"), A.indexOf("\n}", rsi) + 2);
+  const store = new Map();
+  const LS = { get length() { return store.size; }, key: (i) => [...store.keys()][i], getItem: (k) => (store.has(k) ? store.get(k) : null), setItem: (k, v) => store.set(k, String(v)), removeItem: (k) => store.delete(k) };
+  const els = {}; const $ = (id) => (els[id] = els[id] || { textContent: "", classList: { add() {}, remove() {}, toggle() {} } });
+  const t = (k, v) => k + "|" + JSON.stringify(v || {});
+  const sget = (k, d) => (store.has(k) ? JSON.parse(store.get(k)) : d);
+  const sset = (k, v) => store.set(k, JSON.stringify(v));
+  const ftHistory = () => sget("rehab_ft_history", []);
+  const paHistory = () => sget("rehab_pa_history", []);
+  const homeIndexHist = () => sget("rehab_home_idx", []);
+  const M = new Function("sget,sset,sdel,state,ftHistory,paHistory,homeIndexHist,loadCustomExercises,saveCustomExercises,invalidateCustom,$,t,localStorage",
+    STG + "\n" + DK + "\n" + MK + "\n" + MG + "\nreturn { stgStat, stgFmt, renderStorageSize, makeSyncData, mergeSyncData, DATA_KEYS };")(
+    sget, sset, (k) => store.delete(k), { collectBuf: [] }, ftHistory, paHistory, homeIndexHist, () => sget("rehab_custom_ex", []), (v) => sset("rehab_custom_ex", v), () => {}, $, t, LS);
+  T("stgFmt B/KB/MB", () => { eq(M.stgFmt(512), "512 B"); eq(M.stgFmt(2048), "2.0 KB"); eq(M.stgFmt(2 * 1048576), "2.00 MB"); });
+  T("数据占用计入账号分区键 u:邮箱:rehab_*", () => {
+    LS.setItem("rehab_sessions", "x".repeat(2000)); LS.setItem("u:a@b.com:rehab_sessions", "y".repeat(2000));
+    LS.setItem("u:a@b.com:rehab_collect", "z".repeat(1000)); LS.setItem("rehab_custom_ex", "c".repeat(500));
+    LS.setItem("rehab_lang", "\"zh\""); LS.setItem("other_app", "q".repeat(4000));
+    const g = M.stgStat();
+    eq(g.records > 4000, true, "records"); eq(g.collect > 900, true, "collect"); eq(g.custom > 400, true, "custom");
+    eq(g.total > 5000 && g.total < 7000, true, "total=" + g.total);
+  });
+  T("总量+分类明细渲染", () => { M.renderStorageSize(); eq($("storage-size").textContent.indexOf("stgSize"), 0); eq($("storage-break").textContent.indexOf("stgBreak"), 0); });
+  T("无数据文案", () => { store.clear(); M.renderStorageSize(); eq($("storage-break").textContent.indexOf("stgNone"), 0); });
+  T("DATA_KEYS 含三类历史（11 键）", () => { eq(M.DATA_KEYS.length, 11); ["rehab_ft_history", "rehab_pa_history", "rehab_home_idx", "rehab_plan", "rehab_profile"].forEach((k) => eq(M.DATA_KEYS.indexOf(k) >= 0, true, k)); });
+  T("makeSyncData v4 含三类历史", () => {
+    store.clear(); sset("rehab_ft_history", [{ key: "squat", ts: 1 }]); sset("rehab_pa_history", [{ kind: "walk", ts: 1 }]); sset("rehab_home_idx", [{ d: "2026-01-01", v: 50 }]);
+    const d = M.makeSyncData(); eq(d.v, 4); eq(d.ftHistory.length, 1); eq(d.paHistory.length, 1); eq(d.homeIdx.length, 1);
+  });
+  T("三类历史合并去重", () => {
+    store.clear(); sset("rehab_ft_history", [{ key: "squat", ts: 1 }, { key: "arm", ts: 2 }]); sset("rehab_pa_history", [{ kind: "walk", ts: 5 }]); sset("rehab_home_idx", [{ d: "2026-01-02", v: 50 }]);
+    M.mergeSyncData({ ftHistory: [{ key: "squat", ts: 1 }, { key: "squat", ts: 3 }], paHistory: [{ kind: "walk", ts: 5 }, { kind: "standing", ts: 6 }], homeIdx: [{ d: "2026-01-02", v: 99 }, { d: "2026-01-01", v: 10 }] });
+    const f = sget("rehab_ft_history", []); eq(f.length, 3, "ft"); eq(f[0].ts, 3, "ft 倒序");
+    const p = sget("rehab_pa_history", []); eq(p.length, 2, "pa"); eq(p[0].kind, "standing", "pa 倒序");
+    const h = sget("rehab_home_idx", []); eq(h.length, 2, "idx"); eq(h[0].d, "2026-01-02", "idx 倒序"); eq(h[0].v, 50, "同日保留本机");
+  });
+  T("功能测试历史上限 60", () => { store.clear(); const many = []; for (let i = 0; i < 80; i++) many.push({ key: "k", ts: i + 1 }); M.mergeSyncData({ ftHistory: many }); eq(sget("rehab_ft_history", []).length, 60); });
+  R.push("RESULT " + P + " PASS / " + F + " FAIL");
+  document.getElementById("out").textContent = R.join("\n");
+}
+main().catch((e) => { document.getElementById("out").textContent = "HARNESS ERROR: " + e.message; });</script>
+</body></html>

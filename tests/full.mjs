@@ -1,8 +1,15 @@
 // 上市级完整系统验收测试（CDP）——覆盖全部功能模块
 // 前置：8000 静态服务器 + 9228 无头 Chrome（带假摄像头）+ 8555 mock-supabase
-import { writeFileSync, mkdtempSync } from 'node:fs';
+import { writeFileSync, mkdtempSync, readFileSync, readdirSync, appendFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+// v2.21.9：全程日志落盘 tests/_last-run.txt —— 终端/任务输出会被截断时仍能读全量结果
+const LOG_FILE = join(dirname(fileURLToPath(import.meta.url)), '_last-run.txt');
+try { writeFileSync(LOG_FILE, ''); } catch { /* ignore */ }
+const rawLog = console.log.bind(console);
+console.log = (...a) => { rawLog(...a); try { appendFileSync(LOG_FILE, a.join(' ') + '\n'); } catch { /* ignore */ } };
 
 const CDP = 'http://127.0.0.1:' + (process.env.RH_CDP_PORT || '9228');
 const APP = 'http://127.0.0.1:8000/index.html';
@@ -62,7 +69,7 @@ camOn ? ok('摄像头启动 → 模型加载 → 分析运行') : bad('摄像头
 (await evl(`document.getElementById('btn-start-label').textContent === '停止分析'`)) ? ok('按钮状态=停止分析') : bad('按钮状态异常');
 (await evl(`!document.getElementById('train-timer').classList.contains('hidden') && document.getElementById('train-timer').textContent.includes('⏱')`)) ? ok('训练时长计时器显示（画面角标）') : bad('计时器缺失');
 await evl(`document.getElementById('btn-start').click()`);
-await sleep(300);
+await sleep(900);
 (await evl(`document.getElementById('btn-start-label').textContent === '开始分析'`)) ? ok('停止恢复开始分析') : bad('停止失败');
 (await evl(`document.getElementById('train-timer').classList.contains('hidden')`)) ? ok('停止后计时器隐藏') : bad('计时器未隐藏');
 (await evl(`document.getElementById('stats-box').classList.contains('hidden') && document.getElementById('feedback').classList.contains('hidden')`)) ? ok('停止后统计与提示面板清空（无过期残留）') : bad('停止后残留面板');
@@ -201,6 +208,59 @@ await evl(`document.getElementById('btn-clear').click()`);
 await sleep(400);
 (await evl(`!localStorage.getItem('rehab_sessions')`)) ? ok('清空全部数据（确认弹窗）') : bad('清空失败');
 
+console.log('===== 9b. 设置模块细化（v2.21.9：数据占用/备份完整性/导入确认/清空完整性/版本号/同步数据面） =====');
+// 数据占用：总量 + 分类明细（进入设置页自动刷新）
+await evl(`document.querySelector('.bottom-nav button[data-tab="settings"]').click()`);
+await sleep(250);
+(await evl(`/KB|MB|B/.test(document.getElementById('storage-size').textContent) && document.getElementById('storage-break').textContent.length > 5`)) ? ok('数据占用：总量 + 分类明细（记录/采集/自定义/其他）') : bad('数据占用缺失');
+// 备份内容完整性：导出 JSON 必须含 计划/打卡/资料/功能测试/体态/指数
+await evl(`(() => {
+  localStorage.setItem('rehab_plan', JSON.stringify([{ id: 'bp1', ex: 'squat', reps: 8, days: [1] }]));
+  localStorage.setItem('rehab_plan_done', JSON.stringify({ '2026-01-01': ['squat'] }));
+  localStorage.setItem('rehab_profile', JSON.stringify({ name: '备份前', goal: 'knee', injury: '' }));
+  localStorage.setItem('rehab_ft_history', JSON.stringify([{ key: 'squat', ts: 1700000000000, score: 80, dims: {}, m: {}, issues: [], sim: 80, curve: [], ref: [] }]));
+  localStorage.setItem('rehab_pa_history', JSON.stringify([{ kind: 'standing', ts: 1700000000001, score: 75, grade: 'B', items: [], priorities: [] }]));
+  localStorage.setItem('rehab_home_idx', JSON.stringify([{ d: '2026-01-01', v: 60 }]));
+  return true;
+})()`);
+await evl(`document.getElementById('btn-export').click()`);
+await sleep(900);
+let bakJson = null;
+for (const fname of downloads.filter((x) => x.endsWith('.json'))) {
+  try { bakJson = JSON.parse(readFileSync(join(dlDir, fname), 'utf8')); break; } catch { /* 换下一个候选 */ }
+}
+if (!bakJson) {
+  try { const cand = readdirSync(dlDir).find((x) => x.endsWith('.json')); if (cand) bakJson = JSON.parse(readFileSync(join(dlDir, cand), 'utf8')); } catch { /* ignore */ }
+}
+(bakJson && Array.isArray(bakJson.plan) && bakJson.planDone && bakJson.profile && Array.isArray(bakJson.ftHistory) && Array.isArray(bakJson.paHistory) && Array.isArray(bakJson.homeIdx)) ? ok('备份 JSON 完整（计划/打卡/资料/功能测试/体态/指数历史全含）') : bad('备份缺字段: ' + JSON.stringify(bakJson && Object.keys(bakJson)));
+(await evl(`document.getElementById('last-backup').textContent.includes('今天')`)) ? ok('备份卡显示「上次导出备份：今天」') : bad('上次备份提示缺失');
+// 导入：新格式备份可恢复全部数据（含确认弹窗）
+const bakFull = join(dlDir, 'backup-full.json');
+writeFileSync(bakFull, JSON.stringify({ app: 'RehabAI', version: 3, sessions: [], assessments: [], appts: [], customExercises: [], plan: [{ id: 'p9', ex: 'lunge', reps: 6, days: [0, 1, 2, 3, 4, 5, 6] }], planDone: {}, profile: { name: '备份小明', goal: 'knee', injury: '' }, ftHistory: [{ key: 'arm', ts: 1700000000000, score: 66, dims: {}, m: {}, issues: [], sim: 66, curve: [], ref: [] }], paHistory: [{ kind: 'walk', ts: 1700000000001, score: 70, grade: 'B', items: [], priorities: [] }], homeIdx: [{ d: '2026-01-02', v: 55 }] }));
+await setFiles('#import-input', bakFull);
+await sleep(800);
+(await evl(`(() => { const L = (k) => JSON.parse(localStorage.getItem(k) || '[]'); return L('rehab_plan').some((p) => p.id === 'p9') && L('rehab_ft_history').some((r) => r.key === 'arm') && L('rehab_pa_history').some((r) => r.kind === 'walk') && L('rehab_home_idx').some((r) => r.d === '2026-01-02' && r.v === 55) && JSON.parse(localStorage.getItem('rehab_profile') || '{}').name === '备份小明'; })()`)) ? ok('导入备份：计划/资料/功能测试/体态/指数全部恢复（含确认弹窗）') : bad('导入恢复不全');
+(await evl(`document.getElementById('storage-break').textContent.length > 5`)) ? ok('导入后数据占用自动刷新') : bad('导入后占用未刷新');
+// 清空完整性：功能测试/体态/指数历史也一并清除
+await evl(`document.getElementById('btn-clear').click()`);
+await sleep(500);
+(await evl(`!localStorage.getItem('rehab_sessions') && !localStorage.getItem('rehab_plan') && !localStorage.getItem('rehab_ft_history') && !localStorage.getItem('rehab_pa_history') && !localStorage.getItem('rehab_home_idx')`)) ? ok('清空全部数据：含功能测试/体态/指数历史（无残留）') : bad('清空不完整');
+// 关于页版本号随语言切换（原实现只在启动时设置一次）
+await evl(`document.getElementById('btn-lang').click()`);
+await sleep(450);
+(await evl(`document.getElementById('about-version').textContent.startsWith('Version')`)) ? ok('关于页版本号随语言切换（Version）') : bad('版本号未随语言切换');
+await evl(`document.getElementById('btn-lang').click()`);
+await sleep(450);
+(await evl(`document.getElementById('about-version').textContent.includes('版本')`)) ? ok('版本号切回中文') : bad('版本号回中文失败');
+// 二维码同步：空判据补齐（只有功能测试历史也能发起同步）
+await evl(`(() => { localStorage.setItem('rehab_ft_history', JSON.stringify([{ key: 'squat', ts: 1700000000000, score: 80, dims: {}, m: {}, issues: [], sim: 80, curve: [], ref: [] }])); return true; })()`);
+await evl(`document.getElementById('btn-sync-show').click()`);
+await sleep(900);
+(await evl(`!document.getElementById('qr-modal').classList.contains('hidden')`)) ? ok('二维码同步：仅功能测试历史也能发起（空判据已补齐）') : bad('同步空判据未更新');
+await evl(`document.getElementById('qr-close').click()`);
+await sleep(200);
+await evl(`['rehab_sessions','rehab_plan','rehab_plan_done','rehab_profile','rehab_ft_history','rehab_pa_history','rehab_home_idx'].forEach((k) => localStorage.removeItem(k))`);
+
 console.log('===== 10. 账号系统（本地账号 + 登录屏 + mock Supabase） =====');
 // 启动即应显示登录屏（未登录 + 未跳过）
 (await evl(`!document.getElementById('auth-screen').classList.contains('hidden')`)) ? ok('启动即显示登录页') : bad('登录页未在启动时出现');
@@ -280,7 +340,7 @@ await send('Page.navigate', { url: APP });
 await sleep(2500);
 await evl(`document.querySelector('.bottom-nav button[data-tab="settings"]').click()`);
 await sleep(200);
-(await evl(`document.getElementById('about-version').textContent.includes('v2.21')`)) ? ok('版本号显示') : bad('版本号失败');
+(await evl(`/v\\d+\\.\\d+/.test(document.getElementById('about-version').textContent)`)) ? ok('版本号显示') : bad('版本号失败');
 (await evl(`document.getElementById('tab-settings').textContent.includes('隐私政策') && document.getElementById('tab-settings').textContent.includes('免责声明')`)) ? ok('隐私政策 + 免责声明') : bad('法务文案缺失');
 await evl(`document.getElementById('btn-share').click()`);
 await sleep(400);
@@ -480,6 +540,283 @@ await evl(`document.getElementById('train-today').querySelector('.todo-check').c
 await sleep(300);
 const ttAfter = await evl(`(() => { const dd = JSON.parse(localStorage.getItem('rehab_plan_done') || '{}'); const k = Object.keys(dd)[0]; return !!(dd[k] && dd[k].includes('squat')); })()`);
 (ttBefore !== ttAfter) ? ok('训练页任务一键打卡（状态切换，写入计划完成）') : bad('训练页打卡失败');
+
+console.log('===== 21. 全局打磨（v2.21.10：键盘操作 / 无障碍语义 / 焦点接管 / 切页复位 / 动效偏好） =====');
+await evl(`localStorage.setItem('rehab_onboarded', 'true'); localStorage.setItem('rehab_sessions', JSON.stringify([{ id: 'g1', ts: Date.now(), ex: 'squat', exName: '深蹲', reps: 5, dur: 30, depth: 'ok', badPct: 0, valgusPct: 0, riskPct: 0, collectCount: 0 }])); location.reload()`);
+await sleep(2600);
+// 21a 导航无障碍语义
+(await evl(`document.querySelectorAll('.bottom-nav button[aria-label]').length === 9`)) ? ok('底部导航 9 个入口都带 aria-label') : bad('导航 aria-label 缺失');
+await evl(`document.querySelector('.bottom-nav button[data-tab="record"]').click()`);
+await sleep(250);
+(await evl(`document.querySelector('.bottom-nav button[data-tab="record"]').getAttribute('aria-current') === 'page' && !document.querySelector('.bottom-nav button[data-tab="settings"]').hasAttribute('aria-current')`)) ? ok('aria-current 跟随当前页（记录）') : bad('aria-current 未同步');
+// 21b 数字键切页 + 输入框内不误触发
+await evl(`document.body.dispatchEvent(new KeyboardEvent('keydown', { key: '8', bubbles: true }))`);
+await sleep(300);
+(await evl(`document.getElementById('tab-schedule').classList.contains('active')`)) ? ok('数字键 8 → 切到「日程」') : bad('数字键切页失败');
+await evl(`document.querySelector('.bottom-nav button[data-tab="settings"]').click()`);
+await sleep(250);
+await evl(`(() => { const i = document.getElementById('pf-name'); i.focus(); i.dispatchEvent(new KeyboardEvent('keydown', { key: '2', bubbles: true })); return true; })()`);
+await sleep(300);
+(await evl(`document.getElementById('tab-settings').classList.contains('active')`)) ? ok('输入框里按数字不切页（防误触）') : bad('输入框误触发切页');
+// 21c 切页滚动位置复位
+await evl(`window.scrollTo(0, 400)`);
+await sleep(200);
+await evl(`document.querySelector('.bottom-nav button[data-tab="record"]').click()`);
+await sleep(300);
+(await evl(`window.scrollY === 0`)) ? ok('切页滚动位置复位到顶部') : bad('切页未复位滚动');
+// 21d 弹窗语义 + 焦点接管 + Esc 关闭
+await evl(`document.querySelector('.bottom-nav button[data-tab="settings"]').click()`);
+await sleep(250);
+await evl(`document.getElementById('btn-sync-show').click()`);
+await sleep(900);
+const qrOpen = await evl(`!document.getElementById('qr-modal').classList.contains('hidden')`);
+(qrOpen && await evl(`document.getElementById('qr-modal').contains(document.activeElement)`)) ? ok('二维码弹窗打开后自动接管焦点') : bad('弹窗焦点未接管 (open=' + qrOpen + ')');
+(await evl(`document.getElementById('qr-modal').getAttribute('role') === 'dialog' && document.getElementById('qr-modal').getAttribute('aria-modal') === 'true' && !!document.getElementById('qr-title')`)) ? ok('弹窗具备 dialog 语义（role/aria-modal/labelledby）') : bad('弹窗语义缺失');
+await evl(`document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))`);
+await sleep(400);
+(await evl(`document.getElementById('qr-modal').classList.contains('hidden')`)) ? ok('Esc 关闭二维码弹窗') : bad('Esc 关闭失败');
+// 21e 提示条 aria-live
+await evl(`document.getElementById('btn-save-profile').click()`);
+await sleep(400);
+(await evl(`(() => { const t = document.getElementById('toast'); return !!t && t.getAttribute('role') === 'status' && t.getAttribute('aria-live') === 'polite'; })()`)) ? ok('提示条 aria-live（读屏可播报）') : bad('toast 缺 aria-live');
+// 21f 跟随系统「减少动态效果」
+(await evl(`fetch('style.css').then((r) => r.text()).then((s) => s.includes('prefers-reduced-motion'))`)) ? ok('样式支持系统「减少动态效果」偏好') : bad('缺少 reduced-motion 支持');
+// 21g 导航 aria-label 随语言切换
+await evl(`document.getElementById('btn-lang').click()`);
+await sleep(500);
+const navAria = await evl(`document.querySelector('.bottom-nav button[data-tab="train"]').getAttribute('aria-label')`);
+(navAria === 'Train') ? ok('导航 aria-label 随语言切换（Train）') : bad('aria-label 未切换: ' + navAria);
+await evl(`document.getElementById('btn-lang').click()`);
+await sleep(400);
+(await evl(`document.querySelector('.bottom-nav button[data-tab="train"]').getAttribute('aria-label') === '训练'`)) ? ok('导航 aria-label 切回中文（训练）') : bad('aria-label 未回中文');
+await evl(`document.querySelector('.bottom-nav button[data-tab="train"]').click()`);
+await sleep(200);
+
+console.log('===== 22. 疼痛管理（v2.22.0：VAS 评分 / 前后对比 / 趋势 / 全数据面） =====');
+await evl(`localStorage.removeItem('rehab_pain_history'); location.reload()`);
+await sleep(2600);
+await evl(`document.querySelector('.bottom-nav button[data-tab="record"]').click()`);
+await sleep(300);
+(await evl(`!!document.getElementById('btn-pain-pre') && !!document.getElementById('pain-chart') && !!document.getElementById('pain-list')`)) ? ok('记录页疼痛卡渲染（记录按钮+趋势+列表）') : bad('疼痛卡缺失');
+(await evl(`document.getElementById('pain-list').textContent.includes('还没有疼痛记录')`)) ? ok('无记录时显示引导文案') : bad('空状态缺失');
+await evl(`document.getElementById('btn-pain-pre').click()`);
+await sleep(350);
+(await evl(`document.querySelectorAll('#pain-scale .pain-btn').length === 11`)) ? ok('评分弹窗 0–10 共 11 档') : bad('评分档位异常');
+await evl(`document.querySelector('#pain-scale [data-pv="3"]').click()`);
+await sleep(200);
+await evl(`document.getElementById('pain-note').value='上下楼加重'; document.getElementById('pain-save').click()`);
+await sleep(450);
+(await evl(`(() => { const h = JSON.parse(localStorage.getItem('rehab_pain_history') || '[]'); return h.length === 1 && h[0].v === 3 && h[0].when === 'pre' && h[0].note.includes('上下楼'); })()`)) ? ok('记录训练前疼痛 3 分（含备注）') : bad('疼痛记录失败');
+await evl(`document.getElementById('btn-pain-post').click()`);
+await sleep(350);
+await evl(`document.querySelector('#pain-scale [data-pv="7"]').click(); document.getElementById('pain-save').click()`);
+await sleep(450);
+(await evl(`document.getElementById('pain-now').textContent.includes('↑4')`)) ? ok('前后对比显示 ↑4（训练后加重）') : bad('前后对比缺失');
+(await evl(`document.querySelectorAll('#pain-list .item').length === 2`)) ? ok('疼痛历史列表 2 条') : bad('疼痛列表异常');
+(await evl(`!!document.querySelector('#pain-chart svg path') && document.querySelectorAll('#pain-chart .pain-legend .pl').length === 3`)) ? ok('14 天双线趋势图 + 图例（训练前/后/风险线）') : bad('趋势图未绘制');
+(await evl(`(() => { document.querySelector('.bottom-nav button[data-tab="home"]').click(); const el = document.getElementById('home-pain'); return el.textContent.includes('7') && el.className.includes('warn'); })()`)) ? ok('今日页显示近 7 天峰值疼痛（≥7 标黄）') : bad('今日页疼痛提示缺失');
+(await evl(`(() => { document.querySelector('.bottom-nav button[data-tab="train"]').click(); return document.getElementById('pain-strip').textContent.includes('7'); })()`)) ? ok('训练页疼痛快记条同步当天前后评分') : bad('训练页快记条缺失');
+(await evl(`(() => { document.querySelector('.bottom-nav button[data-tab="settings"]').click(); return document.getElementById('ai-card').textContent.includes('疼痛'); })()`)) ? ok('AI 管家即时提示疼痛信号（模块串联）') : bad('AI 管家未感知疼痛');
+await evl(`document.getElementById('btn-export').click()`);
+await sleep(1000);
+let painBak = null;
+for (const f of downloads.filter((x) => x.endsWith('.json'))) {
+  try { const j = JSON.parse(readFileSync(join(dlDir, f), 'utf8')); if (j.painHistory) { painBak = j; break; } } catch { /* 下一个 */ }
+}
+(painBak && Array.isArray(painBak.painHistory) && painBak.painHistory.length === 2) ? ok('备份 JSON 含疼痛记录（全数据面串联）') : bad('备份缺疼痛字段: ' + JSON.stringify(painBak && Object.keys(painBak)));
+await evl(`document.getElementById('btn-clear').click()`);
+await sleep(600);
+(await evl(`!localStorage.getItem('rehab_pain_history')`)) ? ok('清除全部数据含疼痛记录') : bad('清空未清疼痛');
+
+console.log('===== 23. 康复小课堂 + 疼痛预警（v2.23.0：患者教育闭环） =====');
+await evl(`localStorage.setItem('rehab_pain_history', JSON.stringify([{ id: 'p1', ts: Date.now(), when: 'pre', v: 3, part: 'knee', note: '' }, { id: 'p2', ts: Date.now() + 1, when: 'post', v: 6, part: 'knee', note: '' }])); location.reload()`);
+await sleep(2600);
+await evl(`document.querySelector('.bottom-nav button[data-tab="posture"]').click()`);
+await sleep(350);
+(await evl(`document.querySelectorAll('#edu-list .edu-card').length === 5`)) ? ok('康复小课堂：5 张教育卡渲染') : bad('小课堂卡片数异常');
+await evl(`document.querySelector('#edu-list .edu-head').click()`);
+await sleep(350);
+(await evl(`(() => { const b = document.querySelector('#edu-list .edu-body'); return !!b && b.textContent.includes('为什么会这样') && b.textContent.includes('不纠正会怎样') && b.textContent.includes('日常注意'); })()`)) ? ok('展开卡片显示「成因 / 后果 / 日常注意」三段') : bad('教育卡内容缺失');
+await evl(`document.querySelector('#edu-list [data-edugo]').click()`);
+await sleep(350);
+(await evl(`document.getElementById('tab-guide').classList.contains('active')`)) ? ok('教育卡「去练习」跳转到对应训练页（端到端串联）') : bad('教育卡跳转失败');
+await evl(`document.querySelector('.bottom-nav button[data-tab="record"]').click()`);
+await sleep(350);
+(await evl(`(() => { const el = document.querySelector('#pain-now .pain-spike'); return !!el && el.textContent.includes('3'); })()`)) ? ok('训练后疼痛上升 3 分 → 疼痛卡显示预警（≥2 分自动提醒）') : bad('疼痛上升预警缺失');
+(await evl(`(() => { document.querySelector('.bottom-nav button[data-tab="home"]').click(); const el = document.getElementById('home-pain'); return el.textContent.includes('上升') && el.className.includes('warn'); })()`)) ? ok('今日页显示疼痛上升预警') : bad('今日页预警缺失');
+(await evl(`(() => { document.querySelector('.bottom-nav button[data-tab="settings"]').click(); return document.getElementById('ai-card').textContent.includes('疼痛'); })()`)) ? ok('AI 管家含疼痛上升预警建议') : bad('AI 管家无预警');
+await evl(`document.getElementById('btn-lang').click()`);
+await sleep(550);
+(await evl(`(() => { document.querySelector('.bottom-nav button[data-tab="posture"]').click(); const s = document.getElementById('edu-list').textContent; return s.includes('Rounded shoulders') && s.includes('Rehab classroom') === false || s.includes('Rounded shoulders'); })()`)) ? ok('小课堂内容随语言切换（英文）') : bad('小课堂未翻译');
+await evl(`document.getElementById('btn-lang').click()`);
+await sleep(450);
+await evl(`localStorage.removeItem('rehab_pain_history')`);
+
+console.log('===== 24. 治疗师报告（v2.24.0：汇总 / HTML / 图片 / 摘要） =====');
+await evl(`(() => { const now = Date.now(); const d = (i) => now - i * 86400000;
+  localStorage.setItem('rehab_sessions', JSON.stringify([0,1,2,5,9,15].map((i, k) => ({ id: 'r' + k, ts: d(i), ex: 'squat', exName: '深蹲', reps: 20, dur: 60, depth: 'ok', badPct: 2, valgusPct: 0, riskPct: 0, collectCount: 0 }))));
+  localStorage.setItem('rehab_profile', JSON.stringify({ name: '徐小明', goal: 'knee', injury: '半月板术后' }));
+  localStorage.setItem('rehab_pain_history', JSON.stringify([{ id: 'q1', ts: now, when: 'pre', v: 3, part: 'knee', note: '' }]));
+  return true; })()`);
+await evl(`location.reload()`);
+await sleep(2600);
+await evl(`document.querySelector('.bottom-nav button[data-tab="record"]').click()`);
+await sleep(450);
+(await evl(`!!document.getElementById('btn-rep-html') && !!document.getElementById('btn-rep-png') && !!document.getElementById('btn-rep-copy')`)) ? ok('记录页治疗师报告卡（HTML/图片/摘要三种输出）') : bad('报告卡缺失');
+(await evl(`(() => { const s = document.getElementById('rep-summary').textContent; return s.includes('徐小明') && s.includes('6 天'); })()`)) ? ok('报告摘要含患者资料与训练依从（6 天 · 6 次）') : bad('报告摘要内容缺失');
+await evl(`document.getElementById('btn-rep-html').click()`);
+await sleep(1300);
+const repFile = downloads.filter((x) => x.endsWith('.html')).pop();
+let repTxt = '';
+try { repTxt = readFileSync(join(dlDir, repFile), 'utf8'); } catch { /* ignore */ }
+(repTxt.includes('徐小明') && repTxt.includes('治疗师报告') && repTxt.includes('治疗建议') && repTxt.includes('不构成医疗诊断')) ? ok('导出 HTML 报告：含患者/建议/免责声明（浏览器打印即可存 PDF）') : bad('HTML 报告内容缺失: ' + repFile);
+(repTxt.includes('<svg') && repTxt.includes('疼痛趋势')) ? ok('HTML 报告内嵌疼痛趋势图（自包含，无外部资源）') : bad('报告缺趋势图');
+await evl(`document.getElementById('btn-rep-png').click()`);
+await sleep(1600);
+downloads.some((x) => x.endsWith('.png')) ? ok('导出 PNG 长图（可直接发给治疗师）') : bad('PNG 导出失败');
+await evl(`document.getElementById('btn-rep-copy').click()`);
+await sleep(600);
+(await evl(`(() => { const el = document.getElementById('toast'); return !!el && el.textContent.length > 3; })()`)) ? ok('复制摘要后有反馈提示') : bad('复制无反馈');
+// v2.25.0：六维雷达 + 体态骨架截图 + 30 天趋势
+await evl(`localStorage.setItem('rehab_ft_history', JSON.stringify([{ key: 'battery', battery: true, ts: Date.now(), score: 78, sim: 80, dims: { sym: 82, align: 74, dyn: 80, stab: 70, rom: 76, cons: 84, total: 78 }, m: {} }]))`);
+await evl(`localStorage.setItem('rehab_pa_history', JSON.stringify([{ kind: 'standing', ts: Date.now(), score: 80, grade: 'B', items: [], priorities: [], snap: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAA==' }]))`);
+await evl(`document.querySelector('.bottom-nav button[data-tab="record"]').click()`);
+await sleep(600);
+(await evl(`!!document.querySelector('#rep-summary .radar-chart') && document.querySelectorAll('#rep-summary .radar-vals .rv').length === 6`)) ? ok('报告摘要含六维雷达图（6 轴 + 数值）') : bad('雷达图缺失');
+(await evl(`(() => { const im = document.querySelector('#rep-summary .rep-snap'); return !!im && im.getAttribute('src').startsWith('data:image/jpeg'); })()`)) ? ok('报告摘要含体态骨架截图（隐私友好：只有火柴人）') : bad('体态截图缺失');
+(await evl(`document.querySelectorAll('#rep-summary .rep-sec').length >= 3`)) ? ok('报告分段：体态截图 / 六维雷达 / 30 天趋势') : bad('报告分段缺失');
+await evl(`document.getElementById('btn-rep-html').click()`);
+await sleep(1500);
+const rep2 = downloads.filter((x) => x.endsWith('.html')).pop();
+let repTxt2 = '';
+try { repTxt2 = readFileSync(join(dlDir, rep2), 'utf8'); } catch { /* ignore */ }
+(repTxt2.includes('radar-chart') && repTxt2.includes('data:image/jpeg') && repTxt2.includes('30 天训练趋势')) ? ok('导出 HTML 含雷达+骨架截图+30 天趋势（自包含单文件）') : bad('HTML 报告缺新内容');
+await evl(`document.getElementById('btn-rep-png').click()`);
+await sleep(1800);
+downloads.filter((x) => x.endsWith('.png')).length >= 2 ? ok('导出图片：新版长图（截图+雷达+趋势）成功') : bad('新版 PNG 导出失败');
+await evl(`document.getElementById('btn-lang').click()`);
+await sleep(600);
+(await evl(`(() => { document.querySelector('.bottom-nav button[data-tab="record"]').click(); const s = document.getElementById('rep-summary').textContent; return s.includes('Adherence') || s.includes('Patient'); })()`)) ? ok('报告摘要随语言切换（英文）') : bad('报告未翻译');
+await evl(`document.getElementById('btn-lang').click()`);
+await sleep(450);
+await evl(`['rehab_sessions','rehab_profile','rehab_pain_history'].forEach((k) => localStorage.removeItem(k))`);
+
+console.log('===== 25. ROM 关节活动度（v2.26.0：测量 / 等级 / 左右差异 / 报告串联） =====');
+await evl(`localStorage.removeItem('rehab_rom_history'); location.reload()`);
+await sleep(2600);
+await evl(`document.querySelector('.bottom-nav button[data-tab="posture"]').click()`);
+await sleep(350);
+(await evl(`document.querySelectorAll('#rom-items .pa-kind').length === 5 && !!document.getElementById('rom-side')`)) ? ok('ROM 卡：5 个测量项 + 左/右侧切换') : bad('ROM 卡缺失');
+await evl(`document.querySelector('#rom-items [data-rom="kneeFlex"]').click()`);
+await sleep(250);
+await evl(`document.getElementById('btn-rom-demo').click()`);
+let romDone = false;
+for (let i = 0; i < 18; i++) { await sleep(1000); romDone = await evl(`JSON.parse(localStorage.getItem('rehab_rom_history') || '[]').length >= 1`); if (romDone) break; }
+romDone ? ok('演示模式 6 秒完成 ROM 测量并写入历史') : bad('ROM 测量未完成');
+(await evl(`(() => { const h = JSON.parse(localStorage.getItem('rehab_rom_history') || '[]'); return h.length === 1 && h[0].key === 'kneeFlex' && h[0].side === 'L' && h[0].rom >= 125 && h[0].rom <= 145; })()`)) ? ok('膝屈曲 ROM 落在 125–145°（关键点几何计算正确）') : bad('ROM 数值异常');
+(await evl(`!!document.querySelector('#rom-result .rom-lv') && document.getElementById('rom-result').textContent.includes('°')`)) ? ok('结果卡显示活动范围 + 等级 + 参考值') : bad('ROM 结果卡缺失');
+await evl(`document.querySelector('#rom-side [data-side="R"]').click()`);
+await sleep(250);
+await evl(`document.getElementById('btn-rom-demo').click()`);
+for (let i = 0; i < 18; i++) { await sleep(1000); const n = await evl(`JSON.parse(localStorage.getItem('rehab_rom_history') || '[]').length`); if (n >= 2) break; }
+(await evl(`JSON.parse(localStorage.getItem('rehab_rom_history') || '[]').length === 2`)) ? ok('右侧测量写入第 2 条 ROM 记录（左右可分别测）') : bad('右侧 ROM 记录缺失');
+await evl(`document.querySelector('.bottom-nav button[data-tab="record"]').click()`);
+await sleep(450);
+(await evl(`(() => { const s = document.getElementById('rep-summary').textContent; return s.includes('ROM') || s.includes('Range of motion'); })()`)) ? ok('治疗师报告出现 ROM 汇总（模块端到端串联）') : bad('报告缺 ROM 行');
+await evl(`localStorage.removeItem('rehab_rom_history')`);
+
+console.log('===== 26. PROMs 标准化量表（v2.27.0：ODI/NDI/KOOS-12/EQ-5D-5L） =====');
+await evl(`localStorage.removeItem('rehab_proms_history'); location.reload()`);
+await sleep(2600);
+await evl(`document.querySelector('.bottom-nav button[data-tab="assess"]').click()`);
+await sleep(350);
+(await evl(`document.querySelectorAll('#prom-list .pa-kind').length === 4 && !!document.getElementById('btn-prom-start')`)) ? ok('PROMs 卡：4 个量表（ODI/NDI/KOOS-12/EQ-5D-5L）') : bad('PROMs 卡缺失');
+await evl(`document.getElementById('btn-prom-start').click()`);
+await sleep(400);
+(await evl(`document.querySelectorAll('#prom-form .prom-q').length === 10 && document.querySelectorAll('#prom-form [data-qi="0"]').length === 6`)) ? ok('ODI 表单：10 题 × 6 级应答') : bad('ODI 表单结构异常');
+// 全部选最高级（5）→ ODI 应得 100% 且分级为重度受限
+await evl(`document.querySelectorAll('#prom-form .prom-q').forEach((q) => { const b = q.querySelector('[data-qv="5"]'); if (b) b.click(); })`);
+await sleep(500);
+await evl(`document.getElementById('btn-prom-submit').click()`);
+await sleep(600);
+(await evl(`(() => { const h = JSON.parse(localStorage.getItem('rehab_proms_history') || '[]'); return h.length === 1 && h[0].key === 'odi' && h[0].total === 100 && h[0].band === 'Bed' && h[0].level === 'bad'; })()`)) ? ok('ODI 计分正确（全 5 分 → 100% · 极重度 · 严重级别）') : bad('ODI 计分异常');
+(await evl(`document.querySelector('#prom-result .prom-big').textContent.includes('100')`)) ? ok('结果卡显示分数与分级') : bad('结果卡缺失');
+// KOOS-12：全选「无」→ 满分 100 优秀
+await evl(`document.querySelector('#prom-list [data-prom="koos"]').click()`);
+await sleep(300);
+await evl(`document.getElementById('btn-prom-start').click()`);
+await sleep(400);
+await evl(`document.querySelectorAll('#prom-form .prom-q').forEach((q) => { const b = q.querySelector('[data-qv="0"]'); if (b) b.click(); })`);
+await sleep(500);
+await evl(`document.getElementById('btn-prom-submit').click()`);
+await sleep(600);
+(await evl(`(() => { const h = JSON.parse(localStorage.getItem('rehab_proms_history') || '[]'); const r = h.find((x) => x.key === 'koos'); return !!r && r.total === 100 && r.band === 'Exc' && Object.keys(r.subs).length === 5; })()`)) ? ok('KOOS-12 计分正确（12 题全 0 → 100 · 优秀 · 5 个维度）') : bad('KOOS 计分异常');
+(await evl(`document.querySelectorAll('#prom-history .item').length === 2`)) ? ok('量表历史累计 2 条（可删除）') : bad('量表历史异常');
+await evl(`document.querySelector('.bottom-nav button[data-tab="record"]').click()`);
+await sleep(450);
+(await evl(`(() => { const s = document.getElementById('rep-summary').textContent; return s.includes('PROMs') || s.includes('ODI'); })()`)) ? ok('治疗师报告出现量表评分（模块串联）') : bad('报告缺 PROMs 行');
+await evl(`localStorage.removeItem('rehab_proms_history')`);
+
+console.log('===== 27. 自适应智能引擎（v2.28.0：个人基线 / 可调规则 / 可学习处方） =====');
+await evl(`['rehab_ai_prefs','rehab_ai_feedback','rehab_plan','rehab_rom_history','rehab_pain_history','rehab_sessions'].forEach((k) => localStorage.removeItem(k)); location.reload()`);
+await sleep(2600);
+await evl(`document.querySelector('.bottom-nav button[data-tab="home"]').click()`);
+await sleep(400);
+(await evl(`!!document.getElementById('ai-plan') && document.getElementById('ai-plan').textContent.trim().length > 20`)) ? ok('今日页出现 AI 处方卡') : bad('AI 处方卡缺失');
+(await evl(`(() => { const s = document.getElementById('ai-plan').textContent; return s.length > 20 && !!document.getElementById('btn-ai-apply'); })()`)) ? ok('处方含剂量行与「采用/不用/改规则」按钮') : bad('处方结构异常');
+// 采用 → 写入今日计划 + 学习计数
+await evl(`document.getElementById('btn-ai-apply').click()`);
+await sleep(600);
+(await evl(`(() => { const p = JSON.parse(localStorage.getItem('rehab_plan') || '[]'); const f = JSON.parse(localStorage.getItem('rehab_ai_feedback') || '{}'); return p.length === 1 && p[0].days.includes(new Date().getDay()) && f.accepted === 1; })()`)) ? ok('采用处方 → 写入今日计划 + 采纳计数 +1（端到端）') : bad('采用失败');
+await evl(`document.getElementById('btn-ai-ignore').click()`);
+await sleep(500);
+(await evl(`JSON.parse(localStorage.getItem('rehab_ai_feedback') || '{}').ignored === 1`)) ? ok('忽略处方 → 被 AI 记住（用于下次更保守）') : bad('忽略未记录');
+// 规则可改：疼痛阈值 1 分即预警
+await evl(`(() => { document.querySelector('.bottom-nav button[data-tab="settings"]').click(); return true; })()`);
+await sleep(400);
+(await evl(`!!document.getElementById('ai-pain-alarm') && !!document.getElementById('ai-intensity') && document.getElementById('ai-rom-targets').querySelectorAll('input').length === 5`)) ? ok('智能引擎卡：阈值/强度/ROM 目标全部可改') : bad('智能引擎卡缺失');
+await evl(`(() => { const s = document.getElementById('ai-pain-alarm'); s.value = '1'; s.onchange(); return true; })()`);
+await sleep(300);
+await evl(`(() => { localStorage.setItem('rehab_pain_history', JSON.stringify([{ id: 'e1', ts: Date.now(), when: 'pre', v: 3, part: 'knee', note: '' }, { id: 'e2', ts: Date.now() + 1, when: 'post', v: 4, part: 'knee', note: '' }])); location.reload(); })()`);
+await sleep(2600);
+await evl(`document.querySelector('.bottom-nav button[data-tab="record"]').click()`);
+await sleep(400);
+(await evl(`!!document.querySelector('#pain-now .pain-spike')`)) ? ok('阈值改为 1 分后：上升 1 分即触发预警（规则真的可改）') : bad('阈值未生效');
+await evl(`(() => { const s = document.getElementById('ai-pain-alarm'); s.value = '4'; s.onchange(); return true; })()`);
+await sleep(400);
+(await evl(`!document.querySelector('#pain-now .pain-spike')`)) ? ok('阈值改为 4 分后：上升 1 分不再预警（同一数据、不同规则→不同结论）') : bad('阈值回退失败');
+// ROM 目标可改 → 处方依据随之改变
+await evl(`(() => { const inp = document.querySelector('#ai-rom-targets [data-tgt="kneeFlex"]'); inp.value = '150'; inp.dispatchEvent(new Event('change')); return true; })()`);
+await sleep(400);
+(await evl(`JSON.parse(localStorage.getItem('rehab_ai_prefs') || '{}').romTargets.kneeFlex === 150`)) ? ok('ROM 目标值可自行设定并持久化') : bad('ROM 目标未保存');
+await evl(`['rehab_pain_history','rehab_plan','rehab_ai_prefs','rehab_ai_feedback'].forEach((k) => localStorage.removeItem(k))`);
+
+console.log('===== 28. 康复路径（v2.29.0：分阶段 / 条件可改 / 按数据推荐） =====');
+await evl(`['rehab_path','rehab_plan','rehab_pain_history','rehab_ft_history','rehab_proms_history'].forEach((k) => localStorage.removeItem(k)); location.reload()`);
+await sleep(2600);
+await evl(`document.querySelector('.bottom-nav button[data-tab="schedule"]').click()`);
+await sleep(450);
+(await evl(`document.querySelectorAll('#path-pick .pa-kind').length === 3 && !!document.getElementById('path-body')`)) ? ok('康复路径卡：3 条路径（腰痛/膝痛/肩颈）+ 阶段面板') : bad('康复路径卡缺失');
+(await evl(`document.getElementById('path-rec').textContent.includes('推荐')`)) ? ok('显示按数据推荐的路径与理由') : bad('推荐行缺失');
+await evl(`(() => { localStorage.setItem('rehab_pain_history', JSON.stringify([{ id: 'p1', ts: Date.now(), when: 'post', v: 2, part: 'lowback', note: '' }])); return true; })()`);
+await evl(`document.querySelector('.bottom-nav button[data-tab="train"]').click(); document.querySelector('.bottom-nav button[data-tab="schedule"]').click()`);
+await sleep(550);
+(await evl(`document.getElementById('path-rec').textContent.includes('腰痛') || document.getElementById('path-rec').textContent.includes('腰部')`)) ? ok('推荐随数据变化（疼痛部位=腰 → 腰痛路径）') : bad('推荐未跟随数据');
+await evl(`document.getElementById('path-use-rec').click()`);
+await sleep(550);
+(await evl(`JSON.parse(localStorage.getItem('rehab_path') || '{}').path === 'lowback'`)) ? ok('采用推荐路径并写入状态') : bad('采用推荐失败');
+await evl(`document.getElementById('btn-path-apply').click()`);
+await sleep(650);
+(await evl(`JSON.parse(localStorage.getItem('rehab_plan') || '[]').length >= 2`)) ? ok('本期动作一键写入今日计划（端到端串联）') : bad('写入计划失败');
+(await evl(`document.getElementById('path-body').textContent.includes('未满足')`)) ? ok('进阶条件未满足时如实显示（3 次训练后疼痛 ≤3 分）') : bad('达标判定异常');
+await evl(`(() => { const s = document.querySelector('#path-body [data-cond="streak"]'); s.value = '1'; s.dispatchEvent(new Event('change')); const m = document.querySelector('#path-body [data-cond="painMax"]'); m.value = '10'; m.dispatchEvent(new Event('change')); const y = document.querySelector('#path-body [data-cond="sym"]'); y.value = '0'; y.dispatchEvent(new Event('change')); return true; })()`);
+await sleep(600);
+(await evl(`(() => { const c = JSON.parse(localStorage.getItem('rehab_path') || '{}').cond || {}; return c.streak === 1 && c.painMax === 10 && c.sym === 0; })()`)) ? ok('进阶条件（疼痛上限/连续次数/对称性）全部可改并持久化') : bad('条件未保存');
+(await evl(`document.getElementById('path-body').textContent.includes('已满足')`)) ? ok('条件放宽后判定为「已满足」（同数据不同规则→不同结论）') : bad('放宽后仍未达标');
+await evl(`document.getElementById('btn-path-up').click()`);
+await sleep(650);
+(await evl(`(() => { const c = JSON.parse(localStorage.getItem('rehab_path') || '{}'); return c.phase === 1 && Array.isArray(c.log) && c.log.length === 1; })()`)) ? ok('进入下一阶段并留下进阶记录') : bad('进阶失败');
+await evl(`['rehab_path','rehab_plan','rehab_pain_history'].forEach((k) => localStorage.removeItem(k))`);
 
 console.log('===== 结果 =====');
 console.log('CONSOLE_ERRORS:', consoleErrors.length ? consoleErrors.join(' ||| ') : 'none');

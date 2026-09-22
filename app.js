@@ -93,7 +93,7 @@ function migrateDeviceData(email) {
 }
 const fmtDate = (ts) => new Date(ts).toLocaleString(locale(), { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-const APP_VERSION = 'v2.21.8';
+const APP_VERSION = 'v2.29.0';
 const exName = (e) => (e.custom ? e.name : t(e.nameKey));
 const exDesc = (e) => (e.custom ? e.desc : t(e.descKey));
 const depthTxt = (d) => t('depth' + (d ? d.charAt(0).toUpperCase() + d.slice(1) : 'Ok')) || d;
@@ -1374,25 +1374,53 @@ $('btn-clear-collect').addEventListener('click', () => {
   if (!confirm(t('confirmClearCollect'))) return;
   state.collectBuf = []; sset('rehab_collect', []);
   renderCollectCount();
+  renderStorageSize();   // v2.21.9：采集数据清空后同步刷新「本机数据占用」
   toast(t('toastClearedCollect'));
 });
 
 /* ============ 设置页：导出 / 导入 / 清空 ============ */
+// v2.21.9：本机数据键清单（备份 / 导入 / 清空共用同一份，新增数据模块时只改这里，防遗漏）
+const DATA_KEYS = [
+  'rehab_sessions', 'rehab_assessments', 'rehab_appts', 'rehab_custom_ex', 'rehab_collect',
+  'rehab_plan', 'rehab_plan_done', 'rehab_profile',
+  'rehab_ft_history', 'rehab_pa_history', 'rehab_home_idx',
+  'rehab_pain_history',
+  'rehab_rom_history',
+  'rehab_proms_history',
+  'rehab_ai_prefs',
+  'rehab_path',
+];
+const bakCount = (a) => (Array.isArray(a) ? a.length : 0);
+// v2.21.9：备份内容补全（原缺 计划/计划打卡/个人资料/功能测试/体态报告/运动指数历史）
+const bakData = () => ({
+  app: '康复AI', version: 3, exportedAt: new Date().toISOString(),
+  sessions: sget('rehab_sessions', []),
+  assessments: sget('rehab_assessments', []),
+  appts: sget('rehab_appts', []),
+  customExercises: loadCustomExercises(),
+  collect: state.collectBuf,
+  plan: sget('rehab_plan', []),
+  planDone: sget('rehab_plan_done', {}),
+  profile: sget('rehab_profile', {}),
+  ftHistory: sget('rehab_ft_history', []),
+  paHistory: sget('rehab_pa_history', []),
+  homeIdx: sget('rehab_home_idx', []),
+  painHistory: sget('rehab_pain_history', []),
+  romHistory: sget('rehab_rom_history', []),
+  promsHistory: sget('rehab_proms_history', []),
+  aiPrefs: sget('rehab_ai_prefs', {}),
+  path: sget('rehab_path', null),
+});
 $('btn-export').addEventListener('click', () => {
-  const data = {
-    app: '康复AI', version: 2, exportedAt: new Date().toISOString(),
-    sessions: sget('rehab_sessions', []),
-    assessments: sget('rehab_assessments', []),
-    appts: sget('rehab_appts', []),
-    customExercises: loadCustomExercises(),
-    collect: state.collectBuf,
-  };
+  const data = bakData();
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
   a.download = `${t('fileBackup')}-${new Date().toISOString().slice(0, 10)}.json`;
   a.click();
   URL.revokeObjectURL(a.href);
+  sset('rehab_last_backup', Date.now());   // v2.21.9：记录上次导出时间，备份卡显示「上次导出备份」
+  renderLastBackup();
   toast(t('toastExportBackup'));
 });
 $('btn-import').addEventListener('click', () => $('import-input').click());
@@ -1402,12 +1430,29 @@ $('import-input').addEventListener('change', async (ev) => {
   try {
     const data = JSON.parse(await file.text());
     if (!data || !Array.isArray(data.sessions)) throw new Error(t('importFormatErr'));
+    // v2.21.9：导入前摘要确认（导入会覆盖本机对应数据，先让用户看清规模）
+    if (!confirm(t('importConfirm', { s: bakCount(data.sessions), a: bakCount(data.assessments), p: bakCount(data.appts), f: bakCount(data.ftHistory), r: bakCount(data.paHistory) }))) {
+      ev.target.value = '';
+      return;
+    }
     sset('rehab_sessions', data.sessions || []);
     sset('rehab_assessments', data.assessments || []);
     sset('rehab_appts', data.appts || []);
     if (Array.isArray(data.customExercises)) { saveCustomExercises(data.customExercises); invalidateCustom(); }
     if (Array.isArray(data.collect)) { state.collectBuf = data.collect; sset('rehab_collect', data.collect); }
-    renderRecords(); renderAssessments(); renderAppts(); renderCustomList(); renderExChips();
+    // v2.21.9：恢复新增数据（旧版备份没有这些字段 → 保持本机现状，向后兼容）
+    if (Array.isArray(data.plan)) sset('rehab_plan', data.plan);
+    if (data.planDone && typeof data.planDone === 'object') sset('rehab_plan_done', data.planDone);
+    if (data.profile && typeof data.profile === 'object') sset('rehab_profile', data.profile);
+    if (Array.isArray(data.ftHistory)) sset('rehab_ft_history', data.ftHistory);
+    if (Array.isArray(data.paHistory)) sset('rehab_pa_history', data.paHistory);
+    if (Array.isArray(data.homeIdx)) sset('rehab_home_idx', data.homeIdx);
+    if (Array.isArray(data.painHistory)) sset('rehab_pain_history', data.painHistory);
+    if (Array.isArray(data.romHistory)) sset('rehab_rom_history', data.romHistory);
+    if (Array.isArray(data.promsHistory)) sset('rehab_proms_history', data.promsHistory);
+    if (data.aiPrefs && typeof data.aiPrefs === 'object') sset('rehab_ai_prefs', data.aiPrefs);
+    if (data.path && typeof data.path === 'object') sset('rehab_path', data.path);
+    refreshAllData();   // v2.21.9：导入后所有依赖模块一起刷新（原只刷记录/评估/预约/自定义）
     toast(t('toastImportOk'));
     scheduleCloudSync();
   } catch (e) { toast(t('toastImportFail', { msg: e.message })); }
@@ -1415,11 +1460,10 @@ $('import-input').addEventListener('change', async (ev) => {
 });
 $('btn-clear').addEventListener('click', () => {
   if (!confirm(t('confirmClearAll'))) return;
-  ['rehab_sessions', 'rehab_assessments', 'rehab_appts', 'rehab_custom_ex', 'rehab_collect', 'rehab_plan', 'rehab_plan_done', 'rehab_profile'].forEach((k) => sdel(k));
+  DATA_KEYS.forEach((k) => sdel(k));   // v2.21.9：清单化，补齐 功能测试/体态报告/运动指数 历史（原实现残留）
   state.collectBuf = [];
   invalidateCustom();
-  renderRecords(); renderAssessments(); renderAppts(); renderCustomList(); renderExChips();
-  renderCollectCount(); renderProfile(); renderTodayPlan(); renderPlanList(); renderAchievements(); renderGoal();
+  refreshAllData();
   toast(t('toastClearedAll'));
   scheduleCloudSync();
 });
@@ -1432,11 +1476,21 @@ function switchTab(name) {
   const navBtn = document.querySelector(`.bottom-nav button[data-tab="${name}"]`);
   if (navBtn) navBtn.classList.add('active');
   $('tab-' + name).classList.add('active');
+  // v2.21.10 全局：切页时同步无障碍状态（aria-current），并把长页面滚动位置复位到顶部
+  document.querySelectorAll('.bottom-nav button').forEach((b) => {
+    if (b === navBtn) b.setAttribute('aria-current', 'page');
+    else b.removeAttribute('aria-current');
+  });
+  try { window.scrollTo(0, 0); } catch { /* ignore */ }
   if (name === 'train') { kickLoop(); renderTrainToday(); }   // 回到训练页立即恢复分析 + 刷新今日任务小条
   if (name !== 'posture') paStop();          // v2.19：离开体态页自动停止体态评估（防摄像头占用）
   if (name !== 'ft') ftStop();               // v2.20：离开功能测试页自动停止（防摄像头占用）
   if (name === 'home') renderHome();         // v2.21：进入今日页刷新总览
   if (name !== 'guide') gwStop();            // v2.21：离开跟练页自动结束跟练计时
+  if (name === 'settings') renderStorageSize();   // v2.21.9：进入设置页刷新数据占用
+  if (name === 'record') renderReport();          // v2.24.0：进入记录页刷新治疗师报告摘要
+  if (name === 'schedule') renderPath();          // v2.29.0：进入日程页刷新康复路径
+  if (name !== 'posture') romStop();              // v2.26.0：离开体态页自动停止 ROM 测量
 }
 document.querySelectorAll('.bottom-nav button').forEach((btn) => {
   btn.addEventListener('click', () => switchTab(btn.dataset.tab));
@@ -1465,7 +1519,7 @@ const gunzipB64 = async (b64) => new Response(new Blob([b64ToBytes(b64)]).stream
 
 function makeSyncData(includeCollect = false) {
   const d = {
-    app: 'RehabAI', v: 3, ts: Date.now(),
+    app: 'RehabAI', v: 9, ts: Date.now(),
     sessions: sget('rehab_sessions', []),
     assessments: sget('rehab_assessments', []),
     appts: sget('rehab_appts', []),
@@ -1473,6 +1527,15 @@ function makeSyncData(includeCollect = false) {
     plan: sget('rehab_plan', []),
     planDone: sget('rehab_plan_done', {}),
     profile: sget('rehab_profile', {}),
+    // v2.21.9：补传 功能测试记录 / 体态报告 / 运动指数历史（原来换设备后这三页是空的）
+    ftHistory: sget('rehab_ft_history', []),
+    paHistory: sget('rehab_pa_history', []),
+    homeIdx: sget('rehab_home_idx', []),
+    painHistory: sget('rehab_pain_history', []),   // v2.22.0：疼痛记录一并端手互通
+    romHistory: sget('rehab_rom_history', []),     // v2.26.0：ROM 测量一并端手互通
+    promsHistory: sget('rehab_proms_history', []), // v2.27.0：PROMs 量表一并端手互通
+    aiPrefs: sget('rehab_ai_prefs', {}),           // v2.28.0：智能引擎设置一并端手互通
+    path: sget('rehab_path', null),                // v2.29.0：康复路径状态一并端手互通
   };
   if (includeCollect) d.collect = state.collectBuf;
   return d;
@@ -1502,6 +1565,37 @@ function mergeSyncData(data) {
   if (data.profile && (data.profile.name || data.profile.injury)) {
     sset('rehab_profile', { ...(sget('rehab_profile', {})), ...data.profile });
   }
+  // v2.21.9：三类历史（记录本身无 id，按 项目/类型 + 时间戳 去重；日期型按 d 去重）
+  if (Array.isArray(data.ftHistory) && data.ftHistory.length) {
+    const m = new Map(ftHistory().map((r) => [r.key + '|' + r.ts, r]));
+    data.ftHistory.forEach((r) => { if (r && r.ts) m.set(r.key + '|' + r.ts, r); });
+    sset('rehab_ft_history', [...m.values()].sort((a, b) => b.ts - a.ts).slice(0, 60));
+  }
+  if (Array.isArray(data.paHistory) && data.paHistory.length) {
+    const m = new Map(paHistory().map((r) => [r.kind + '|' + r.ts, r]));
+    data.paHistory.forEach((r) => { if (r && r.ts) m.set(r.kind + '|' + r.ts, r); });
+    sset('rehab_pa_history', [...m.values()].sort((a, b) => b.ts - a.ts).slice(0, 30));
+  }
+  if (Array.isArray(data.homeIdx) && data.homeIdx.length) {
+    const m = new Map(homeIndexHist().map((r) => [r.d, r]));
+    data.homeIdx.forEach((r) => { if (r && r.d && !m.has(r.d)) m.set(r.d, r); });
+    sset('rehab_home_idx', [...m.values()].sort((a, b) => (a.d < b.d ? 1 : -1)).slice(0, 30));
+  }
+  if (Array.isArray(data.painHistory) && data.painHistory.length) {
+    painSave(mergeById(painHistory(), data.painHistory));   // 疼痛记录有 id，按 id 合并
+  }
+  if (Array.isArray(data.romHistory) && data.romHistory.length) {
+    romSave(mergeById(romHistory(), data.romHistory));      // v2.26.0：ROM 记录按 id 合并
+  }
+  if (Array.isArray(data.promsHistory) && data.promsHistory.length) {
+    promSave(mergeById(promHistory(), data.promsHistory));  // v2.27.0：PROMs 记录按 id 合并
+  }
+  if (data.aiPrefs && typeof data.aiPrefs === 'object') {
+    sset('rehab_ai_prefs', Object.assign({}, aiPrefs(), data.aiPrefs));   // v2.28.0：智能引擎设置合并
+  }
+  if (data.path && typeof data.path === 'object') {
+    sset('rehab_path', Object.assign({}, pathCfg(), data.path));          // v2.29.0：康复路径合并
+  }
   if (Array.isArray(data.collect) && data.collect.length) {
     const seen = new Set(state.collectBuf.map((r) => r.ex + '|' + r.label + '|' + (r.feats || []).join(',')));
     for (const r of data.collect) {
@@ -1516,7 +1610,8 @@ function mergeSyncData(data) {
 /* ---------- 显示二维码（发送端） ---------- */
 async function startSyncShow() {
   const data = makeSyncData();
-  if (!data.sessions.length && !data.assessments.length && !data.appts.length && !data.customExercises.length) {
+  if (!data.sessions.length && !data.assessments.length && !data.appts.length && !data.customExercises.length
+    && !data.plan.length && !data.ftHistory.length && !data.paHistory.length && !data.homeIdx.length) {
     toast(t('qrEmpty'));
     return;
   }
@@ -1615,7 +1710,7 @@ async function finishSyncScan() {
     const data = JSON.parse(json);
     if (!Array.isArray(data.sessions)) throw new Error('bad payload');
     const r = mergeSyncData(data);
-    renderRecords(); renderAssessments(); renderAppts(); renderCustomList(); renderExChips();
+    refreshAllData();   // v2.21.9：同步后全模块刷新（原只刷记录/评估/预约/自定义，今日与计划不刷新）
     toast(t('scanDone', { s: r.s, a: r.a, p: r.p, c: r.c }));
   } catch (e) {
     toast(t('scanError', { msg: e.message }));
@@ -2213,6 +2308,10 @@ const aiEnv = () => {
     cameraFails: stats.cameraFail || 0,
     modelFails: stats.modelFail || 0,
     daysSinceTrain: lastTs ? (Date.now() - lastTs) / 86400000 : null,
+    painMax: painRecentMax(7),          // v2.22.0：近 7 天最高疼痛（供 AI 管家提示）
+    painCount: painHistory().filter((r) => r.ts >= Date.now() - 7 * 86400000).length,
+    painSpike: painSpike() ? painSpike().delta : 0,   // v2.23.0：当天训练后疼痛上升 ≥2 分
+    promBad: promBadCount(),                          // v2.27.0：重度受限的量表份数
   };
 };
 let aiLast = null;
@@ -2486,7 +2585,13 @@ $('btn-voice-toggle').addEventListener('click', () => {
 /* ============ 轻提示 ============ */
 function toast(msg) {
   let t = $('toast');
-  if (!t) { t = document.createElement('div'); t.id = 'toast'; document.body.appendChild(t); }
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'toast';
+    t.setAttribute('role', 'status');          // v2.21.10：提示条可被读屏播报
+    t.setAttribute('aria-live', 'polite');
+    document.body.appendChild(t);
+  }
   t.textContent = msg;
   t.style.opacity = 1; t.style.transform = 'translate(-50%, 0)';
   clearTimeout(t._tm);
@@ -3009,10 +3114,16 @@ function paBuildReport(kind, items) {
   const score = Math.round(items.reduce((a, i) => a + i.score, 0) / Math.max(1, items.length));
   const grade = score >= 85 ? 'A' : score >= 70 ? 'B' : score >= 55 ? 'C' : 'D';
   const priorities = items.filter((i) => i.level !== 'good').sort((a, b) => a.score - b.score);
-  return { kind, ts: Date.now(), score, grade, items, priorities, demo: paState.demo };
+  // v2.25.0：报告附一张骨架快照（只含火柴人，不含真人照片），供治疗师报告对比
+  return { kind, ts: Date.now(), score, grade, items, priorities, demo: paState.demo, snap: paSnapShot() };
 }
 function paHistory() { return sget('rehab_pa_history', []); }
-function paSaveReport(r) { const h = paHistory(); h.unshift(r); if (h.length > 30) h.length = 30; sset('rehab_pa_history', h); }
+function paSaveReport(r) {
+  const h = paHistory(); h.unshift(r);
+  if (h.length > 30) h.length = 30;
+  h.forEach((x, i) => { if (i >= 8 && x.snap) delete x.snap; });   // v2.25.0：快照只留最近 8 份
+  sset('rehab_pa_history', h);
+}
 
 const paItemHtml = (i) => `
   <div class="pa-item">
@@ -4355,7 +4466,10 @@ function homeAdvice(idx) {
 function renderHome() {
   const el = $('home-index');
   if (!el) return;
-  const idx = homeIndex();
+  const raw = homeIndex();
+  // v2.21.9：完全没有数据时（新装 App / 刚「清除全部数据」）按无数据态渲染，
+  // 既不显示 0 分卡，也不写入一条空的指数历史（原来清空后会被立刻写回）
+  const idx = (raw.pa == null && raw.ft == null && raw.days30 === 0) ? { ...raw, score: null } : raw;
   const advice = homeAdvice(idx);
   if (idx.score == null) {
     el.innerHTML = `
@@ -4549,6 +4663,1351 @@ function trainTimerTick() {
 }
 setInterval(trainTimerTick, 500);
 
+// v2.21.9：设置页「本机数据占用」（只读统计，纯新增）
+// 修复：登录后数据写在账号分区键 u:<邮箱>:rehab_*，原实现只认 'rehab' 前缀 → 已登录时统计偏小
+const STG_APP_KEY = /^(u:.*:)?rehab/;
+const stgBytes = (s) => { try { return new Blob([s]).size; } catch { return s.length * 2; } };
+const stgFmt = (b) => (b < 1024 ? b + ' B' : b < 1048576 ? (b / 1024).toFixed(1) + ' KB' : (b / 1048576).toFixed(2) + ' MB');
+function stgStat() {
+  const g = { total: 0, records: 0, collect: 0, custom: 0 };
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (!k || !STG_APP_KEY.test(k)) continue;
+      const b = stgBytes(k + (localStorage.getItem(k) || ''));
+      g.total += b;
+      if (k.includes('collect')) g.collect += b;
+      else if (k.includes('custom_ex')) g.custom += b;
+      else if (/sessions|assessments|appts|ft_history|pa_history|home_idx|plan/.test(k)) g.records += b;
+    }
+  } catch { /* ignore */ }
+  return g;
+}
+function renderStorageSize() {
+  const el = $('storage-size');
+  if (!el) return;
+  const g = stgStat();
+  el.textContent = t('stgSize', { s: stgFmt(g.total) });
+  const bd = $('storage-break');
+  if (bd) {
+    bd.textContent = g.total === 0 ? t('stgNone')
+      : t('stgBreak', { r: stgFmt(g.records), c: stgFmt(g.collect), m: stgFmt(g.custom), o: stgFmt(Math.max(0, g.total - g.records - g.collect - g.custom)) });
+  }
+}
+// v2.21.9：备份卡「上次导出备份」提示（≥7 天标黄提醒）
+function renderLastBackup() {
+  const el = $('last-backup');
+  if (!el) return;
+  const ts = sget('rehab_last_backup', 0);
+  if (!ts) { el.textContent = t('bakNever'); el.classList.remove('warn'); return; }
+  const days = Math.floor((Date.now() - ts) / 86400000);
+  el.textContent = t(days <= 0 ? 'bakToday' : 'bakDaysAgo', { d: days });
+  el.classList.toggle('warn', days >= 7);
+}
+// v2.21.9：数据被替换/清空/同步后统一刷新全部依赖模块（导入、清空、二维码同步共用）
+function refreshAllData() {
+  renderRecords(); renderAssessments(); renderAppts(); renderCustomList(); renderExChips();
+  renderCollectCount(); renderProfile(); renderTodayPlan(); renderPlanList(); renderPlanPick();
+  renderAchievements(); renderGoal(); renderHome(); renderTrainToday();
+  renderPaUI(); renderFtUI(); renderStorageSize(); renderLastBackup();
+  renderPain(); renderPainStrip(); renderReport();   // v2.22.0/v2.24.0：疼痛与报告数据一起刷新
+  renderRomHistory(); renderRomResult(romHistory()[0] || null);   // v2.26.0：ROM 数据一起刷新
+  renderPromHistory();                                  // v2.27.0：PROMs 数据一起刷新
+  renderAiPlan(); renderAiEngine(); renderPath();       // v2.28.0/v2.29.0：引擎与路径一起刷新
+}
+
+/* ============ v2.29.0 新模块：康复路径（分阶段 · 条件可改 · 按你的数据推荐） ============ */
+// 原则延续：路径只是「起点」，阶段/剂量/进阶条件全部可改；系统按用户自己的数据推荐与提示升级。
+const PATHS = [
+  { key: 'lowback', ico: 'hiphinge', phases: [
+    { ex: [['hiphinge', 8, 2], ['sitstand', 8, 2]] },
+    { ex: [['squat', 10, 2], ['stepup', 8, 2]] },
+    { ex: [['lunge', 10, 3], ['squat', 12, 3]] },
+  ] },
+  { key: 'knee', ico: 'squat', phases: [
+    { ex: [['sitstand', 8, 2], ['hiphinge', 8, 2]] },
+    { ex: [['squat', 10, 2], ['stepup', 10, 2]] },
+    { ex: [['lunge', 10, 3], ['squat', 14, 3]] },
+  ] },
+  { key: 'shoulder', ico: 'shoulderraise', phases: [
+    { ex: [['shoulderraise', 10, 2], ['standing', 8, 2]] },
+    { ex: [['shoulderraise', 12, 2], ['pushup', 8, 2]] },
+    { ex: [['pushup', 10, 3], ['shoulderraise', 15, 3]] },
+  ] },
+];
+const PATH_PHASE_KEYS = ['Acute', 'Recover', 'Strength'];
+const PATH_CFG_DEF = { path: null, phase: 0, cond: { painMax: 3, streak: 3, sym: 85 }, autoSuggest: true };
+const pathDef = (key) => PATHS.find((p) => p.key === key) || PATHS[1];
+const pathCfg = () => {
+  const c = sget('rehab_path', null) || {};
+  return { path: c.path || null, phase: Number(c.phase) || 0, cond: Object.assign({}, PATH_CFG_DEF.cond, c.cond || {}), autoSuggest: c.autoSuggest !== false, log: c.log || [] };
+};
+const pathSave = (patch) => { sset('rehab_path', Object.assign(pathCfg(), patch)); renderPath(); renderAiPlan(); };
+// 按用户自己的数据推荐路径（疼痛部位优先，其次量表，最后功能测试弱项）
+function pathRecommend() {
+  const pain = painHistory();
+  const part = pain.length ? (pain[0].part || '') : '';
+  const PART_KEY = { lowback: 'painPartLowBack', knee: 'painPartKnee', shoulder: 'painPartShoulder', hip: 'painPartHip', ankle: 'painPartAnkle', other: 'painPartOther' };
+  if (['lowback', 'knee', 'shoulder'].includes(part)) {
+    return { key: part, why: t('pathWhyPain', { n: pain.length, p: t(PART_KEY[part] || 'painPartOther') }) };
+  }
+  const ph = promHistory();
+  if (ph.some((r) => r.key === 'odi')) return { key: 'lowback', why: t('pathWhyProm', { s: t('promOdiT') }) };
+  if (ph.some((r) => r.key === 'koos')) return { key: 'knee', why: t('pathWhyProm', { s: t('promKoosT') }) };
+  if (ph.some((r) => r.key === 'ndi')) return { key: 'shoulder', why: t('pathWhyProm', { s: t('promNdiT') }) };
+  const ft = ftLatestDims();
+  if (ft && ft.sym != null && ft.sym < 80) return { key: 'knee', why: t('pathWhySym', { v: Math.round(ft.sym) }) };
+  return { key: 'knee', why: t('pathWhyDefault') };
+}
+// 进阶条件检查（条件值由用户设定）
+function pathCheck() {
+  const cfg = pathCfg();
+  const c = cfg.cond;
+  const need = Math.max(1, Number(c.streak) || 3);
+  const posts = painHistory().filter((r) => r.when === 'post').slice(0, need);
+  const painOk = posts.length >= need && posts.every((r) => r.v <= (Number(c.painMax) || 3));
+  const ft = ftLatestDims();
+  const sym = ft && ft.sym != null ? Math.round(ft.sym) : null;
+  const symNeed = Number(c.sym) || 0;
+  const symOk = !symNeed || sym == null ? true : sym >= symNeed;
+  return { painOk, symOk, ok: painOk && symOk, posts: posts.length, need, sym, painMax: Number(c.painMax) || 3, symNeed };
+}
+function pathNext() { const cfg = pathCfg(); return Math.min(2, cfg.phase + 1); }
+function renderPath() {
+  const list = $('path-pick');
+  if (!list) return;
+  const cfg = pathCfg();
+  const rec = pathRecommend();
+  const eff = cfg.path || rec.key;
+  $('path-rec').innerHTML = `${t('pathRec')}：<b>${t('path' + rec.key.charAt(0).toUpperCase() + rec.key.slice(1) + 'T')}</b> · ${rec.why}` +
+    (cfg.path ? '' : ` <button class="link-btn" id="path-use-rec">${t('pathUseRec')}</button>`);
+  const useBtn = $('path-use-rec');
+  if (useBtn) useBtn.addEventListener('click', () => { pathSave({ path: rec.key, phase: 0 }); toast(t('pathStarted')); });
+  list.innerHTML = PATHS.map((p) => `<button class="pa-kind ${eff === p.key ? 'on' : ''}" data-path="${p.key}">
+    <span class="pa-kind-ico">${icon(p.ico)}</span><span>${t('path' + p.key.charAt(0).toUpperCase() + p.key.slice(1) + 'T')}</span></button>`).join('');
+  list.querySelectorAll('[data-path]').forEach((b) => b.addEventListener('click', () => {
+    pathSave({ path: b.dataset.path, phase: 0 });
+    toast(t('pathSwitched'));
+  }));
+  const pd = pathDef(eff);
+  const pi = Math.min(cfg.phase, pd.phases.length - 1);
+  const ph = pd.phases[pi];
+  const ck = pathCheck();
+  const body = $('path-body');
+  body.innerHTML = `<div class="path-head">
+      <b>${t('pathPhase' + PATH_PHASE_KEYS[pi])}</b>
+      <span class="hint tiny">${t('pathPhaseOf', { i: pi + 1, n: pd.phases.length })}</span>
+      <span class="rom-lv ${ck.ok ? 'good' : 'warn'}">${ck.ok ? t('pathReady') : t('pathNotYet')}</span>
+    </div>
+    <div class="list">${ph.ex.map(([ex, reps, sets]) => {
+      const e = getEx(ex);
+      return `<div class="item"><div><div class="t"><span class="t-ico">${icon(e ? e.icon : 'custom')}</span>${e ? exName(e) : ex}</div>
+        <div class="d">${t('pathDose', { s: sets, r: reps })}</div></div></div>`;
+    }).join('')}</div>
+    <div class="path-cond">
+      <div class="hint tiny">${t('pathCondTitle')}</div>
+      <label class="ai-tgt"><span>${t('pathCondPain')}</span><input type="number" min="0" max="10" value="${cfg.cond.painMax}" data-cond="painMax"></label>
+      <label class="ai-tgt"><span>${t('pathCondStreak')}</span><input type="number" min="1" max="14" value="${cfg.cond.streak}" data-cond="streak"></label>
+      <label class="ai-tgt"><span>${t('pathCondSym')}</span><input type="number" min="0" max="100" value="${cfg.cond.sym}" data-cond="sym"></label>
+      <label class="ai-tgt"><span>${t('pathAuto')}</span><input type="checkbox" id="path-auto" ${cfg.autoSuggest ? 'checked' : ''} style="width:auto"></label>
+    </div>
+    <div class="hint tiny">${t('pathStatus', { pain: ck.posts, need: ck.need, max: ck.painMax, sym: ck.sym == null ? '—' : ck.sym, symNeed: ck.symNeed })}</div>
+    <div class="controls">
+      <button id="btn-path-apply" class="btn primary">${t('pathApply')}</button>
+      <button id="btn-path-up" class="btn" ${pi >= pd.phases.length - 1 ? 'disabled' : ''}>${t('pathUp')}</button>
+      <button id="btn-path-reset" class="btn">${t('pathReset')}</button>
+    </div>
+    ${cfg.log && cfg.log.length ? `<p class="hint tiny">${t('pathLog', { n: cfg.log.length, last: new Date(cfg.log[0].ts).toLocaleDateString(locale()) })}</p>` : ''}`;
+  body.querySelectorAll('[data-cond]').forEach((inp) => inp.addEventListener('change', () => {
+    const cond = Object.assign({}, cfg.cond);
+    cond[inp.dataset.cond] = Number(inp.value);
+    pathSave({ cond });
+  }));
+  const auto = $('path-auto');
+  if (auto) auto.addEventListener('change', () => pathSave({ autoSuggest: auto.checked }));
+  $('btn-path-apply').addEventListener('click', () => {
+    const plan = planGet();
+    const today = new Date().getDay();
+    ph.ex.forEach(([ex, reps]) => {
+      const i = plan.findIndex((x) => x.ex === ex && (x.days || []).includes(today));
+      if (i >= 0) plan[i] = Object.assign({}, plan[i], { reps });
+      else plan.push({ id: 'pa' + Date.now() + ex, ex, reps, days: [today] });
+    });
+    sset('rehab_plan', plan);
+    refreshAllData();
+    toast(t('pathApplied'));
+  });
+  $('btn-path-up').addEventListener('click', () => {
+    const ck2 = pathCheck();
+    const cfg2 = pathCfg();
+    if (!ck2.ok && !confirm(t('pathForceUp'))) return;
+    const next = pathNext();
+    const log = [{ ts: Date.now(), from: cfg2.phase, to: next, ok: ck2.ok }].concat(cfg2.log || []).slice(0, 20);
+    pathSave({ phase: next, log });
+    toast(t('pathUpDone', { n: next + 1 }));
+  });
+  $('btn-path-reset').addEventListener('click', () => { pathSave({ phase: 0 }); toast(t('pathResetDone')); });
+}
+
+/* ============ v2.28.0 新模块：自适应智能引擎（个人基线 · 可调规则 · 可学习处方） ============ */
+// 设计原则：固定临床标准只作「参考」，主判定一律用用户自己的历史基线；每条规则都可见、可改、可关。
+const AI_PREFS_DEF = { painAlarm: 2, intensity: 'std', autoAdapt: true, romTargets: {} };
+const aiPrefs = () => Object.assign({}, AI_PREFS_DEF, sget('rehab_ai_prefs', {}) || {});
+const aiFeedback = () => LS.get('rehab_ai_feedback', { accepted: 0, ignored: 0 });
+const aiLearnAdd = (k) => { const f = aiFeedback(); f[k] = (f[k] || 0) + 1; LS.set('rehab_ai_feedback', f); renderAiPlan(); renderAiEngine(); };   // 注意：ai.js 已导出 aiFeedbackAdd（反馈日志），此处必须用不同名字
+const aiPrefSet = (patch) => {
+  sset('rehab_ai_prefs', Object.assign(aiPrefs(), patch));
+  renderAiEngine(); renderAiPlan(); renderPain();
+};
+const median = (a) => {
+  if (!a.length) return null;
+  const s = [...a].sort((x, y) => x - y);
+  const m = Math.floor(s.length / 2);
+  return s.length % 2 ? s[m] : Math.round((s[m - 1] + s[m]) / 2);
+};
+// 个人基线：取用户自己的历史中位数/最佳/最近一次（而不是人群常模）
+function romBaseline(key, side) {
+  const list = romHistory().filter((r) => r.key === key && (!side || r.side === side) && r.rom != null).map((r) => r.rom);
+  return list.length ? { n: list.length, med: median(list), best: Math.max(...list), last: list[0] } : null;
+}
+function painBaseline() {
+  const list = painHistory().map((r) => r.v);
+  return list.length ? { n: list.length, med: median(list), last: list[0] } : null;
+}
+function romTarget(it) {
+  const t = (aiPrefs().romTargets || {})[it.key];
+  const v = Number(t);
+  return (t == null || t === '' || Number.isNaN(v) || v <= 0) ? it.norm : v;   // 未设 = 用临床参考值（可覆盖）
+}
+// 处方引擎：每一步都产出「理由」，可解释、可学习
+function aiPrescribe() {
+  const p = aiPrefs();
+  const f = aiFeedback();
+  const spike = painSpike();
+  const painMax = painRecentMax(7);
+  const pb = painBaseline();
+  const ft = ftLatestDims();
+  const sym = ft && ft.sym != null ? Math.round(ft.sym) : null;
+  const idx = homeIndex();
+  const sessions = sget('rehab_sessions', []);
+  const d7 = new Set(sessions.filter((s) => s.ts >= Date.now() - 7 * 86400000).map((s) => dayKeyOf(s.ts))).size;
+  const weak = ROM_ITEMS.map((it) => ({ it, b: romBaseline(it.key) }))
+    .filter((x) => x.b && x.b.last != null)
+    .map((x) => ({ it: x.it, b: x.b, gap: romTarget(x.it) - x.b.last }))
+    .sort((a, b) => b.gap - a.gap)[0] || null;
+  const reasons = [];
+  const basis = [
+    t('aiBasisPain', { v: painMax == null ? '—' : painMax, a: p.painAlarm }),
+    t('aiBasisSym', { v: sym == null ? '—' : sym }),
+    t('aiBasisRom', weak ? { n: t('romShort' + weak.it.key.charAt(0).toUpperCase() + weak.it.key.slice(1)), v: weak.b.last, tg: romTarget(weak.it) } : { n: '—', v: '—', tg: '—' }),
+    t('aiBasisAdh', { d: d7 }),
+    t('aiBasisFeed', { a: f.accepted || 0, i: f.ignored || 0 }),
+  ];
+  let ex = 'squat', sets = 2, reps = 10, rest = 60, level = gwLevel(), focus = 'strength';
+  if (!p.autoAdapt) {
+    focus = 'manual';
+    reasons.push(t('aiReasonManual'));
+  } else {
+    if ((spike && spike.delta >= p.painAlarm) || (painMax != null && painMax >= 7)) {
+      focus = 'pain'; ex = 'hiphinge'; sets = 1; reps = 8; rest = 90;
+      reasons.push(spike && spike.delta >= p.painAlarm
+        ? t('aiReasonPainSpike', { d: spike.delta, a: p.painAlarm })
+        : t('aiReasonPainHigh', { v: painMax }));
+    } else if (sym != null && sym < 80) {
+      focus = 'symmetry'; ex = 'stepup'; sets = 2; reps = 8; rest = 60;
+      reasons.push(t('aiReasonSym', { v: sym }));
+    } else if (weak && weak.gap > 0) {
+      focus = 'mobility'; ex = weak.it.lm === 'shoulder' ? 'shoulderraise' : 'squat'; sets = 2; reps = 8; rest = 45;
+      reasons.push(t('aiReasonRom', { n: t('romShort' + weak.it.key.charAt(0).toUpperCase() + weak.it.key.slice(1)), v: weak.b.last, tg: romTarget(weak.it), g: weak.gap }));
+    } else if (d7 < 2) {
+      focus = 'habit'; sets = 1; reps = 8; rest = 45;
+      reasons.push(t('aiReasonHabit', { d: d7 }));
+    } else {
+      focus = 'strength';
+      if (idx.score != null && idx.score >= 75) { sets += 1; reps += 2; reasons.push(t('aiReasonProgress', { v: idx.score })); }
+      else reasons.push(t('aiReasonKeep', { v: idx.score == null ? '—' : idx.score }));
+    }
+    if (p.intensity === 'soft') { sets = Math.max(1, sets - 1); rest += 30; reasons.push(t('aiReasonSoft')); }
+    if (p.intensity === 'hard') { sets += 1; rest = Math.max(30, rest - 15); reasons.push(t('aiReasonHard')); }
+    if ((f.ignored || 0) > (f.accepted || 0)) { sets = Math.max(1, sets - 1); reasons.push(t('aiReasonLearn', { a: f.accepted || 0, i: f.ignored || 0 })); }
+  }
+  return { ex, sets, reps, rest, level, focus, reasons, basis, spike };
+}
+function renderAiPlan() {
+  const el = $('ai-plan');
+  if (!el) return;
+  const pr = aiPrescribe();
+  const e = getEx(pr.ex);
+  el.innerHTML = `<div class="ai-plan-head"><span class="t-ico">${icon(e ? e.icon : 'custom')}</span>
+      <b>${e ? exName(e) : pr.ex}</b> · ${t('aiPlanDose', { s: pr.sets, r: pr.reps, rest: pr.rest })}
+      <span class="rom-lv ${pr.focus === 'pain' ? 'bad' : pr.focus === 'strength' ? 'good' : 'warn'}">${t('aiFocus' + pr.focus.charAt(0).toUpperCase() + pr.focus.slice(1))}</span></div>
+    <div class="ai-plan-reasons">${pr.reasons.map((r) => `<div class="ai-reason">• ${r}</div>`).join('')}</div>
+    <details class="ai-basis"><summary class="hint tiny">${t('aiBasisTitle')}</summary>
+      ${pr.basis.map((b) => `<div class="hint tiny">· ${b}</div>`).join('')}</details>
+    <div class="controls">
+      <button id="btn-ai-apply" class="btn primary" data-i18n="${pr.focus === 'pain' ? 'aiApply' : 'aiApply'}">${t('aiApply')}</button>
+      <button id="btn-ai-ignore" class="btn">${t('aiIgnore')}</button>
+      <button id="btn-ai-tune" class="btn">${t('aiTune')}</button>
+    </div>`;
+  $('btn-ai-apply').addEventListener('click', aiPlanApply);
+  $('btn-ai-ignore').addEventListener('click', aiPlanIgnore);
+  $('btn-ai-tune').addEventListener('click', () => { switchTab('settings'); setTimeout(() => $('ai-engine') && $('ai-engine').scrollIntoView({ behavior: 'smooth' }), 120); });
+}
+function aiPlanApply() {
+  const pr = aiPrescribe();
+  const plan = planGet();
+  const today = new Date().getDay();
+  const i = plan.findIndex((x) => x.ex === pr.ex && (x.days || []).includes(today));
+  if (i >= 0) plan[i] = Object.assign({}, plan[i], { reps: pr.reps });
+  else plan.push({ id: 'ai' + Date.now(), ex: pr.ex, reps: pr.reps, days: [today] });
+  sset('rehab_plan', plan);
+  aiLearnAdd('accepted');
+  refreshAllData();
+  toast(t('aiPlanApplied'));
+}
+function aiPlanIgnore() {
+  aiLearnAdd('ignored');
+  toast(t('aiPlanIgnored'));
+}
+function renderAiEngine() {
+  const p = aiPrefs();
+  const seg = $('ai-intensity');
+  if (seg) seg.querySelectorAll('[data-int]').forEach((b) => {
+    b.classList.toggle('on', b.dataset.int === p.intensity);
+    b.onclick = () => aiPrefSet({ intensity: b.dataset.int });
+  });
+  const sel = $('ai-pain-alarm');
+  if (sel) { sel.value = String(p.painAlarm); sel.onchange = () => aiPrefSet({ painAlarm: Number(sel.value) }); }
+  const cb = $('ai-auto-adapt');
+  if (cb) { cb.checked = !!p.autoAdapt; cb.onchange = () => aiPrefSet({ autoAdapt: cb.checked }); }
+  const tgt = $('ai-rom-targets');
+  if (tgt) {
+    tgt.innerHTML = ROM_ITEMS.map((it) => `<label class="ai-tgt"><span>${t('romItem' + it.key.charAt(0).toUpperCase() + it.key.slice(1))}</span>
+      <input type="number" min="0" max="200" value="${(p.romTargets || {})[it.key] != null ? (p.romTargets || {})[it.key] : ''}" placeholder="${it.norm}" data-tgt="${it.key}"></label>`).join('');
+    tgt.querySelectorAll('[data-tgt]').forEach((inp) => inp.addEventListener('change', () => {
+      const m = Object.assign({}, p.romTargets || {});
+      const v = inp.value === '' ? null : Number(inp.value);
+      if (v == null || Number.isNaN(v)) delete m[inp.dataset.tgt]; else m[inp.dataset.tgt] = v;
+      aiPrefSet({ romTargets: m });
+    }));
+  }
+  const b = $('ai-baseline');
+  if (b) {
+    const pb = painBaseline();
+    const rows = [];
+    ROM_ITEMS.forEach((it) => {
+      const rb = romBaseline(it.key);
+      if (rb) rows.push(`<div class="rep-row"><span class="k">${t('romShort' + it.key.charAt(0).toUpperCase() + it.key.slice(1))}</span><span class="v">${t('aiBaseRom', { last: rb.last, med: rb.med, best: rb.best, n: rb.n })}</span></div>`);
+    });
+    if (pb) rows.push(`<div class="rep-row"><span class="k">${t('painTitle')}</span><span class="v">${t('aiBasePain', { med: pb.med, last: pb.last, n: pb.n })}</span></div>`);
+    const f = aiFeedback();
+    rows.push(`<div class="rep-row"><span class="k">${t('aiEngLearn')}</span><span class="v">${t('aiEngLearnV', { a: f.accepted || 0, i: f.ignored || 0 })}</span></div>`);
+    b.innerHTML = rows.join('') || `<p class="hint tiny">${t('aiBaseNone')}</p>`;
+  }
+}
+$('btn-ai-reset') && $('btn-ai-reset').addEventListener('click', () => {
+  sset('rehab_ai_prefs', Object.assign({}, AI_PREFS_DEF));
+  renderAiEngine(); renderAiPlan(); renderPain();
+  toast(t('aiEngResetDone'));
+});
+
+/* ============ v2.27.0 新模块：标准化结局量表 PROMs（ODI / NDI / KOOS-12 / EQ-5D-5L） ============ */
+// 对标 Physitrack / Hinge Health 的 PROMs 随访：用国际通用量表记录功能受限程度并跟踪变化。
+const PROM_DEFS = [
+  { key: 'odi', type: 'ratio', opt: 6, max: 5, items: 10 },
+  { key: 'ndi', type: 'ratio', opt: 6, max: 5, items: 10 },
+  { key: 'koos', type: 'sub', opt: 5, max: 4, subs: [['pain', 4], ['symptom', 1], ['adl', 4], ['sport', 1], ['qol', 2]] },
+  { key: 'eq5d', type: 'eq', opt: 5, dims: 5 },
+];
+const PROM_ITEM_KEYS = {
+  odi: Array.from({ length: 10 }, (_, i) => 'promOdiI' + (i + 1)),
+  ndi: Array.from({ length: 10 }, (_, i) => 'promNdiI' + (i + 1)),
+  koos: Array.from({ length: 12 }, (_, i) => 'promKoosI' + (i + 1)),
+  eq5d: Array.from({ length: 5 }, (_, i) => 'promEqD' + (i + 1)),
+};
+const PROM_SUB_KEYS = { pain: 'promSubPain', symptom: 'promSubSymptom', adl: 'promSubAdl', sport: 'promSubSport', qol: 'promSubQol' };
+const promDef = (key) => PROM_DEFS.find((x) => x.key === key) || PROM_DEFS[0];
+const promHistory = () => sget('rehab_proms_history', []);
+const promSave = (h) => sset('rehab_proms_history', h.slice(0, 40));
+const promState = { key: 'odi', answers: [], open: false, vas: 50 };
+function promScore(def, answers) {
+  if (def.type === 'eq') {
+    const dims = answers.slice(0, 5).map((v) => (v == null ? 1 : v + 1));
+    const worst = Math.max(...dims);
+    return { total: promState.vas, subs: { dims, vas: promState.vas }, band: worst >= 4 ? 'EqWarn' : 'EqOk', level: worst >= 4 ? 'bad' : worst >= 3 ? 'warn' : 'good' };
+  }
+  if (def.type === 'sub') {
+    let idx = 0, sum = 0;
+    const subs = {};
+    def.subs.forEach(([k, n]) => {
+      let s = 0;
+      for (let i = 0; i < n; i++) { const v = answers[idx++]; s += (v == null ? 0 : v); }
+      subs[k] = Math.max(0, Math.round(100 - (s * 100) / (4 * n)));
+      sum += subs[k];
+    });
+    const total = Math.round(sum / def.subs.length);
+    return { total, subs, band: total >= 90 ? 'Exc' : total >= 75 ? 'Good' : total >= 50 ? 'Fair' : 'Poor', level: total >= 75 ? 'good' : total >= 50 ? 'warn' : 'bad' };
+  }
+  const answered = answers.filter((v) => v != null).length;
+  const sum = answers.reduce((a, v) => a + (v == null ? 0 : v), 0);
+  const total = Math.round((sum * 100) / (5 * Math.max(1, answered)));
+  return { total, subs: { answered }, band: total <= 20 ? 'Min' : total <= 40 ? 'Mod' : total <= 60 ? 'Sev' : total <= 80 ? 'VSev' : 'Bed', level: total <= 20 ? 'good' : total <= 40 ? 'warn' : 'bad' };
+}
+const promNameKey = (k) => 'prom' + k.charAt(0).toUpperCase() + k.slice(1) + 'T';
+function renderPromUI() {
+  const el = $('prom-list');
+  if (!el) return;
+  el.innerHTML = PROM_DEFS.map((d) => `<button class="pa-kind ${promState.key === d.key ? 'on' : ''}" data-prom="${d.key}">
+    <span class="pa-kind-ico">${icon('assess')}</span><span>${t(promNameKey(d.key))}</span></button>`).join('');
+  el.querySelectorAll('[data-prom]').forEach((b) => b.addEventListener('click', () => {
+    promState.key = b.dataset.prom;
+    promState.open = false;
+    promState.answers = [];
+    $('prom-form').classList.add('hidden');
+    renderPromUI();
+  }));
+  $('prom-desc').textContent = t('prom' + promState.key.charAt(0).toUpperCase() + promState.key.slice(1) + 'D');
+  $('btn-prom-cancel').classList.toggle('hidden', !promState.open);
+  $('btn-prom-start').classList.toggle('hidden', promState.open);
+  if (promState.open) renderPromForm();
+}
+function renderPromForm() {
+  const d = promDef(promState.key);
+  const keys = PROM_ITEM_KEYS[d.key];
+  if (promState.answers.length !== keys.length) promState.answers = new Array(keys.length).fill(null);
+  const box = $('prom-form');
+  box.classList.remove('hidden');
+  box.innerHTML = `<div style="margin-top:10px">` + keys.map((k, qi) => `
+    <div class="prom-q">
+      <div class="prom-qt">${qi + 1}. ${t(k)}</div>
+      <div class="prom-opts">${Array.from({ length: d.opt }, (_, v) => `<button class="prom-opt ${promState.answers[qi] === v ? 'on' : ''}" data-qi="${qi}" data-qv="${v}">${t('promL' + v)}</button>`).join('')}</div>
+    </div>`).join('') + (d.type === 'eq' ? `
+    <div class="prom-q"><div class="prom-qt">${t('promVas')} · <b id="prom-vas-val">${promState.vas}</b></div>
+      <input type="range" id="prom-vas" min="0" max="100" value="${promState.vas}" style="width:100%"></div>` : '')
+    + `<div class="controls"><button id="btn-prom-submit" class="btn primary">${t('promSubmit')}</button></div></div>`;
+  box.querySelectorAll('[data-qi]').forEach((b) => b.addEventListener('click', () => {
+    promState.answers[Number(b.dataset.qi)] = Number(b.dataset.qv);
+    renderPromForm();
+  }));
+  const vas = $('prom-vas');
+  if (vas) vas.addEventListener('input', () => { promState.vas = Number(vas.value); $('prom-vas-val').textContent = vas.value; });
+  $('btn-prom-submit').addEventListener('click', promSubmit);
+}
+function promSubmit() {
+  const d = promDef(promState.key);
+  const keys = PROM_ITEM_KEYS[d.key];
+  const answered = promState.answers.filter((v) => v != null).length;
+  const need = d.type === 'ratio' ? 8 : keys.length;
+  if (answered < need) { toast(t('promNeedAll', { n: need })); return; }
+  const sc = promScore(d, promState.answers);
+  const rec = { id: uid(), ts: Date.now(), key: d.key, answers: promState.answers.slice(), total: sc.total, subs: sc.subs, band: sc.band, level: sc.level };
+  const h = promHistory(); h.unshift(rec); promSave(h);
+  promState.open = false;
+  $('prom-form').classList.add('hidden');
+  renderPromUI();
+  renderPromResult(rec);
+  renderPromHistory();
+  renderReport();
+  aiRun();
+  toast(t('promDone'));
+  scheduleCloudSync();
+}
+function renderPromResult(rec) {
+  const el = $('prom-result');
+  if (!el) return;
+  if (!rec) { el.classList.add('hidden'); return; }
+  const d = promDef(rec.key);
+  const prev = promHistory().filter((r) => r.id !== rec.id && r.key === rec.key)[0];
+  const delta = prev ? rec.total - prev.total : null;
+  const better = d.type === 'ratio' ? delta != null && delta < 0 : delta != null && delta > 0;
+  el.classList.remove('hidden');
+  el.className = 'prom-result ' + rec.level;
+  const isKoos = !!rec.subs && ['pain', 'symptom', 'adl', 'sport', 'qol'].some((k) => rec.subs[k] != null);
+  const subTxt = rec.subs && rec.subs.dims
+    ? `<span><i>${t('promVas')}</i> <b>${rec.subs.vas}</b></span>`
+    : isKoos
+      ? Object.entries(rec.subs).map(([k, v]) => `<span><i>${t(PROM_SUB_KEYS[k] || k)}</i> <b>${v}</b></span>`).join('')
+      : '';
+  el.innerHTML = `<div class="prom-head">${t(promNameKey(rec.key))} · <span class="rom-lv ${rec.level}">${t('promBand' + rec.band)}</span></div>
+    <div class="prom-big">${rec.total}${d.type === 'eq' ? ' / 100' : '%'}</div>
+    ${subTxt ? `<div class="prom-sub">${subTxt}</div>` : ''}
+    ${delta == null ? '' : `<p class="hint tiny ${better ? '' : delta === 0 ? '' : 'warn'}">${t(better ? 'promBetter' : delta === 0 ? 'promSame' : 'promWorse', { d: Math.abs(delta) })}</p>`}
+    <p class="hint tiny">${t('promAdvice' + rec.level.charAt(0).toUpperCase() + rec.level.slice(1))}</p>`;
+  }
+function renderPromHistory() {
+  const el = $('prom-history');
+  if (!el) return;
+  const h = promHistory();
+  if (!h.length) { el.innerHTML = emptyBox('assess', 'promNoData'); return; }
+  el.innerHTML = h.slice(0, 6).map((r) => `<div class="item">
+      <div>
+        <div class="t"><span class="t-ico">${icon('assess')}</span>${t(promNameKey(r.key))}
+          <span class="rom-lv ${r.level}">${t('promBand' + r.band)}</span></div>
+        <div class="d">${new Date(r.ts).toLocaleString(locale(), { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })} · ${r.total}${promDef(r.key).type === 'eq' ? ' / 100' : '%'}</div>
+      </div>
+      <div><button class="mini del" data-promdel="${r.id}">${icon('trash')}</button></div>
+    </div>`).join('');
+  el.querySelectorAll('[data-promdel]').forEach((b) => b.addEventListener('click', () => {
+    if (!confirm(t('confirmDelProm'))) return;
+    promSave(promHistory().filter((r) => r.id !== b.dataset.promdel));
+    renderPromHistory(); renderReport();
+    toast(t('toastDeleted'));
+  }));
+}
+$('btn-prom-start').addEventListener('click', () => {
+  promState.open = true;
+  promState.answers = [];
+  promState.vas = 50;
+  renderPromUI();
+});
+$('btn-prom-cancel').addEventListener('click', () => {
+  promState.open = false;
+  $('prom-form').classList.add('hidden');
+  renderPromUI();
+});
+// 报告：各量表最近一次结果
+function promReportRows() {
+  const h = promHistory();
+  const rows = [];
+  const latest = {};
+  h.forEach((r) => { if (!latest[r.key]) latest[r.key] = r; });
+  const keys = Object.keys(latest);
+  if (keys.length) {
+    rows.push({ k: t('repProms'), v: keys.map((k) => `${t(promNameKey(k))} ${latest[k].total}${promDef(k).type === 'eq' ? '' : '%'}`).join(' · '), cls: keys.some((k) => latest[k].level === 'bad') ? 'warn' : keys.every((k) => latest[k].level === 'good') ? 'ok' : '' });
+  }
+  return rows;
+}
+function promBadCount() { return promHistory().filter((r) => r.level === 'bad').length; }
+
+/* ============ v2.26.0 新模块：ROM 关节活动度（Range of Motion） ============ */
+// 对标专业康复产品的 ROM 测量：单摄像头 → 关键点角度 → 关节最大活动范围 + 左右差异。
+const ROM_MS = 6000;                 // 每次测量时长（6 秒，做到最大幅度并保持）
+const ROM_IDX = {
+  L: { shoulder: 11, elbow: 13, hip: 23, knee: 25, ankle: 27 },
+  R: { shoulder: 12, elbow: 14, hip: 24, knee: 26, ankle: 28 },
+};
+const ROM_ITEMS = [
+  { key: 'kneeFlex', lm: 'knee', mode: 'gain', norm: 135, from: 175, to: 45 },
+  { key: 'kneeExt', lm: 'knee', mode: 'deficit', norm: 5, from: 160, to: 178 },
+  { key: 'shoulderFlex', lm: 'shoulder', mode: 'gain', norm: 160, from: 15, to: 175 },
+  { key: 'shoulderAbd', lm: 'shoulder', mode: 'gain', norm: 160, from: 15, to: 175 },
+  { key: 'hipFlex', lm: 'hip', mode: 'gain', norm: 110, from: 175, to: 60 },
+];
+const romItem = (key) => ROM_ITEMS.find((x) => x.key === key) || ROM_ITEMS[0];
+const romHistory = () => sget('rehab_rom_history', []);
+const romSave = (h) => sset('rehab_rom_history', h.slice(0, 60));
+const romAngleAt = (p, a, b) => {
+  const v1 = [a.x - p.x, a.y - p.y], v2 = [b.x - p.x, b.y - p.y];
+  const d = Math.hypot(v1[0], v1[1]) * Math.hypot(v2[0], v2[1]);
+  if (!d) return 0;
+  const cos = Math.max(-1, Math.min(1, (v1[0] * v2[0] + v1[1] * v2[1]) / d));
+  return (Math.acos(cos) * 180) / Math.PI;
+};
+function romRawAngle(lm, side, lms) {
+  const I = ROM_IDX[side] || ROM_IDX.L;
+  try {
+    if (lm === 'knee') return romAngleAt(lms[I.knee], lms[I.hip], lms[I.ankle]);
+    if (lm === 'hip') return romAngleAt(lms[I.hip], lms[I.shoulder], lms[I.knee]);
+    if (lm === 'shoulder') return romAngleAt(lms[I.shoulder], lms[I.hip], lms[I.elbow]);
+  } catch { /* 关键点缺失 */ }
+  return 0;
+}
+function romValueOf(it, min, max) {
+  if (min == null || max == null) return null;
+  if (it.mode === 'deficit') return Math.round(180 - max);            // 伸展缺损（越小越好）
+  return Math.round(it.lm === 'shoulder' ? max : 180 - min);          // 屈曲/外展取最大角
+}
+function romLevel(it, v) {
+  if (v == null) return 'none';
+  if (it.mode === 'deficit') return v <= 5 ? 'good' : v <= 10 ? 'warn' : 'bad';
+  return v >= it.norm ? 'good' : v >= it.norm - 20 ? 'warn' : 'bad';
+}
+const romState = { active: false, demo: false, key: 'kneeFlex', side: 'L', t0: 0, min: null, max: null, lastT: 0, videoOn: false };
+// 演示模式：合成「从起始角匀速到最大角」的骨架帧（测试与无摄像头时可用）
+function romDemoFrame(key, ts) {
+  const it = romItem(key);
+  const elapsed = romState.t0 ? ts - romState.t0 : 0;          // 用本次测量的已用时间，保证 6 秒走完全程
+  const p = Math.min(1, Math.max(0, elapsed / ROM_MS));
+  const ang = ((it.from + (it.to - it.from) * p) * Math.PI) / 180;
+  const mk = (x, y) => ({ x, y, z: 0, visibility: 1 });
+  const lms = Array.from({ length: 33 }, () => mk(0.5, 0.5));
+  const dir = [Math.sin(ang), -Math.cos(ang)];    // 与「向上」的基准成 ang（膝/髋用）
+  const dir2 = [Math.sin(ang), Math.cos(ang)];     // 与「向下」的基准成 ang（肩用）
+  if (it.lm === 'knee') {
+    const hip = mk(0.5, 0.28), knee = mk(0.5, 0.56);
+    lms[23] = lms[24] = hip; lms[25] = lms[26] = knee;
+    lms[27] = lms[28] = mk(knee.x + dir[0] * 0.3, knee.y + dir[1] * 0.3);
+    lms[11] = lms[12] = mk(0.5, 0.18); lms[13] = lms[14] = mk(0.58, 0.4); lms[15] = lms[16] = mk(0.62, 0.5);
+    lms[31] = lms[32] = mk(knee.x + dir[0] * 0.36, knee.y + dir[1] * 0.36);
+  } else if (it.lm === 'hip') {
+    const sh = mk(0.5, 0.16), hip = mk(0.5, 0.52);
+    lms[11] = lms[12] = sh; lms[23] = lms[24] = hip;
+    lms[25] = lms[26] = mk(hip.x + dir[0] * 0.3, hip.y + dir[1] * 0.3);
+    lms[27] = lms[28] = mk(hip.x + dir[0] * 0.56, hip.y + dir[1] * 0.56);
+    lms[13] = lms[14] = mk(0.5, 0.32); lms[15] = lms[16] = mk(0.5, 0.44);
+  } else {
+    const hip = mk(0.5, 0.78), sh = mk(0.5, 0.36);
+    lms[23] = lms[24] = hip; lms[11] = lms[12] = sh;
+    lms[13] = lms[14] = mk(sh.x + dir2[0] * 0.28, sh.y + dir2[1] * 0.28);
+    lms[15] = lms[16] = mk(sh.x + dir2[0] * 0.52, sh.y + dir2[1] * 0.52);
+    lms[25] = lms[26] = mk(0.5, 0.9); lms[27] = lms[28] = mk(0.5, 0.98);
+  }
+  lms[0] = mk(0.5, 0.1);
+  return lms;
+}
+function romGuide() {
+  const it = romItem(romState.key);
+  $('rom-guide').textContent = t('romGuide' + it.key.charAt(0).toUpperCase() + it.key.slice(1));
+}
+function setRomBtn() {
+  const el = $('btn-rom-start-label');
+  if (el) el.textContent = romState.active ? t('romStop') : t('romStart');
+}
+function renderRomLive(cur) {
+  const el = $('rom-live');
+  if (!el) return;
+  el.classList.remove('hidden');
+  const it = romItem(romState.key);
+  const v = romValueOf(it, romState.min, romState.max);
+  const pct = romState.t0 ? Math.min(100, Math.round(((performance.now() - romState.t0) / ROM_MS) * 100)) : 0;
+  el.innerHTML = `<div class="rom-row"><b>${t('romCurrent')}</b><span class="rom-cur">${cur == null ? '—' : cur.toFixed(0)}°</span>
+    <b>${t('romBest')}</b><span class="rom-best">${v == null ? '—' : v + '°'}</span></div>
+    <div class="rom-bar"><div class="rom-fill" style="width:${pct}%"></div></div>`;
+}
+function renderRomResult(rec) {
+  const el = $('rom-result');
+  if (!el) return;
+  if (!rec) { el.classList.add('hidden'); return; }
+  const it = romItem(rec.key);
+  const prev = romHistory().filter((r) => r.id !== rec.id && r.key === rec.key && r.side === rec.side)[0];
+  const diff = prev && prev.rom != null && rec.rom != null ? rec.rom - prev.rom : null;
+  el.classList.remove('hidden');
+  el.className = 'rom-result ' + rec.level;
+  el.innerHTML = `<div class="rom-head">${t('romItem' + it.key.charAt(0).toUpperCase() + it.key.slice(1))} · ${rec.side === 'L' ? t('romSideL') : t('romSideR')}
+      <span class="rom-lv ${rec.level}">${t('romLv' + rec.level.charAt(0).toUpperCase() + rec.level.slice(1))}</span></div>
+    <div class="rom-big">${it.mode === 'deficit' ? t('romDeficit', { v: rec.rom == null ? '—' : rec.rom }) : t('romRange', { v: rec.rom == null ? '—' : rec.rom })}</div>
+    <p class="hint tiny">${t('romDetail', { min: rec.min == null ? '—' : rec.min, max: rec.max == null ? '—' : rec.max, n: it.norm })}</p>
+    ${(function () { const b = romBaseline(rec.key, rec.side); if (!b || rec.rom == null) return ''; const d = rec.rom - b.med; return `<p class="hint tiny ${d < 0 ? 'warn' : ''}">${t('romVsBaseline', { v: b.med, d: (d >= 0 ? '+' : '') + d, n: b.n })}</p>`; })()}
+    ${diff == null ? '' : `<p class="hint tiny ${diff > 0 ? '' : diff < 0 ? 'warn' : ''}">${t(diff >= 0 ? 'romUp' : 'romDown', { d: Math.abs(diff) })}</p>`}
+    <p class="hint tiny">${t('romAdvice' + (rec.level === 'good' ? 'Good' : rec.level === 'bad' ? 'Bad' : 'Warn'))}</p>`;
+}
+function renderRomHistory() {
+  const el = $('rom-history');
+  if (!el) return;
+  const h = romHistory();
+  if (!h.length) { el.innerHTML = emptyBox('assess', 'romNoData'); return; }
+  el.innerHTML = h.slice(0, 6).map((r) => {
+    const it = romItem(r.key);
+    return `<div class="item">
+      <div>
+        <div class="t"><span class="t-ico">${icon('assess')}</span>${t('romItem' + it.key.charAt(0).toUpperCase() + it.key.slice(1))} · ${r.side === 'L' ? t('romSideL') : t('romSideR')}
+          <span class="rom-lv ${r.level}">${t('romLv' + r.level.charAt(0).toUpperCase() + r.level.slice(1))}</span></div>
+        <div class="d">${new Date(r.ts).toLocaleString(locale(), { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })} · ${t('romDetailShort', { v: r.rom == null ? '—' : r.rom })}</div>
+      </div>
+      <div><button class="mini del" data-romdel="${r.id}">${icon('trash')}</button></div>
+    </div>`;
+  }).join('');
+  el.querySelectorAll('[data-romdel]').forEach((b) => b.addEventListener('click', () => {
+    if (!confirm(t('confirmDelRom'))) return;
+    romSave(romHistory().filter((r) => r.id !== b.dataset.romdel));
+    renderRomHistory(); renderReport();
+    toast(t('toastDeleted'));
+  }));
+}
+function renderRomUI() {
+  const el = $('rom-items');
+  if (!el) return;
+  el.innerHTML = ROM_ITEMS.map((it) => `<button class="pa-kind ${romState.key === it.key ? 'on' : ''}" data-rom="${it.key}">
+    <span class="pa-kind-ico">${icon('assess')}</span><span>${t('romItem' + it.key.charAt(0).toUpperCase() + it.key.slice(1))}</span></button>`).join('');
+  el.querySelectorAll('[data-rom]').forEach((b) => b.addEventListener('click', () => {
+    romState.key = b.dataset.rom;
+    if (romState.active) { romStop(); toast(t('romSwitched')); }
+    renderRomUI();
+  }));
+  const seg = $('rom-side');
+  if (seg) seg.querySelectorAll('[data-side]').forEach((b) => {
+    b.classList.toggle('on', b.dataset.side === romState.side);
+    b.onclick = () => {
+      romState.side = b.dataset.side;
+      if (romState.active) { romStop(); toast(t('romSwitched')); }
+      renderRomUI();
+    };
+  });
+  romGuide();
+  setRomBtn();
+}
+async function romStart(demo) {
+  if (romState.active) { romStop(); return; }
+  if (paState.active) paStop();                       // 与体态评估互斥，防止摄像头占用
+  romState.active = true; romState.demo = !!demo;
+  romState.t0 = 0; romState.min = null; romState.max = null;
+  renderRomResult(null);
+  setRomBtn();
+  if (demo) {
+    $('pa-video').classList.add('hidden');
+    $('pa-placeholder').classList.remove('hidden');
+    $('pa-placeholder-text').textContent = t('romDemoRunning');
+  } else {
+    $('pa-video').classList.remove('hidden');
+    try {
+      const stream = await openCamera();
+      const v = $('pa-video');
+      v.srcObject = stream;
+      await new Promise((res, rej) => {
+        if (v.readyState >= 1) return res();
+        const t0 = setTimeout(() => rej(new Error('rom camera timeout')), 15000);
+        v.onloadedmetadata = () => { clearTimeout(t0); res(); };
+      });
+      romState.videoOn = true;
+    } catch (e) { romState.active = false; setRomBtn(); showCameraError(e); return; }
+  }
+  renderRomLive(null);
+  requestAnimationFrame(romLoop);
+}
+function romStop() {
+  romState.active = false;
+  romState.videoOn = false;
+  try {
+    const v = $('pa-video');
+    if (v && v.srcObject) { v.srcObject.getTracks().forEach((x) => x.stop()); v.srcObject = null; }
+    const c = $('pa-overlay');
+    if (c) c.getContext('2d').clearRect(0, 0, c.width, c.height);
+  } catch { /* ignore */ }
+  $('rom-live').classList.add('hidden');
+  setRomBtn();
+}
+function romLoop() {
+  if (!romState.active) return;
+  if (state.tab !== 'posture' || document.hidden) { requestAnimationFrame(romLoop); return; }
+  const ts = performance.now();
+  if (ts - romState.lastT < 33) { requestAnimationFrame(romLoop); return; }
+  romState.lastT = ts;
+  if (!romState.t0) romState.t0 = ts;
+  const it = romItem(romState.key);
+  let lms = null;
+  if (romState.demo) lms = romDemoFrame(romState.key, ts);
+  else {
+    const v = $('pa-video');
+    if (!romState.videoOn || v.readyState < 2) { requestAnimationFrame(romLoop); return; }
+    const r = state.landmarker ? state.landmarker.detectForVideo(v, ts) : null;
+    if (r && r.landmarks && r.landmarks.length) lms = r.landmarks[0];
+  }
+  const c = $('pa-overlay');
+  if (c) {
+    const cw = c.clientWidth, ch = c.clientHeight;
+    if (c.width !== cw || c.height !== ch) { c.width = cw; c.height = ch; }
+    const ctx2 = c.getContext('2d');
+    ctx2.clearRect(0, 0, cw, ch);
+    if (lms) drawStick(ctx2, lms, cw, ch, !romState.demo);
+  }
+  let cur = null;
+  if (lms) {
+    cur = romRawAngle(it.lm, romState.side, lms);
+    if (cur > 1 && cur < 180) {
+      romState.min = romState.min == null ? cur : Math.min(romState.min, cur);
+      romState.max = romState.max == null ? cur : Math.max(romState.max, cur);
+    }
+  }
+  renderRomLive(cur);
+  if (ts - romState.t0 >= ROM_MS) { romFinish(); return; }
+  requestAnimationFrame(romLoop);
+}
+function romFinish() {
+  const it = romItem(romState.key);
+  const min = romState.min == null ? null : Math.round(romState.min);
+  const max = romState.max == null ? null : Math.round(romState.max);
+  const rom = romValueOf(it, romState.min, romState.max);
+  const rec = { id: uid(), ts: Date.now(), key: it.key, side: romState.side, min, max, rom, level: romLevel(it, rom), demo: romState.demo };
+  const h = romHistory(); h.unshift(rec); romSave(h);
+  romStop();
+  renderRomResult(rec);
+  renderRomHistory();
+  renderReport();
+  renderHome();
+  toast(t('romDone'));
+  scheduleCloudSync();
+}
+$('btn-rom-start').addEventListener('click', () => { romStart(false); });
+$('btn-rom-demo').addEventListener('click', () => { romStart(true); });
+// 报告里的 ROM 行 + 左右差异
+function romReportRows() {
+  const h = romHistory();
+  const rows = [];
+  const measured = ROM_ITEMS.filter((it) => h.some((r) => r.key === it.key && r.rom != null));
+  if (measured.length) {
+    rows.push({ k: t('repRom'), v: measured.map((it) => {
+      const last = h.find((r) => r.key === it.key && r.rom != null);
+      return `${t('romShort' + it.key.charAt(0).toUpperCase() + it.key.slice(1))} ${last.rom}°`;
+    }).join(' · '), cls: '' });
+    const diffs = [], seen = {};
+    h.forEach((r) => { if (r.rom == null) return; seen[r.key] = seen[r.key] || {}; if (!seen[r.key][r.side]) seen[r.key][r.side] = r.rom; });
+    Object.entries(seen).forEach(([k, v]) => {
+      if (v.L != null && v.R != null) diffs.push(`${t('romShort' + k.charAt(0).toUpperCase() + k.slice(1))} ${Math.abs(v.L - v.R)}°`);
+    });
+    if (diffs.length) rows.push({ k: t('repRomDiff'), v: diffs.join(' · '), cls: diffs.some((d) => parseInt(d.match(/(\d+)°/)[1], 10) > 10) ? 'warn' : 'ok' });
+  }
+  return rows;
+}
+
+/* ============ v2.25.0 报告升级：体态截图 + 六维雷达 + 30 天趋势 ============ */
+// 体态截图：优先存「骨架图」（只含火柴人，不含真人照片，隐私友好），退化到视频帧
+function paSnapShot() {
+  try {
+    const cv = document.createElement('canvas');
+    const ov = $('overlay');
+    const v = $('pa-video');
+    const src = (ov && ov.width > 8 && !ov.classList.contains('hidden')) ? ov : (v && v.videoWidth ? v : null);
+    if (!src) return null;
+    const sw = src.width || src.videoWidth;
+    const sh = src.height || src.videoHeight;
+    if (!sw || !sh) return null;
+    const w = 240, h = Math.max(2, Math.round(w * sh / sw));
+    cv.width = w; cv.height = h;
+    cv.getContext('2d').drawImage(src, 0, 0, w, h);
+    const url = cv.toDataURL('image/jpeg', 0.6);
+    return url && url.length > 400 ? url : null;
+  } catch { return null; }
+}
+// 功能测试六维雷达（对称/排列/动态/稳定/活动度/一致性）
+const FT_DIM_ORDER = ['sym', 'align', 'dyn', 'stab', 'rom', 'cons'];
+const FT_DIM_KEYS = ['ftDimSym', 'ftDimAlign', 'ftDimDyn', 'ftDimStab', 'ftDimRom', 'ftDimCons'];
+function ftLatestDims() {
+  const h = ftHistory();
+  const rec = h.find((r) => r.battery && r.dims) || h.find((r) => r.dims);
+  return rec ? rec.dims : null;
+}
+function radarSvg(dims, uid) {
+  const V = dims || {};
+  const W = 220, C = W / 2, R = 76;
+  const pt = (i, r) => {
+    const a = -Math.PI / 2 + (Math.PI * 2 * i) / FT_DIM_ORDER.length;
+    return [C + Math.cos(a) * r, C + Math.sin(a) * r];
+  };
+  const ring = (f) => FT_DIM_ORDER.map((_, i) => pt(i, R * f).map((n) => n.toFixed(1)).join(',')).join(' ');
+  const vals = FT_DIM_ORDER.map((k) => Math.max(0, Math.min(100, Math.round(Number(V[k]) || 0))));
+  const poly = vals.map((v, i) => pt(i, (R * v) / 100).map((n) => n.toFixed(1)).join(',')).join(' ');
+  return `<svg viewBox="0 0 ${W} ${W}" class="radar-chart" role="img" aria-label="${t('repRadar')}">
+    ${[0.25, 0.5, 0.75, 1].map((f) => `<polygon points="${ring(f)}" fill="none" stroke="#e7e2d7" stroke-width="1"/>`).join('')}
+    ${FT_DIM_ORDER.map((_, i) => { const [x, y] = pt(i, R); return `<line x1="${C}" y1="${C}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}" stroke="#e7e2d7" stroke-width="1"/>`; }).join('')}
+    <polygon points="${poly}" fill="rgba(14,124,102,.18)" stroke="#0e7c66" stroke-width="2"/>
+    ${FT_DIM_ORDER.map((_, i) => { const [x, y] = pt(i, R + 14); return `<text x="${x.toFixed(1)}" y="${(y + 3).toFixed(1)}" font-size="9" fill="#69707c" text-anchor="middle">${t(FT_DIM_KEYS[i])}</text>`; }).join('')}
+  </svg>
+  <div class="radar-vals">${FT_DIM_ORDER.map((k, i) => `<span class="rv"><i>${t(FT_DIM_KEYS[i])}</i><b>${vals[i]}</b></span>`).join('')}</div>`;
+}
+// 近 30 天每日训练次数（0 的天也保留，形成连续趋势）
+function trend30Points() {
+  const sessions = sget('rehab_sessions', []);
+  const out = [];
+  for (let i = 29; i >= 0; i--) {
+    const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - i);
+    const k = dayKeyOf(d.getTime());
+    out.push(sessions.filter((s) => dayKeyOf(s.ts) === k).reduce((a, s) => a + (s.reps || 0), 0));
+  }
+  return out;
+}
+const loadImg = (src) => new Promise((res) => {
+  if (!src) return res(null);
+  const im = new Image();
+  im.onload = () => res(im);
+  im.onerror = () => res(null);
+  im.src = src;
+});
+// canvas 版雷达 + 折线（供 PNG 长图使用）
+function drawRadarCanvas(c, cx, cy, R, dims) {
+  const V = dims || {};
+  const n = FT_DIM_ORDER.length;
+  const pt = (i, r) => {
+    const a = -Math.PI / 2 + (Math.PI * 2 * i) / n;
+    return [cx + Math.cos(a) * r, cy + Math.sin(a) * r];
+  };
+  c.strokeStyle = '#e7e2d7'; c.lineWidth = 1;
+  [0.25, 0.5, 0.75, 1].forEach((f) => {
+    c.beginPath();
+    for (let i = 0; i <= n; i++) { const [x, y] = pt(i % n, R * f); i ? c.lineTo(x, y) : c.moveTo(x, y); }
+    c.stroke();
+  });
+  for (let i = 0; i < n; i++) { const [x, y] = pt(i, R); c.beginPath(); c.moveTo(cx, cy); c.lineTo(x, y); c.stroke(); }
+  c.beginPath();
+  FT_DIM_ORDER.forEach((k, i) => {
+    const v = Math.max(0, Math.min(100, Number(V[k]) || 0));
+    const [x, y] = pt(i, (R * v) / 100);
+    i ? c.lineTo(x, y) : c.moveTo(x, y);
+  });
+  c.closePath(); c.fillStyle = 'rgba(14,124,102,.18)'; c.fill();
+  c.strokeStyle = '#0e7c66'; c.lineWidth = 2; c.stroke();
+  c.fillStyle = '#69707c'; c.font = '12px "Microsoft YaHei",system-ui,sans-serif';
+  FT_DIM_ORDER.forEach((k, i) => {
+    const [x, y] = pt(i, R + 18);
+    c.textAlign = 'center';
+    c.fillText(`${t(FT_DIM_KEYS[i])} ${Math.round(Number(V[k]) || 0)}`, x, y + 4);
+    c.textAlign = 'left';
+  });
+}
+function drawTrendCanvas(c, x, y, w, h, pts) {
+  const m = Math.max(1, ...pts);
+  const px = (i) => x + (w * i) / Math.max(1, pts.length - 1);
+  const py = (v) => y + h - (h * v) / m;
+  c.strokeStyle = '#e7e2d7'; c.lineWidth = 1;
+  c.beginPath(); c.moveTo(x, y + h); c.lineTo(x + w, y + h); c.stroke();
+  c.beginPath();
+  pts.forEach((v, i) => (i ? c.lineTo(px(i), py(v)) : c.moveTo(px(i), py(v))));
+  c.strokeStyle = '#0e7c66'; c.lineWidth = 2; c.stroke();
+  c.lineTo(x + w, y + h); c.lineTo(x, y + h); c.closePath();
+  c.fillStyle = 'rgba(14,124,102,.12)'; c.fill();
+}
+
+/* ============ v2.24.0 新模块：治疗师报告（一键汇总 + HTML/PDF/图片/摘要） ============ */
+// 对标 PhysiApp 的会话级回传：把评估、训练依从性、疼痛与建议汇总成一页可分享的报告。
+function buildReportData() {
+  const sessions = sget('rehab_sessions', []);
+  const from = Date.now() - 30 * 86400000;
+  const s30 = sessions.filter((s) => (s.ts || 0) >= from);
+  const days = new Set(s30.map((s) => dayKeyOf(s.ts))).size;
+  const reps = s30.reduce((a, s) => a + (s.reps || 0), 0);
+  const doneKeys = Object.keys(sget('rehab_plan_done', {})).filter((k) => k >= dayKeyOf(from));
+  const pairs = painDailyPairs(14).filter((p) => p.pre != null || p.post != null);
+  return {
+    prof: profileGet(),
+    sessions: s30.length, days, reps,
+    streak: calcStreak(sessions),
+    idx: homeIndex(),
+    pa: paHistory()[0] || null,
+    ft: ftHistory().find((r) => r.battery) || ftHistory()[0] || null,
+    painMax: painRecentMax(30),
+    pairs,
+    plan: planGet().length,
+    planDays: doneKeys.length,
+    ai: aiLast,
+    spike: painSpike(),
+    snap: (paHistory()[0] && paHistory()[0].snap) || null,   // v2.25.0：最新体态骨架快照
+    dims: ftLatestDims(),                                    // v2.25.0：功能测试六维
+    trend30: trend30Points(),                                // v2.25.0：近 30 天训练趋势
+  };
+}
+function reportRows(r) {
+  const rows = [];
+  rows.push({ k: t('repPatient'), v: (r.prof.name || t('repAnon')) + (r.prof.goal ? ' · ' + t('goal' + r.prof.goal.charAt(0).toUpperCase() + r.prof.goal.slice(1)) : ''), cls: '' });
+  rows.push({ k: t('repIndex'), v: r.idx.score == null ? t('repNone') : r.idx.score + ' · ' + (r.idx.level ? t('gwLv' + r.idx.level) : ''), cls: r.idx.score == null ? '' : r.idx.score >= 75 ? 'ok' : r.idx.score < 60 ? 'warn' : '' });
+  rows.push({ k: t('repPa'), v: r.pa ? r.pa.score + ' · ' + t('paGrade' + (r.pa.grade || 'C')) : t('repNone'), cls: '' });
+  rows.push({ k: t('repFt'), v: r.ft ? String(r.ft.score) : t('repNone'), cls: '' });
+  rows.push({ k: t('repPain'), v: r.painMax == null ? t('repNone') : r.painMax + ' / 10', cls: r.painMax != null && r.painMax >= 7 ? 'warn' : r.painMax != null && r.painMax <= 3 ? 'ok' : '' });
+  rows.push({ k: t('repAdherence'), v: t('repAdh', { d: r.days, n: r.sessions, r: r.reps }), cls: r.days >= 12 ? 'ok' : r.days === 0 ? 'warn' : '' });
+  rows.push({ k: t('repStreak'), v: t('repDays', { n: r.streak }), cls: '' });
+  rows.push({ k: t('repPlan'), v: t('repPlanV', { p: r.plan, d: r.planDays }), cls: '' });
+  romReportRows().forEach((x) => rows.push(x));   // v2.26.0：ROM 测量汇总进报告
+  promReportRows().forEach((x) => rows.push(x));  // v2.27.0：PROMs 量表结果进报告
+  return rows;
+}
+function reportAdvice(r) {
+  const list = [];
+  if (r.spike) list.push(t('aiPainSpike', { d: r.spike.delta }));
+  else if (r.painMax != null && r.painMax >= 7) list.push(t('aiPainHigh', { v: r.painMax }));
+  if (r.idx.score != null && r.idx.score < 60) list.push(t('repAdvLow'));
+  if (r.days < 8) list.push(t('repAdvConsist'));
+  if (r.ft && r.ft.score < 70) list.push(t('repAdvFt'));
+  if (r.ai && r.ai.items) r.ai.items.slice(0, 3).forEach((it) => list.push(t(it.key, it.args)));
+  if (!list.length) list.push(t('repAdvGood'));
+  return list;
+}
+function renderReport() {
+  const el = $('rep-summary');
+  if (!el) return;
+  const r = buildReportData();
+  el.innerHTML = reportRows(r).map((x) => `<div class="rep-row"><span class="k">${x.k}</span><span class="v ${x.cls}">${x.v}</span></div>`).join('')
+    + (r.snap
+      ? `<div class="rep-sec"><h4>${t('repSnap')}</h4><img class="rep-snap" src="${r.snap}" alt="${t('repSnap')}"><p class="hint tiny">${t('repSnapNote')}</p></div>`
+      : `<div class="rep-sec"><h4>${t('repSnap')}</h4><p class="hint tiny">${t('repSnapNone')}</p></div>`)
+    + (r.dims ? `<div class="rep-sec"><h4>${t('repRadar')}</h4>${radarSvg(r.dims, 'reps')}</div>` : '')
+    + `<div class="rep-sec"><h4>${t('repTrend30')}</h4>${lineChart(r.trend30, '#0e7c66', 'rep30')}</div>`;
+}
+function reportSummaryText(r) {
+  const L = [t('repTitle') + ' · ' + new Date().toLocaleDateString(locale())];
+  reportRows(r).forEach((x) => L.push(`${x.k}：${x.v}`));
+  L.push('', t('repSuggest'));
+  reportAdvice(r).forEach((a, i) => L.push(`${i + 1}. ${a}`));
+  L.push('', t('repDisclaimer'));
+  return L.join('\n');
+}
+function reportHtmlDoc(r) {
+  const chartPts = r.pairs.map((p) => (p.post != null ? p.post : p.pre));
+  const chart = chartPts.length > 0 ? lineChart(chartPts, '#e07a5f', 'rp') : '';
+  const rows = reportRows(r).map((x) => `<tr><th>${x.k}</th><td class="${x.cls}">${x.v}</td></tr>`).join('');
+  const snapHtml = r.snap
+    ? `<h2>${t('repSnap')}</h2><img src="${r.snap}" alt="${t('repSnap')}" style="width:300px;border-radius:10px"><div class="sub">${t('repSnapNote')}</div>`
+    : '';
+  const radarHtml = r.dims ? `<h2>${t('repRadar')}</h2>${radarSvg(r.dims, 'rpradar')}` : '';
+  const trendHtml = `<h2>${t('repTrend30')}</h2>${lineChart(r.trend30, '#0e7c66', 'rp30')}`;
+  const adv = reportAdvice(r).map((a) => `<li>${a}</li>`).join('');
+  return `<!doctype html><html lang="${locale()}"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>${t('repTitle')} · ${new Date().toLocaleDateString(locale())}</title>
+<style>
+body{font-family:-apple-system,"Segoe UI",Roboto,"Helvetica Neue","Microsoft YaHei",sans-serif;max-width:760px;margin:28px auto;padding:0 18px;color:#22262e;line-height:1.65}
+h1{font-size:22px;margin:0 0 4px}.sub{color:#69707c;font-size:13px;margin-bottom:18px}
+table{border-collapse:collapse;width:100%;margin:14px 0}th,td{text-align:left;padding:9px 10px;border-bottom:1px solid #e7e2d7;font-size:14px}
+th{color:#69707c;font-weight:600;width:150px}td{font-weight:650}td.ok{color:#0e7c66}td.warn{color:#d14a4a}
+h2{font-size:15px;margin:22px 0 6px}.line-chart{width:100%;height:90px}
+.radar-chart{width:220px;height:220px;display:block}.radar-vals{display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:6px}
+.radar-vals .rv{font-size:12px;color:#69707c}.radar-vals .rv i{font-style:normal;margin-right:4px}.radar-vals .rv b{color:#0e7c66}
+ul{margin:6px 0 0 18px;padding:0}li{font-size:14px;margin-bottom:6px}
+.foot{margin-top:26px;padding-top:12px;border-top:1px solid #e7e2d7;color:#69707c;font-size:12px}
+@media print{body{margin:0}}
+</style></head><body>
+<h1>${t('repTitle')}</h1>
+<div class="sub">${t('repSubtitle')} · ${new Date().toLocaleString(locale())}</div>
+<table>${rows}</table>
+${snapHtml}${radarHtml}${trendHtml}
+${chart ? `<h2>${t('repPainTrend')}</h2>${chart}` : ''}
+<h2>${t('repSuggest')}</h2><ul>${adv}</ul>
+<div class="foot">${t('repPrintTip')}<br>${t('repDisclaimer')}</div>
+</body></html>`;
+}
+function downloadBlob(name, blob) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+function exportReportHtml() {
+  const r = buildReportData();
+  const name = `${t('fileReport')}-${new Date().toISOString().slice(0, 10)}.html`;
+  downloadBlob(name, new Blob([reportHtmlDoc(r)], { type: 'text/html;charset=utf-8' }));
+  toast(t('repDone'));
+}
+async function exportReportPng() {
+  const r = buildReportData();
+  const snapImg = await loadImg(r.snap);
+  const W = 900, H = 1760, S = 2;
+  const cv = document.createElement('canvas');
+  cv.width = W * S; cv.height = H * S;
+  const c = cv.getContext('2d');
+  c.scale(S, S);
+  c.fillStyle = '#f6f4ef'; c.fillRect(0, 0, W, H);
+  c.fillStyle = '#ffffff'; c.fillRect(36, 36, W - 72, H - 72);
+  c.fillStyle = '#0e7c66'; c.fillRect(36, 36, W - 72, 6);
+  c.fillStyle = '#22262e'; c.font = 'bold 30px "Microsoft YaHei",system-ui,sans-serif';
+  c.fillText(t('repTitle'), 68, 110);
+  c.fillStyle = '#69707c'; c.font = '16px "Microsoft YaHei",system-ui,sans-serif';
+  c.fillText(t('repSubtitle') + ' · ' + new Date().toLocaleString(locale()), 68, 142);
+  let y = 200;
+  reportRows(r).forEach((x) => {
+    c.fillStyle = '#69707c'; c.font = '17px "Microsoft YaHei",system-ui,sans-serif';
+    c.fillText(x.k, 68, y);
+    c.fillStyle = x.cls === 'warn' ? '#d14a4a' : x.cls === 'ok' ? '#0e7c66' : '#22262e';
+    c.font = 'bold 18px "Microsoft YaHei",system-ui,sans-serif';
+    const txt = String(x.v);
+    c.fillText(txt.length > 44 ? txt.slice(0, 43) + '…' : txt, 260, y);
+    c.strokeStyle = '#e7e2d7'; c.lineWidth = 1;
+    c.beginPath(); c.moveTo(68, y + 14); c.lineTo(W - 68, y + 14); c.stroke();
+    y += 52;
+  });
+  // v2.25.0：体态骨架截图 + 六维雷达 + 30 天训练趋势
+  let y2 = y + 16;
+  c.fillStyle = '#0e7c66'; c.font = 'bold 18px "Microsoft YaHei",system-ui,sans-serif';
+  c.fillText(t('repSnap'), 68, y2);
+  if (snapImg) c.drawImage(snapImg, 68, y2 + 16, 300, Math.round((300 * snapImg.height) / snapImg.width));
+  else {
+    c.fillStyle = '#69707c'; c.font = '15px "Microsoft YaHei",system-ui,sans-serif';
+    c.fillText(t('repSnapNone'), 68, y2 + 38);
+  }
+  if (r.dims) {
+    c.fillStyle = '#0e7c66'; c.font = 'bold 18px "Microsoft YaHei",system-ui,sans-serif';
+    c.fillText(t('repRadar'), 470, y2);
+    drawRadarCanvas(c, 640, y2 + 160, 110, r.dims);
+  }
+  y2 += 340;
+  c.fillStyle = '#0e7c66'; c.font = 'bold 18px "Microsoft YaHei",system-ui,sans-serif';
+  c.fillText(t('repTrend30'), 68, y2);
+  drawTrendCanvas(c, 68, y2 + 18, W - 136, 130, r.trend30);
+  y = y2 + 200;
+  c.fillStyle = '#0e7c66'; c.font = 'bold 18px "Microsoft YaHei",system-ui,sans-serif';
+  c.fillText(t('repSuggest'), 68, y + 26);
+  y += 62;
+  reportAdvice(r).slice(0, 5).forEach((a, i) => {
+    c.fillStyle = '#22262e'; c.font = '16px "Microsoft YaHei",system-ui,sans-serif';
+    const line = `${i + 1}. ${a}`;
+    let rest = line;
+    while (rest.length) {
+      const cut = rest.slice(0, 42);
+      c.fillText(cut, 68, y);
+      rest = rest.slice(42);
+      y += 26;
+    }
+    y += 10;
+  });
+  c.fillStyle = '#69707c'; c.font = '13px "Microsoft YaHei",system-ui,sans-serif';
+  c.fillText(t('repDisclaimer'), 68, H - 70);
+  cv.toBlob((b) => { if (b) downloadBlob(`${t('fileReport')}-${new Date().toISOString().slice(0, 10)}.png`, b); }, 'image/png');
+  toast(t('repDone'));
+}
+$('btn-rep-html').addEventListener('click', exportReportHtml);
+$('btn-rep-png').addEventListener('click', exportReportPng);
+$('btn-rep-copy').addEventListener('click', async () => {
+  const txt = reportSummaryText(buildReportData());
+  try { await navigator.clipboard.writeText(txt); toast(t('repCopyOk')); }
+  catch { toast(t('repCopyFail')); }
+});
+
+/* ============ v2.23.0 新模块：康复小课堂（患者教育）+ 疼痛上升预警 ============ */
+// 对标 PhysioTrack / ReplayRehab：把「问题→训练」补上「为什么会这样、不纠正会怎样、日常注意什么」。
+const EDU_CARDS = [
+  { id: 'round', ico: 'shoulderraise', go: 'guide', key: 'eduRound' },     // 圆肩 → 体态改善课
+  { id: 'valgus', ico: 'squat', go: 'train', key: 'eduValgus' },            // 膝内扣 → 训练页
+  { id: 'pelvic', ico: 'bridge', go: 'guide', key: 'eduPelvic' },           // 骨盆前倾 → 体态改善课
+  { id: 'fhead', ico: 'standing', go: 'guide', key: 'eduFHead' },           // 头前伸 → 体态改善课
+  { id: 'lowback', ico: 'hiphinge', go: 'train', key: 'eduLowBack' },       // 下背痛 → 训练页
+];
+const eduOpen = {};
+function renderEdu() {
+  const el = $('edu-list');
+  if (!el) return;
+  el.innerHTML = EDU_CARDS.map((c) => {
+    const open = !!eduOpen[c.id];
+    return `<div class="edu-card ${open ? 'on' : ''}">
+      <button class="edu-head" data-edu="${c.id}">
+        <span class="edu-ico">${icon(c.ico)}</span>
+        <span class="edu-t">${t(c.key + 'T')}</span>
+        <span class="edu-arrow">${open ? '−' : '+'}</span>
+      </button>
+      ${open ? `<div class="edu-body">
+        <p><b>${t('eduWhy')}</b>${t(c.key + 'Why')}</p>
+        <p><b>${t('eduRisk')}</b>${t(c.key + 'Risk')}</p>
+        <p><b>${t('eduDaily')}</b>${t(c.key + 'Daily')}</p>
+        <button class="btn small" data-edugo="${c.go}">${t('eduGo')} →</button>
+      </div>` : ''}
+    </div>`;
+  }).join('');
+  el.querySelectorAll('[data-edu]').forEach((b) => b.addEventListener('click', () => {
+    eduOpen[b.dataset.edu] = !eduOpen[b.dataset.edu];
+    renderEdu();
+  }));
+  el.querySelectorAll('[data-edugo]').forEach((b) => b.addEventListener('click', () => switchTab(b.dataset.edugo)));
+}
+// 疼痛上升预警：同一天「训练后 − 训练前 ≥ 2 分」→ 建议降强度或暂停该动作
+function painTodayPair() {
+  const k = dayKeyOf(Date.now());
+  const rows = painHistory().filter((r) => dayKeyOf(r.ts) === k);
+  const pre = rows.filter((r) => r.when === 'pre').pop();
+  const post = rows.filter((r) => r.when === 'post').pop();
+  return (pre && post) ? { pre: pre.v, post: post.v, delta: post.v - pre.v } : null;
+}
+function painSpike() {
+  const p = painTodayPair();
+  // v2.28.0：阈值不再写死，由「智能引擎」里的设置决定（默认 2 分，可改 1–4 或关闭自动调参）
+  const thr = Number(aiPrefs().painAlarm) || 2;
+  return (p && p.delta >= thr) ? p : null;
+}
+
+/* ============ v2.22.0 新模块：疼痛管理（VAS 0–10 · 训练前后 · 趋势） ============ */
+// 对标 PhysiApp / Kaia Health：每次训练前后各记一次疼痛，疼痛变化进入趋势与恢复建议。
+const PAIN_MAX = 10;
+const painHistory = () => sget('rehab_pain_history', []);
+const painSave = (list) => sset('rehab_pain_history', list.slice(0, 120));
+function painAdd(when, v, part, note) {
+  const h = painHistory();
+  h.unshift({ id: uid(), ts: Date.now(), when, v, part: part || 'other', note: note || '' });
+  painSave(h);
+}
+const painLevelOf = (v) => (v <= 3 ? 'good' : v <= 6 ? 'warn' : 'bad');
+const painLvKey = (v) => 'painLv' + (v <= 3 ? 'Low' : v <= 6 ? 'Mid' : 'High');
+const dayKeyOf = (ts) => {
+  const d = new Date(ts);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
+// 近 N 天：每天取最后一次「训练前 / 训练后」评分，供双线趋势图
+function painDailyPairs(days = 14) {
+  const h = painHistory();
+  const out = [];
+  for (let i = days - 1; i >= 0; i--) {
+    const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - i);
+    const k = dayKeyOf(d.getTime());
+    const rows = h.filter((r) => dayKeyOf(r.ts) === k);
+    const pre = rows.filter((r) => r.when === 'pre').pop();
+    const post = rows.filter((r) => r.when === 'post').pop();
+    const any = rows[0];
+    out.push({ k, pre: pre ? pre.v : null, post: post ? post.v : null, any: any ? any.v : null });
+  }
+  return out;
+}
+// 双线趋势图（纯新增，不动旧 lineChart）
+function painChartSvg(pairs) {
+  const W = 320, H = 92, P = 10;
+  const n = pairs.length;
+  const x = (i) => P + (W - 2 * P) * (i / Math.max(1, n - 1));
+  const y = (v) => H - P - (H - 2 * P) * (Math.max(0, Math.min(PAIN_MAX, v)) / PAIN_MAX);
+  const line = (key, color) => {
+    const pts = pairs.map((p, i) => (p[key] == null ? null : { x: x(i), y: y(p[key]) })).filter(Boolean);
+    if (!pts.length) return '';
+    const d = pts.map((p, i) => (i ? 'L' : 'M') + p.x.toFixed(1) + ' ' + p.y.toFixed(1)).join(' ');
+    return `<path d="${d}" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" vector-effect="non-scaling-stroke"/>` +
+      pts.map((p) => `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="2.2" fill="${color}"/>`).join('');
+  };
+  return `<div class="pain-legend"><span class="pl pre">${t('painPre')}</span><span class="pl post">${t('painPost')}</span><span class="pl risk">${t('painRiskLine')}</span></div>
+    <svg viewBox="0 0 ${W} ${H}" class="line-chart" preserveAspectRatio="none">
+      <line x1="${P}" y1="${y(7).toFixed(1)}" x2="${W - P}" y2="${y(7).toFixed(1)}" stroke="#f0d9d5" stroke-width="1" stroke-dasharray="3 3"/>
+      ${line('pre', '#0e7c66')}${line('post', '#e07a5f')}
+    </svg>`;
+}
+// 近 N 天最高疼痛（供今日页建议与 AI 管家）
+function painRecentMax(days = 7) {
+  const from = Date.now() - days * 86400000;
+  const list = painHistory().filter((r) => r.ts >= from);
+  return list.length ? Math.max(...list.map((r) => r.v)) : null;
+}
+function renderPain() {
+  const el = $('pain-now');
+  if (!el) return;
+  const h = painHistory();
+  const todayK = dayKeyOf(Date.now());
+  const today = h.filter((r) => dayKeyOf(r.ts) === todayK);
+  const preT = today.filter((r) => r.when === 'pre').pop();
+  const postT = today.filter((r) => r.when === 'post').pop();
+  const last = today[0] || h[0] || null;
+  el.innerHTML = `<div class="pain-now-row">
+    <span class="pain-chip ${preT ? painLevelOf(preT.v) : 'none'}">${t('painPre')} · ${preT ? preT.v : '—'}</span>
+    <span class="pain-chip ${postT ? painLevelOf(postT.v) : 'none'}">${t('painPost')} · ${postT ? postT.v : '—'}</span>
+    ${preT && postT ? `<span class="pain-delta ${postT.v > preT.v ? 'up' : postT.v < preT.v ? 'down' : ''}">${postT.v > preT.v ? t('painUp', { d: postT.v - preT.v }) : postT.v < preT.v ? t('painDown', { d: preT.v - postT.v }) : t('painSame')}</span>` : ''}
+    ${last ? `<span class="hint tiny">${t('painLast', { d: dayKeyOf(last.ts).slice(5), v: last.v })}</span>` : ''}
+  </div>`;
+  const sp = painSpike();
+  if (sp) {
+    el.innerHTML += `<div class="pain-spike">${t('painSpikeTip', { d: sp.delta, post: sp.post })}
+      <button class="link-btn" id="pain-spike-more">${t('painSpikeBtn')} →</button></div>`;
+    const mb = $('pain-spike-more');
+    if (mb) mb.addEventListener('click', () => switchTab('posture'));   // 去「康复小课堂」看日常注意与训练
+  }
+  const chartEl = $('pain-chart');
+  if (chartEl) chartEl.innerHTML = painChartSvg(painDailyPairs(14));
+  const list = $('pain-list');
+  if (!h.length) { if (list) list.innerHTML = emptyBox('alert', 'painNone'); }
+  else if (list) {
+    list.innerHTML = h.slice(0, 6).map((r) => `
+      <div class="item">
+        <div>
+          <div class="t"><span class="t-ico">${icon('alert')}</span>${r.v} · ${t(r.when === 'pre' ? 'painPre' : r.when === 'post' ? 'painPost' : 'painManual')}
+            <span class="pain-lv ${painLevelOf(r.v)}">${t(painLvKey(r.v))}</span></div>
+          <div class="d">${new Date(r.ts).toLocaleString(locale(), { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}${r.note ? ' · ' + r.note : ''}</div>
+        </div>
+        <div><button class="mini del" data-paindel="${r.id}">${icon('trash')}</button></div>
+      </div>`).join('');
+    list.querySelectorAll('[data-paindel]').forEach((b) => b.addEventListener('click', () => {
+      if (!confirm(t('confirmDelPain'))) return;
+      painSave(painHistory().filter((r) => r.id !== b.dataset.paindel));
+      renderPain(); renderPainStrip();
+      toast(t('toastDeleted'));
+    }));
+  }
+  // 今日页提示行（与今日总览同源，不改动 renderHome）
+  const hp = $('home-pain');
+  if (hp) {
+    const mx = painRecentMax(7);
+    const sp2 = painSpike();
+    hp.className = 'hint tiny' + ((sp2 || (mx != null && mx >= 7)) ? ' warn' : '');
+    hp.textContent = sp2
+      ? t('homePainSpike', { d: sp2.delta, post: sp2.post })
+      : mx == null ? t('painNone') : mx >= 7 ? t('homePainHigh', { v: mx }) : t('homePainOk', { v: mx });
+  }
+}
+function renderPainStrip() {
+  const el = $('pain-strip');
+  if (!el) return;
+  const todayK = dayKeyOf(Date.now());
+  const h = painHistory().filter((r) => dayKeyOf(r.ts) === todayK);
+  const pre = h.filter((r) => r.when === 'pre').pop();
+  const post = h.filter((r) => r.when === 'post').pop();
+  el.innerHTML = `<button class="pain-mini ${pre ? painLevelOf(pre.v) : ''}" data-pain="pre">${t('painPre')} ${pre ? pre.v : '—'}</button>
+    <button class="pain-mini ${post ? painLevelOf(post.v) : ''}" data-pain="post">${t('painPost')} ${post ? post.v : '—'}</button>
+    <span class="hint tiny">${t('painStripHint')}</span>`;
+  el.querySelectorAll('[data-pain]').forEach((b) => b.addEventListener('click', () => openPainModal(b.dataset.pain)));
+}
+const painState = { when: 'pre', v: null };
+function renderPainScale() {
+  const el = $('pain-scale');
+  el.innerHTML = Array.from({ length: PAIN_MAX + 1 }, (_, v) => `<button class="pain-btn ${painLevelOf(v)} ${painState.v === v ? 'on' : ''}" data-pv="${v}">${v}</button>`).join('');
+  el.querySelectorAll('[data-pv]').forEach((b) => b.addEventListener('click', () => { painState.v = Number(b.dataset.pv); renderPainScale(); }));
+}
+function openPainModal(when) {
+  painState.when = when || 'pre';
+  painState.v = null;
+  $('pain-modal-title').textContent = t(painState.when === 'pre' ? 'painPickPre' : 'painPickPost');
+  $('pain-note').value = '';
+  renderPainScale();
+  $('pain-modal').classList.remove('hidden');
+}
+$('btn-pain-pre').addEventListener('click', () => openPainModal('pre'));
+$('btn-pain-post').addEventListener('click', () => openPainModal('post'));
+$('pain-cancel').addEventListener('click', () => $('pain-modal').classList.add('hidden'));
+$('pain-save').addEventListener('click', () => {
+  if (painState.v == null) { toast(t('painPickFirst')); return; }
+  painAdd(painState.when, painState.v, $('pain-part').value, $('pain-note').value.trim());
+  $('pain-modal').classList.add('hidden');
+  renderPain(); renderPainStrip();
+  aiRun();                              // v2.22.0：疼痛数据 → AI 管家建议即时更新
+  toast(t('toastPainSaved', { v: painState.v }));
+  scheduleCloudSync();
+});
+
+/* ============ v2.21.10 全局：键盘操作、无障碍语义与弹窗焦点 ============ */
+const NAV_TABS = ['home', 'train', 'posture', 'ft', 'guide', 'record', 'assess', 'schedule', 'settings'];
+const FOCUS_MODALS = ['onboard', 'qr-modal', 'fb-modal'];      // 打开时接管焦点、关闭时归还
+const ESC_MODALS = ['qr-modal', 'fb-modal', 'onboard'];        // Esc 可关闭（登录屏不可关，避免误退）
+const focusTrap = { prev: null };
+// 底部导航按钮的 aria-label 跟随可见文字与语言（中文 →「训练」，英文 →「Train」）
+function navLabelSync() {
+  document.querySelectorAll('.bottom-nav button').forEach((b) => {
+    const lab = b.querySelector('.nav-label');
+    if (lab) b.setAttribute('aria-label', lab.textContent.trim());
+  });
+  const nav = document.querySelector('.bottom-nav');
+  if (nav) nav.setAttribute('aria-label', t('navMain'));
+}
+function modalFocusIn(el) {
+  if (!el || el.dataset.a11yFocus === '1') return;
+  el.dataset.a11yFocus = '1';
+  if (document.activeElement && document.activeElement !== document.body) focusTrap.prev = document.activeElement;
+  const target = el.querySelector('input, button, [href], select, textarea');
+  if (target) { try { target.focus({ preventScroll: true }); } catch { /* ignore */ } }
+}
+function modalFocusOut(el) {
+  if (el) el.dataset.a11yFocus = '';
+  const p = focusTrap.prev;
+  focusTrap.prev = null;
+  if (p && document.contains(p)) { try { p.focus({ preventScroll: true }); } catch { /* ignore */ } }
+}
+function closeTopModal() {
+  if (syncState.scanning) { cancelSyncScan(); return true; }   // 扫码中：Esc 结束扫码
+  for (const id of ESC_MODALS.slice().reverse()) {
+    const el = $(id);
+    if (!el || el.classList.contains('hidden')) continue;
+    if (id === 'qr-modal') stopSyncShow();
+    else if (id === 'fb-modal') el.classList.add('hidden');
+    else closeOnboard();
+    return true;
+  }
+  return false;
+}
+const isTypingTarget = (el) => !!(el && el.closest && el.closest('input, textarea, select, [contenteditable="true"]'));
+document.addEventListener('keydown', (ev) => {
+  if (ev.key === 'Escape' || ev.key === 'Esc') { if (closeTopModal()) ev.preventDefault(); return; }
+  if (ev.ctrlKey || ev.metaKey || ev.altKey || ev.shiftKey) return;      // 不抢系统快捷键
+  if (isTypingTarget(ev.target)) return;                                 // 输入框里输入数字不切页
+  for (const id of ESC_MODALS) { const el = $(id); if (el && !el.classList.contains('hidden')) return; }
+  const n = Number(ev.key);
+  if (Number.isInteger(n) && n >= 1 && n <= NAV_TABS.length) { switchTab(NAV_TABS[n - 1]); ev.preventDefault(); }
+});
+// 弹窗显隐 → 自动接管/归还焦点（观察器实现，纯新增，不改动旧的开合逻辑）
+const modalObserver = new MutationObserver((list) => {
+  list.forEach((m) => {
+    const el = m.target;
+    if (!el || !el.classList) return;
+    if (el.classList.contains('hidden')) modalFocusOut(el);
+    else modalFocusIn(el);
+  });
+});
+FOCUS_MODALS.forEach((id) => { const el = $(id); if (el) modalObserver.observe(el, { attributes: true, attributeFilter: ['class'] }); });
+// 注意：navLabelSync() 必须等 initI18n() 把可见文字本地化之后再调用（见启动段）
+
 /* ============ 启动 ============ */
 initI18n();
 setCustomKey(ukey('rehab_custom_ex'));   // 账号分区：自定义动作按当前账号隔离
@@ -4566,6 +6025,17 @@ onLangChanged(() => {
   renderHome();                                         // v2.21：今日总览随语言切换
   renderGuide();                                        // v2.21：跟练页随语言切换
   renderTrainToday();                                   // v2.21.5：训练页今日任务小条随语言切换
+  renderStorageSize();                                  // v2.21.9：数据占用随语言切换
+  renderLastBackup();                                   // v2.21.9：上次备份提示随语言切换
+  navLabelSync();                                       // v2.21.10：导航 aria-label 随语言切换
+  renderPain(); renderPainStrip();                      // v2.22.0：疼痛卡随语言切换
+  renderEdu();                                          // v2.23.0：康复小课堂随语言切换
+  renderReport();                                       // v2.24.0：治疗师报告摘要随语言切换
+  renderRomUI(); renderRomHistory(); renderRomResult(romHistory()[0] || null);   // v2.26.0：ROM 随语言切换
+  renderPromUI(); renderPromHistory();                  // v2.27.0：PROMs 随语言切换
+  renderAiPlan(); renderAiEngine();                     // v2.28.0：自适应引擎随语言切换
+  renderPath();                                         // v2.29.0：康复路径随语言切换
+  $('about-version').textContent = t('versionLabel', { v: APP_VERSION });   // v2.21.9：关于页版本号随语言切换（原来只设置一次）
   setStartBtn(state.running ? 'btnStop' : 'btnStart', state.running ? 'stop' : 'play');
   $('btn-collect-label').textContent = state.collectMode ? t('btnCollectStop') : t('btnCollect');
   $('feedback')._last = null;
@@ -4604,6 +6074,16 @@ window.__ftBatteryDemo = () => ftStart('battery', true);   // 测试钩子：完
 renderHome();
 renderGuide();
 renderTrainToday();
+renderStorageSize();
+renderLastBackup();
+navLabelSync();                                          // v2.21.10：本地化后再同步导航 aria-label
+renderPain(); renderPainStrip();                         // v2.22.0：疼痛卡初始化
+renderEdu();                                             // v2.23.0：康复小课堂初始化
+renderReport();                                          // v2.24.0：治疗师报告摘要初始化
+renderRomUI(); renderRomHistory(); renderRomResult(null); // v2.26.0：ROM 测量初始化
+renderPromUI(); renderPromHistory();                     // v2.27.0：PROMs 量表初始化
+renderAiPlan(); renderAiEngine();                        // v2.28.0：自适应引擎初始化
+renderPath();                                            // v2.29.0：康复路径初始化
 window.__gwSkip = () => gwFinish(true);                   // 测试钩子：直接完成当前跟练
 showOnboard();
 setTimeout(reminderCatchUp, 4000);            // 错过提醒时间 → 打开时补一次

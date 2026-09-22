@@ -60,6 +60,9 @@ export function healthCheck(env) {
   const profOk = prof.name || prof.injury || (prof.goal && prof.goal !== 'other');
   if (!profOk) score -= 8;
   if (!(e.planCount || 0)) score -= 5;
+  // 疼痛信号（v2.22.0）：近 7 天最高疼痛 ≥7 分提示减量/就医
+  const painMax = e.painMax;
+  if (painMax != null && painMax >= 7) score -= 6;
   score = Math.max(0, Math.min(100, Math.round(score)));
 
   // 1) 版本更新（重要度最高）
@@ -72,6 +75,13 @@ export function healthCheck(env) {
   if (cam >= 2) items.push({ level: 'warn', icon: 'camera', key: 'aiCamTip', args: { n: cam } });
   else if (cam === 1) items.push({ level: 'info', icon: 'camera', key: 'aiCamTip', args: { n: cam } });
   if (model >= 1) items.push({ level: 'warn', icon: 'loader', key: 'aiModelTip', args: {} });
+  // 疼痛信号（v2.22.0）：把新模块的疼痛数据接进 AI 管家建议
+  if (painMax != null && painMax >= 7) items.push({ level: 'warn', icon: 'alert', key: 'aiPainHigh', args: { v: painMax } });
+  else if (painMax != null && painMax >= 4) items.push({ level: 'info', icon: 'alert', key: 'aiPainMid', args: { v: painMax } });
+  // 疼痛上升预警（v2.23.0）：同一天训练后比训练前升高 ≥2 分
+  if (e.painSpike >= 2) items.push({ level: 'warn', icon: 'alert', key: 'aiPainSpike', args: { d: e.painSpike } });
+  // 量表信号（v2.27.0）：功能受限量表处于重度区间
+  if (e.promBad >= 1) items.push({ level: 'warn', icon: 'assess', key: 'aiPromBad', args: { n: e.promBad } });
   // 3) 训练习惯
   if (noTrain) items.push({ level: 'info', icon: 'flame', key: 'aiTrainEncourage', args: { n: Math.max(7, Math.floor(days || 0)) } });
   if (e.streak >= 7) items.push({ level: 'praise', icon: 'flame', key: 'aiStreak7', args: { n: e.streak } });

@@ -45,6 +45,7 @@
     <p class="hint" id="ex-desc"></p>
     <div id="goal-line" class="goal-line hidden"></div>
     <div id="train-today" class="card hidden" style="margin-top:10px;padding:12px 14px"></div>
+    <div id="pain-strip" class="pain-strip"></div>
 
     <div class="camera-box">
       <video id="video" playsinline muted autoplay></video>
@@ -158,8 +159,35 @@
     <div id="pa-report" class="card hidden"></div>
 
     <div class="card">
+      <h3 data-i18n="romTitle">关节活动度 ROM 测量</h3>
+      <p class="hint" data-i18n="romIntro">测 6 秒取最大活动范围：选测量项与侧别 → 按提示慢慢做到最大幅度 → 自动记录角度、等级与左右差异。</p>
+      <div id="rom-items" class="pa-kinds"></div>
+      <div class="controls" style="margin-top:8px">
+        <div class="seg" id="rom-side">
+          <button data-side="L" class="on" data-i18n="romSideL">左侧</button>
+          <button data-side="R" data-i18n="romSideR">右侧</button>
+        </div>
+      </div>
+      <p class="hint tiny" id="rom-guide"></p>
+      <div class="controls">
+        <button id="btn-rom-start" class="btn primary"><span id="btn-rom-start-label" data-i18n="romStart">开始 ROM 测量</span></button>
+        <button id="btn-rom-demo" class="btn" data-i18n="romDemo">演示模式</button>
+      </div>
+      <div id="rom-live" class="rom-live hidden"></div>
+      <div id="rom-result" class="hidden"></div>
+      <p class="hint tiny" id="rom-history-title" data-i18n="romHistoryTitle" style="margin-top:12px">ROM 历史</p>
+      <div id="rom-history" class="list"></div>
+    </div>
+
+    <div class="card">
       <h3 data-i18n="paHistoryTitle">历史体态评估</h3>
       <div id="pa-history" class="list"></div>
+    </div>
+
+    <div class="card">
+      <h3 data-i18n="eduTitle">康复小课堂</h3>
+      <p class="hint" data-i18n="eduHint">点开卡片了解「为什么会这样 · 不纠正会怎样 · 日常该注意什么」，并直接跳到对应训练。</p>
+      <div id="edu-list" class="list"></div>
     </div>
   </section>
 
@@ -232,6 +260,12 @@
     <div class="card">
       <h3 data-i18n="homeTitle">今日总览</h3>
       <div id="home-index"></div>
+      <p class="hint tiny" id="home-pain" style="margin-top:8px"></p>
+    </div>
+    <div class="card" id="ai-plan-card">
+      <h3 data-i18n="aiPlanTitle">AI 今日处方</h3>
+      <p class="hint" data-i18n="aiPlanIntro">依据你自己的数据算出来，不是固定模板：规则与阈值都可在「设置 → 智能引擎」里改；采纳与否会被记住，下次自动调整。</p>
+      <div id="ai-plan"></div>
     </div>
     <div class="card">
       <h3 data-i18n="homeToday">今日任务</h3>
@@ -282,6 +316,27 @@
       <h3 data-i18n="achTitle">成就</h3>
       <div id="ach-grid" class="ach"></div>
       <p class="hint tiny" id="ach-count" style="margin-top:6px"></p>
+    </div>
+    <div class="card">
+      <h3 data-i18n="painTitle">疼痛记录（VAS 0–10）</h3>
+      <p class="hint" data-i18n="painHint">训练前后各记一次：看训练是让疼痛变好还是变差。≥7 分建议先休息，或咨询治疗师。</p>
+      <div id="pain-now" class="pain-now"></div>
+      <div id="pain-chart" class="trend"></div>
+      <div class="controls">
+        <button id="btn-pain-pre" class="btn"><span data-i18n="painPre">记训练前疼痛</span></button>
+        <button id="btn-pain-post" class="btn"><span data-i18n="painPost">记训练后疼痛</span></button>
+      </div>
+      <div id="pain-list" class="list" style="margin-top:8px"></div>
+    </div>
+    <div class="card">
+      <h3 data-i18n="repTitle">治疗师报告</h3>
+      <p class="hint" data-i18n="repHint">把近 30 天的评估、训练、疼痛与建议汇总成一页报告：导出 HTML 后用浏览器「打印 → 另存为 PDF」即可发给治疗师，也可以直接发图片。</p>
+      <div id="rep-summary" class="rep-summary"></div>
+      <div class="controls">
+        <button id="btn-rep-html" class="btn primary"><span data-i18n="repExportHtml">导出报告（HTML/PDF）</span></button>
+        <button id="btn-rep-png" class="btn"><span data-i18n="repExportPng">导出图片</span></button>
+        <button id="btn-rep-copy" class="btn"><span data-i18n="repCopy">复制摘要</span></button>
+      </div>
     </div>
     <div class="card">
       <h3 data-i18n="recordTitle">打卡记录</h3>
@@ -336,6 +391,20 @@
       <div id="assess-trend" class="trend"></div>
     </div>
     <div class="card">
+      <h3 data-i18n="promTitle">标准化自评量表（PROMs）</h3>
+      <p class="hint" data-i18n="promIntro">用国际通用的随访量表记录功能受限程度：ODI 腰痛 · NDI 颈痛 · KOOS-12 膝痛 · EQ-5D-5L 通用健康。同一量表反复填写即可看恢复曲线，结果自动进入治疗师报告。</p>
+      <div id="prom-list" class="pa-kinds"></div>
+      <p class="hint tiny" id="prom-desc"></p>
+      <div class="controls">
+        <button id="btn-prom-start" class="btn primary"><span data-i18n="promStart">开始填写</span></button>
+        <button id="btn-prom-cancel" class="btn hidden" data-i18n="cfCancel">取消</button>
+      </div>
+      <div id="prom-form" class="hidden"></div>
+      <div id="prom-result" class="hidden"></div>
+      <p class="hint tiny" id="prom-history-title" data-i18n="promHistoryTitle" style="margin-top:12px">量表历史</p>
+      <div id="prom-history" class="list"></div>
+    </div>
+    <div class="card">
       <h3 data-i18n="assessListTitle">历史评估</h3>
       <div id="assess-list" class="list"></div>
     </div>
@@ -343,6 +412,13 @@
 
   <!-- ============ 预约日程 ============ -->
   <section id="tab-schedule" class="tab">
+    <div class="card">
+      <h3 data-i18n="pathTitle">康复路径（分阶段）</h3>
+      <p class="hint" data-i18n="pathIntro">不是写死的模板：路径、当前阶段、进阶条件都由你定；系统按你自己的数据推荐起点与升级时机，并可随时手动调整。</p>
+      <div id="path-rec" class="hint tiny"></div>
+      <div id="path-pick" class="pa-kinds"></div>
+      <div id="path-body"></div>
+    </div>
     <div class="card">
       <h3 data-i18n="todayPlan">今日任务</h3>
       <div id="today-plan" class="list"></div>
@@ -558,6 +634,9 @@
     <div class="card">
       <h3 data-i18n="backupTitle">备份 / 恢复（JSON 文件）</h3>
       <p class="hint" data-i18n="backupHint">完整备份（含采集数据）：导出 JSON 文件保存，另一台「导入数据」恢复。</p>
+      <p class="hint tiny" id="storage-size"></p>
+      <p class="hint tiny" id="storage-break"></p>
+      <p class="hint tiny" id="last-backup"></p>
       <div class="controls">
         <button id="btn-export" class="btn">
           <span class="btn-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v10M7.5 10.5 12 15l4.5-4.5M5 20h14"/></svg></span>
@@ -581,6 +660,33 @@
     </div>
 
     <div class="card">
+      <h3 data-i18n="aiEngTitle">智能引擎（可自行调整）</h3>
+      <p class="hint" data-i18n="aiEngIntro">这里的每一条都能改：阈值、强度偏好、目标值全部由你决定；关闭自动调参后，AI 只汇报数据、不再改你的训练量。</p>
+      <div class="form">
+        <label class="hint" for="ai-pain-alarm" data-i18n="aiEngAlarm">疼痛预警阈值（训练后比训练前高几分就提醒）</label>
+        <select id="ai-pain-alarm">
+          <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option>
+        </select>
+        <label class="hint" data-i18n="aiEngIntensity">训练强度偏好</label>
+        <div class="seg" id="ai-intensity">
+          <button data-int="soft" data-i18n="aiEngSoft">保守</button>
+          <button data-int="std" data-i18n="aiEngStd">标准</button>
+          <button data-int="hard" data-i18n="aiEngHard">积极</button>
+        </div>
+        <label class="hint" style="display:flex;align-items:center;gap:8px">
+          <input type="checkbox" id="ai-auto-adapt" style="width:auto"> <span data-i18n="aiEngAuto">允许 AI 自动调整组数/强度/休息</span>
+        </label>
+      </div>
+      <p class="hint tiny" data-i18n="aiEngTargets">我的 ROM 目标值（留空 = 用临床参考值）</p>
+      <div id="ai-rom-targets" class="seg-grid"></div>
+      <p class="hint tiny" data-i18n="aiEngBaseline" style="margin-top:12px">我的个人基线（来自你自己的历史）</p>
+      <div id="ai-baseline" class="rep-summary"></div>
+      <div class="controls" style="margin-top:10px">
+        <button id="btn-ai-reset" class="btn" data-i18n="aiEngReset">恢复默认设置</button>
+      </div>
+    </div>
+
+    <div class="card">
       <h3 data-i18n="aboutTitle">关于</h3>
       <ul class="about">
         <li data-i18n="aboutAi">AI 模型：MediaPipe PoseLandmarker（本地运行，不上传视频）</li>
@@ -588,6 +694,7 @@
         <li data-i18n="aboutHttps">手机使用摄像头需要 HTTPS —— 部署到 <b>Netlify</b>（免费）即可</li>
         <li data-i18n="aboutDeploy">部署方法：把本文件夹拖进 <a href="https://app.netlify.com/drop" target="_blank" rel="noopener">app.netlify.com/drop</a></li>
         <li data-i18n="aboutPwa">支持安装到手机主屏幕（浏览器菜单 → 添加到主屏幕），像 App 一样使用，离线也能打开</li>
+        <li data-i18n="kbHint">键盘操作：数字键 1–9 切换页面，Esc 关闭弹窗（桌面浏览器）</li>
         <li id="about-version" class="about-version"></li>
       </ul>
       <button id="btn-share" class="btn primary block" style="margin-top:10px">
@@ -621,7 +728,7 @@
   </section>
 </main>
 
-<nav class="bottom-nav">
+<nav class="bottom-nav" aria-label="主导航">
   <button data-tab="home">
     <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 11.2 12 4.8l7.5 6.4M6.2 10.2V19a1 1 0 0 0 1 1h9.6a1 1 0 0 0 1-1v-8.8"/></svg>
     <span class="nav-label" data-i18n="navHome">今日</span>
@@ -663,7 +770,7 @@
 <div id="selftest-out" style="display:none"></div>
 
 <!-- 首次启动引导 -->
-<div id="onboard" class="auth-overlay hidden" style="z-index:90">
+<div id="onboard" class="auth-overlay hidden" style="z-index:90" role="dialog" aria-modal="true" aria-labelledby="ob-title">
   <div class="auth-card ob-card">
     <div class="ob-ico" id="ob-ico"></div>
     <h2 id="ob-title" style="text-align:center;font-size:19px;margin-top:10px"></h2>
@@ -713,9 +820,9 @@
 </div>
 
 <!-- 二维码同步弹窗 -->
-<div id="qr-modal" class="modal-overlay hidden">
+<div id="qr-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="qr-title">
   <div class="modal-card">
-    <h3 data-i18n="qrTitle">同步二维码</h3>
+    <h3 id="qr-title" data-i18n="qrTitle">同步二维码</h3>
     <canvas id="qr-canvas" class="qr-canvas"></canvas>
     <p id="qr-page" class="hint" style="text-align:center"></p>
     <button id="qr-close" class="btn block" data-i18n="qrClose">关闭</button>
@@ -723,9 +830,9 @@
 </div>
 
 <!-- 意见反馈弹窗（AI 管家自动附体检报告） -->
-<div id="fb-modal" class="modal-overlay hidden">
+<div id="fb-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="fb-title">
   <div class="modal-card">
-    <h3 data-i18n="aiFeedbackTitle">意见反馈</h3>
+    <h3 id="fb-title" data-i18n="aiFeedbackTitle">意见反馈</h3>
     <p class="hint" data-i18n="aiFeedbackHint">你的反馈会直接发给开发者（打开 GitHub 提交）。AI 管家已自动附上系统体检报告。</p>
     <div class="form">
       <label class="hint" data-i18n="aiRate">整体评价</label>
@@ -740,6 +847,30 @@
       <button id="btn-fb-copy" class="btn block" data-i18n="aiFbCopy">复制报告</button>
       <button id="btn-fb-close" class="btn block" data-i18n="aiFbClose">关闭</button>
       <p class="hint tiny" data-i18n="aiFbPrivacy">隐私承诺：只发送上方体检报告和你的评语，绝不包含视频、姓名、邮箱或任何身份信息。</p>
+    </div>
+  </div>
+</div>
+
+<!-- 疼痛评分弹窗（VAS 0–10，纯新增模块） -->
+<div id="pain-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="pain-modal-title">
+  <div class="modal-card">
+    <h3 id="pain-modal-title" data-i18n="painPickTitle">现在的疼痛程度？</h3>
+    <p class="hint" data-i18n="painScaleHint">0 = 完全不痛 · 5 = 中等 · 10 = 无法忍受</p>
+    <div id="pain-scale" class="pain-scale"></div>
+    <div class="form">
+      <select id="pain-part">
+        <option value="knee" data-i18n="painPartKnee">膝</option>
+        <option value="lowback" data-i18n="painPartLowBack">腰</option>
+        <option value="shoulder" data-i18n="painPartShoulder">肩</option>
+        <option value="hip" data-i18n="painPartHip">髋</option>
+        <option value="ankle" data-i18n="painPartAnkle">踝</option>
+        <option value="other" data-i18n="painPartOther">其他</option>
+      </select>
+      <input type="text" id="pain-note" data-i18n-ph="painNotePh" placeholder="备注（可选，如：上下楼时加重）">
+    </div>
+    <div class="controls">
+      <button id="pain-cancel" class="btn" data-i18n="cfCancel">取消</button>
+      <button id="pain-save" class="btn primary" data-i18n="cfSave">保存</button>
     </div>
   </div>
 </div>

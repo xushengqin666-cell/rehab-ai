@@ -397,6 +397,121 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, .link-btn:foc
 .retry-card b { color: var(--red); font-size: 14px; }
 .retry-row { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
 .hint.tiny { font-size: 11px; color: var(--dim); margin-top: 8px; }
+.hint.tiny.warn { color: #b45309; }   /* v2.21.9：备份超期提醒 */
+
+/* ---------- 疼痛记录（v2.22.0 新模块） ---------- */
+.pain-strip { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 8px 0 2px; }
+.pain-mini { border: 1px solid var(--line); background: var(--card); border-radius: 999px; padding: 5px 11px; font-size: 12px; font-weight: 650; color: var(--dim); cursor: pointer; }
+.pain-mini.good { border-color: rgba(14, 124, 102, .4); color: var(--teal); }
+.pain-mini.warn { border-color: rgba(245, 158, 11, .5); color: var(--yellow); }
+.pain-mini.bad { border-color: rgba(209, 74, 74, .5); color: var(--red); }
+.pain-now-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 8px 0 2px; }
+.pain-chip { font-size: 12px; font-weight: 700; border-radius: 999px; padding: 4px 10px; background: var(--bg2); color: var(--dim); }
+.pain-chip.good { background: rgba(14, 124, 102, .12); color: var(--teal); }
+.pain-chip.warn { background: rgba(245, 158, 11, .16); color: var(--yellow); }
+.pain-chip.bad { background: rgba(209, 74, 74, .14); color: var(--red); }
+.pain-delta { font-size: 12px; font-weight: 700; color: var(--dim); }
+.pain-delta.up { color: var(--red); }
+.pain-delta.down { color: var(--teal); }
+.pain-lv { font-size: 11px; font-weight: 700; margin-left: 6px; }
+.pain-lv.good { color: var(--teal); }
+.pain-lv.warn { color: var(--yellow); }
+.pain-lv.bad { color: var(--red); }
+.pain-legend { display: flex; gap: 14px; font-size: 11px; color: var(--dim); margin: 8px 0 2px; }
+.pain-legend .pl::before { content: ''; display: inline-block; width: 10px; height: 2px; margin-right: 5px; vertical-align: middle; background: var(--teal); }
+.pain-legend .post::before { background: #e07a5f; }
+.pain-legend .risk::before { background: #f0d9d5; }
+.pain-scale { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; margin: 10px 0; }
+.pain-btn { border: 1px solid var(--line); background: var(--card); border-radius: 10px; padding: 9px 0; font-size: 14px; font-weight: 700; cursor: pointer; color: var(--dim); }
+.pain-btn.good { color: var(--teal); }
+.pain-btn.warn { color: var(--yellow); }
+.pain-btn.bad { color: var(--red); }
+.pain-btn.on { background: var(--teal); border-color: var(--teal); color: #fff; }
+
+.pain-spike { margin-top: 8px; padding: 9px 11px; border-radius: 10px; background: rgba(209, 74, 74, .08); border-left: 3px solid var(--red); font-size: 12px; line-height: 1.7; color: var(--text); }
+/* ---------- 康复路径（v2.29.0 新模块） ---------- */
+.path-head { display: flex; align-items: center; gap: 8px; font-size: 13.5px; margin: 10px 0 6px; flex-wrap: wrap; }
+.path-cond { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; margin: 8px 0; }
+
+/* ---------- 自适应智能引擎（v2.28.0 新模块） ---------- */
+.ai-plan-head { display: flex; align-items: center; gap: 8px; font-size: 13.5px; font-weight: 650; flex-wrap: wrap; }
+.ai-plan-reasons { margin-top: 8px; }
+.ai-reason { font-size: 12.5px; line-height: 1.75; color: var(--text); }
+.ai-basis { margin-top: 8px; }
+.ai-basis summary { cursor: pointer; }
+.seg-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; margin-top: 6px; }
+.ai-tgt { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--dim); }
+.ai-tgt input { width: 74px; }
+
+/* ---------- PROMs 标准化量表（v2.27.0 新模块） ---------- */
+.prom-q { padding: 10px 0; border-bottom: 1px dashed var(--line); }
+.prom-q:last-child { border-bottom: 0; }
+.prom-qt { font-size: 12.5px; font-weight: 650; margin-bottom: 7px; }
+.prom-opts { display: flex; flex-wrap: wrap; gap: 6px; }
+.prom-opt { border: 1px solid var(--line); background: var(--card); border-radius: 999px; padding: 5px 10px; font-size: 11.5px; color: var(--dim); cursor: pointer; }
+.prom-opt.on { background: var(--teal); border-color: var(--teal); color: #fff; font-weight: 650; }
+.prom-result { margin-top: 12px; padding: 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--card); }
+.prom-result.good { border-color: rgba(14, 124, 102, .45); }
+.prom-result.warn { border-color: rgba(245, 158, 11, .5); }
+.prom-result.bad { border-color: rgba(209, 74, 74, .5); }
+.prom-big { font-size: 24px; font-weight: 800; color: var(--teal); }
+.prom-sub { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 6px; font-size: 11.5px; color: var(--dim); }
+.prom-sub b { color: var(--teal); }
+
+/* ---------- ROM 关节活动度（v2.26.0 新模块） ---------- */
+.rom-live { margin-top: 10px; padding: 10px 12px; border-radius: 12px; background: var(--bg2); }
+.rom-row { display: flex; align-items: baseline; gap: 8px; font-size: 12.5px; color: var(--dim); }
+.rom-row b { font-weight: 650; }
+.rom-cur { color: var(--text); font-weight: 700; font-size: 15px; }
+.rom-best { color: var(--teal); font-weight: 700; font-size: 15px; }
+.rom-bar { height: 6px; border-radius: 999px; background: #ded9cf; margin-top: 8px; overflow: hidden; }
+.rom-fill { height: 100%; background: var(--teal); border-radius: 999px; transition: width .18s linear; }
+.rom-result { margin-top: 10px; padding: 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--card); }
+.rom-result.good { border-color: rgba(14, 124, 102, .45); }
+.rom-result.warn { border-color: rgba(245, 158, 11, .5); }
+.rom-result.bad { border-color: rgba(209, 74, 74, .5); }
+.rom-head { font-size: 13px; font-weight: 650; display: flex; align-items: center; gap: 8px; }
+.rom-big { font-size: 22px; font-weight: 800; color: var(--teal); margin: 6px 0 2px; }
+.rom-lv { font-size: 11px; font-weight: 700; border-radius: 999px; padding: 2px 8px; background: var(--bg2); color: var(--dim); }
+.rom-lv.good { background: rgba(14, 124, 102, .12); color: var(--teal); }
+.rom-lv.warn { background: rgba(245, 158, 11, .16); color: var(--yellow); }
+.rom-lv.bad { background: rgba(209, 74, 74, .14); color: var(--red); }
+
+/* ---------- 治疗师报告（v2.24.0 新模块） ---------- */
+.rep-summary { margin: 8px 0 4px; }
+.rep-sec { margin-top: 12px; }
+.rep-sec h4 { font-size: 12px; color: var(--dim); font-weight: 650; margin: 0 0 6px; }
+.rep-snap { width: 100%; max-width: 300px; border-radius: 10px; border: 1px solid var(--line); display: block; }
+.radar-chart { width: 220px; height: 220px; display: block; margin: 0 auto; }
+.radar-vals { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 6px; }
+.radar-vals .rv { font-size: 11.5px; color: var(--dim); }
+.radar-vals .rv i { font-style: normal; margin-right: 4px; }
+.radar-vals .rv b { color: var(--teal); }
+.rep-row { display: flex; gap: 8px; align-items: baseline; font-size: 12.5px; line-height: 1.9; }
+.rep-row .k { color: var(--dim); min-width: 76px; }
+.rep-row .v { color: var(--text); font-weight: 650; }
+.rep-row .v.warn { color: var(--red); }
+.rep-row .v.ok { color: var(--teal); }
+
+/* ---------- 康复小课堂（v2.23.0 新模块） ---------- */
+.edu-card { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; margin-bottom: 8px; background: var(--card); }
+.edu-card.on { border-color: rgba(14, 124, 102, .45); }
+.edu-head { display: flex; align-items: center; gap: 10px; width: 100%; padding: 11px 12px; background: none; border: 0; cursor: pointer; text-align: left; font: inherit; color: var(--text); }
+.edu-ico { color: var(--teal); display: inline-flex; }
+.edu-t { flex: 1; font-weight: 650; font-size: 13.5px; }
+.edu-arrow { color: var(--dim); font-size: 16px; font-weight: 700; }
+.edu-body { padding: 0 12px 12px; border-top: 1px dashed var(--line); }
+.edu-body p { font-size: 12.5px; line-height: 1.75; color: var(--text); margin: 10px 0 0; }
+.edu-body p b { display: block; color: var(--teal); font-size: 11.5px; margin-bottom: 2px; }
+
+/* v2.21.10 全局：跟随系统「减少动态效果」偏好（动画仅保留极短时长，警报改为静态红） */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+  }
+}
 
 /* ---------- 轻提示 ---------- */
 #toast {
