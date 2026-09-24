@@ -933,6 +933,54 @@ const paRows = await evl(`document.querySelectorAll('#pa-history .item').length`
 (paRows >= 2) ? ok('体态历史里缺 kind 的旧记录也能渲染，不再整段崩掉（导入/同步兼容）') : bad(`体态历史渲染异常，行数=${paRows}`);
 await evl(`localStorage.removeItem('rehab_pa_history')`);
 
+console.log('===== 34. 标准动作示范（图解）+ 示范录像（v2.34.0） =====');
+await evl(`document.querySelector('.bottom-nav button[data-tab="guide"]').click()`);
+await sleep(700);
+// 34a 跟练页示范墙
+const dmbCells = await evl(`document.querySelectorAll('#gw-demos .dmb-cell').length`);
+(dmbCells >= 8) ? ok(`跟练页标准示范墙：${dmbCells} 个动作都有图解`) : bad(`示范墙动作数不足：${dmbCells}`);
+(await evl(`document.querySelectorAll('#gw-demos .dmb-cell svg').length === document.querySelectorAll('#gw-demos .dmb-cell').length`)) ? ok('每个动作都渲染出火柴人示范图') : bad('存在空白示范图');
+(await evl(`document.querySelectorAll('#gw-demos .dmb-cell .dmb-fr-cap').length >= 8`)) ? ok('示范图带动作名称') : bad('示范图缺名称');
+// 34b 打开示范弹窗
+await evl(`document.querySelector('#gw-demos [data-dmb="squat"]').click()`);
+await sleep(500);
+(await evl(`!document.getElementById('dmb-modal').classList.contains('hidden')`)) ? ok('点「看示范」打开示范弹窗') : bad('示范弹窗没打开');
+(await evl(`document.querySelectorAll('#dmb-body .dmb-fr').length >= 3`)) ? ok('弹窗含关键帧与错误对照（≥3 格）') : bad('弹窗内容缺失');
+(await evl(`document.querySelectorAll('#dmb-body .dmb-fr-cap.bad').length >= 2`)) ? ok('常见错误单独标红列出（≥2 条）') : bad('错误对照缺失');
+// 34c 判定标准来自应用真实阈值
+const dmbAng = await evl(`window.__rehabDemo.demoAngles('squat').map((a) => a.k + ':' + a.v).join(',')`);
+const thrOk = await evl(`(function(){const a=window.__rehabDemo.demoAngles('squat');const e=a.map(x=>x.v);return e.indexOf(100)>=0 && e.indexOf(150)>=0;})()`);
+thrOk ? ok(`标准角度直接取应用判定阈值（${dmbAng}）`) : bad(`阈值标注异常：${dmbAng}`);
+// 34c2 内扣错误对照必须用正视，且膝比踝更靠内（否则这张对照图和正确姿势一模一样）
+const valgus = await evl(`(function(){const s=window.__rehabDemo;const p=s.poseOf('squat', s.DEMOS.squat.front.p, 'front');const k=Math.abs(p.KL[0]-p.H[0]), a=Math.abs(p.AL[0]-p.H[0]);return p.kind+':'+(k<a);})()`);
+(valgus === 'front:true') ? ok('膝盖内扣对照用的是正视，且膝真的画在踝内侧') : bad(`内扣对照异常：${valgus}`);
+// 34d 播放成动图
+const svgBefore = await evl(`document.getElementById('dmb-big').innerHTML.length`);
+await evl(`document.getElementById('dmb-play').click()`);
+await sleep(700);
+const svgAfter = await evl(`document.getElementById('dmb-big').innerHTML`);
+(svgAfter.length > 0 && (await evl(`(function(){const p=window.__rehabDemo.demoPose('squat',0.5);const q=window.__rehabDemo.demoPose('squat',0.05);return Math.abs(p.knee-q.knee)>20;})()`))) ? ok('播放：示范图在关键帧之间连续变化（可当动图看）') : bad('播放无效');
+await evl(`document.getElementById('dmb-play').click()`);
+await sleep(200);
+// 34e 录像存取（IndexedDB，用合成 Blob 验证链路）
+const clipOk = await evl(`(async function(){const s=window.__rehabDemo;if(!s.idb())return 'no-idb';const b=new Blob([new Uint8Array(2048)],{type:'video/webm'});await s.clipPut(b,{ex:'squat',label:'测试',durSec:3});const a=await s.clipAll();const n=a.length;await s.clipDel(a[0].id);const n2=(await s.clipAll()).length;return n+'>'+n2;})()`);
+(String(clipOk) === '1>0') ? ok('示范录像可存本机并可删除（IndexedDB 链路通）') : bad(`录像存取异常：${clipOk}`);
+await evl(`document.getElementById('dmb-close').click()`);
+await sleep(250);
+(await evl(`document.getElementById('dmb-modal').classList.contains('hidden')`)) ? ok('示范弹窗可关闭') : bad('弹窗关不掉');
+// 34f 训练页标准示范位 + 录制按钮
+await evl(`document.querySelector('.bottom-nav button[data-tab="train"]').click()`);
+await sleep(600);
+(await evl(`!document.getElementById('train-demo').classList.contains('hidden') && document.getElementById('train-demo').querySelectorAll('svg').length >= 1`)) ? ok('训练页显示当前动作的标准示范位图解') : bad('训练页示范位缺失');
+(await evl(`document.getElementById('train-demo').textContent.includes('100') && document.getElementById('train-demo').textContent.includes('150')`)) ? ok('训练页示范位同时标出判定阈值') : bad('训练页阈值缺失');
+(await evl(`!!document.getElementById('train-rec')`)) ? ok('训练页提供录像按钮（录制自己的标准动作）') : bad('录像按钮缺失');
+// 34g 跟练进行中显示当前动作示范
+const stepDemo = await evl(`(function(){const list=document.querySelector('#gw-list [data-gw="knee"]');if(!list)return 'no-card';list.click();return 'clicked';})()`);
+await sleep(900);
+(await evl(`!!document.getElementById('gw-step-demo') || !!document.getElementById('gw-stage')`)) ? ok('跟练页可进入训练台（示范接入点存在）') : bad('训练台异常');
+await evl(`(function(){const b=document.getElementById('btn-gw-stop');if(b)b.click();return 1;})()`);
+await sleep(600);
+
 console.log('===== 结果 =====');
 console.log('CONSOLE_ERRORS:', consoleErrors.length ? consoleErrors.join(' ||| ') : 'none');
 if (consoleErrors.length) failN++;

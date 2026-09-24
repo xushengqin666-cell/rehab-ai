@@ -1,8 +1,8 @@
 // Service Worker — 离线策略：
 //   · 页面/JS/CSS 网络优先（更新及时生效），离线时回退缓存
 //   · 大文件（wasm / 模型 / vendor 库 / 图标）缓存优先（省流量、离线可用）
-const CACHE = 'rehab-v2.33.1';
-const PRECACHE = ['./', './index.html', './style.css', './app.js', './analysis.js', './ai.js', './i18n.js', './manifest.json', './icon-192.png', './icon-512.png'];
+const CACHE = 'rehab-v2.34.0';
+const PRECACHE = ['./', './index.html', './style.css', './demo.css', './app.js', './analysis.js', './demo.js', './ai.js', './i18n.js', './manifest.json', './icon-192.png', './icon-512.png'];
 const CACHE_FIRST = ['./vision_bundle.mjs', './vendor/qrcode.js', './vendor/jsqr.js', './pose_landmarker_full.task'];
 const scopePath = new URL(self.registration.scope).pathname;
 const relPath = (url) => (url.pathname.startsWith(scopePath) ? '/' + url.pathname.slice(scopePath.length) : url.pathname);

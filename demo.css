@@ -1,0 +1,38 @@
+/* demo.css - v2.34.0 标准动作示范（火柴人图解）与示范录像样式 */
+.dmb-svg { width: 100%; height: auto; display: block; max-height: 100%; }
+.dmb-ground { stroke: var(--line); stroke-width: 2; stroke-dasharray: 4 4; }
+.dmb-b { stroke: var(--teal); stroke-width: 6; stroke-linecap: round; stroke-linejoin: round; }
+.dmb-b-g { stroke: var(--line); stroke-width: 5; stroke-linecap: round; stroke-dasharray: 5 5; }
+.dmb-j { fill: var(--teal-d); }
+.dmb-h { stroke: var(--teal); stroke-width: 5; }
+.dmb-arc { stroke: var(--yellow); stroke-width: 2; }
+.dmb-arc2 { stroke: var(--dim); stroke-width: 2; }
+.dmb-arc-t { font-size: 12px; fill: var(--yellow); text-anchor: middle; font-weight: 600; }
+.dmb-cap { font-size: 12px; fill: var(--dim); text-anchor: middle; }
+svg .dmb-fault.dmb-b { stroke: var(--red); }
+svg .dmb-fault.dmb-j { fill: var(--red); }
+svg .dmb-fault.dmb-h { stroke: var(--red); }
+.dmb-card { max-height: 88vh; overflow-y: auto; width: min(560px, 94vw); }
+.dmb-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.dmb-head h3 { margin: 0; }
+.dmb-top { display: flex; gap: 12px; align-items: center; margin-top: 8px; }
+.dmb-big { flex: 0 0 44%; background: var(--bg); border-radius: var(--radius); padding: 4px; }
+.dmb-side { flex: 1; min-width: 0; }
+.dmb-name { font-weight: 700; font-size: 16px; margin-bottom: 4px; }
+.dmb-sec { margin: 14px 0 6px; font-weight: 700; font-size: 14px; color: var(--text); }
+.dmb-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.dmb-fr { flex: 1 1 104px; min-width: 104px; background: var(--bg); border-radius: 12px; padding: 6px 4px 4px; }
+.dmb-fr-fig { height: 118px; display: flex; align-items: flex-end; }
+.dmb-fr-cap { text-align: center; font-size: 12px; color: var(--dim); margin-top: 4px; }
+.dmb-fr-cap.bad { color: var(--red); font-weight: 600; }
+.dmb-angles { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0; }
+.dmb-chip { font-size: 12px; padding: 3px 8px; border-radius: 999px; background: var(--bg2); color: var(--dim); }
+.dmb-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 8px; margin-top: 8px; }
+.dmb-cell { background: var(--bg); border-radius: 12px; padding: 6px 4px 8px; text-align: center; }
+.dmb-cell-fig { height: 110px; display: flex; align-items: flex-end; justify-content: center; }
+.dmb-train-fig { background: var(--bg); border-radius: var(--radius); padding: 6px; max-width: 210px; margin: 6px auto; }
+.gw-stepdemo { background: var(--bg); border-radius: var(--radius); padding: 4px; margin: 6px auto 8px; max-width: 200px; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.dmb-clips { display: flex; flex-direction: column; gap: 8px; }
+.dmb-clip { background: var(--bg); border-radius: 12px; padding: 8px 10px; }
+.dmb-clip-meta { margin-bottom: 4px; }
+.dmb-video video { width: 100%; border-radius: 10px; margin-top: 6px; background: #000; }

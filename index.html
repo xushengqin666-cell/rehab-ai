@@ -18,6 +18,7 @@
 <meta property="og:url" content="https://xushengqin666-cell.github.io/rehab-ai/">
 <meta property="og:image" content="https://xushengqin666-cell.github.io/rehab-ai/icon-512.png">
 <link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="demo.css">
 </head>
 <body>
 
@@ -71,6 +72,7 @@
     <div id="goal-line" class="goal-line hidden"></div>
     <div id="train-today" class="card hidden" style="margin-top:10px;padding:12px 14px"></div>
     <div id="pain-strip" class="pain-strip"></div>
+    <div id="train-demo" class="card hidden" style="margin-top:10px"></div>
 
     <div class="camera-box">
       <video id="video" playsinline muted autoplay></video>
@@ -329,6 +331,11 @@
       <h3 data-i18n="guideTitle">AI 跟练（引导式训练）</h3>
       <p class="hint" data-i18n="guideIntro">选一节康复跟练课：节拍器打节奏、语音报组次、组间自动休息，完成后自动计入训练记录（无需摄像头）。</p>
       <div id="gw-list" class="gw-list"></div>
+    </div>
+    <div class="card" id="gw-demos-card">
+      <h3 data-i18n="dmbGuideDemos">标准动作示范（跟练课动作）</h3>
+      <p class="hint" data-i18n="dmbGuideDemosHint">点动作看标准做法：关键帧图解 · 判定标准（本应用实际使用的角度）· 常见错误对照。可播放成动图，边看边练。</p>
+      <div id="gw-demos" class="dmb-grid"></div>
     </div>
     <div id="gw-active" class="card hidden">
       <div class="gw-stage" id="gw-stage"></div>
@@ -897,6 +904,17 @@
     <canvas id="qr-canvas" class="qr-canvas"></canvas>
     <p id="qr-page" class="hint" style="text-align:center"></p>
     <button id="qr-close" class="btn block" data-i18n="qrClose">关闭</button>
+  </div>
+</div>
+
+<!-- 标准动作示范弹窗（v2.34.0：关键帧图解 + 判定标准 + 常见错误 + 示范录像） -->
+<div id="dmb-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="dmb-title">
+  <div class="modal-card dmb-card">
+    <div class="dmb-head">
+      <h3 id="dmb-title" data-i18n="dmbTitle">标准动作示范</h3>
+      <button id="dmb-close" class="btn small" data-i18n="dmbClose">关闭</button>
+    </div>
+    <div id="dmb-body"></div>
   </div>
 </div>
 

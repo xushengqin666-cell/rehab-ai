@@ -8,6 +8,7 @@ import {
   verticalAngle,
 } from './analysis.js';
 import { healthCheck, buildFeedbackReport, logAiError, aiErrors, aiStats, aiStatsGet, aiFeedbackAdd, aiSessionComment, generatePlan } from './ai.js';
+import { DEMOS, hasDemo, demoPose, poseOf, figureSvg, demoAngles, clipPut, clipAll, clipDel, clipGet, clipSetForEx, clipForEx, idbAvailable } from './demo.js';
 
 /* ============ 基础工具 ============ */
 const $ = (id) => document.getElementById(id);
@@ -93,7 +94,7 @@ function migrateDeviceData(email) {
 }
 const fmtDate = (ts) => new Date(ts).toLocaleString(locale(), { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-const APP_VERSION = 'v2.33.1';
+const APP_VERSION = 'v2.34.0';
 const exName = (e) => (e.custom ? e.name : t(e.nameKey));
 const exDesc = (e) => (e.custom ? e.desc : t(e.descKey));
 const depthTxt = (d) => t('depth' + (d ? d.charAt(0).toUpperCase() + d.slice(1) : 'Ok')) || d;
@@ -462,6 +463,7 @@ function renderExChips() {
   $('ex-chips').querySelectorAll('.chip[data-ex]').forEach((b) =>
     b.addEventListener('click', () => { LS.set('rehab_active_ex', b.dataset.ex); switchEx(); }));
   $('chip-add').addEventListener('click', () => { openCustomForm(null); switchTab('settings'); });
+  renderTrainDemo();   // v2.34.0：动作换了，标准示范与录像卡一起换
   const ex = getEx(activeExId());
   if (ex) {
     const autoLabel = activeExId() === 'auto' ? `<span class="std">✨ ${t('autoDetected', { name: exName(ex) })}</span><br>` : '';
@@ -1482,7 +1484,8 @@ function switchTab(name) {
   try { window.scrollTo(0, 0); } catch { /* ignore */ }
   renderBlockSub();                          // v2.33.0：按所属区块显示子标签栏
   if (name === 'recheck') renderRecheck();   // v2.33.0：进入复评页刷新对比与分析
-  if (name === 'train') { kickLoop(); renderTrainToday(); }   // 回到训练页立即恢复分析 + 刷新今日任务小条
+  if (name === 'train') { kickLoop(); renderTrainToday(); renderTrainDemo(); }   // 回到训练页立即恢复分析 + 刷新今日任务小条 + 标准示范卡
+  if (name === 'guide') renderGuide();   // v2.34.0：进入跟练页刷新示范墙
   if (name !== 'posture') paStop();          // v2.19：离开体态页自动停止体态评估（防摄像头占用）
   if (name !== 'ft') ftStop();               // v2.20：离开功能测试页自动停止（防摄像头占用）
   if (name === 'home') { renderHome(); renderCareLoop(); }   // v2.21/v2.31：进入今日页刷新总览与闭环
@@ -4367,6 +4370,7 @@ function renderGuide() {
   const activeEl = $('gw-active');
   const stageEl = $('gw-stage');
   if (!listEl) return;
+  renderDemos();   // v2.34.0：示范墙随语言与状态刷新
   if (!gwState.active) {
     const wk = new Date(); wk.setHours(0, 0, 0, 0); wk.setDate(wk.getDate() - 6);
     const gwWeek = sget('rehab_sessions', []).filter((s) => s.ex === 'guided' && new Date(s.ts) >= wk).length;
@@ -4423,6 +4427,7 @@ function renderGuide() {
     <div class="gw-set-line">${t(prog.name)} · ${t('gwLevel')}：${t('gwLv' + gwState.level)}</div>
     <div class="gw-dots">${dots}</div>
     <div class="gw-step-name">${icon(step.icon)} ${t(step.name)}<span class="gw-set-line" style="display:block">${t('gwStepOf', { s: gwState.stepIdx + 1, S: prog.steps.length })}</span></div>
+    ${hasDemo(step.icon) ? '<div class="gw-stepdemo" id="gw-step-demo">' + figureSvg(step.icon, { pose: demoPose(step.icon, gwState.phase === 'rest' ? 0 : 0.5), w: 190, h: 178 }) + '<button class="btn small" id="gw-step-look">' + t('dmbLook') + '</button></div>' : ''}
     <div class="gw-big">${big}</div>
     <div class="gw-set-line">${sub}</div>
     <div class="gw-bar"><div class="gw-bar-fill" style="width:${barPct}%"></div></div>
@@ -4435,6 +4440,8 @@ function renderGuide() {
     <p class="hint tiny" data-i18n="gwTap">点一下 +1（自动计数不准时用手点）</p>`;
   $('btn-gw-stop').addEventListener('click', () => gwFinish(false));
   $('btn-gw-tap').addEventListener('click', gwTap);
+  const gsl = $('gw-step-look');
+  if (gsl) gsl.addEventListener('click', () => openDemo(step.icon));   // v2.34.0：边练边看标准示范
 }
 
 /* ---- 今日总览：综合运动指数（体态 30% + 功能 30% + 坚持 40%）+ 恢复建议 + 热力图 + 周小结 ---- */
@@ -4712,6 +4719,195 @@ function renderLastBackup() {
   el.classList.toggle('warn', days >= 7);
 }
 // v2.21.9：数据被替换/清空/同步后统一刷新全部依赖模块（导入、清空、二维码同步共用）
+/* ============ v2.34.0 标准动作示范（图解）+ 示范录像 ============ */
+const dmbState = { key: null, playing: false, raf: 0, t0: 0 };
+const recState = { rec: null, t0: 0 };
+// 跟练课里出现过的动作，按课程顺序去重（跟练是日常最常走的路）
+function guideStepKeys() {
+  const seen = [];
+  Object.values(GW_PROGRAMS).forEach((p) => p.steps.forEach((s) => {
+    if (hasDemo(s.icon) && seen.indexOf(s.icon) < 0) seen.push(s.icon);
+  }));
+  return seen;
+}
+function dmbName(key) { const e = EXERCISES[key]; return e ? exName(e) : t('dmbUnknown'); }
+function dmbAngleChips(key) {
+  return demoAngles(key).map((a) => '<span class="dmb-chip">' + t(a.k, { v: a.v }) + '</span>').join('');
+}
+
+function openDemo(key) {
+  const modal = $('dmb-modal');
+  if (!modal || !hasDemo(key)) return;
+  dmbState.key = key;
+  renderDemoBody();
+  modal.classList.remove('hidden');
+  $('dmb-close').onclick = closeDemo;
+}
+function closeDemo() {
+  dmbStopPlay();
+  const m = $('dmb-modal'); if (m) m.classList.add('hidden');
+}
+function dmbStopPlay() {
+  dmbState.playing = false;
+  if (dmbState.raf) { try { cancelAnimationFrame(dmbState.raf); } catch (e) { /* ignore */ } dmbState.raf = 0; }
+}
+function dmbTick(ts) {
+  if (!dmbState.playing) return;
+  const big = $('dmb-big');
+  if (!big || !dmbState.key) { dmbStopPlay(); return; }
+  if (!dmbState.t0) dmbState.t0 = ts;
+  const dur = 2800;
+  const u = ((ts - dmbState.t0) % dur) / dur;
+  const tri = u < 0.5 ? u * 2 : (1 - u) * 2;   // 去-回，像 GIF 一样循环
+  big.innerHTML = figureSvg(dmbState.key, { pose: demoPose(dmbState.key, tri), w: 230, h: 250, ghost: true });
+  dmbState.raf = requestAnimationFrame(dmbTick);
+}
+function dmbPlayToggle() {
+  if (dmbState.playing) { dmbStopPlay(); renderDemoBody(); return; }
+  dmbState.playing = true; dmbState.t0 = 0;
+  const b = $('dmb-play'); if (b) b.textContent = t('dmbPause');
+  dmbState.raf = requestAnimationFrame(dmbTick);
+}
+
+function renderDemoBody() {
+  const el = $('dmb-body');
+  const key = dmbState.key;
+  if (!el || !key) return;
+  const d = DEMOS[key];
+  const e = EXERCISES[key];
+  const frames = d.frames.map((fr) => '<div class="dmb-fr"><div class="dmb-fr-fig">' +
+    figureSvg(key, { pose: poseOf(key, fr.p), w: 150, h: 168 }) + '</div><div class="dmb-fr-cap">' + t(fr.key) + '</div></div>').join('');
+  const faults = d.faults.map((ft) => '<div class="dmb-fr"><div class="dmb-fr-fig">' +
+    figureSvg(key, { pose: poseOf(key, ft.p), w: 150, h: 168, fault: true }) + '</div><div class="dmb-fr-cap bad">' + t(ft.key) + '</div></div>').join('') +
+    (d.front ? '<div class="dmb-fr"><div class="dmb-fr-fig">' +
+      figureSvg(key, { pose: poseOf(key, d.front.p, 'front'), w: 150, h: 168, fault: true }) + '</div><div class="dmb-fr-cap bad">' + t(d.front.key) + '</div></div>' : '');
+  el.innerHTML =
+    '<div class="dmb-top"><div class="dmb-big" id="dmb-big">' +
+      figureSvg(key, { pose: demoPose(key, 0.5), w: 230, h: 250, ghost: true }) + '</div>' +
+      '<div class="dmb-side">' +
+        '<div class="dmb-name">' + dmbName(key) + '</div>' +
+        (e && e.stdKey ? '<p class="hint">' + t(e.stdKey) + '</p>' : '') +
+        '<div class="dmb-angles">' + dmbAngleChips(key) + '</div>' +
+        '<div class="controls"><button class="btn small" id="dmb-play">' + t('dmbPlay') + '</button>' +
+          '<button class="btn small" id="dmb-rec">' + (recState.rec ? t('dmbRecStop') : t('dmbRec')) + '</button></div>' +
+      '</div></div>' +
+    '<div class="dmb-sec">' + t('dmbFrames') + '</div><div class="dmb-row">' + frames + '</div>' +
+    (e && e.descKey ? '<div class="dmb-sec">' + t('dmbCues') + '</div><p class="hint">' + t(e.descKey) + '</p>' : '') +
+    '<div class="dmb-sec">' + t('dmbFaults') + '</div><div class="dmb-row">' + faults + '</div>' +
+    '<p class="hint tiny">' + t('dmbRecHint') + '</p>' +
+    '<div class="dmb-sec">' + t('dmbClips') + '</div><div id="dmb-clips" class="dmb-clips"></div>';
+  const p = $('dmb-play'); if (p) p.addEventListener('click', dmbPlayToggle);
+  const rc = $('dmb-rec'); if (rc) rc.addEventListener('click', recToggle);
+  renderClips($('dmb-clips'));
+}
+
+/* ---- 录像：录的是分析画布（摄像头画面 + 骨架叠加），只存本机 ---- */
+async function recToggle() {
+  if (recState.rec) { try { recState.rec.stop(); } catch (e) { /* ignore */ } return; }
+  const cv = $('overlay');
+  if (!cv || typeof cv.captureStream !== 'function' || typeof MediaRecorder === 'undefined') { toast(t('dmbNoRec')); return; }
+  try {
+    const stream = cv.captureStream(25);
+    let mime = 'video/webm';
+    if (MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported('video/webm;codecs=vp9')) mime = 'video/webm;codecs=vp9';
+    const rec = new MediaRecorder(stream, { mimeType: mime });
+    const chunks = [];
+    rec.ondataavailable = (ev) => { if (ev.data && ev.data.size) chunks.push(ev.data); };
+    rec.onstop = async () => {
+      const blob = new Blob(chunks, { type: 'video/webm' });
+      const durSec = Math.max(1, Math.round((Date.now() - recState.t0) / 1000));
+      recState.rec = null;
+      if (blob.size > 0 && idbAvailable()) {
+        try { await clipPut(blob, { ex: activeExId(), label: dmbName(activeExId()), durSec: durSec }); toast(t('dmbRecSaved', { n: durSec })); }
+        catch (e) { toast(t('dmbNoRec')); }
+      } else { toast(t('dmbNoRec')); }
+      renderTrainDemo();
+      if (dmbState.key) renderDemoBody();
+    };
+    rec.start(1000);
+    recState.rec = rec; recState.t0 = Date.now();
+    toast(t('dmbRecOn'));
+    renderTrainDemo();
+  } catch (err) { toast(t('dmbNoRec')); }
+}
+
+async function renderClips(host) {
+  if (!host) return;
+  if (!idbAvailable()) { host.innerHTML = '<p class="hint tiny">' + t('dmbNoIdb') + '</p>'; return; }
+  let all = [];
+  try { all = await clipAll(); } catch (e) { all = []; }
+  if (!all.length) { host.innerHTML = '<p class="hint tiny">' + t('dmbClipEmpty') + '</p>'; return; }
+  host.innerHTML = all.map((c) => '<div class="dmb-clip" data-clip="' + c.id + '">' +
+    '<div class="dmb-clip-meta"><b>' + (c.label || c.ex || t('dmbClip')) + '</b>' +
+      '<span class="hint tiny"> ' + new Date(c.ts).toLocaleString(locale(), { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) +
+      ' · ' + c.durSec + 's · ' + Math.max(1, Math.round((c.bytes || 0) / 1048576 * 10) / 10) + 'MB' +
+      (c.forEx ? ' · ' + t('dmbDemoFor', { n: dmbName(c.forEx) }) : '') + '</span></div>' +
+    '<div class="controls"><button class="btn small" data-clip-play="' + c.id + '">' + t('dmbPlayClip') + '</button>' +
+      '<button class="btn small" data-clip-set="' + c.id + '">' + t('dmbSetAsDemo') + '</button>' +
+      '<button class="btn small" data-clip-del="' + c.id + '">' + t('dmbDel') + '</button></div>' +
+    '<div class="dmb-video" data-clip-host="' + c.id + '"></div></div>').join('');
+  host.querySelectorAll('[data-clip-play]').forEach((b) => b.addEventListener('click', async () => {
+    const c = await clipGet(b.dataset.clipPlay);
+    const box = host.querySelector('[data-clip-host="' + b.dataset.clipPlay + '"]');
+    if (!c || !box) return;
+    if (box.innerHTML) { box.innerHTML = ''; return; }
+    const url = URL.createObjectURL(c.blob);
+    box.innerHTML = '<video controls playsinline src="' + url + '"></video>';
+  }));
+  host.querySelectorAll('[data-clip-set]').forEach((b) => b.addEventListener('click', async () => {
+    const ex = dmbState.key || activeExId();
+    await clipSetForEx(b.dataset.clipSet, ex);
+    toast(t('dmbSetDone', { n: dmbName(ex) }));
+    renderClips(host); renderTrainDemo();
+  }));
+  host.querySelectorAll('[data-clip-del]').forEach((b) => b.addEventListener('click', async () => {
+    await clipDel(b.dataset.clipDel); renderClips(host); renderTrainDemo();
+  }));
+}
+
+/* ---- 跟练页示范墙 ---- */
+function renderDemos() {
+  const card = $('gw-demos-card');
+  if (card) card.classList.toggle('hidden', !!gwState.active);   // 跟练进行中不占屏幕，示范直接显示在训练台
+  const el = $('gw-demos');
+  if (!el) return;
+  const keys = guideStepKeys();
+  el.innerHTML = keys.map((k) => '<div class="dmb-cell">' +
+    '<div class="dmb-cell-fig">' + figureSvg(k, { pose: demoPose(k, 0.5), w: 150, h: 160 }) + '</div>' +
+    '<div class="dmb-fr-cap">' + dmbName(k) + '</div>' +
+    '<button class="btn small" data-dmb="' + k + '">' + t('dmbLook') + '</button></div>').join('');
+  el.querySelectorAll('[data-dmb]').forEach((b) => b.addEventListener('click', () => openDemo(b.dataset.dmb)));
+}
+// 验收用钩子：把示范图与录像存取暴露给自动化测试（不影响正常功能）
+try {
+  window.__rehabDemo = { hasDemo: hasDemo, demoAngles: demoAngles, figureSvg: figureSvg, demoPose: demoPose,
+    poseOf: poseOf, DEMOS: DEMOS,
+    clipPut: clipPut, clipAll: clipAll, clipDel: clipDel, idb: idbAvailable };
+} catch (e) { /* ignore */ }
+
+/* ---- 训练页：当前动作的标准示范 + 录制 ---- */
+function renderTrainDemo() {
+  const el = $('train-demo');
+  if (!el) return;
+  const id = activeExId();
+  if (!id || id === 'auto') { el.classList.add('hidden'); return; }
+  el.classList.remove('hidden');
+  const e = EXERCISES[id];
+  const has = hasDemo(id);
+  el.innerHTML = '<h3>' + t('dmbTrainTitle') + ' · ' + dmbName(id) + '</h3>' +
+    (has ? '<div class="dmb-train-fig">' + figureSvg(id, { pose: demoPose(id, 0.5), w: 200, h: 215 }) + '</div>' +
+      '<div class="dmb-angles">' + dmbAngleChips(id) + '</div>'
+      : '<p class="hint">' + t('dmbNoDemo') + '</p>') +
+    (e && e.stdKey ? '<p class="hint">' + t(e.stdKey) + '</p>' : '') +
+    '<div class="controls">' + (has ? '<button class="btn small" id="train-demo-look">' + t('dmbLook') + '</button>' : '') +
+      '<button class="btn small ' + (recState.rec ? 'primary' : '') + '" id="train-rec">' + (recState.rec ? t('dmbRecStop') : t('dmbRec')) + '</button></div>' +
+    '<p class="hint tiny">' + t('dmbRecHint') + '</p>' +
+    '<div id="train-clips" class="dmb-clips"></div>';
+  const l = $('train-demo-look'); if (l) l.addEventListener('click', () => openDemo(id));
+  const rc = $('train-rec'); if (rc) rc.addEventListener('click', recToggle);
+  renderClips($('train-clips'));
+}
+
 function refreshAllData() {
   renderRecords(); renderAssessments(); renderAppts(); renderCustomList(); renderExChips();
   renderCollectCount(); renderProfile(); renderTodayPlan(); renderPlanList(); renderPlanPick();
