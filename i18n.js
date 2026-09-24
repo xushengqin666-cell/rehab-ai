@@ -82,6 +82,13 @@ const DICT = {
     repRadar: '功能测试六维', repTrend30: '近 30 天训练趋势（每日动作次数）',
     ftDimSym: '对称', ftDimAlign: '排列', ftDimDyn: '动态', ftDimStab: '稳定', ftDimRom: '活动度', ftDimCons: '一致性',
     fileReport: '康复AI治疗师报告',
+    // v2.32.0 端手接力
+    relayTitle: '端手接力（手机 ⇄ 电脑）',
+    relayIntro: '三步把数据搬过去：① 在本机点「导出数据」拿到一个备份文件；② 用微信/邮件/隔空投送传到另一台；③ 在另一台点「导入并合并」——两台数据会合并（不是覆盖），编号相同的记录自动去重。',
+    relayHint: '两台在同一房间时用二维码最快；不在同一地点就传文件。两种方式都是本地直传，不经过任何服务器。',
+    btnSyncShow2: '面对面二维码同步',
+    relayState: '本机现有数据 {n} 条 · 上次导出 {d}',
+    importMerged: '合并完成：新增训练 {s} 条 · 疼痛 {p} 条 · 活动度 {r} 条（本次文件共 {t} 项）',
     // v2.31.0 康复闭环
     loopTitle: '康复闭环（一条主线）',
     loopIntro: '评估发现问题 → 生成训练 → 训练后记疼痛 → 复评对比：五步自动串起来，每一步都能一键跳到该去的地方。',
@@ -782,6 +789,13 @@ const DICT = {
     repRadar: 'Function test (6 dimensions)', repTrend30: 'Training trend, last 30 days (reps per day)',
     ftDimSym: 'Symmetry', ftDimAlign: 'Alignment', ftDimDyn: 'Dynamics', ftDimStab: 'Stability', ftDimRom: 'ROM', ftDimCons: 'Consistency',
     fileReport: 'RehabAI-therapist-report',
+    // v2.32.0 Phone <-> computer relay
+    relayTitle: 'Phone to computer relay',
+    relayIntro: 'Three steps: 1) tap Export on this device; 2) send the file to the other device (chat, email, AirDrop); 3) tap Import and merge there - the two data sets are MERGED (not overwritten) and duplicate records are removed by id.',
+    relayHint: 'Same room: QR sync is fastest. Different places: send the file. Both stay local and never touch a server.',
+    btnSyncShow2: 'Face-to-face QR sync',
+    relayState: '{n} records on this device - last export {d}',
+    importMerged: 'Merged: +{s} sessions, +{p} pain entries, +{r} ROM records (file contained {t} items)',
     // v2.31.0 Care loop
     loopTitle: 'Rehab loop (one thread)',
     loopIntro: 'Assess to find problems, generate training, log pain after training, re-test and compare: five steps linked automatically, each one click away from where you need to go.',

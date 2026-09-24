@@ -872,6 +872,23 @@ await sleep(550);
 (await evl(`document.getElementById('care-loop').textContent.includes('+7')`)) ? ok('复评对比自动算出（活动度 +7°，训练→复评→对比闭环）') : bad('对比未显示');
 await evl(`['rehab_pa_history','rehab_ft_history','rehab_rom_history','rehab_plan','rehab_sessions'].forEach((k) => localStorage.removeItem(k))`);
 
+console.log('===== 31. 端手接力（v2.32.0：导出→传文件→导入合并 真互通） =====');
+await evl(`['rehab_sessions','rehab_rom_history','rehab_pain_history','rehab_last_backup'].forEach((k) => localStorage.removeItem(k)); location.reload()`);
+await sleep(2600);
+await evl(`document.querySelector('.bottom-nav button[data-tab="home"]').click()`);
+await sleep(450);
+(await evl(`!!document.getElementById('btn-relay-export') && !!document.getElementById('btn-relay-import') && !!document.getElementById('btn-relay-qr') && !!document.getElementById('relay-state')`)) ? ok('今日页出现端手接力卡（导出/导入合并/二维码 + 状态行）') : bad('端手接力卡缺失');
+// 合并语义：本机已有 1 条 + 导入文件里 2 条（其中 1 条同 id）→ 合并后应为 2 条（不是覆盖成 2 条重复 3 条）
+await evl(`(() => { localStorage.setItem('rehab_sessions', JSON.stringify([{ id: 'loc1', ts: Date.now(), ex: 'squat', exName: '深蹲', reps: 10, dur: 60, depth: 'ok', badPct: 0, valgusPct: 0, riskPct: 0, collectCount: 0 }])); return true; })()`);
+const relayBak = join(dlDir, 'relay.json');
+writeFileSync(relayBak, JSON.stringify({ app: 'RehabAI', v: 3, sessions: [{ id: 'loc1', ts: Date.now(), ex: 'squat', exName: '深蹲', reps: 12, dur: 60, depth: 'ok', badPct: 0, valgusPct: 0, riskPct: 0, collectCount: 0 }, { id: 'from2', ts: Date.now() - 1000, ex: 'lunge', exName: '弓步蹲', reps: 9, dur: 60, depth: 'ok', badPct: 0, valgusPct: 0, riskPct: 0, collectCount: 0 }], assessments: [], appts: [], customExercises: [], romHistory: [{ id: 'romA', ts: Date.now(), key: 'kneeFlex', side: 'L', min: 40, max: 175, rom: 140, level: 'good' }], painHistory: [{ id: 'pA', ts: Date.now(), when: 'post', v: 2, part: 'knee', note: '' }] }));
+await setFiles('#import-input', relayBak);
+await sleep(900);
+(await evl(`(() => { const s = JSON.parse(localStorage.getItem('rehab_sessions') || '[]'); return s.length === 2 && s.some((x) => x.id === 'from2') && s.some((x) => x.id === 'loc1' && x.reps === 12); })()`)) ? ok('导入 = 合并（本机 1 条 + 文件 2 条 → 2 条，同 id 被更新而非重复）') : bad('合并语义失败');
+(await evl(`JSON.parse(localStorage.getItem('rehab_rom_history') || '[]').length === 1 && JSON.parse(localStorage.getItem('rehab_pain_history') || '[]').length === 1`)) ? ok('活动度与疼痛也随文件合并进本机') : bad('其它数据未合并');
+(await evl(`(() => { const el = document.getElementById('relay-state'); return el && el.textContent.length > 5; })()`)) ? ok('接力卡显示本机数据量与上次导出日期') : bad('接力状态行缺失');
+await evl(`['rehab_sessions','rehab_rom_history','rehab_pain_history'].forEach((k) => localStorage.removeItem(k))`);
+
 console.log('===== 结果 =====');
 console.log('CONSOLE_ERRORS:', consoleErrors.length ? consoleErrors.join(' ||| ') : 'none');
 if (consoleErrors.length) failN++;

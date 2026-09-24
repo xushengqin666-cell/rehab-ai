@@ -259,6 +259,17 @@
   <!-- ============ 今日（v2.21 新增：综合运动指数 · 恢复建议 · 坚持热力图 · 周小结） ============ -->
   <section id="tab-home" class="tab">
     <div class="card">
+      <h3 data-i18n="relayTitle">端手接力（手机 ⇄ 电脑）</h3>
+      <p class="hint" data-i18n="relayIntro">三步把数据搬过去：①在本机点「导出数据」拿到一个备份文件；②用微信/邮件/隔空投送传到另一台；③在另一台点「导入并合并」——两台的数据会合并（不是覆盖），编号相同的记录自动去重。</p>
+      <div class="controls">
+        <button id="btn-relay-export" class="btn primary"><span data-i18n="btnExport">导出数据</span></button>
+        <button id="btn-relay-import" class="btn"><span data-i18n="btnImport">导入并合并</span></button>
+        <button id="btn-relay-qr" class="btn"><span data-i18n="btnSyncShow2">面对面二维码同步</span></button>
+      </div>
+      <p class="hint tiny" id="relay-state"></p>
+      <p class="hint tiny" data-i18n="relayHint">两台在同一房间时用二维码最快；不在同一地点就传文件。两种方式都是本地直传，不经过任何服务器。</p>
+    </div>
+    <div class="card">
       <h3 data-i18n="loopTitle">康复闭环（一条主线）</h3>
       <p class="hint" data-i18n="loopIntro">评估发现问题 → 生成训练 → 训练后记疼痛 → 复评对比：五步自动串起来，每一步都能一键跳到该去的地方。</p>
       <div id="care-loop"></div>

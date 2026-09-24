@@ -93,7 +93,7 @@ function migrateDeviceData(email) {
 }
 const fmtDate = (ts) => new Date(ts).toLocaleString(locale(), { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-const APP_VERSION = 'v2.31.0';
+const APP_VERSION = 'v2.32.0';
 const exName = (e) => (e.custom ? e.name : t(e.nameKey));
 const exDesc = (e) => (e.custom ? e.desc : t(e.descKey));
 const depthTxt = (d) => t('depth' + (d ? d.charAt(0).toUpperCase() + d.slice(1) : 'Ok')) || d;
@@ -1438,31 +1438,20 @@ $('import-input').addEventListener('change', async (ev) => {
   try {
     const data = JSON.parse(await file.text());
     if (!data || !Array.isArray(data.sessions)) throw new Error(t('importFormatErr'));
-    // v2.21.9：导入前摘要确认（导入会覆盖本机对应数据，先让用户看清规模）
+    // v2.32.0：导入 = 「端手接力」——从手机导出的文件在电脑导入时是**合并**（去重、保留双方数据），不再覆盖本机
     if (!confirm(t('importConfirm', { s: bakCount(data.sessions), a: bakCount(data.assessments), p: bakCount(data.appts), f: bakCount(data.ftHistory), r: bakCount(data.paHistory) }))) {
       ev.target.value = '';
       return;
     }
-    sset('rehab_sessions', data.sessions || []);
-    sset('rehab_assessments', data.assessments || []);
-    sset('rehab_appts', data.appts || []);
-    if (Array.isArray(data.customExercises)) { saveCustomExercises(data.customExercises); invalidateCustom(); }
-    if (Array.isArray(data.collect)) { state.collectBuf = data.collect; sset('rehab_collect', data.collect); }
-    // v2.21.9：恢复新增数据（旧版备份没有这些字段 → 保持本机现状，向后兼容）
-    if (Array.isArray(data.plan)) sset('rehab_plan', data.plan);
-    if (data.planDone && typeof data.planDone === 'object') sset('rehab_plan_done', data.planDone);
-    if (data.profile && typeof data.profile === 'object') sset('rehab_profile', data.profile);
-    if (Array.isArray(data.ftHistory)) sset('rehab_ft_history', data.ftHistory);
-    if (Array.isArray(data.paHistory)) sset('rehab_pa_history', data.paHistory);
-    if (Array.isArray(data.homeIdx)) sset('rehab_home_idx', data.homeIdx);
-    if (Array.isArray(data.painHistory)) sset('rehab_pain_history', data.painHistory);
-    if (Array.isArray(data.romHistory)) sset('rehab_rom_history', data.romHistory);
-    if (Array.isArray(data.promsHistory)) sset('rehab_proms_history', data.promsHistory);
-    if (data.aiPrefs && typeof data.aiPrefs === 'object') sset('rehab_ai_prefs', data.aiPrefs);
-    if (data.path && typeof data.path === 'object') sset('rehab_path', data.path);
-    if (data.camPrefs && typeof data.camPrefs === 'object') sset('rehab_cam_prefs', data.camPrefs);
-    refreshAllData();   // v2.21.9：导入后所有依赖模块一起刷新（原只刷记录/评估/预约/自定义）
-    toast(t('toastImportOk'));
+    const before = { s: sget('rehab_sessions', []).length, p: painHistory().length, r: romHistory().length };
+    const m = mergeSyncData(data);   // 与二维码同步共用同一个合并引擎（按 id 去重、双方保留）
+    const added = {
+      s: Math.max(0, sget('rehab_sessions', []).length - before.s),
+      p: Math.max(0, painHistory().length - before.p),
+      r: Math.max(0, romHistory().length - before.r),
+    };
+    refreshAllData();   // 导入后所有依赖模块一起刷新
+    toast(t('importMerged', { s: added.s, p: added.p, r: added.r, t: m.s + m.a + m.p + m.c }));
     scheduleCloudSync();
   } catch (e) { toast(t('toastImportFail', { msg: e.message })); }
   ev.target.value = '';
@@ -4725,6 +4714,19 @@ function refreshAllData() {
   renderAiPlan(); renderAiEngine(); renderPath(); renderCareLoop();   // v2.28.0/v2.29.0/v2.31.0：引擎·路径·闭环一起刷新
 }
 
+/* ============ v2.32.0 新模块：端手接力（手机 ⇄ 电脑 数据合并式互通） ============ */
+function renderRelayState() {
+  const el = $('relay-state');
+  if (!el) return;
+  const n = sget('rehab_sessions', []).length + paHistory().length + romHistory().length + promHistory().length + painHistory().length;
+  const last = LS.get('rehab_last_backup', 0);
+  el.textContent = t('relayState', { n, d: last ? new Date(last).toLocaleDateString(locale()) : t('repNone') });
+}
+// 入口放在今日页最上方：导出 → 传文件 → 导入并合并（与二维码同步共用 mergeSyncData 合并引擎）
+$('btn-relay-export') && $('btn-relay-export').addEventListener('click', () => $('btn-export').click());
+$('btn-relay-import') && $('btn-relay-import').addEventListener('click', () => $('btn-import').click());
+$('btn-relay-qr') && $('btn-relay-qr').addEventListener('click', () => { startSyncShow(); });
+
 /* ============ v2.31.0 新模块：康复闭环（把评估/问题/训练/复评/对比串成一条主线） ============ */
 // 解决“各模块各说各话”：所有评估 → 问题清单 → 生成训练计划 → 训练后记疼痛 → 复评 → 前后对比，全部互相调用。
 function assessSnapshot() {
@@ -6351,6 +6353,7 @@ renderAiPlan(); renderAiEngine();                        // v2.28.0：自适应�
 renderPath();                                            // v2.29.0：康复路径初始化
 renderCamCard();                                         // v2.30.0：影像设置初始化
 renderCareLoop();                                        // v2.31.0：康复闭环初始化
+renderRelayState();                                      // v2.32.0：端手接力状态
 window.__gwSkip = () => gwFinish(true);                   // 测试钩子：直接完成当前跟练
 showOnboard();
 setTimeout(reminderCatchUp, 4000);            // 错过提醒时间 → 打开时补一次
