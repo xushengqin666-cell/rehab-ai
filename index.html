@@ -36,7 +36,32 @@
   <button id="btn-lang" class="lang-btn" title="Switch language">EN</button>
 </header>
 
+<div id="block-sub" class="block-sub hidden"></div>
+
 <main>
+  <!-- ============ 复评（v2.33.0 新增：训练前 vs 现在的对比 + 哪里弱/练哪块肌群） ============ -->
+  <section id="tab-recheck" class="tab">
+    <div class="card">
+      <h3 data-i18n="rcTitle">复评对比（训练前 vs 现在）</h3>
+      <p class="hint" data-i18n="rcIntro">把最近一次评估与上一次（或训练前）逐项对照：活动度、疼痛、功能测试六维、量表、体态，自动算出差值与方向。</p>
+      <div id="rc-compare"></div>
+      <div class="controls">
+        <button id="btn-rc-report" class="btn primary"><span data-i18n="rcReport">生成对比报告</span></button>
+        <button id="btn-rc-assess" class="btn"><span data-i18n="rcGoAssess">再测一次（复评）</span></button>
+        <button id="btn-rc-trend" class="btn"><span data-i18n="rcTrendBtn">看趋势</span></button>
+      </div>
+    </div>
+    <div class="card">
+      <h3 data-i18n="rcAnalyzeTitle">AI 分析：哪里有问题 · 该练哪块肌群</h3>
+      <p class="hint" data-i18n="rcAnalyzeIntro">按你的评估数据推断可能的薄弱环节与对应肌群，并给出练什么。本地规则引擎先出结论；联网时可切换为大模型分析。</p>
+      <div id="body-analysis"></div>
+    </div>
+    <div class="card">
+      <h3 data-i18n="rcTrendTitle">恢复趋势</h3>
+      <div id="rc-trend"></div>
+    </div>
+  </section>
+
   <!-- ============ 训练 ============ -->
   <section id="tab-train" class="tab active">
     <div class="ex-row">
@@ -783,11 +808,11 @@
     <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="4.8" r="2.2"/><path d="M12 7v5.6M12 12.6l-4 3M12 12.6l4 3M12 15.6l-3.2 4M12 15.6l3.2 4M12 9.6l-4.6-2M12 9.6l4.6-2M7.4 6.8l-1 3.4M16.6 6.8l1 3.4"/></svg>
     <span class="nav-label" data-i18n="paNav">体态</span>
   </button>
-  <button data-tab="ft">
+  <button data-tab="ft" class="nav-hidden">
     <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20v-8.5M12 20V4.5M19 20V11M3.8 20h16.4"/><path d="M7.6 9h2M13.6 6.5h2"/></svg>
     <span class="nav-label" data-i18n="ftNav">功能测试</span>
   </button>
-  <button data-tab="guide">
+  <button data-tab="guide" class="nav-hidden">
     <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.4"/><path d="M10 9.2v5.6l4.6-2.8Z" fill="currentColor" stroke="none"/></svg>
     <span class="nav-label" data-i18n="navGuide">跟练</span>
   </button>
@@ -795,13 +820,17 @@
     <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20v-8.5M12 20V4.5M19 20V11M3.8 20h16.4"/></svg>
     <span class="nav-label" data-i18n="navRecord">记录</span>
   </button>
-  <button data-tab="assess">
+  <button data-tab="assess" class="nav-hidden">
     <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6.5" y="4.2" width="11" height="16.2" rx="2.2"/><path d="M9.4 4.2v-1a1 1 0 0 1 1-1h3.2a1 1 0 0 1 1 1v1M9.2 13.6l2.1 2.1 3.7-4.4"/></svg>
     <span class="nav-label" data-i18n="navAssess">评估</span>
   </button>
-  <button data-tab="schedule">
+  <button data-tab="schedule" class="nav-hidden">
     <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="5.8" width="15.6" height="14.4" rx="2.2"/><path d="M4.2 10h15.6M8.4 3.8v3M15.6 3.8v3M8.6 14.5h2M13.4 14.5h2M8.6 17h2"/></svg>
     <span class="nav-label" data-i18n="navSchedule">日程</span>
+  </button>
+  <button data-tab="recheck">
+    <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 1 0-2.2 6.1M20 5v6h-6"/><path d="M8.5 12.2l2.2 2.2 4.3-5"/></svg>
+    <span class="nav-label" data-i18n="navRecheck">复评</span>
   </button>
   <button data-tab="settings">
     <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 7.5h15M4.5 16.5h15"/><circle cx="9.5" cy="7.5" r="1.7" fill="currentColor" stroke="none"/><circle cx="15" cy="16.5" r="1.7" fill="currentColor" stroke="none"/></svg>

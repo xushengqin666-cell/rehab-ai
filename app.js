@@ -93,7 +93,7 @@ function migrateDeviceData(email) {
 }
 const fmtDate = (ts) => new Date(ts).toLocaleString(locale(), { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-const APP_VERSION = 'v2.32.0';
+const APP_VERSION = 'v2.33.0';
 const exName = (e) => (e.custom ? e.name : t(e.nameKey));
 const exDesc = (e) => (e.custom ? e.desc : t(e.descKey));
 const depthTxt = (d) => t('depth' + (d ? d.charAt(0).toUpperCase() + d.slice(1) : 'Ok')) || d;
@@ -1480,6 +1480,8 @@ function switchTab(name) {
     else b.removeAttribute('aria-current');
   });
   try { window.scrollTo(0, 0); } catch { /* ignore */ }
+  renderBlockSub();                          // v2.33.0：按所属区块显示子标签栏
+  if (name === 'recheck') renderRecheck();   // v2.33.0：进入复评页刷新对比与分析
   if (name === 'train') { kickLoop(); renderTrainToday(); }   // 回到训练页立即恢复分析 + 刷新今日任务小条
   if (name !== 'posture') paStop();          // v2.19：离开体态页自动停止体态评估（防摄像头占用）
   if (name !== 'ft') ftStop();               // v2.20：离开功能测试页自动停止（防摄像头占用）
@@ -4711,8 +4713,114 @@ function refreshAllData() {
   renderPain(); renderPainStrip(); renderReport();   // v2.22.0/v2.24.0：疼痛与报告数据一起刷新
   renderRomHistory(); renderRomResult(romHistory()[0] || null);   // v2.26.0：ROM 数据一起刷新
   renderPromHistory();                                  // v2.27.0：PROMs 数据一起刷新
-  renderAiPlan(); renderAiEngine(); renderPath(); renderCareLoop();   // v2.28.0/v2.29.0/v2.31.0：引擎·路径·闭环一起刷新
+  renderAiPlan(); renderAiEngine(); renderPath(); renderCareLoop(); renderRecheck();   // v2.28-v2.33：引擎·路径·闭环·复评一起刷新
 }
+
+/* ============ v2.33.0 新模块：三块式架构（评估 / 训练 / 复评）+ 肌群分析 ============ */
+// 底部导航收敛为 6 个主入口，评估与训练两块用子标签容纳各自的页面；复评页做前后对比与薄弱肌群分析。
+const BLOCK_DEF = {
+  assess: { label: 'blockAssess', items: [['posture', 'subPosture'], ['ft', 'subFt'], ['assess', 'subAssess']] },
+  train: { label: 'blockTrain', items: [['guide', 'subGuide'], ['schedule', 'subSchedule'], ['train', 'subTrain']] },
+};
+const BLOCK_OF = { posture: 'assess', ft: 'assess', assess: 'assess', guide: 'train', schedule: 'train', train: 'train' };
+function renderBlockSub() {
+  const el = $('block-sub');
+  if (!el) return;
+  const cur = state.tab;
+  const blk = BLOCK_OF[cur];
+  if (!blk) { el.classList.add('hidden'); return; }
+  el.classList.remove('hidden');
+  el.innerHTML = `<span class="bs-label">${t(BLOCK_DEF[blk].label)}</span>` +
+    BLOCK_DEF[blk].items.map(([k, key]) => `<button class="bs-btn ${cur === k ? 'on' : ''}" data-bs="${k}">${t(key)}</button>`).join('');
+  el.querySelectorAll('[data-bs]').forEach((b) => b.addEventListener('click', () => switchTab(b.dataset.bs)));
+}
+// 肌群映射：把"问题"翻译成"要练哪块肌肉 + 练什么"
+const MUSCLE_MAP = [
+  { test: (s) => s.paItems.some((x) => /shoulder|肩/i.test(x)) || s.dims && s.dims.sym != null && s.dims.sym < 80, key: 'gluteMed', ex: ['stepup', 'lunge'] },
+  { test: (s) => s.paItems.some((x) => /knee|膝/i.test(x)) || (s.dims && s.dims.align != null && s.dims.align < 75), key: 'quadVmo', ex: ['sitstand', 'squat'] },
+  { test: (s) => s.paItems.some((x) => /hip|髋|骨盆|pelvis/i.test(x)), key: 'gluteMax', ex: ['hiphinge', 'bridge'] },
+  { test: (s) => s.paItems.some((x) => /back|腰|脊柱|spine/i.test(x)) || (s.dims && s.dims.stab != null && s.dims.stab < 75), key: 'coreDeep', ex: ['plank', 'hiphinge'] },
+  { test: (s) => s.paItems.some((x) => /neck|颈|head|头/i.test(x)), key: 'neckDeep', ex: ['shoulderraise', 'standing'] },
+  { test: (s) => s.paItems.some((x) => /ankle|踝|foot|足/i.test(x)) || (s.dims && s.dims.rom != null && s.dims.rom < 75), key: 'calfAnkle', ex: ['squat', 'stepup'] },
+];
+function bodyAnalysis() {
+  const s = assessSnapshot();
+  const ft = s.ft && s.ft.dims ? s.ft.dims : null;
+  const flat = {
+    paItems: (s.pa && s.pa.priorities ? s.pa.priorities.map((x) => String(x.label || '')) : []),
+    dims: ft,
+  };
+  const hits = MUSCLE_MAP.filter((m) => m.test(flat));
+  const weakRom = ROM_ITEMS.map((it) => ({ it, b: romBaseline(it.key) })).filter((x) => x.b && x.b.last != null)
+    .map((x) => ({ it: x.it, last: x.b.last, gap: romTarget(x.it) - x.b.last })).sort((a, b) => b.gap - a.gap)[0];
+  const pain = painRecentMax(7);
+  const findings = [];
+  if (weakRom && weakRom.gap > 0) findings.push({ kind: 'rom', text: t('anRom', { n: t('romItem' + weakRom.it.key.charAt(0).toUpperCase() + weakRom.it.key.slice(1)), v: weakRom.last, g: weakRom.gap }), muscles: weakRom.it.lm === 'shoulder' ? ['shoulderStab'] : ['gluteMax', 'calfAnkle'] });
+  if (ft) {
+    const order = [['sym', 'ftDimSym'], ['align', 'ftDimAlign'], ['dyn', 'ftDimDyn'], ['stab', 'ftDimStab'], ['rom', 'ftDimRom'], ['cons', 'ftDimCons']];
+    let low = null;
+    order.forEach(([k, key]) => { const v = Number(ft[k]); if (v != null && (low == null || v < low.v)) low = { k, key, v }; });
+    if (low && low.v < 80) findings.push({ kind: 'ft', text: t('anFt', { n: t(low.key), v: Math.round(low.v) }), muscles: low.k === 'sym' ? ['gluteMed'] : low.k === 'stab' ? ['coreDeep'] : ['quadVmo'] });
+  }
+  if (pain != null && pain >= 4) findings.push({ kind: 'pain', text: t('anPain', { v: pain }), muscles: ['gluteMax'] });
+  if (!s.pa && !s.ft && !s.rom && !s.prom) findings.push({ kind: 'none', text: t('anNone'), muscles: [] });
+  const muscles = [...new Set([].concat(...findings.map((f) => f.muscles), ...hits.map((m) => m.key)))];
+  const ex = [...new Set([].concat(...hits.map((m) => m.ex)))];
+  return { findings, muscles, ex };
+}
+function renderBodyAnalysis() {
+  const el = $('body-analysis');
+  if (!el) return;
+  const a = bodyAnalysis();
+  el.innerHTML = `<div class="an-find">${a.findings.map((f) => `<div class="an-item ${f.kind}">• ${f.text}</div>`).join('')}</div>
+    ${a.muscles.length ? `<div class="an-cols"><div><b>${t('anMuscles')}</b><ul>${a.muscles.map((m) => `<li>${t('mus' + m.charAt(0).toUpperCase() + m.slice(1))}</li>`).join('')}</ul></div>
+    <div><b>${t('anExercises')}</b><ul>${a.ex.map((x) => { const e = getEx(x); return `<li>${e ? exName(e) : x}</li>`; }).join('')}</ul></div></div>
+    <div class="controls"><button id="btn-an-plan" class="btn primary">${t('anMakePlan')}</button>
+      <button id="btn-an-eval" class="btn">${t('anAskModel')}</button></div>` : ''}`;
+  const p = $('btn-an-plan');
+  if (p) p.addEventListener('click', () => { loopPlanFromIssues(); switchTab('train'); });
+  const e2 = $('btn-an-eval');
+  if (e2) e2.addEventListener('click', () => { toast(t('anModelHint')); });
+}
+function renderRecheck() {
+  const el = $('rc-compare');
+  if (!el) return;
+  const s = assessSnapshot();
+  const rom = romHistory();
+  const rows = [];
+  // 活动度：同项同侧 最近 vs 上一次
+  ROM_ITEMS.forEach((it) => {
+    const list = rom.filter((r) => r.key === it.key && r.rom != null);
+    const now = list[0], prev = list.find((r, i) => i > 0 && r.side === (now && now.side));
+    if (now) rows.push({ k: t('romItem' + it.key.charAt(0).toUpperCase() + it.key.slice(1)) + (now.side === 'L' ? ' 左' : ' 右'), now: now.rom + '°', prev: prev ? prev.rom + '°' : '—', d: prev ? now.rom - prev.rom : null, better: prev ? now.rom >= prev.rom : null, unit: '°' });
+  });
+  // 疼痛：训练前 vs 训练后（越低越好）
+  const pairs = painTodayPair();
+  if (pairs) rows.push({ k: t('painTitle'), now: pairs.post + '', prev: pairs.pre + '', d: pairs.post - pairs.pre, better: pairs.post <= pairs.pre, unit: '' });
+  // 功能测试综合
+  const ftAll = ftHistory().filter((r) => r.score != null);
+  if (ftAll.length >= 2) rows.push({ k: t('repFt'), now: String(ftAll[0].score), prev: String(ftAll[1].score), d: ftAll[0].score - ftAll[1].score, better: ftAll[0].score >= ftAll[1].score, unit: '' });
+  // 体态 / 量表
+  const paAll = paHistory();
+  if (paAll.length >= 2) rows.push({ k: t('repPa'), now: String(paAll[0].score), prev: String(paAll[1].score), d: paAll[0].score - paAll[1].score, better: paAll[0].score >= paAll[1].score, unit: '' });
+  const prAll = promHistory();
+  if (prAll.length >= 2 && prAll[0].key === prAll[1].key) rows.push({ k: t(promNameKey(prAll[0].key)), now: String(prAll[0].total), prev: String(prAll[1].total), d: prAll[0].total - prAll[1].total, better: promDef(prAll[0].key).type === 'ratio' ? prAll[0].total <= prAll[1].total : prAll[0].total >= prAll[1].total, unit: '' });
+  el.innerHTML = rows.length
+    ? rows.map((r) => `<div class="rc-row"><span class="rc-k">${r.k}</span><span class="rc-prev">${r.prev}${r.unit}</span><span class="rc-arrow">→</span><span class="rc-now">${r.now}${r.unit}</span>
+        ${r.d == null ? '' : `<span class="rc-d ${r.better ? 'ok' : 'warn'}">${r.d > 0 ? '+' : ''}${r.d}${r.unit}</span>`}</div>`).join('')
+    : `<p class="hint tiny">${t('rcNoData')}</p>`;
+  const tr = $('rc-trend');
+  if (tr) {
+    const pts = trend30Points();
+    const pain30 = painHistory().slice(0, 30).map((r) => r.v).reverse();
+    tr.innerHTML = `<p class="chart-cap">${t('rcTrendTrain')}</p>${lineChart(pts, '#0e7c66', 'rc30')}
+      ${pain30.length > 1 ? `<p class="chart-cap">${t('rcTrendPain')}</p>${lineChart(pain30, '#e07a5f', 'rcp')}` : ''}`;
+  }
+  renderBodyAnalysis();
+}
+$('btn-rc-report') && $('btn-rc-report').addEventListener('click', () => $('btn-rep-html').click());
+$('btn-rc-assess') && $('btn-rc-assess').addEventListener('click', () => switchTab('posture'));
+$('btn-rc-trend') && $('btn-rc-trend').addEventListener('click', () => { const e3 = $('rc-trend'); if (e3) e3.scrollIntoView({ behavior: 'smooth' }); });
 
 /* ============ v2.32.0 新模块：端手接力（手机 ⇄ 电脑 数据合并式互通） ============ */
 function renderRelayState() {
@@ -6302,6 +6410,7 @@ onLangChanged(() => {
   renderPath();                                         // v2.29.0：康复路径随语言切换
   renderCamCard();                                      // v2.30.0：影像设置随语言切换
   renderCareLoop();                                     // v2.31.0：康复闭环随语言切换
+  renderBlockSub(); renderRecheck();                    // v2.33.0：子标签与复评页随语言切换
   $('about-version').textContent = t('versionLabel', { v: APP_VERSION });   // v2.21.9：关于页版本号随语言切换（原来只设置一次）
   setStartBtn(state.running ? 'btnStop' : 'btnStart', state.running ? 'stop' : 'play');
   $('btn-collect-label').textContent = state.collectMode ? t('btnCollectStop') : t('btnCollect');
@@ -6354,6 +6463,7 @@ renderPath();                                            // v2.29.0：康复路�
 renderCamCard();                                         // v2.30.0：影像设置初始化
 renderCareLoop();                                        // v2.31.0：康复闭环初始化
 renderRelayState();                                      // v2.32.0：端手接力状态
+renderBlockSub(); renderRecheck();                        // v2.33.0：三块式架构与复评页初始化
 window.__gwSkip = () => gwFinish(true);                   // 测试钩子：直接完成当前跟练
 showOnboard();
 setTimeout(reminderCatchUp, 4000);            // 错过提醒时间 → 打开时补一次
