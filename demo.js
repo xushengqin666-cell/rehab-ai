@@ -20,8 +20,11 @@ function sidePose(o) {
   const armD = o.arm != null ? o.arm : lean + 72;
   const E = mv(S, dir(armD), g.armUp);
   const W = mv(E, dir(armD - (o.elbow != null ? o.elbow : 12)), g.armLo);
+  const rear = o.rear != null ? o.rear : 0;   // 分腿站（弓步）：后脚在踝后 rear 处
   return { kind: 'side', A: A, K: K, H: H, S: S, head: head, E: E, W: W,
-    toe: [A[0] + 17, A[1]], heel: [A[0] - 8, A[1]], ground: A[1], knee: knee, lean: lean };
+    toe: [A[0] + 23, A[1]], heel: [A[0] - 7, A[1]],
+    rearToe: rear ? [A[0] - rear + 16, A[1]] : null, rearHeel: rear ? [A[0] - rear - 7, A[1]] : null,
+    wall: !!o.wall, ground: A[1], knee: knee, lean: lean };
 }
 /* 正视：膝间距 kx（越小越内扣）、手臂上举 armUp 度 */
 function frontPose(o) {
@@ -51,47 +54,47 @@ function customPose(j) {
 /* 每个动作的标准关键帧：数值直接取自 analysis.js 里应用真正使用的判定阈值 */
 export const DEMOS = {
   squat: { view: 'side', frames: [
-    { key: 'demoPrep', p: { beta: 4, knee: 172, lean: 5, arm: 70 } },
-    { key: 'demoKey', p: { beta: 8, knee: 95, lean: 18, arm: 88 } },
-    { key: 'demoBack', p: { beta: 4, knee: 172, lean: 5, arm: 70 } }],
+    { key: 'demoPrep', p: { beta: 5, knee: 172, lean: 6, arm: 78 } },
+    { key: 'demoKey', p: { beta: 22, knee: 95, lean: 45, arm: 100 } },
+    { key: 'demoBack', p: { beta: 5, knee: 172, lean: 6, arm: 78 } }],
     faults: [{ key: 'dmbFaultShallow', p: { beta: 6, knee: 142, lean: 10, arm: 74 } },
              { key: 'dmbFaultLean', p: { beta: 11, knee: 108, lean: 34, arm: 96 } }],
     front: { key: 'dmbFaultValgus', p: { kx: 8 } } },
   sitstand: { view: 'side', frames: [
-    { key: 'demoPrep', p: { beta: 14, knee: 92, lean: 14, arm: 78 } },
-    { key: 'demoKey', p: { beta: 10, knee: 168, lean: 8, arm: 66 } },
-    { key: 'demoBack', p: { beta: 14, knee: 92, lean: 14, arm: 78 } }],
+    { key: 'demoPrep', p: { beta: 20, knee: 92, lean: 38, arm: 110 } },
+    { key: 'demoKey', p: { beta: 6, knee: 170, lean: 4, arm: 80 } },
+    { key: 'demoBack', p: { beta: 20, knee: 92, lean: 38, arm: 110 } }],
     faults: [{ key: 'dmbFaultShallow', p: { beta: 12, knee: 130, lean: 30, arm: 84 } },
              { key: 'dmbFaultLean', p: { beta: 16, knee: 96, lean: 36, arm: 92 } }],
     front: { key: 'dmbFaultValgus', p: { kx: 8 } } },
   stepup: { view: 'side', frames: [
-    { key: 'demoPrep', p: { beta: 4, knee: 174, lean: 6, arm: 70 } },
-    { key: 'demoKey', p: { beta: 9, knee: 88, lean: 16, arm: 86 } },
-    { key: 'demoBack', p: { beta: 4, knee: 174, lean: 6, arm: 70 } }],
+    { key: 'demoPrep', p: { beta: 4, knee: 174, lean: 4, arm: 78 } },
+    { key: 'demoKey', p: { beta: 22, knee: 88, lean: 30, arm: 96 } },
+    { key: 'demoBack', p: { beta: 4, knee: 174, lean: 4, arm: 78 } }],
     faults: [{ key: 'dmbFaultShallow', p: { beta: 6, knee: 140, lean: 10, arm: 74 } },
              { key: 'dmbFaultLean', p: { beta: 12, knee: 100, lean: 33, arm: 96 } }],
     front: { key: 'dmbFaultValgus', p: { kx: 9 } } },
   lunge: { view: 'side', frames: [
-    { key: 'demoPrep', p: { beta: 2, knee: 176, lean: 4, arm: 70 } },
-    { key: 'demoKey', p: { beta: 10, knee: 94, lean: 12, arm: 84 } },
-    { key: 'demoBack', p: { beta: 2, knee: 176, lean: 4, arm: 70 } }],
+    { key: 'demoPrep', p: { beta: 3, knee: 176, lean: 3, arm: 78, rear: 44 } },
+    { key: 'demoKey', p: { beta: 20, knee: 94, lean: 26, arm: 92, rear: 44 } },
+    { key: 'demoBack', p: { beta: 3, knee: 176, lean: 3, arm: 78, rear: 44 } }],
     faults: [{ key: 'dmbFaultShallow', p: { beta: 6, knee: 138, lean: 8, arm: 74 } },
              { key: 'dmbFaultLean', p: { beta: 14, knee: 104, lean: 30, arm: 92 } }] },
   hiphinge: { view: 'side', frames: [
-    { key: 'demoPrep', p: { beta: 4, knee: 168, lean: 6, arm: 78 } },
-    { key: 'demoKey', p: { beta: 10, knee: 148, lean: 55, arm: 150 } },
-    { key: 'demoBack', p: { beta: 4, knee: 168, lean: 6, arm: 78 } }],
+    { key: 'demoPrep', p: { beta: 6, knee: 166, lean: 6, arm: 172 } },
+    { key: 'demoKey', p: { beta: 10, knee: 150, lean: 48, arm: 176 } },
+    { key: 'demoBack', p: { beta: 6, knee: 166, lean: 6, arm: 172 } }],
     faults: [{ key: 'dmbFaultShallow', p: { beta: 6, knee: 164, lean: 22, arm: 96 } },
              { key: 'dmbFaultSag', p: { beta: 14, knee: 120, lean: 62, arm: 160 } }] },
   wallsit: { view: 'side', frames: [
-    { key: 'demoPrep', p: { beta: 12, knee: 96, lean: 14, arm: 70 } },
-    { key: 'demoKey', p: { beta: 12, knee: 92, lean: 10, arm: 72 } }, 
-    { key: 'demoBack', p: { beta: 12, knee: 96, lean: 14, arm: 70 } }],
+    { key: 'demoPrep', p: { beta: 3, knee: 96, lean: 5, arm: 70, wall: true } },
+    { key: 'demoKey', p: { beta: 3, knee: 92, lean: 4, arm: 70, wall: true } },
+    { key: 'demoBack', p: { beta: 3, knee: 96, lean: 5, arm: 70, wall: true } }],
     faults: [{ key: 'dmbFaultShallow', p: { beta: 8, knee: 130, lean: 12, arm: 72 } }] },
   bend: { view: 'side', frames: [
-    { key: 'demoPrep', p: { beta: 4, knee: 170, lean: 6, arm: 74 } },
-    { key: 'demoKey', p: { beta: 8, knee: 152, lean: 48, arm: 146 } },
-    { key: 'demoBack', p: { beta: 4, knee: 170, lean: 6, arm: 74 } }],
+    { key: 'demoPrep', p: { beta: 6, knee: 168, lean: 6, arm: 170 } },
+    { key: 'demoKey', p: { beta: 12, knee: 150, lean: 44, arm: 174 } },
+    { key: 'demoBack', p: { beta: 6, knee: 168, lean: 6, arm: 170 } }],
     faults: [{ key: 'dmbFaultSag', p: { beta: 12, knee: 124, lean: 60, arm: 158 } }] },
   shoulderraise: { view: 'front', frames: [
     { key: 'demoPrep', p: { armUp: 20 } },
@@ -113,12 +116,12 @@ export const DEMOS = {
 };
 
 /* 取某动作在 t（0..1，跨全部关键帧）处的姿态 */
-export function demoPose(key, t) {
+export function demoParams(key, t) {
   const d = DEMOS[key];
   if (!d) return null;
   const f = d.frames;
   const n = f.length - 1;
-  if (n <= 0) return poseOf(key, f[0].p);          // 单帧动作（如平板支撑）直接返回该帧
+  if (n <= 0) return f[0].p;                        // 单帧动作（如平板支撑）
   const tt = Math.max(0, Math.min(1, t == null ? 0 : t));
   const seg = Math.min(n - 1, Math.floor(tt * n));
   const k = tt * n - seg;
@@ -126,11 +129,34 @@ export function demoPose(key, t) {
   const o = {};
   Object.keys(a).forEach((kk) => {
     const va = a[kk], vb = b[kk];
-    o[kk] = (Array.isArray(va) && Array.isArray(vb))
-      ? [lerp(va[0], vb[0], k), lerp(va[1], vb[1], k)]   // 关节坐标要逐分量插值
-      : lerp(va, vb, k);
+    if (Array.isArray(va) && Array.isArray(vb)) o[kk] = [lerp(va[0], vb[0], k), lerp(va[1], vb[1], k)];
+    else if (typeof va === 'number' && typeof vb === 'number') o[kk] = lerp(va, vb, k);
+    else o[kk] = k < 1 ? va : vb;                   // 布尔/字符串类参数（如 wall、rear）不插值
   });
-  return poseOf(key, o);
+  return o;
+}
+/* 姿态（二维）+ 三维模型（可多角度）：统一入口，供界面调用 */
+export function demoFigure(key, o) {
+  const opt = o || {};
+  const d = DEMOS[key];
+  if (!d) return '';
+  let params;
+  if (opt.fault === 'front') params = d.front ? d.front.p : null;
+  else if (opt.fault === true || typeof opt.fault === 'number') params = d.faults[opt.fault === true ? 0 : opt.fault].p;
+  else if (opt.params) params = opt.params;
+  else params = (typeof opt.frame === 'string') ? demoParams(key, 0.5) : d.frames[opt.frame || 0].p;
+  if (!params) return '';
+  const fault = !!opt.fault || opt.faultStyle === true;
+  const az = opt.azimuth;
+  if (d.view === 'side') {
+    const gm = opt.ghost ? build3D(key, opt.ghostParams || d.frames[0].p) : null;
+    return figure3d(key, { params: params, azimuth: az != null ? az : 0, w: opt.w, h: opt.h, scale: opt.scale, fault: fault, ghostModel: gm, model: opt.model });
+  }
+  return figureSvg(key, { pose: poseOf(key, params, opt.forceView), w: opt.w || 220, h: opt.h || 230, fault: fault });
+}
+export function demoPose(key, t) {
+  const o = demoParams(key, t);
+  return o ? poseOf(key, o) : null;
 }
 export function poseOf(key, o, view) {
   const d = DEMOS[key];
@@ -245,7 +271,113 @@ export function figureSvg(key, o) {
   s += '</svg>';
   return s;
 }
+
+/* ---------- 三维骨架 + 任意方位角投影（多个角度观察） ---------- */
+const LAT = { hip: 11, knee: 12, ankle: 12, shoulder: 17 };
+function v3(x, y, z) { return [x, y, z]; }
+/* 由侧视姿态构建三维关节：X=前后(前为正) Y=上下(上为正) Z=左右 */
+export function build3D(key, params) {
+  const p = poseOf(key, params);
+  if (!p || p.kind !== 'side') return null;
+  const OX = 110, G = p.ground;
+  const j = (q) => v3(q[0] - OX, G - q[1], 0);
+  const A = j(p.A), K = j(p.K), H = j(p.H), S = j(p.S), E = j(p.E), W = j(p.W), hd = j(p.head);
+  const kh = params && params.kx != null ? params.kx : LAT.knee;   // 膝位可内移 → 内扣
+  const part = [];
+  const hipL = v3(H[0], H[1], LAT.hip), hipR = v3(H[0], H[1], -LAT.hip);
+  const kneL = v3(K[0], K[1], kh), kneR = v3(K[0], K[1], -kh);
+  const ankL = v3(A[0], A[1], LAT.ankle), ankR = v3(A[0], A[1], -LAT.ankle);
+  const shoL = v3(S[0], S[1], LAT.shoulder), shoR = v3(S[0], S[1], -LAT.shoulder);
+  const elbL = v3(E[0], E[1], LAT.shoulder - 3), elbR = v3(E[0], E[1], -(LAT.shoulder - 3));
+  const wriL = v3(W[0], W[1], LAT.shoulder - 4), wriR = v3(W[0], W[1], -(LAT.shoulder - 4));
+  const HIPC = v3(H[0], H[1], 0), SHOC = v3(S[0], S[1], 0);
+  const toeL = v3(p.toe[0] - OX, G - p.toe[1], LAT.ankle), toeR = v3(p.toe[0] - OX, G - p.toe[1], -LAT.ankle);
+  const heelL = v3(p.heel[0] - OX, G - p.heel[1], LAT.ankle), heelR = v3(p.heel[0] - OX, G - p.heel[1], -LAT.ankle);
+  const rearL = p.rearToe ? v3(p.rearToe[0] - OX, G - p.rearToe[1], LAT.ankle) : null;
+  const rearR = p.rearToe ? v3(p.rearToe[0] - OX, G - p.rearToe[1], -LAT.ankle) : null;
+  const rearHeelL = p.rearHeel ? v3(p.rearHeel[0] - OX, G - p.rearHeel[1], LAT.ankle) : null;
+  const rearHeelR = p.rearHeel ? v3(p.rearHeel[0] - OX, G - p.rearHeel[1], -LAT.ankle) : null;
+  part.push([ankL, kneL, 7], [kneL, hipL, 9], [ankR, kneR, 7], [kneR, hipR, 9]);
+  part.push([heelL, toeL, 5], [heelR, toeR, 5]);
+  if (rearL) part.push([rearHeelL, rearL, 5], [rearHeelR, rearR, 5]);
+  part.push([hipL, hipR, 10]);                       // 骨盆
+  part.push([HIPC, SHOC, 13]);                       // 躯干
+  part.push([shoL, elbL, 6], [elbL, wriL, 5], [shoR, elbR, 6], [elbR, wriR, 5]);
+  part.push([SHOC, v3(hd[0], hd[1] - 4, 0), 5]);     // 颈
+  part.push([shoL, shoR, 7]);                        // 肩带
+  return { parts: part, head: hd, ground: G, footL: [heelL, toeL], footR: [heelR, toeR],
+    rearL: rearL ? [rearHeelL, rearL] : null, rearR: rearR ? [rearHeelR, rearR] : null,
+    wall: p.wall, knee: p.knee, lean: p.lean, hip: HIPC, sho: SHOC, ank: A, kne: K, spt: p };
+}
+/* 方位角：0=侧面（看到前后方向）  90=正面（看到左右方向） */
+export function project3(q, azDeg, ox, oy, scale) {
+  const a = azDeg * Math.PI / 180, c = Math.cos(a), s = Math.sin(a);
+  const sx = q[0] * c + q[2] * s;
+  const dep = -q[0] * s + q[2] * c;
+  return { x: ox + sx * scale, y: oy - q[1] * scale, d: dep };
+}
+export function figure3d(key, o) {
+  const opt = o || {};
+  const az = opt.azimuth != null ? opt.azimuth : 0;
+  const m = opt.model || build3D(key, opt.params || DEMOS[key].frames[0].p);
+  if (!m) return '';
+  const w = opt.w || 220, h = opt.h || 230;
+  const scale = opt.scale || 1;
+  const g = project3(v3(0, 0, 0), az, w / 2, m.ground, scale);
+  const ox = w / 2, oy = m.ground;
+  const body = opt.fault ? 'dmb-body dmb-fault' : 'dmb-body';
+  let ghost = null;
+  if (opt.ghost && opt.ghostModel) {
+    ghost = opt.ghostModel.parts.map((pp) => {
+      const a = project3(pp[0], az, ox, oy, scale), b = project3(pp[1], az, ox, oy, scale);
+      return { a: a, b: b, r: pp[2], d: (a.d + b.d) / 2 };
+    });
+  }
+  // 按深度排序（远的先画）
+  const items = m.parts.map((pp) => {
+    const a = project3(pp[0], az, ox, oy, scale), b = project3(pp[1], az, ox, oy, scale);
+    return { a: a, b: b, r: pp[2], d: (a.d + b.d) / 2 };
+  }).sort((p, q) => p.d - q.d);
+  let s = '<svg class="dmb-svg" viewBox="0 0 ' + w + ' ' + h + '" preserveAspectRatio="xMidYMax meet" role="img">';
+  s += '<line class="dmb-ground" x1="8" y1="' + oy + '" x2="' + (w - 8) + '" y2="' + oy + '"/>';
+  if (m.wall) s += '<rect class="dmb-wall" x="' + (ox - 74 * scale) + '" y="' + (oy - 128 * scale) + '" width="9" height="' + (128 * scale) + '" rx="3"/>';
+  if (ghost) {
+    for (const it of ghost) {
+      const lw = (it.r * 2 * scale).toFixed(1);
+      s += '<line class="dmb-ghost-p" x1="' + it.a.x.toFixed(1) + '" y1="' + it.a.y.toFixed(1) + '" x2="' + it.b.x.toFixed(1) + '" y2="' + it.b.y.toFixed(1) + '" stroke-width="' + lw + '" stroke-linecap="round"/>';
+    }
+  }
+  for (const it of items) {
+    const lw = (it.r * 2 * scale).toFixed(1);
+    s += '<line class="' + body + '" x1="' + it.a.x.toFixed(1) + '" y1="' + it.a.y.toFixed(1) + '" x2="' + it.b.x.toFixed(1) + '" y2="' + it.b.y.toFixed(1) + '" stroke-width="' + lw + '" stroke-linecap="round"/>';
+  }
+  const hd = project3(m.head, az, ox, oy, scale);
+  s += '<circle class="' + (opt.fault ? 'dmb-head dmb-fault' : 'dmb-head') + '" cx="' + hd.x.toFixed(1) + '" cy="' + hd.y.toFixed(1) + '" r="' + (11 * scale).toFixed(1) + '"/>';
+  if (m.wall) s += '<text class="dmb-cap" x="' + (ox - 69 * scale) + '" y="' + (oy - 134 * scale) + '">墙</text>';
+  s += '</svg>';
+  return s;
+}
 /* 标准角度：直接读 analysis.js 里应用判定用的阈值 */
+/* 人体重心与支撑面（用于校验姿势物理上站得稳） */
+export function comOf(p) {
+  const mid = (a, b) => [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+  const segs = [[p.head, 0.08], [mid(p.H, p.S), 0.50], [mid(p.S, p.E), 0.05], [mid(p.E, p.W), 0.03], [mid(p.K, p.H), 0.21], [mid(p.A, p.K), 0.13]];
+  let x = 0, y = 0;
+  for (const [pt, m] of segs) { x += pt[0] * m; y += pt[1] * m; }
+  return [x, y];
+}
+export function supportOf(p) {
+  let lo = p.heel[0], hi = p.toe[0];
+  if (p.rearHeel) lo = Math.min(lo, p.rearHeel[0]);
+  if (p.rearToe) hi = Math.max(hi, p.rearToe[0]);
+  return [lo, hi];
+}
+export function balanceOf(key, params) {
+  const p = poseOf(key, params);
+  if (!p || p.kind !== 'side') return null;
+  const c = comOf(p); const s = supportOf(p);
+  return { com: c[0], support: s, margin: Math.min(c[0] - s[0], s[1] - c[0]), wall: !!p.wall };
+}
 export function demoAngles(key) {
   const e = EXERCISES[key];
   if (!e || !e.rep) return [];

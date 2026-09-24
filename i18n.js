@@ -84,7 +84,8 @@ const DICT = {
     fileReport: '康复AI治疗师报告',
     // v2.33.0 三块式架构
     navRecheck: '复评',
-    dmbTitle: '标准动作示范', dmbClose: '关闭', dmbLook: '看示范', dmbPlay: '播放示范', dmbPause: '暂停',
+    dmbAzSide: '侧面', dmbAz35: '斜前方', dmbAzFront: '正面', dmbAzTitle: '视角',
+  dmbTitle: '标准动作示范', dmbClose: '关闭', dmbLook: '看示范', dmbPlay: '播放示范', dmbPause: '暂停',
   dmbFrames: '关键帧图解', dmbCues: '动作要点', dmbFaults: '常见错误（对照着看）',
   dmbGuideDemos: '标准动作示范（跟练课动作）',
   dmbGuideDemosHint: '点动作看标准做法：关键帧图解 · 判定标准（本应用实际使用的角度）· 常见错误对照。可播放成动图，边看边练。',
@@ -827,7 +828,8 @@ const DICT = {
     fileReport: 'RehabAI-therapist-report',
     // v2.33.0 Three-block architecture
     navRecheck: 'Re-test',
-    dmbTitle: 'Standard form demo', dmbClose: 'Close', dmbLook: 'Show form', dmbPlay: 'Play', dmbPause: 'Pause',
+    dmbAzSide: 'Side', dmbAz35: 'Three-quarter', dmbAzFront: 'Front', dmbAzTitle: 'View',
+  dmbTitle: 'Standard form demo', dmbClose: 'Close', dmbLook: 'Show form', dmbPlay: 'Play', dmbPause: 'Pause',
   dmbFrames: 'Key frames', dmbCues: 'Form cues', dmbFaults: 'Common mistakes (compare)',
   dmbGuideDemos: 'Standard form demos (class moves)',
   dmbGuideDemosHint: 'Tap a move for the standard: key frames, the exact thresholds this app judges by, and common mistakes. Play it as an animation and follow along.',

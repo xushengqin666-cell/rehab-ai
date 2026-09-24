@@ -1,7 +1,13 @@
-/* demo.css - 标准动作示范（剪影人形图解）与示范录像样式 */
+/* demo.css - 标准动作示范（三维人体，可多角度看）与示范录像样式 */
 .dmb-svg { width: 100%; height: auto; display: block; max-height: 100%; }
 .dmb-ground { stroke: var(--line); stroke-width: 2; stroke-dasharray: 4 4; }
-/* 身体：实心剪影（比细线更像教材示范图） */
+.dmb-wall { fill: var(--line); }
+/* 三维人体：带粗细的胶囊躯干四肢，靠深度排序与圆头描边表现体积 */
+.dmb-body { stroke: var(--teal); fill: none; }
+.dmb-body.dmb-fault { stroke: var(--red); }
+.dmb-head { fill: var(--teal); stroke: none; }
+.dmb-head.dmb-fault { fill: var(--red); }
+.dmb-ghost-p { stroke: #d8d2c6; fill: none; }
 .dmb-b { fill: var(--teal); stroke: none; }
 .dmb-h { fill: var(--teal); stroke: none; }
 svg .dmb-fault.dmb-b, svg .dmb-fault.dmb-h { fill: var(--red); }
@@ -13,6 +19,9 @@ svg .dmb-fault.dmb-b, svg .dmb-fault.dmb-h { fill: var(--red); }
 .dmb-arc2 { stroke: var(--dim); stroke-width: 2; fill: none; }
 .dmb-arc-t { font-size: 12px; fill: var(--yellow); text-anchor: middle; font-weight: 600; }
 .dmb-cap { font-size: 12px; fill: var(--dim); text-anchor: middle; }
+.dmb-az { display: flex; gap: 6px; flex-wrap: wrap; margin: 6px 0; align-items: center; }
+.dmb-az button { font-size: 12px; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--card); color: var(--dim); }
+.dmb-az button.on { background: var(--teal); border-color: var(--teal); color: #fff; }
 .dmb-card { max-height: 88vh; overflow-y: auto; width: min(560px, 94vw); }
 .dmb-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .dmb-head h3 { margin: 0; }

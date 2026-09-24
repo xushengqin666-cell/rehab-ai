@@ -8,7 +8,7 @@ import {
   verticalAngle,
 } from './analysis.js';
 import { healthCheck, buildFeedbackReport, logAiError, aiErrors, aiStats, aiStatsGet, aiFeedbackAdd, aiSessionComment, generatePlan } from './ai.js';
-import { DEMOS, hasDemo, demoPose, poseOf, figureSvg, demoAngles, clipPut, clipAll, clipDel, clipGet, clipSetForEx, clipForEx, idbAvailable } from './demo.js';
+import { DEMOS, hasDemo, demoPose, demoParams, demoFigure, poseOf, demoAngles, balanceOf, clipPut, clipAll, clipDel, clipGet, clipSetForEx, clipForEx, idbAvailable } from './demo.js';
 
 /* ============ 基础工具 ============ */
 const $ = (id) => document.getElementById(id);
@@ -94,7 +94,7 @@ function migrateDeviceData(email) {
 }
 const fmtDate = (ts) => new Date(ts).toLocaleString(locale(), { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-const APP_VERSION = 'v2.34.1';
+const APP_VERSION = 'v2.35.0';
 const exName = (e) => (e.custom ? e.name : t(e.nameKey));
 const exDesc = (e) => (e.custom ? e.desc : t(e.descKey));
 const depthTxt = (d) => t('depth' + (d ? d.charAt(0).toUpperCase() + d.slice(1) : 'Ok')) || d;
@@ -4427,7 +4427,7 @@ function renderGuide() {
     <div class="gw-set-line">${t(prog.name)} · ${t('gwLevel')}：${t('gwLv' + gwState.level)}</div>
     <div class="gw-dots">${dots}</div>
     <div class="gw-step-name">${icon(step.icon)} ${t(step.name)}<span class="gw-set-line" style="display:block">${t('gwStepOf', { s: gwState.stepIdx + 1, S: prog.steps.length })}</span></div>
-    ${hasDemo(step.icon) ? '<div class="gw-stepdemo" id="gw-step-demo">' + figureSvg(step.icon, { pose: demoPose(step.icon, gwState.phase === 'rest' ? 0 : 0.5), w: 190, h: 178 }) + '<button class="btn small" id="gw-step-look">' + t('dmbLook') + '</button></div>' : ''}
+    ${hasDemo(step.icon) ? '<div class="gw-stepdemo" id="gw-step-demo">' + demoFigure(step.icon, { params: demoParams(step.icon, gwState.phase === 'rest' ? 0 : 0.5), azimuth: 35, w: 190, h: 178 }) + '<button class="btn small" id="gw-step-look">' + t('dmbLook') + '</button></div>' : ''}
     <div class="gw-big">${big}</div>
     <div class="gw-set-line">${sub}</div>
     <div class="gw-bar"><div class="gw-bar-fill" style="width:${barPct}%"></div></div>
@@ -4720,7 +4720,7 @@ function renderLastBackup() {
 }
 // v2.21.9：数据被替换/清空/同步后统一刷新全部依赖模块（导入、清空、二维码同步共用）
 /* ============ v2.34.0 标准动作示范（图解）+ 示范录像 ============ */
-const dmbState = { key: null, playing: false, raf: 0, t0: 0 };
+const dmbState = { key: null, playing: false, raf: 0, t0: 0, az: 35 };   // az=观察方位角：0 侧面 / 35 斜前 / 90 正面
 const recState = { rec: null, t0: 0 };
 // 跟练课里出现过的动作，按课程顺序去重（跟练是日常最常走的路）
 function guideStepKeys() {
@@ -4759,7 +4759,7 @@ function dmbTick(ts) {
   const dur = 2800;
   const u = ((ts - dmbState.t0) % dur) / dur;
   const tri = u < 0.5 ? u * 2 : (1 - u) * 2;   // 去-回，像 GIF 一样循环
-  big.innerHTML = figureSvg(dmbState.key, { pose: demoPose(dmbState.key, tri), w: 230, h: 250, ghost: true });
+  big.innerHTML = demoFigure(dmbState.key, { params: demoParams(dmbState.key, tri), azimuth: dmbState.az, w: 230, h: 250, ghost: true });
   dmbState.raf = requestAnimationFrame(dmbTick);
 }
 function dmbPlayToggle() {
@@ -4775,19 +4775,21 @@ function renderDemoBody() {
   if (!el || !key) return;
   const d = DEMOS[key];
   const e = EXERCISES[key];
+  const az = dmbState.az;
   const frames = d.frames.map((fr) => '<div class="dmb-fr"><div class="dmb-fr-fig">' +
-    figureSvg(key, { pose: poseOf(key, fr.p), w: 150, h: 168 }) + '</div><div class="dmb-fr-cap">' + t(fr.key) + '</div></div>').join('');
+    demoFigure(key, { params: fr.p, azimuth: az, w: 150, h: 168 }) + '</div><div class="dmb-fr-cap">' + t(fr.key) + '</div></div>').join('');
   const faults = d.faults.map((ft) => '<div class="dmb-fr"><div class="dmb-fr-fig">' +
-    figureSvg(key, { pose: poseOf(key, ft.p), w: 150, h: 168, fault: true }) + '</div><div class="dmb-fr-cap bad">' + t(ft.key) + '</div></div>').join('') +
+    demoFigure(key, { params: ft.p, azimuth: az, w: 150, h: 168, fault: true }) + '</div><div class="dmb-fr-cap bad">' + t(ft.key) + '</div></div>').join('') +
     (d.front ? '<div class="dmb-fr"><div class="dmb-fr-fig">' +
-      figureSvg(key, { pose: poseOf(key, d.front.p, 'front'), w: 150, h: 168, fault: true }) + '</div><div class="dmb-fr-cap bad">' + t(d.front.key) + '</div></div>' : '');
+      demoFigure(key, { fault: 'front', azimuth: 90, w: 150, h: 168 }) + '</div><div class="dmb-fr-cap bad">' + t(d.front.key) + '</div></div>' : '');
   el.innerHTML =
     '<div class="dmb-top"><div class="dmb-big" id="dmb-big">' +
-      figureSvg(key, { pose: demoPose(key, 0.5), w: 230, h: 250, ghost: true }) + '</div>' +
+      demoFigure(key, { params: demoParams(key, 0.5), azimuth: az, w: 230, h: 250, ghost: true }) + '</div>' +
       '<div class="dmb-side">' +
         '<div class="dmb-name">' + dmbName(key) + '</div>' +
         (e && e.stdKey ? '<p class="hint">' + t(e.stdKey) + '</p>' : '') +
         '<div class="dmb-angles">' + dmbAngleChips(key) + '</div>' +
+        '<div class="dmb-az"><span class="dmb-chip">' + t('dmbAzTitle') + '</span>' + [[0, 'dmbAzSide'], [35, 'dmbAz35'], [90, 'dmbAzFront']].map(([a, k]) => '<button data-az="' + a + '" class="' + (dmbState.az === a ? 'on' : '') + '">' + t(k) + '</button>').join('') + '</div>' +
         '<div class="controls"><button class="btn small" id="dmb-play">' + t('dmbPlay') + '</button>' +
           '<button class="btn small" id="dmb-rec">' + (recState.rec ? t('dmbRecStop') : t('dmbRec')) + '</button></div>' +
       '</div></div>' +
@@ -4796,6 +4798,7 @@ function renderDemoBody() {
     '<div class="dmb-sec">' + t('dmbFaults') + '</div><div class="dmb-row">' + faults + '</div>' +
     '<p class="hint tiny">' + t('dmbRecHint') + '</p>' +
     '<div class="dmb-sec">' + t('dmbClips') + '</div><div id="dmb-clips" class="dmb-clips"></div>';
+  el.querySelectorAll('[data-az]').forEach((b) => b.addEventListener('click', () => { dmbState.az = Number(b.dataset.az); renderDemoBody(); }));
   const p = $('dmb-play'); if (p) p.addEventListener('click', dmbPlayToggle);
   const rc = $('dmb-rec'); if (rc) rc.addEventListener('click', recToggle);
   renderClips($('dmb-clips'));
@@ -4873,17 +4876,17 @@ function renderDemos() {
   if (!el) return;
   const keys = guideStepKeys();
   el.innerHTML = keys.map((k) => '<div class="dmb-cell">' +
-    '<div class="dmb-cell-fig">' + figureSvg(k, { pose: demoPose(k, 0.5), w: 150, h: 160 }) + '</div>' +
+    '<div class="dmb-cell-fig">' + demoFigure(k, { params: demoParams(k, 0.5), azimuth: 35, w: 150, h: 160 }) + '</div>' +
     '<div class="dmb-fr-cap">' + dmbName(k) + '</div>' +
     '<button class="btn small" data-dmb="' + k + '">' + t('dmbLook') + '</button></div>').join('');
   el.querySelectorAll('[data-dmb]').forEach((b) => b.addEventListener('click', () => openDemo(b.dataset.dmb)));
 }
 // 验收用钩子：把示范图与录像存取暴露给自动化测试（不影响正常功能）
 try {
-  window.__rehabDemo = { hasDemo: hasDemo, demoAngles: demoAngles, figureSvg: figureSvg, demoPose: demoPose,
-    poseOf: poseOf, DEMOS: DEMOS,
+  window.__rehabDemo = { hasDemo: hasDemo, demoAngles: demoAngles, demoFigure: demoFigure, demoParams: demoParams,
+    DEMOS: DEMOS, balanceOf: balanceOf, poseOf: poseOf, demoPose: demoPose,
     clipPut: clipPut, clipAll: clipAll, clipDel: clipDel, idb: idbAvailable };
-} catch (e) { /* ignore */ }
+} catch (e) { try { console.error('demo hook init failed:', e && e.message); } catch (x) { /* ignore */ } }   // 不再静默：钩子坏掉必须看得见
 
 /* ---- 训练页：当前动作的标准示范 + 录制 ---- */
 function renderTrainDemo() {
@@ -4895,7 +4898,7 @@ function renderTrainDemo() {
   const e = EXERCISES[id];
   const has = hasDemo(id);
   el.innerHTML = '<h3>' + t('dmbTrainTitle') + ' · ' + dmbName(id) + '</h3>' +
-    (has ? '<div class="dmb-train-fig">' + figureSvg(id, { pose: demoPose(id, 0.5), w: 200, h: 215 }) + '</div>' +
+    (has ? '<div class="dmb-train-fig">' + demoFigure(id, { params: demoParams(id, 0.5), azimuth: dmbState.az, w: 200, h: 215 }) + '</div>' +
       '<div class="dmb-angles">' + dmbAngleChips(id) + '</div>'
       : '<p class="hint">' + t('dmbNoDemo') + '</p>') +
     (e && e.stdKey ? '<p class="hint">' + t(e.stdKey) + '</p>' : '') +

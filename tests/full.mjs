@@ -941,15 +941,28 @@ const dmbCells = await evl(`document.querySelectorAll('#gw-demos .dmb-cell').len
 (dmbCells >= 8) ? ok(`跟练页标准示范墙：${dmbCells} 个动作都有图解`) : bad(`示范墙动作数不足：${dmbCells}`);
 (await evl(`document.querySelectorAll('#gw-demos .dmb-cell svg').length === document.querySelectorAll('#gw-demos .dmb-cell').length`)) ? ok('每个动作都渲染出火柴人示范图') : bad('存在空白示范图');
 (await evl(`document.querySelectorAll('#gw-demos .dmb-cell .dmb-fr-cap').length >= 8`)) ? ok('示范图带动作名称') : bad('示范图缺名称');
-// 34a2 示范图必须是「有体块的剪影人形」（多边形肢体 + 起始位虚影 + 方向箭头），不是几根细线
-const sil = await evl(`(function(){const c=document.querySelector('#gw-demos .dmb-cell');if(!c)return 'none';const s=c.querySelector('svg');return (s.querySelectorAll('polygon').length>=6)+':'+(s.querySelectorAll('.dmb-b').length>=6)+':'+(s.querySelectorAll('.dmb-arrow,.dmb-arc').length>=1);})()`);
-(sil === 'true:true:true') ? ok('示范图是剪影人形（躯干+四肢共 ≥6 个带粗细的体块多边形，非细线）') : bad(`示范图体块异常：${sil}`);
+// 34a2 示范图必须是三维人体（带粗细的胶囊肢体，靠深度排序表现体积），不是细线
+const sil = await evl(`(function(){const c=document.querySelector('#gw-demos .dmb-cell');if(!c)return 'none';const s=c.querySelector('svg');const b=s.querySelectorAll('.dmb-body');let thin=0;b.forEach(function(e){if(parseFloat(e.getAttribute('stroke-width')||'0')<3)thin++;});return b.length+':'+thin+':'+(s.querySelectorAll('rect,circle').length>=1);})()`);
+(/^(1[0-9]|[2-9][0-9]):0:true$/.test(String(sil))) ? ok('示范图是三维人体（≥10 段带粗细的胶囊肢体 + 头，非细线）') : bad(`三维人体异常：${sil}`);
+// 34a3 重心必须落在支撑面内（物理上站得住，不会往后倒）
+const bal = await evl(`(function(){const s=window.__rehabDemo;if(!s||!s.balanceOf)return 'nohook:'+(typeof window.__rehabDemo);const bad=[];Object.keys(s.DEMOS).forEach(function(k){const d=s.DEMOS[k];if(d.view!=='side')return;d.frames.forEach(function(f,i){const b=s.balanceOf(k,f.p);if(b&&!b.wall&&b.margin<=1)bad.push(k+'#'+i+'('+b.margin.toFixed(1)+')');});});return bad.join(',');})()`);
+(bal === '') ? ok('所有站姿动作每个关键帧的重心都落在支撑面内（含深蹲到位）') : bad(`重心出界：${bal}`);
 // 34b 打开示范弹窗
 await evl(`document.querySelector('#gw-demos [data-dmb="squat"]').click()`);
 await sleep(500);
 (await evl(`!document.getElementById('dmb-modal').classList.contains('hidden')`)) ? ok('点「看示范」打开示范弹窗') : bad('示范弹窗没打开');
 (await evl(`document.querySelectorAll('#dmb-body .dmb-fr').length >= 3`)) ? ok('弹窗含关键帧与错误对照（≥3 格）') : bad('弹窗内容缺失');
 (await evl(`document.querySelectorAll('#dmb-body .dmb-fr-cap.bad').length >= 2`)) ? ok('常见错误单独标红列出（≥2 条）') : bad('错误对照缺失');
+// 34b2 可切换观察角度（多个角度看不清楚的地方）
+const svgSide = await evl(`document.getElementById('dmb-big').innerHTML`);
+await evl(`document.querySelector('#dmb-body [data-az="90"]').click()`);
+await sleep(500);
+const svgFront = await evl(`document.getElementById('dmb-big').innerHTML`);
+await evl(`document.querySelector('#dmb-body [data-az="35"]').click()`);
+await sleep(400);
+const svgBack = await evl(`document.getElementById('dmb-big').innerHTML`);
+(svgSide !== svgFront && svgFront.length > 100) ? ok('可切换观察角度：正面与侧面是两张不同的图') : bad('视角切换无效');
+(svgSide === svgBack) ? ok('切回原角度视图与原来一致（角度状态可用）') : bad('角度状态异常');
 // 34c 判定标准来自应用真实阈值
 const dmbAng = await evl(`window.__rehabDemo.demoAngles('squat').map((a) => a.k + ':' + a.v).join(',')`);
 const thrOk = await evl(`(function(){const a=window.__rehabDemo.demoAngles('squat');const e=a.map(x=>x.v);return e.indexOf(100)>=0 && e.indexOf(150)>=0;})()`);
