@@ -151,6 +151,36 @@ function limb(pts, cls) {
 }
 function joint(p, cls) { return '<circle class="' + cls + '" cx="' + p[0].toFixed(1) + '" cy="' + p[1].toFixed(1) + '" r="3.4"/>'; }
 function head(p, cls) { return '<circle class="' + cls + '" cx="' + p[0].toFixed(1) + '" cy="' + p[1].toFixed(1) + '" r="' + GEO.headR + '" fill="none"/>'; }
+/* v2.34.1：有体块的剪影人形 —— 每段肢体画成上粗下细的多边形，关节补圆，比细线更像教材示范图 */
+function seg(p1, p2, w1, w2, cls) {
+  const dx = p2[0] - p1[0], dy = p2[1] - p1[1];
+  const L = Math.hypot(dx, dy) || 1;
+  const nx = -dy / L, ny = dx / L;
+  const a = [p1[0] + nx * w1 / 2, p1[1] + ny * w1 / 2];
+  const b = [p2[0] + nx * w2 / 2, p2[1] + ny * w2 / 2];
+  const c = [p2[0] - nx * w2 / 2, p2[1] - ny * w2 / 2];
+  const d = [p1[0] - nx * w1 / 2, p1[1] - ny * w1 / 2];
+  return '<polygon class="' + cls + '" points="' + [a, b, c, d].map(P).join(' ') + '"/>';
+}
+function chain(pts, widths, cls) {
+  let s = '';
+  for (let i = 0; i < pts.length - 1; i++) s += seg(pts[i], pts[i + 1], widths[i], widths[i + 1], cls);
+  for (let i = 0; i < pts.length; i++) s += disc(pts[i], Math.max(4, widths[i] / 2), cls);
+  return s;
+}
+function disc(p, r, cls) { return '<circle class="' + cls + '" cx="' + p[0].toFixed(1) + '" cy="' + p[1].toFixed(1) + '" r="' + r.toFixed(1) + '"/>'; }
+/* 运动方向箭头：从起始位指向到位 */
+function arrow(p1, p2, cls) {
+  const dx = p2[0] - p1[0], dy = p2[1] - p1[1];
+  const L = Math.hypot(dx, dy);
+  if (L < 14) return '';
+  const ux = dx / L, uy = dy / L, nx = -uy, ny = ux;
+  const base = [p2[0] - ux * 14, p2[1] - uy * 14];
+  const l = [base[0] + nx * 6, base[1] + ny * 6];
+  const r = [base[0] - nx * 6, base[1] - ny * 6];
+  return '<line class="' + cls + '" x1="' + p1[0].toFixed(1) + '" y1="' + p1[1].toFixed(1) + '" x2="' + base[0].toFixed(1) + '" y2="' + base[1].toFixed(1) + '"/>' +
+    '<polygon class="' + cls + '-h" points="' + [p2, l, r].map(P).join(' ') + '"/>';
+}
 /* 角度弧：在顶点 v，两条射线到 a、b 之间画弧 */
 function arc(v, a, b, r, cls, label) {
   const a1 = Math.atan2(a[1] - v[1], a[0] - v[0]);
@@ -183,22 +213,29 @@ export function figureSvg(key, o) {
   s += '<line class="dmb-ground" x1="8" y1="' + (p.ground || GEO.ground) + '" x2="' + (w - 8) + '" y2="' + (p.ground || GEO.ground) + '"/>';
   if (ghost) {
     s += '<g class="dmb-ghost">';
-    s += limb([ghost.A, ghost.K, ghost.H, ghost.S], 'dmb-b-g');
+    if (ghost.kind === 'front') {
+      s += chain([ghost.AL, ghost.KL, ghost.H, ghost.KR, ghost.AR], [11, 15, 20, 15, 11], 'dmb-b-g');
+      s += chain([ghost.H, ghost.S], [24, 27], 'dmb-b-g');
+      s += disc(ghost.head, 12, 'dmb-b-g');
+    } else {
+      s += chain([ghost.A, ghost.K, ghost.H, ghost.S], [10, 15, 21, 18], 'dmb-b-g');
+      s += chain([ghost.S, ghost.E, ghost.W], [11, 9, 7], 'dmb-b-g');
+      s += disc(ghost.head, 12, 'dmb-b-g');
+    }
     s += '</g>';
+    if (opt.arrow !== false) s += arrow(ghost.H, p.H, 'dmb-arrow');   // 运动方向：从起始位髋到当前髋
   }
   if (p.kind === 'front') {
-    s += limb([p.AL, p.KL, p.H, p.KR, p.AR], cls);
-    s += limb([p.H, p.S], cls);
-    s += limb([p.S, p.EL, p.WL], cls);
-    s += limb([p.S, p.ER, p.WR], cls);
-    s += head(p.head, hc);
-    [p.H, p.S, p.KL, p.KR, p.AL, p.AR, p.EL, p.ER, p.WL, p.WR].forEach((q) => { s += joint(q, jc); });
+    s += chain([p.AL, p.KL, p.H, p.KR, p.AR], [11, 15, 20, 15, 11], cls);
+    s += chain([p.H, p.S], [24, 27], cls);
+    s += chain([p.S, p.EL, p.WL], [11, 9, 7], cls);
+    s += chain([p.S, p.ER, p.WR], [11, 9, 7], cls);
+    s += disc(p.head, 12, hc);
   } else {
-    s += limb([p.heel, p.A, p.toe], cls);
-    s += limb([p.A, p.K, p.H, p.S], cls);
-    s += limb([p.S, p.E, p.W], cls);
-    s += head(p.head, hc);
-    [p.A, p.K, p.H, p.S, p.E, p.W].forEach((q) => { s += joint(q, jc); });
+    s += chain([p.heel, p.toe], [10, 7], cls);
+    s += chain([p.A, p.K, p.H, p.S], [10, 15, 21, 18], cls);
+    s += chain([p.S, p.E, p.W], [11, 9, 7], cls);
+    s += disc(p.head, 12, hc);
     if (!opt.noArc && p.kind === 'side') {
       s += arc(p.K, p.A, p.H, 17, 'dmb-arc', Math.round(p.knee) + String.fromCharCode(176));
       s += arc(p.H, p.K, p.S, 15, 'dmb-arc2', Math.round(p.lean) + String.fromCharCode(176));

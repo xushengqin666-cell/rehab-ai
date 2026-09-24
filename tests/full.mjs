@@ -941,6 +941,9 @@ const dmbCells = await evl(`document.querySelectorAll('#gw-demos .dmb-cell').len
 (dmbCells >= 8) ? ok(`跟练页标准示范墙：${dmbCells} 个动作都有图解`) : bad(`示范墙动作数不足：${dmbCells}`);
 (await evl(`document.querySelectorAll('#gw-demos .dmb-cell svg').length === document.querySelectorAll('#gw-demos .dmb-cell').length`)) ? ok('每个动作都渲染出火柴人示范图') : bad('存在空白示范图');
 (await evl(`document.querySelectorAll('#gw-demos .dmb-cell .dmb-fr-cap').length >= 8`)) ? ok('示范图带动作名称') : bad('示范图缺名称');
+// 34a2 示范图必须是「有体块的剪影人形」（多边形肢体 + 起始位虚影 + 方向箭头），不是几根细线
+const sil = await evl(`(function(){const c=document.querySelector('#gw-demos .dmb-cell');if(!c)return 'none';const s=c.querySelector('svg');return (s.querySelectorAll('polygon').length>=6)+':'+(s.querySelectorAll('.dmb-b').length>=6)+':'+(s.querySelectorAll('.dmb-arrow,.dmb-arc').length>=1);})()`);
+(sil === 'true:true:true') ? ok('示范图是剪影人形（躯干+四肢共 ≥6 个带粗细的体块多边形，非细线）') : bad(`示范图体块异常：${sil}`);
 // 34b 打开示范弹窗
 await evl(`document.querySelector('#gw-demos [data-dmb="squat"]').click()`);
 await sleep(500);
