@@ -429,6 +429,21 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, .link-btn:foc
 .pain-btn.on { background: var(--teal); border-color: var(--teal); color: #fff; }
 
 .pain-spike { margin-top: 8px; padding: 9px 11px; border-radius: 10px; background: rgba(209, 74, 74, .08); border-left: 3px solid var(--red); font-size: 12px; line-height: 1.7; color: var(--text); }
+/* ---------- 康复闭环（v2.31.0 新模块） ---------- */
+.loop-steps { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 6px 0 10px; }
+.loop-step { font-size: 11.5px; font-weight: 650; padding: 3px 9px; border-radius: 999px; background: var(--bg2); color: var(--dim); }
+.loop-step.on { background: rgba(14, 124, 102, .14); color: var(--teal); }
+.loop-arrow { color: var(--line); font-size: 11px; }
+.loop-now { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 13px; padding: 9px 11px; border-radius: 10px; background: rgba(14, 124, 102, .08); }
+.loop-now b { color: var(--teal); }
+.loop-issues { margin-top: 10px; }
+.loop-issue { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; font-size: 12.5px; line-height: 1.8; padding: 6px 0; border-bottom: 1px dashed var(--line); }
+.loop-issue:last-child { border-bottom: 0; }
+.loop-tag { font-size: 10.5px; padding: 1px 7px; border-radius: 999px; background: var(--bg2); color: var(--dim); }
+.loop-issue.bad .loop-tag { background: rgba(209, 74, 74, .14); color: var(--red); }
+.loop-issue.warn .loop-tag { background: rgba(245, 158, 11, .16); color: var(--yellow); }
+.loop-detail { color: var(--dim); }
+
 /* ---------- 影像引导（v2.30.0 新模块） ---------- */
 .cam-guide { position: absolute; left: 10px; right: 10px; bottom: 10px; padding: 7px 10px; border-radius: 10px; font-size: 12px; font-weight: 600; background: rgba(20, 24, 31, .72); color: #fff; text-align: center; }
 .cam-guide.ok { background: rgba(14, 124, 102, .82); }

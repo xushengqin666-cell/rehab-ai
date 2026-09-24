@@ -93,7 +93,7 @@ function migrateDeviceData(email) {
 }
 const fmtDate = (ts) => new Date(ts).toLocaleString(locale(), { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-const APP_VERSION = 'v2.30.0';
+const APP_VERSION = 'v2.31.0';
 const exName = (e) => (e.custom ? e.name : t(e.nameKey));
 const exDesc = (e) => (e.custom ? e.desc : t(e.descKey));
 const depthTxt = (d) => t('depth' + (d ? d.charAt(0).toUpperCase() + d.slice(1) : 'Ok')) || d;
@@ -1494,7 +1494,7 @@ function switchTab(name) {
   if (name === 'train') { kickLoop(); renderTrainToday(); }   // 回到训练页立即恢复分析 + 刷新今日任务小条
   if (name !== 'posture') paStop();          // v2.19：离开体态页自动停止体态评估（防摄像头占用）
   if (name !== 'ft') ftStop();               // v2.20：离开功能测试页自动停止（防摄像头占用）
-  if (name === 'home') renderHome();         // v2.21：进入今日页刷新总览
+  if (name === 'home') { renderHome(); renderCareLoop(); }   // v2.21/v2.31：进入今日页刷新总览与闭环
   if (name !== 'guide') gwStop();            // v2.21：离开跟练页自动结束跟练计时
   if (name === 'settings') renderStorageSize();   // v2.21.9：进入设置页刷新数据占用
   if (name === 'record') renderReport();          // v2.24.0：进入记录页刷新治疗师报告摘要
@@ -4722,7 +4722,139 @@ function refreshAllData() {
   renderPain(); renderPainStrip(); renderReport();   // v2.22.0/v2.24.0：疼痛与报告数据一起刷新
   renderRomHistory(); renderRomResult(romHistory()[0] || null);   // v2.26.0：ROM 数据一起刷新
   renderPromHistory();                                  // v2.27.0：PROMs 数据一起刷新
-  renderAiPlan(); renderAiEngine(); renderPath();       // v2.28.0/v2.29.0：引擎与路径一起刷新
+  renderAiPlan(); renderAiEngine(); renderPath(); renderCareLoop();   // v2.28.0/v2.29.0/v2.31.0：引擎·路径·闭环一起刷新
+}
+
+/* ============ v2.31.0 新模块：康复闭环（把评估/问题/训练/复评/对比串成一条主线） ============ */
+// 解决“各模块各说各话”：所有评估 → 问题清单 → 生成训练计划 → 训练后记疼痛 → 复评 → 前后对比，全部互相调用。
+function assessSnapshot() {
+  const pa = paHistory()[0] || null;
+  const ft = ftHistory().find((r) => r.battery && r.dims) || ftHistory()[0] || null;
+  const rom = romHistory()[0] || null;
+  const prom = promHistory()[0] || null;
+  const ts = Math.max(pa ? pa.ts || 0 : 0, ft ? ft.ts || 0 : 0, rom ? rom.ts || 0 : 0, prom ? prom.ts || 0 : 0);
+  return { pa, ft, rom, prom, ts, painMax: painRecentMax(7), painLast: painHistory()[0] || null };
+}
+// 问题清单：把五类评估的弱项汇总成可执行条目（每条都知道自己来自哪个模块、该练什么）
+function issueList() {
+  const s = assessSnapshot();
+  const out = [];
+  const SEV = { bad: 0, warn: 1, info: 2 };
+  if (s.pa && Array.isArray(s.pa.priorities)) {
+    s.pa.priorities.slice(0, 2).forEach((it) => out.push({
+      key: 'pa:' + it.label, src: t('loopSrcPa'), name: it.label, detail: it.advice || it.text || '',
+      sev: String(it.level) === 'bad' ? 'bad' : 'warn', go: 'posture',
+    }));
+  }
+  if (s.ft && s.ft.dims) {
+    const dims = s.ft.dims;
+    const order = ['sym', 'align', 'dyn', 'stab', 'rom', 'cons'];
+    const keys = ['ftDimSym', 'ftDimAlign', 'ftDimDyn', 'ftDimStab', 'ftDimRom', 'ftDimCons'];
+    let low = null;
+    order.forEach((k, i) => { const v = Number(dims[k]); if (v != null && (low == null || v < low.v)) low = { k, v, i }; });
+    if (low) out.push({ key: 'ft:' + low.k, src: t('loopSrcFt'), name: t(keys[low.i]), detail: t('loopFtLow', { v: Math.round(low.v) }), sev: low.v < 70 ? 'bad' : 'warn', go: 'ft' });
+  }
+  const weak = ROM_ITEMS.map((it) => ({ it, b: romBaseline(it.key) })).filter((x) => x.b && x.b.last != null)
+    .map((x) => ({ it: x.it, last: x.b.last, gap: romTarget(x.it) - x.b.last })).sort((a, b) => b.gap - a.gap)[0];
+  if (weak && weak.gap > 0) out.push({
+    key: 'rom:' + weak.it.key, src: t('loopSrcRom'), name: t('romItem' + weak.it.key.charAt(0).toUpperCase() + weak.it.key.slice(1)),
+    detail: t('loopRomGap', { v: weak.last, tg: romTarget(weak.it), g: weak.gap }), sev: weak.gap > 20 ? 'bad' : 'warn', go: 'posture',
+  });
+  const bad = promHistory().find((r) => r.level === 'bad');
+  if (bad) out.push({ key: 'prom:' + bad.key, src: t('loopSrcProm'), name: t(promNameKey(bad.key)), detail: t('loopPromBad', { v: bad.total }), sev: 'bad', go: 'assess' });
+  if (s.painMax != null && s.painMax >= 4) out.push({
+    key: 'pain', src: t('loopSrcPain'), name: t('painTitle'), detail: t('loopPain', { v: s.painMax, p: s.painLast ? t('painPart' + String(s.painLast.part || 'other').replace(/^\w/, (c) => c.toUpperCase()).replace('Lowback', 'LowBack')) : '—' }),
+    sev: s.painMax >= 7 ? 'bad' : 'warn', go: 'record',
+  });
+  return out.sort((a, b) => SEV[a.sev] - SEV[b.sev]);
+}
+// 闭环五步 + 当前该做的一件事
+function careLoop() {
+  const s = assessSnapshot();
+  const sessions = sget('rehab_sessions', []);
+  const todayK = dayKeyOf(Date.now());
+  const trainedToday = sessions.some((x) => dayKeyOf(x.ts) === todayK);
+  const hasAssess = !!(s.pa || s.ft || s.rom || s.prom);
+  const issues = issueList();
+  const plan = planGet();
+  const romNow = romHistory()[0] || null;
+  const romPrev = romHistory().filter((r, i) => i > 0 && romNow && r.key === romNow.key && r.side === romNow.side)[0] || null;
+  const painPost = painHistory().filter((r) => r.when === 'post')[0] || null;
+  const painPre = painHistory().filter((r) => r.when === 'pre')[0] || null;
+  const cmp = {
+    rom: romNow && romPrev && romNow.rom != null && romPrev.rom != null ? romNow.rom - romPrev.rom : null,
+    pain: painPost && painPre ? painPost.v - painPre.v : null,
+    ft: s.ft && s.ft.score != null ? s.ft.score : null,
+  };
+  const steps = [
+    { key: 'assess', done: hasAssess, label: t('loopStepAssess') },
+    { key: 'issues', done: issues.length > 0, label: t('loopStepIssues') },
+    { key: 'plan', done: plan.length > 0, label: t('loopStepPlan') },
+    { key: 'train', done: trainedToday, label: t('loopStepTrain') },
+    { key: 'recheck', done: hasAssess && trainedToday && s.ts > (painPost ? 0 : 0) && !!romPrev, label: t('loopStepRecheck') },
+  ];
+  let next;
+  if (!hasAssess) next = { act: 'assess', label: t('loopNextAssess'), go: 'posture' };
+  else if (!plan.length) next = { act: 'plan', label: t('loopNextPlan') };
+  else if (!trainedToday) next = { act: 'train', label: t('loopNextTrain'), go: 'train' };
+  else if (!painHistory().some((r) => r.when === 'post' && dayKeyOf(r.ts) === todayK)) next = { act: 'pain', label: t('loopNextPain') };
+  else if (!romPrev) next = { act: 'recheck', label: t('loopNextRecheck'), go: 'posture' };
+  else next = { act: 'compare', label: t('loopNextCompare') };
+  return { s, steps, issues, next, cmp, trainedToday };
+}
+// 按问题清单一键生成今日计划（体态/功能测试/ROM/量表/疼痛 → 动作）
+function loopPlanFromIssues() {
+  const issues = issueList();
+  const map = { pa: 'posture', ft: 'fa', rom: 'squat', prom: 'sitstand', pain: 'hiphinge' };
+  const plan = planGet();
+  const today = new Date().getDay();
+  const picks = [];
+  issues.slice(0, 3).forEach((it) => {
+    const pre = it.key.split(':')[0];
+    let ex = 'squat';
+    if (pre === 'rom') ex = it.key.split(':')[1] === 'shoulderFlex' || it.key.split(':')[1] === 'shoulderAbd' ? 'shoulderraise' : 'squat';
+    else if (pre === 'ft') ex = 'stepup';
+    else if (pre === 'prom') ex = 'sitstand';
+    else if (pre === 'pain') ex = 'hiphinge';
+    else if (pre === 'pa') ex = /shoulder/i.test(it.name) ? 'shoulderraise' : 'hiphinge';
+    picks.push(ex);
+  });
+  if (!picks.length) picks.push('squat');
+  picks.forEach((ex, i) => {
+    const reps = i === 0 ? 10 : 8;
+    const j = plan.findIndex((x) => x.ex === ex && (x.days || []).includes(today));
+    if (j >= 0) plan[j] = Object.assign({}, plan[j], { reps });
+    else plan.push({ id: 'lp' + Date.now() + ex, ex, reps, days: [today] });
+  });
+  sset('rehab_plan', plan);
+  refreshAllData();
+  toast(t('loopPlanDone', { n: picks.length }));
+}
+function renderCareLoop() {
+  const el = $('care-loop');
+  if (!el) return;
+  const L = careLoop();
+  const chips = L.steps.map((x) => `<span class="loop-step ${x.done ? 'on' : ''}">${x.done ? '✓' : '○'} ${x.label}</span>`).join('<span class="loop-arrow">→</span>');
+  const issues = L.issues.slice(0, 3).map((it) => `<div class="loop-issue ${it.sev}">
+      <span class="loop-tag">${it.src}</span><b>${it.name}</b><span class="loop-detail">${it.detail}</span>
+      <button class="link-btn" data-loop-go="${it.go}">${t('loopGo')}</button></div>`).join('');
+  const cmp = [];
+  if (L.cmp.rom != null) cmp.push(t('loopCmpRom', { v: (L.cmp.rom >= 0 ? '+' : '') + L.cmp.rom }));
+  if (L.cmp.pain != null) cmp.push(t('loopCmpPain', { v: (L.cmp.pain >= 0 ? '+' : '') + L.cmp.pain }));
+  el.innerHTML = `<div class="loop-steps">${chips}</div>
+    <div class="loop-now"><b>${t('loopNow')}</b> ${L.next.label}
+      <button id="btn-loop-next" class="btn primary small">${t('loopDo')}</button></div>
+    ${issues ? `<div class="loop-issues">${issues}</div>` : `<p class="hint tiny">${t('loopNoIssues')}</p>`}
+    ${cmp.length ? `<p class="hint tiny">${t('loopCompare')}：${cmp.join(' · ')}</p>` : ''}`;
+  const nb = $('btn-loop-next');
+  if (nb) nb.addEventListener('click', () => {
+    const a = L.next.act;
+    if (a === 'plan') loopPlanFromIssues();
+    else if (a === 'pain') openPainModal('post');
+    else if (a === 'compare') { renderCareLoop(); toast(t('loopCompareDone')); }
+    else if (L.next.go) switchTab(L.next.go);
+  });
+  el.querySelectorAll('[data-loop-go]').forEach((b) => b.addEventListener('click', () => switchTab(b.dataset.loopGo)));
 }
 
 /* ============ v2.30.0 新模块：影像能力升级（视野自适应 · 距离引导 · 设备能力可视化） ============ */
@@ -6073,7 +6205,7 @@ $('pain-save').addEventListener('click', () => {
   if (painState.v == null) { toast(t('painPickFirst')); return; }
   painAdd(painState.when, painState.v, $('pain-part').value, $('pain-note').value.trim());
   $('pain-modal').classList.add('hidden');
-  renderPain(); renderPainStrip();
+  renderPain(); renderPainStrip(); renderCareLoop();
   aiRun();                              // v2.22.0：疼痛数据 → AI 管家建议即时更新
   toast(t('toastPainSaved', { v: painState.v }));
   scheduleCloudSync();
@@ -6167,6 +6299,7 @@ onLangChanged(() => {
   renderAiPlan(); renderAiEngine();                     // v2.28.0：自适应引擎随语言切换
   renderPath();                                         // v2.29.0：康复路径随语言切换
   renderCamCard();                                      // v2.30.0：影像设置随语言切换
+  renderCareLoop();                                     // v2.31.0：康复闭环随语言切换
   $('about-version').textContent = t('versionLabel', { v: APP_VERSION });   // v2.21.9：关于页版本号随语言切换（原来只设置一次）
   setStartBtn(state.running ? 'btnStop' : 'btnStart', state.running ? 'stop' : 'play');
   $('btn-collect-label').textContent = state.collectMode ? t('btnCollectStop') : t('btnCollect');
@@ -6217,6 +6350,7 @@ renderPromUI(); renderPromHistory();                     // v2.27.0：PROMs 量�
 renderAiPlan(); renderAiEngine();                        // v2.28.0：自适应引擎初始化
 renderPath();                                            // v2.29.0：康复路径初始化
 renderCamCard();                                         // v2.30.0：影像设置初始化
+renderCareLoop();                                        // v2.31.0：康复闭环初始化
 window.__gwSkip = () => gwFinish(true);                   // 测试钩子：直接完成当前跟练
 showOnboard();
 setTimeout(reminderCatchUp, 4000);            // 错过提醒时间 → 打开时补一次

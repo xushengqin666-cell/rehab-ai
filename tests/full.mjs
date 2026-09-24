@@ -834,6 +834,44 @@ await sleep(400);
 (await evl(`(() => { document.querySelector('.bottom-nav button[data-tab="train"]').click(); return !!document.getElementById('cam-guide'); })()`)) ? ok('训练画面已挂载入镜/距离引导条') : bad('引导条未挂载');
 await evl(`['rehab_cam_prefs'].forEach((k) => localStorage.removeItem(k))`);
 
+console.log('===== 30. 康复闭环（v2.31.0：评估→问题→训练→疼痛→复评 全链路联动） =====');
+await evl(`['rehab_pa_history','rehab_ft_history','rehab_rom_history','rehab_plan','rehab_sessions','rehab_pain_history','rehab_proms_history'].forEach((k) => localStorage.removeItem(k)); location.reload()`);
+await sleep(2600);
+await evl(`document.querySelector('.bottom-nav button[data-tab="home"]').click()`);
+await sleep(450);
+(await evl(`document.querySelectorAll('#care-loop .loop-step').length === 5`)) ? ok('今日页出现康复闭环面板（五步）') : bad('闭环面板缺失');
+(await evl(`document.getElementById('care-loop').textContent.includes('评估') && !!document.getElementById('btn-loop-next')`)) ? ok('无数据时提示先做评估（含一键动作）') : bad('闭环首步提示缺失');
+await evl(`document.getElementById('btn-loop-next').click()`);
+await sleep(400);
+(await evl(`document.getElementById('tab-posture').classList.contains('active')`)) ? ok('点「去做」直接跳到体态评估页（模块联动）') : bad('闭环跳转失败');
+// 播种评估数据 → 问题清单 + 一键生成计划
+await evl(`(() => { const now = Date.now();
+  localStorage.setItem('rehab_pa_history', JSON.stringify([{ kind: 'standing', ts: now, score: 62, grade: 'C', items: [], priorities: [{ label: '肩部前倾', level: 'warn', text: '肩部前倾 12°', advice: '多做划船类拉的动作' }] }]));
+  localStorage.setItem('rehab_ft_history', JSON.stringify([{ key: 'battery', battery: true, ts: now, score: 70, sim: 70, dims: { sym: 58, align: 80, dyn: 80, stab: 80, rom: 80, cons: 80 }, m: {} }]));
+  return true; })()`);
+await evl(`document.querySelector('.bottom-nav button[data-tab="train"]').click(); document.querySelector('.bottom-nav button[data-tab="home"]').click()`);
+await sleep(550);
+(await evl(`document.querySelectorAll('#care-loop .loop-issue').length >= 2`)) ? ok('问题清单自动汇总（体态 + 功能测试低分维度）') : bad('问题清单为空');
+(await evl(`document.getElementById('care-loop').textContent.includes('体态') && document.getElementById('care-loop').textContent.includes('功能测试')`)) ? ok('每条问题标注来源模块（可见联动）') : bad('问题来源未标注');
+await evl(`document.getElementById('btn-loop-next').click()`);
+await sleep(700);
+(await evl(`JSON.parse(localStorage.getItem('rehab_plan') || '[]').length >= 1`)) ? ok('按问题清单一键生成今日训练计划（评估→训练联动）') : bad('生成计划失败');
+// 播种今日训练 → 闭环提示记训练后疼痛
+await evl(`(() => { localStorage.setItem('rehab_sessions', JSON.stringify([{ id: 'c1', ts: Date.now(), ex: 'squat', exName: '深蹲', reps: 10, dur: 60, depth: 'ok', badPct: 0, valgusPct: 0, riskPct: 0, collectCount: 0 }])); return true; })()`);
+await evl(`document.querySelector('.bottom-nav button[data-tab="train"]').click(); document.querySelector('.bottom-nav button[data-tab="home"]').click()`);
+await sleep(550);
+(await evl(`document.getElementById('care-loop').textContent.includes('疼痛')`)) ? ok('练完后闭环提示记「训练后疼痛」（训练→疼痛联动）') : bad('未提示记疼痛');
+await evl(`document.getElementById('btn-loop-next').click()`);
+await sleep(500);
+(await evl(`!document.getElementById('pain-modal').classList.contains('hidden')`)) ? ok('点闭环动作直接打开疼痛评分弹窗') : bad('疼痛弹窗未打开');
+await evl(`document.getElementById('pain-cancel').click()`);
+// 复评对比：两次 ROM
+await evl(`(() => { const now = Date.now(); localStorage.setItem('rehab_rom_history', JSON.stringify([{ id: 'r2', ts: now, key: 'kneeFlex', side: 'L', min: 45, max: 175, rom: 135, level: 'good' }, { id: 'r1', ts: now - 86400000, key: 'kneeFlex', side: 'L', min: 52, max: 175, rom: 128, level: 'warn' }])); return true; })()`);
+await evl(`document.querySelector('.bottom-nav button[data-tab="settings"]').click(); document.querySelector('.bottom-nav button[data-tab="home"]').click()`);
+await sleep(550);
+(await evl(`document.getElementById('care-loop').textContent.includes('+7')`)) ? ok('复评对比自动算出（活动度 +7°，训练→复评→对比闭环）') : bad('对比未显示');
+await evl(`['rehab_pa_history','rehab_ft_history','rehab_rom_history','rehab_plan','rehab_sessions'].forEach((k) => localStorage.removeItem(k))`);
+
 console.log('===== 结果 =====');
 console.log('CONSOLE_ERRORS:', consoleErrors.length ? consoleErrors.join(' ||| ') : 'none');
 if (consoleErrors.length) failN++;
