@@ -818,6 +818,22 @@ await sleep(650);
 (await evl(`(() => { const c = JSON.parse(localStorage.getItem('rehab_path') || '{}'); return c.phase === 1 && Array.isArray(c.log) && c.log.length === 1; })()`)) ? ok('进入下一阶段并留下进阶记录') : bad('进阶失败');
 await evl(`['rehab_path','rehab_plan','rehab_pain_history'].forEach((k) => localStorage.removeItem(k))`);
 
+console.log('===== 29. 影像能力升级（v2.30.0：视野/距离引导/设备能力） =====');
+await evl(`['rehab_cam_prefs'].forEach((k) => localStorage.removeItem(k)); location.reload()`);
+await sleep(2600);
+await evl(`document.querySelector('.bottom-nav button[data-tab="settings"]').click()`);
+await sleep(450);
+(await evl(`document.querySelectorAll('#cam-aspect [data-cam-asp]').length === 2 && !!document.getElementById('cam-follow') && !!document.getElementById('cam-guide-chk') && !!document.getElementById('btn-cam-pick')`)) ? ok('影像设置卡：比例/跟随/引导/自动挑选齐全') : bad('影像卡缺失');
+(await evl(`(document.getElementById('cam-status').textContent || '').length > 4`)) ? ok('影像状态行显示当前画面与变焦能力') : bad('影像状态行为空');
+await evl(`(() => { document.querySelector('#cam-aspect [data-cam-asp="169"]').click(); return true; })()`);
+await sleep(400);
+(await evl(`JSON.parse(localStorage.getItem('rehab_cam_prefs') || '{}').aspect === '169'`)) ? ok('画面比例可切换并持久化（3:4 ↔ 16:9）') : bad('比例未保存');
+await evl(`(() => { const c = document.getElementById('cam-guide-chk'); c.checked = false; c.onchange(); return true; })()`);
+await sleep(400);
+(await evl(`JSON.parse(localStorage.getItem('rehab_cam_prefs') || '{}').guide === false`)) ? ok('入镜引导可关闭（就地生效）') : bad('引导开关未保存');
+(await evl(`(() => { document.querySelector('.bottom-nav button[data-tab="train"]').click(); return !!document.getElementById('cam-guide'); })()`)) ? ok('训练画面已挂载入镜/距离引导条') : bad('引导条未挂载');
+await evl(`['rehab_cam_prefs'].forEach((k) => localStorage.removeItem(k))`);
+
 console.log('===== 结果 =====');
 console.log('CONSOLE_ERRORS:', consoleErrors.length ? consoleErrors.join(' ||| ') : 'none');
 if (consoleErrors.length) failN++;

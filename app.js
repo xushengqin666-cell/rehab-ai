@@ -93,7 +93,7 @@ function migrateDeviceData(email) {
 }
 const fmtDate = (ts) => new Date(ts).toLocaleString(locale(), { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-const APP_VERSION = 'v2.29.0';
+const APP_VERSION = 'v2.30.0';
 const exName = (e) => (e.custom ? e.name : t(e.nameKey));
 const exDesc = (e) => (e.custom ? e.desc : t(e.descKey));
 const depthTxt = (d) => t('depth' + (d ? d.charAt(0).toUpperCase() + d.slice(1) : 'Ok')) || d;
@@ -264,8 +264,11 @@ async function openCamera() {
   // 红外摄像头拍出来是全黑的 —— 把非 IR 设备排在前面，并跳过 IR 流
   const devs = state.cameras.filter((c) => c.deviceId).sort((a, b) => (isIRLabel(a.label) ? 1 : 0) - (isIRLabel(b.label) ? 1 : 0));
   const nonIR = devs.filter((d) => !isIRLabel(d.label));
+  const cMain = camConstraints({ facingMode: 'user' });      // v2.30.0：按影像偏好（3:4 竖幅默认，同样距离能看到更多身体）
+  const cAny = camConstraints();
   const candidates = [
-    { video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false },
+    { video: cMain, audio: false },
+    { video: cAny, audio: false },
     { video: { width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false },
     { video: { width: { ideal: 640 }, height: { ideal: 480 } }, audio: false },   // 低配设备兜底
     ...devs.map((c) => ({
@@ -281,6 +284,8 @@ async function openCamera() {
         stream.getTracks().forEach((t) => t.stop());
         continue;
       }
+      await camApplyZoom(stream);   // v2.30.0：设备支持 zoom 时按偏好拉到最广/指定倍数（iOS 不支持则自动跳过）
+      camSaveCaps(stream);
       return stream;
     } catch (e) { lastErr = e; }
   }
@@ -656,6 +661,7 @@ function loop() {
   if ($('overlay').width !== cw || $('overlay').height !== ch) { $('overlay').width = cw; $('overlay').height = ch; }
   ctx.clearRect(0, 0, cw, ch);
   drawStick(ctx, lms, cw, ch, true);
+  camGuideUpdate(lms);            // v2.30.0：入镜/距离引导（可关）
 
   // 身体完整性检测：关键部位没照全 → 持续 ~5 帧才提醒（防单帧误判闪烁），并暂停分析
   // 智能识别模式例外：只有脚踝没照到时不暂停（坐姿时脚常在桌下），让投票切到坐姿分析
@@ -1389,6 +1395,7 @@ const DATA_KEYS = [
   'rehab_proms_history',
   'rehab_ai_prefs',
   'rehab_path',
+  'rehab_cam_prefs',
 ];
 const bakCount = (a) => (Array.isArray(a) ? a.length : 0);
 // v2.21.9：备份内容补全（原缺 计划/计划打卡/个人资料/功能测试/体态报告/运动指数历史）
@@ -1410,6 +1417,7 @@ const bakData = () => ({
   promsHistory: sget('rehab_proms_history', []),
   aiPrefs: sget('rehab_ai_prefs', {}),
   path: sget('rehab_path', null),
+  camPrefs: sget('rehab_cam_prefs', {}),
 });
 $('btn-export').addEventListener('click', () => {
   const data = bakData();
@@ -1452,6 +1460,7 @@ $('import-input').addEventListener('change', async (ev) => {
     if (Array.isArray(data.promsHistory)) sset('rehab_proms_history', data.promsHistory);
     if (data.aiPrefs && typeof data.aiPrefs === 'object') sset('rehab_ai_prefs', data.aiPrefs);
     if (data.path && typeof data.path === 'object') sset('rehab_path', data.path);
+    if (data.camPrefs && typeof data.camPrefs === 'object') sset('rehab_cam_prefs', data.camPrefs);
     refreshAllData();   // v2.21.9：导入后所有依赖模块一起刷新（原只刷记录/评估/预约/自定义）
     toast(t('toastImportOk'));
     scheduleCloudSync();
@@ -4716,6 +4725,128 @@ function refreshAllData() {
   renderAiPlan(); renderAiEngine(); renderPath();       // v2.28.0/v2.29.0：引擎与路径一起刷新
 }
 
+/* ============ v2.30.0 新模块：影像能力升级（视野自适应 · 距离引导 · 设备能力可视化） ============ */
+// 目标：手机不用放很远也能拍全 —— 默认竖幅 3:4（同距离能看到更多身体）、支持 zoom 的设备自动拉到最广、
+// 识别不到全身时给出「后退/靠近/抬手机」的具体引导，而不是一句“失败了”。
+const CAM_PREFS_DEF = { aspect: '34', follow: true, guide: true, zoom: null, deviceId: null };
+const camPrefs = () => Object.assign({}, CAM_PREFS_DEF, sget('rehab_cam_prefs', {}) || {});
+const camPrefSet = (patch) => { sset('rehab_cam_prefs', Object.assign(camPrefs(), patch)); renderCamCard(); };
+const camCaps = { supported: null, min: null, max: null, zoom: null, w: null, h: null, label: '' };
+function camConstraints(extra) {
+  const p = camPrefs();
+  const size = p.aspect === '169' ? { width: { ideal: 1280 }, height: { ideal: 720 } } : { width: { ideal: 960 }, height: { ideal: 1280 } };
+  const base = Object.assign({}, size, p.deviceId ? { deviceId: { exact: p.deviceId } } : {});
+  return Object.assign({ video: Object.assign(base, extra || {}), audio: false });
+}
+async function camApplyZoom(stream) {
+  try {
+    const track = stream.getVideoTracks()[0];
+    if (!track || typeof track.getCapabilities !== 'function') { camCaps.supported = false; return; }
+    const caps = track.getCapabilities();
+    if (!caps || !caps.zoom) { camCaps.supported = false; return; }
+    const p = camPrefs();
+    const want = p.zoom == null ? caps.zoom.min : Math.min(caps.zoom.max, Math.max(caps.zoom.min, Number(p.zoom)));
+    await track.applyConstraints({ advanced: [{ zoom: want }] });
+    camCaps.supported = true; camCaps.min = caps.zoom.min; camCaps.max = caps.zoom.max; camCaps.zoom = want;
+  } catch { camCaps.supported = false; }
+}
+function camSaveCaps(stream) {
+  try {
+    const s = stream.getVideoTracks()[0].getSettings ? stream.getVideoTracks()[0].getSettings() : {};
+    camCaps.w = s.width || null; camCaps.h = s.height || null;
+    camCaps.label = stream.getVideoTracks()[0].label || '';
+    renderCamCard();
+  } catch { /* ignore */ }
+}
+// 入镜比例：以头到脚（或肩到踝）的归一化高度估计“离得够不够远”
+function camFitInfo(lms) {
+  if (!lms) return null;
+  const ys = [];
+  [0, 11, 12, 23, 24, 27, 28].forEach((i) => { if (lms[i] && (lms[i].visibility ?? 1) > 0.4) ys.push(lms[i].y); });
+  if (ys.length < 3) return null;
+  const h = Math.max(...ys) - Math.min(...ys);
+  return { h, level: h < 0.5 ? 'far' : h > 0.97 ? 'close' : 'ok' };
+}
+function camGuideUpdate(lms) {
+  const el = $('cam-guide');
+  if (!el) return;
+  if (!camPrefs().guide) { el.classList.add('hidden'); return; }
+  const f = camFitInfo(lms);
+  el.classList.remove('hidden');
+  if (!f) { el.textContent = t('camGuideNone'); el.className = 'cam-guide warn'; return; }
+  el.textContent = f.level === 'far' ? t('camGuideFar') : f.level === 'close' ? t('camGuideClose') : t('camGuideOk', { p: Math.round(f.h * 100) });
+  el.className = 'cam-guide ' + (f.level === 'ok' ? 'ok' : 'warn');
+}
+// 自动挑选“最广视野”的摄像头：逐个候选打开，量同一个人在同一位置的入镜高度，取最小者（越小=视野越广）
+async function camAutoPickWidest() {
+  const btn = $('btn-cam-pick');
+  if (btn) btn.disabled = true;
+  try {
+    const devs = (await detectCameras()).filter((c) => c.deviceId);
+    if (devs.length < 2) { toast(t('camPickSingle')); return; }
+    if (!state.landmarker) { toast(t('camPickNeedModel')); return; }
+    const results = [];
+    for (const d of devs) {
+      let stream = null;
+      try {
+        stream = await openCameraWithTimeout({ video: { deviceId: { exact: d.deviceId }, width: { ideal: 960 }, height: { ideal: 1280 } }, audio: false }, 8000);
+        const v = document.createElement('video');
+        v.playsInline = true; v.muted = true; v.srcObject = stream;
+        await v.play().catch(() => {});
+        await new Promise((r2) => setTimeout(r2, 1200));
+        let best = null;
+        for (let i = 0; i < 6; i++) {
+          const res = state.landmarker.detectForVideo(v, performance.now());
+          if (res && res.landmarks && res.landmarks.length) {
+            const f = camFitInfo(res.landmarks[0]);
+            if (f && (best == null || f.h < best)) best = f.h;
+          }
+          await new Promise((r2) => setTimeout(r2, 180));
+        }
+        results.push({ id: d.deviceId, label: d.label || d.deviceId.slice(0, 6), h: best });
+      } catch { /* 该设备打不开就跳过 */ }
+      finally { if (stream) stream.getTracks().forEach((x) => x.stop()); }
+    }
+    const ok = results.filter((r) => r.h != null).sort((a, b) => a.h - b.h);
+    if (!ok.length) { toast(t('camPickFail')); return; }
+    camPrefSet({ deviceId: ok[0].id });
+    toast(t('camPickDone', { l: ok[0].label, n: ok.length }));
+  } catch (e) { toast(t('camPickFail')); }
+  finally { if (btn) btn.disabled = false; }
+}
+function renderCamCard() {
+  const p = camPrefs();
+  const seg = $('cam-aspect');
+  if (seg) seg.querySelectorAll('[data-cam-asp]').forEach((b) => {
+    b.classList.toggle('on', b.dataset.camAsp === p.aspect);
+    b.onclick = () => camPrefSet({ aspect: b.dataset.camAsp });
+  });
+  const setChk = (id, key) => {
+    const el = $(id);
+    if (el) { el.checked = !!p[key]; el.onchange = () => camPrefSet({ [key]: el.checked }); }
+  };
+  setChk('cam-follow', 'follow');
+  setChk('cam-guide-chk', 'guide');
+  const zr = $('cam-zoom');
+  if (zr) {
+    if (camCaps.supported) {
+      zr.classList.remove('hidden');
+      zr.min = camCaps.min; zr.max = camCaps.max; zr.step = '0.1'; zr.value = camCaps.zoom;
+      zr.oninput = () => camPrefSet({ zoom: Number(zr.value) });
+    } else zr.classList.add('hidden');
+  }
+  const st = $('cam-status');
+  if (st) {
+    const parts = [];
+    parts.push(t('camStRes', { w: camCaps.w || '—', h: camCaps.h || '—' }));
+    parts.push(camCaps.supported ? t('camStZoom', { z: Number(camCaps.zoom).toFixed(1) }) : t('camStNoZoom'));
+    parts.push(p.deviceId ? t('camStPicked') : t('camStAuto'));
+    st.textContent = parts.join(' · ');
+  }
+}
+$('btn-cam-pick') && $('btn-cam-pick').addEventListener('click', camAutoPickWidest);
+$('btn-cam-reset') && $('btn-cam-reset').addEventListener('click', () => { camPrefSet({ zoom: null, deviceId: null }); toast(t('camReset')); });
+
 /* ============ v2.29.0 新模块：康复路径（分阶段 · 条件可改 · 按你的数据推荐） ============ */
 // 原则延续：路径只是「起点」，阶段/剂量/进阶条件全部可改；系统按用户自己的数据推荐与提示升级。
 const PATHS = [
@@ -6035,6 +6166,7 @@ onLangChanged(() => {
   renderPromUI(); renderPromHistory();                  // v2.27.0：PROMs 随语言切换
   renderAiPlan(); renderAiEngine();                     // v2.28.0：自适应引擎随语言切换
   renderPath();                                         // v2.29.0：康复路径随语言切换
+  renderCamCard();                                      // v2.30.0：影像设置随语言切换
   $('about-version').textContent = t('versionLabel', { v: APP_VERSION });   // v2.21.9：关于页版本号随语言切换（原来只设置一次）
   setStartBtn(state.running ? 'btnStop' : 'btnStart', state.running ? 'stop' : 'play');
   $('btn-collect-label').textContent = state.collectMode ? t('btnCollectStop') : t('btnCollect');
@@ -6084,6 +6216,7 @@ renderRomUI(); renderRomHistory(); renderRomResult(null); // v2.26.0：ROM 测�
 renderPromUI(); renderPromHistory();                     // v2.27.0：PROMs 量表初始化
 renderAiPlan(); renderAiEngine();                        // v2.28.0：自适应引擎初始化
 renderPath();                                            // v2.29.0：康复路径初始化
+renderCamCard();                                         // v2.30.0：影像设置初始化
 window.__gwSkip = () => gwFinish(true);                   // 测试钩子：直接完成当前跟练
 showOnboard();
 setTimeout(reminderCatchUp, 4000);            // 错过提醒时间 → 打开时补一次

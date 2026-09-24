@@ -429,6 +429,11 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, .link-btn:foc
 .pain-btn.on { background: var(--teal); border-color: var(--teal); color: #fff; }
 
 .pain-spike { margin-top: 8px; padding: 9px 11px; border-radius: 10px; background: rgba(209, 74, 74, .08); border-left: 3px solid var(--red); font-size: 12px; line-height: 1.7; color: var(--text); }
+/* ---------- 影像引导（v2.30.0 新模块） ---------- */
+.cam-guide { position: absolute; left: 10px; right: 10px; bottom: 10px; padding: 7px 10px; border-radius: 10px; font-size: 12px; font-weight: 600; background: rgba(20, 24, 31, .72); color: #fff; text-align: center; }
+.cam-guide.ok { background: rgba(14, 124, 102, .82); }
+.cam-guide.warn { background: rgba(209, 74, 74, .82); }
+
 /* ---------- 康复路径（v2.29.0 新模块） ---------- */
 .path-head { display: flex; align-items: center; gap: 8px; font-size: 13.5px; margin: 10px 0 6px; flex-wrap: wrap; }
 .path-cond { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; margin: 8px 0; }

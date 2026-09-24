@@ -58,6 +58,7 @@
       </div>
       <div id="loading" class="hidden"></div>
       <div id="train-timer" class="train-timer hidden"></div>
+      <div id="cam-guide" class="cam-guide hidden"></div>
     </div>
 
     <div id="stats-box" class="hidden">
@@ -683,6 +684,31 @@
       <div id="ai-baseline" class="rep-summary"></div>
       <div class="controls" style="margin-top:10px">
         <button id="btn-ai-reset" class="btn" data-i18n="aiEngReset">恢复默认设置</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3 data-i18n="camTitle">影像设置（手机不用放很远）</h3>
+      <p class="hint" data-i18n="camIntro">默认用竖幅 3:4，同样距离能看到更多身体；支持变焦的手机自动拉到最广视野；识别不到全身时会给「后退/靠近」的具体提示。</p>
+      <div class="form">
+        <label class="hint" data-i18n="camAspect">画面比例</label>
+        <div class="seg" id="cam-aspect">
+          <button data-cam-asp="34" data-i18n="camAspect34">竖幅 3:4（推荐）</button>
+          <button data-cam-asp="169" data-i18n="camAspect169">横幅 16:9</button>
+        </div>
+        <label class="hint" style="display:flex;align-items:center;gap:8px">
+          <input type="checkbox" id="cam-follow" style="width:auto"> <span data-i18n="camFollow">跟随显示（火柴人始终居中）</span>
+        </label>
+        <label class="hint" style="display:flex;align-items:center;gap:8px">
+          <input type="checkbox" id="cam-guide-chk" style="width:auto"> <span data-i18n="camGuideChk">显示入镜/距离引导</span>
+        </label>
+        <label class="hint" for="cam-zoom" data-i18n="camZoom">视野（变焦，仅部分安卓机型支持）</label>
+        <input type="range" id="cam-zoom" min="1" max="1" step="0.1" class="hidden" style="width:100%">
+      </div>
+      <p class="hint tiny" id="cam-status"></p>
+      <div class="controls">
+        <button id="btn-cam-pick" class="btn primary" data-i18n="camPick">自动挑选最广镜头</button>
+        <button id="btn-cam-reset" class="btn" data-i18n="camReset">重置影像设置</button>
       </div>
     </div>
 

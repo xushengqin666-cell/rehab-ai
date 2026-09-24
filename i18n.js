@@ -82,6 +82,16 @@ const DICT = {
     repRadar: '功能测试六维', repTrend30: '近 30 天训练趋势（每日动作次数）',
     ftDimSym: '对称', ftDimAlign: '排列', ftDimDyn: '动态', ftDimStab: '稳定', ftDimRom: '活动度', ftDimCons: '一致性',
     fileReport: '康复AI治疗师报告',
+    // v2.30.0 影像能力
+    camTitle: '影像设置（手机不用放很远）',
+    camIntro: '默认用竖幅 3:4，同样距离能看到更多身体；支持变焦的手机自动拉到最广视野；识别不到全身时会给「后退/靠近」的具体提示。',
+    camAspect: '画面比例', camAspect34: '竖幅 3:4（推荐）', camAspect169: '横幅 16:9',
+    camFollow: '跟随显示（火柴人始终居中）', camGuideChk: '显示入镜/距离引导', camZoom: '视野（变焦，仅部分安卓机型支持）',
+    camPick: '自动挑选最广镜头', camPickSingle: '只检测到一个摄像头，无需挑选', camPickNeedModel: '请先在训练页启动一次（加载 AI 模型）再挑选',
+    camPickDone: '已选用最广镜头：{l}（比较了 {n} 个）', camPickFail: '挑选失败，沿用当前摄像头', camReset: '影像设置已重置',
+    camStRes: '画面 {w}×{h}', camStZoom: '已自动变焦到最广（{z}×）', camStNoZoom: '本机不支持网页变焦（iOS 常见）', camStPicked: '已指定摄像头', camStAuto: '自动选择摄像头',
+    camGuideNone: '站到画面里，让全身完整入镜', camGuideFar: '离得有点远 → 往前走一步，或把手机放低一些',
+    camGuideClose: '画面快要装不下了 → 后退半步，或改用「横幅 16:9」', camGuideOk: '入镜合适（约占画面 {p}%）',
     // v2.29.0 康复路径
     pathTitle: '康复路径（分阶段）',
     pathIntro: '不是写死的模板：路径、当前阶段、进阶条件都由你定；系统按你自己的数据推荐起点与升级时机，并可随时手动调整。',
@@ -757,6 +767,16 @@ const DICT = {
     repRadar: 'Function test (6 dimensions)', repTrend30: 'Training trend, last 30 days (reps per day)',
     ftDimSym: 'Symmetry', ftDimAlign: 'Alignment', ftDimDyn: 'Dynamics', ftDimStab: 'Stability', ftDimRom: 'ROM', ftDimCons: 'Consistency',
     fileReport: 'RehabAI-therapist-report',
+    // v2.30.0 Camera capabilities
+    camTitle: 'Camera settings (no need to stand far away)',
+    camIntro: 'Portrait 3:4 by default so more of your body fits at the same distance; phones with zoom are pushed to the widest view; when you are not fully in frame you get a specific step-back or step-closer hint.',
+    camAspect: 'Aspect ratio', camAspect34: 'Portrait 3:4 (recommended)', camAspect169: 'Landscape 16:9',
+    camFollow: 'Follow display (keep the skeleton centred)', camGuideChk: 'Show framing / distance hints', camZoom: 'Field of view (zoom, some Android phones only)',
+    camPick: 'Auto-pick the widest lens', camPickSingle: 'Only one camera detected - nothing to pick', camPickNeedModel: 'Start the Train tab once (load the AI model) before picking',
+    camPickDone: 'Using the widest lens: {l} (compared {n})', camPickFail: 'Picking failed - keeping the current camera', camReset: 'Camera settings reset',
+    camStRes: 'Frame {w}x{h}', camStZoom: 'Auto zoomed to the widest ({z}x)', camStNoZoom: 'This device does not expose zoom to the web (common on iOS)', camStPicked: 'Camera pinned', camStAuto: 'Camera auto',
+    camGuideNone: 'Step into the frame so your whole body is visible', camGuideFar: 'A bit far away -> step forward or lower the phone',
+    camGuideClose: 'Almost out of frame -> step back half a step, or switch to 16:9', camGuideOk: 'Framing looks right (about {p}% of the frame)',
     // v2.29.0 Rehab path
     pathTitle: 'Rehab path (phased)',
     pathIntro: 'Not a fixed template: the path, current phase and progression rules are yours to set. The app recommends a starting point and timing from your own data, and you can change it any time.',
