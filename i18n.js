@@ -527,7 +527,7 @@ const DICT = {
     btnDeleteAccount: '删除账号', acctDeleteConfirm: '确定删除账号 {e} 吗？该账号在本机的全部数据（训练记录、计划、资料）将永久删除，无法恢复。',
     acctDeleted: '账号已删除，数据已清除',
     // ============ v2.19 全身体态评估 ============
-    paNav: '体态',
+    paNav: '评估',
     paTitle: '全身体态评估', paIntro: '选择一种体态 → 全身完整入镜并保持 → AI 确认「识别完整」后才开始评价 → 指出不足并给出改进建议。支持：正常站立 / 单腿站立 / 深蹲 / 走路 / 跑步。',
     paKindStand: '正常站立', paKindSingle: '单腿站立', paKindSquat: '深蹲', paKindWalk: '走路', paKindRun: '跑步',
     paGuideStand: '侧身或正面朝向镜头，全身入镜，自然站立 6 秒', paGuideSingle: '双手叉腰抬起一条腿，保持 8 秒', paGuideSquat: '下蹲到膝盖约 90°，在底部保持 6 秒', paGuideWalk: '在镜头前来回走约 10 秒（至少 6 步）', paGuideRun: '原地小跑约 10 秒（至少 8 步）',
@@ -1242,7 +1242,7 @@ const DICT = {
     btnDeleteAccount: 'Delete account', acctDeleteConfirm: 'Delete account {e}? All local data for this account (sessions, plans, profile) will be permanently erased and cannot be recovered.',
     acctDeleted: 'Account deleted and data erased',
     // ============ v2.19 Full-body posture assessment ============
-    paNav: 'Posture',
+    paNav: 'Assess',
     paTitle: 'Full-Body Posture Assessment', paIntro: 'Pick a posture → keep your whole body in frame and hold still → AI only starts scoring once recognition is COMPLETE → get specific issues + improvement advice. Supports: standing, single-leg stance, squat, walking, running.',
     paKindStand: 'Standing', paKindSingle: 'Single-leg', paKindSquat: 'Squat', paKindWalk: 'Walking', paKindRun: 'Running',
     paGuideStand: 'Face the camera (or side on), whole body in frame, stand naturally for 6s', paGuideSingle: 'Hands on hips, lift one leg, hold for 8s', paGuideSquat: 'Squat to ~90° knee bend and hold the bottom for 6s', paGuideWalk: 'Walk back and forth in view for ~10s (at least 6 steps)', paGuideRun: 'Jog on the spot for ~10s (at least 8 steps)',

@@ -93,7 +93,7 @@ function migrateDeviceData(email) {
 }
 const fmtDate = (ts) => new Date(ts).toLocaleString(locale(), { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-const APP_VERSION = 'v2.33.0';
+const APP_VERSION = 'v2.33.1';
 const exName = (e) => (e.custom ? e.name : t(e.nameKey));
 const exDesc = (e) => (e.custom ? e.desc : t(e.descKey));
 const depthTxt = (d) => t('depth' + (d ? d.charAt(0).toUpperCase() + d.slice(1) : 'Ok')) || d;
@@ -1491,6 +1491,11 @@ function switchTab(name) {
   if (name === 'record') renderReport();          // v2.24.0：进入记录页刷新治疗师报告摘要
   if (name === 'schedule') renderPath();          // v2.29.0：进入日程页刷新康复路径
   if (name !== 'posture') romStop();              // v2.26.0：离开体态页自动停止 ROM 测量
+  // v2.33.1：进入评估块（体态/功能测试/量表）即刷新其面板 —— 否则导入/二维码同步进来的新数据要重启才看得见
+  if (name === 'posture' || name === 'ft' || name === 'assess') {
+    renderPaUI(); renderFtUI(); renderRomHistory(); renderRomResult(romHistory()[0] || null);
+    renderPromHistory(); renderPain(); renderReport(); renderCareLoop();
+  }
 }
 document.querySelectorAll('.bottom-nav button').forEach((btn) => {
   btn.addEventListener('click', () => switchTab(btn.dataset.tab));
@@ -3142,11 +3147,11 @@ function renderPaReport(r, scroll = true) {
   const demoBadge = r.demo ? `<span class="pa-demo-badge">${t('paDemoNote')}</span>` : '';
   el.innerHTML = `
     ${demoBadge}
-    <h3>${t('paReportTitle')} · ${t(PA_META[r.kind].nameKey)}</h3>
+    <h3>${t('paReportTitle')} · ${t((PA_META[r.kind] || PA_META.standing).nameKey)}</h3>
     <div class="pa-score">
-      <div class="pa-score-num">${r.score}</div>
+      <div class="pa-score-num">${r.score != null ? r.score : '—'}</div>
       <div>
-        <div class="pa-score-grade">${t('paScore')} · ${t('paGrade' + r.grade)}</div>
+        <div class="pa-score-grade">${t('paScore')}${r.grade ? ' · ' + t('paGrade' + r.grade) : ''}</div>
         <div class="pa-score-sub">${t('paSafety')}</div>
       </div>
     </div>
@@ -3171,12 +3176,14 @@ function renderPaHistory() {
     const when = new Date(r.ts);
     const date = when.toLocaleDateString(locale(), { month: 'numeric', day: 'numeric' }) + ' ' + when.toLocaleTimeString(locale(), { hour: '2-digit', minute: '2-digit' });
     const kindIcon = { standing: 'standing', single: 'standing', squat: 'squat', walk: 'stepup', run: 'stepup' }[r.kind] || 'standing';
+    const meta = PA_META[r.kind] || PA_META.standing;   // v2.33.1：导入/同步来的旧记录可能缺 kind，兜底防整条历史列表崩掉
     const prev = h.find((x) => x.kind === r.kind && x.ts < r.ts);   // v2.21.4：与上次同体态对比
-    const delta = prev ? `<span class="ft-delta ${r.score >= prev.score ? 'up' : 'down'}">${t('paHistoryDelta', { v: (r.score >= prev.score ? '↑' : '↓') + Math.abs(r.score - prev.score) })}</span>` : '';
+    const canDelta = prev && Number.isFinite(Number(r.score)) && Number.isFinite(Number(prev.score));
+    const delta = canDelta ? `<span class="ft-delta ${Number(r.score) >= Number(prev.score) ? 'up' : 'down'}">${t('paHistoryDelta', { v: (Number(r.score) >= Number(prev.score) ? '↑' : '↓') + Math.abs(Number(r.score) - Number(prev.score)) })}</span>` : '';
     return `
     <div class="item">
-      <div class="t">${icon(kindIcon)}${t(PA_META[r.kind].nameKey)}${r.demo ? ' · ' + t('paBtnDemo') : ''} — ${date} ${delta}</div>
-      <div class="d">${t('paScore')} ${r.score} · ${t('paGrade' + r.grade)}${r.priorities.length ? ' · ' + r.priorities.length + ' ' + t('paPriority') : ''}</div>
+      <div class="t">${icon(kindIcon)}${t(meta.nameKey)}${r.demo ? ' · ' + t('paBtnDemo') : ''} — ${date} ${delta}</div>
+      <div class="d">${t('paScore')} ${r.score != null ? r.score : '—'}${r.grade ? ' · ' + t('paGrade' + r.grade) : ''}${Array.isArray(r.priorities) && r.priorities.length ? ' · ' + r.priorities.length + ' ' + t('paPriority') : ''}</div>
       <div class="controls" style="margin-top:6px"><button class="btn small" data-pa-view="${r.ts}"><span>${t('paView')}</span></button></div>
     </div>`;
   }).join('');

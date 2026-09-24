@@ -923,6 +923,16 @@ await sleep(650);
 (await evl(`JSON.parse(localStorage.getItem('rehab_plan') || '[]').length >= 1`)) ? ok('按分析一键生成今日计划（分析→训练块联动）') : bad('计划生成失败');
 await evl(`['rehab_rom_history','rehab_ft_history','rehab_pa_history','rehab_plan'].forEach((k) => localStorage.removeItem(k))`);
 
+console.log('===== 33. 导航顺序 + 旧记录兼容（v2.33.1） =====');
+const navOrder = await evl(`Array.from(document.querySelectorAll('.bottom-nav button')).filter((b) => !b.classList.contains('nav-hidden')).map((b) => { const l = b.querySelector('.nav-label'); return l ? l.textContent.trim() : ''; }).join('/')`);
+(navOrder === '今日/评估/训练/复评/记录/设置') ? ok(`底部导航收敛为 今日/评估/训练/复评/记录/设置（实际：${navOrder}）`) : bad(`底部导航顺序异常：${navOrder}`);
+await evl(`localStorage.setItem('rehab_pa_history', JSON.stringify([{ ts: Date.now() - 3600000, score: 70, priorities: [{ label: '肩部前倾', level: 'warn' }] }, { ts: Date.now(), kind: 'standing', score: 80, grade: 'B', priorities: [] }]))`);
+await evl(`document.querySelector('.bottom-nav button[data-tab="posture"]').click()`);
+await sleep(500);
+const paRows = await evl(`document.querySelectorAll('#pa-history .item').length`);
+(paRows >= 2) ? ok('体态历史里缺 kind 的旧记录也能渲染，不再整段崩掉（导入/同步兼容）') : bad(`体态历史渲染异常，行数=${paRows}`);
+await evl(`localStorage.removeItem('rehab_pa_history')`);
+
 console.log('===== 结果 =====');
 console.log('CONSOLE_ERRORS:', consoleErrors.length ? consoleErrors.join(' ||| ') : 'none');
 if (consoleErrors.length) failN++;
