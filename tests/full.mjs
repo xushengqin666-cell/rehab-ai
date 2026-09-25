@@ -939,11 +939,11 @@ await sleep(700);
 // 34a 跟练页示范墙
 const dmbCells = await evl(`document.querySelectorAll('#gw-demos .dmb-cell').length`);
 (dmbCells >= 8) ? ok(`跟练页标准示范墙：${dmbCells} 个动作都有图解`) : bad(`示范墙动作数不足：${dmbCells}`);
-(await evl(`Array.from(document.querySelectorAll('#gw-demos .dmb-cell')).every((c) => c.querySelector('svg') || c.querySelector('img'))`)) ? ok('每个动作都有示范图（真人动图或三维图）') : bad('存在空白示范图');
-(await evl(`document.querySelectorAll('#gw-demos .dmb-cell .dmb-fr-cap').length >= 8`)) ? ok('示范图带动作名称') : bad('示范图缺名称');
-// 34a2 示范图必须是三维人体（带粗细的胶囊肢体，靠深度排序表现体积），不是细线
-const sil = await evl(`(function(){const cells=Array.from(document.querySelectorAll('#gw-demos .dmb-cell'));for(const c of cells){const s=c.querySelector('svg');if(!s)continue;const b=s.querySelectorAll('.dmb-body');let thin=0;b.forEach(function(e){if(parseFloat(e.getAttribute('stroke-width')||'0')<3)thin++;});return b.length+':'+thin+':'+(s.querySelectorAll('rect,circle').length>=1);}return 'none';})()`);
-(/^(1[0-9]|[2-9][0-9]):0:true$/.test(String(sil))) ? ok('示范图是三维人体（≥10 段带粗细的胶囊肢体 + 头，非细线）') : bad(`三维人体异常：${sil}`);
+(await evl(`Array.from(document.querySelectorAll('#gw-demos .dmb-cell')).every((c) => c.querySelector('img') || c.textContent.includes('补充'))`)) ? ok('每个动作格都有真人动图或「正在补充」提示') : bad('存在空白示范格');
+(await evl(`document.querySelectorAll('#gw-demos .dmb-cell .dmb-fr-cap, #gw-demos .dmb-cell .dmb-cell-none').length >= 8`)) ? ok('每个示范格都带动作名称') : bad('示范格缺名称');
+// 34a2 界面里不应再出现合成人形（用户明确要求：全部换成真人示范）
+const sil = await evl(`document.querySelectorAll('#gw-demos .dmb-cell svg').length + ':' + document.querySelectorAll('#gw-demos .dmb-cell img').length`);
+(/^0:[1-9]/.test(String(sil))) ? ok('示范墙已全部换成真人动图（合成人形 0 个）') : bad(`示范墙仍含合成人形：${sil}`);
 // 34a3 重心必须落在支撑面内（物理上站得住，不会往后倒）
 const bal = await evl(`(function(){const s=window.__rehabDemo;if(!s||!s.balanceOf)return 'nohook:'+(typeof window.__rehabDemo);const bad=[];Object.keys(s.DEMOS).forEach(function(k){const d=s.DEMOS[k];if(d.view!=='side')return;d.frames.forEach(function(f,i){const b=s.balanceOf(k,f.p);if(b&&!b.wall&&b.margin<=1)bad.push(k+'#'+i+'('+b.margin.toFixed(1)+')');});});return bad.join(',');})()`);
 (bal === '') ? ok('所有站姿动作每个关键帧的重心都落在支撑面内（含深蹲到位）') : bad(`重心出界：${bal}`);
@@ -956,18 +956,15 @@ await sleep(500);
 (await evl(`!document.getElementById('dmb-modal').classList.contains('hidden')`)) ? ok('点「看示范」打开示范弹窗') : bad('示范弹窗没打开');
 (await evl(`(function(){const im=document.querySelector('#dmb-body .dmb-real-img');return !!im && im.complete && im.naturalWidth>20;})()`)) ? ok('弹窗顶部显示真人标准示范动图') : bad('弹窗缺真人示范图');
 (await evl(`document.querySelector('#dmb-body').textContent.includes('公有领域')`)) ? ok('真人示范标注了来源与公有领域许可') : bad('缺来源/许可标注');
-(await evl(`document.querySelectorAll('#dmb-body .dmb-fr').length >= 3`)) ? ok('弹窗含关键帧与错误对照（≥3 格）') : bad('弹窗内容缺失');
-(await evl(`document.querySelectorAll('#dmb-body .dmb-fr-cap.bad').length >= 2`)) ? ok('常见错误单独标红列出（≥2 条）') : bad('错误对照缺失');
-// 34b2 可切换观察角度（多个角度看不清楚的地方）
-const svgSide = await evl(`document.getElementById('dmb-big').innerHTML`);
-await evl(`document.querySelector('#dmb-body [data-az="90"]').click()`);
-await sleep(500);
-const svgFront = await evl(`document.getElementById('dmb-big').innerHTML`);
-await evl(`document.querySelector('#dmb-body [data-az="35"]').click()`);
-await sleep(400);
-const svgBack = await evl(`document.getElementById('dmb-big').innerHTML`);
-(svgSide !== svgFront && svgFront.length > 100) ? ok('可切换观察角度：正面与侧面是两张不同的图') : bad('视角切换无效');
-(svgSide === svgBack) ? ok('切回原角度视图与原来一致（角度状态可用）') : bad('角度状态异常');
+(await evl(`document.querySelectorAll('#dmb-body .dmb-angles .dmb-chip').length >= 2`)) ? ok('弹窗标出应用真实判定阈值（≥2 个）') : bad('弹窗缺阈值标注');
+// 34b2 弹窗内不得出现合成人形，常见错误改为文字自查
+await sleep(200);
+(await evl(`document.querySelectorAll('#dmb-body .dmb-body, #dmb-body .dmb-fr').length === 0`)) ? ok('示范弹窗内已无合成人形') : bad('弹窗里仍有合成人形');
+(await evl(`document.querySelectorAll('#dmb-body .dmb-err').length >= 2`)) ? ok('常见错误以文字逐条列出（自查用）') : bad('常见错误缺失');
+// 34b3 （原多角度按钮已随合成图下线）
+const svgSide = '';
+
+
 // 34c 判定标准来自应用真实阈值
 const dmbAng = await evl(`window.__rehabDemo.demoAngles('squat').map((a) => a.k + ':' + a.v).join(',')`);
 const thrOk = await evl(`(function(){const a=window.__rehabDemo.demoAngles('squat');const e=a.map(x=>x.v);return e.indexOf(100)>=0 && e.indexOf(150)>=0;})()`);
@@ -975,13 +972,7 @@ thrOk ? ok(`标准角度直接取应用判定阈值（${dmbAng}）`) : bad(`阈�
 // 34c2 内扣错误对照必须用正视，且膝比踝更靠内（否则这张对照图和正确姿势一模一样）
 const valgus = await evl(`(function(){const s=window.__rehabDemo;const p=s.poseOf('squat', s.DEMOS.squat.front.p, 'front');const k=Math.abs(p.KL[0]-p.H[0]), a=Math.abs(p.AL[0]-p.H[0]);return p.kind+':'+(k<a);})()`);
 (valgus === 'front:true') ? ok('膝盖内扣对照用的是正视，且膝真的画在踝内侧') : bad(`内扣对照异常：${valgus}`);
-// 34d 播放成动图
-const svgBefore = await evl(`document.getElementById('dmb-big').innerHTML.length`);
-await evl(`document.getElementById('dmb-play').click()`);
 await sleep(700);
-const svgAfter = await evl(`document.getElementById('dmb-big').innerHTML`);
-(svgAfter.length > 0 && (await evl(`(function(){const p=window.__rehabDemo.demoPose('squat',0.5);const q=window.__rehabDemo.demoPose('squat',0.05);return Math.abs(p.knee-q.knee)>20;})()`))) ? ok('播放：示范图在关键帧之间连续变化（可当动图看）') : bad('播放无效');
-await evl(`document.getElementById('dmb-play').click()`);
 await sleep(200);
 // 34e 录像存取（IndexedDB，用合成 Blob 验证链路）
 const clipOk = await evl(`(async function(){const s=window.__rehabDemo;if(!s.idb())return 'no-idb';const b=new Blob([new Uint8Array(2048)],{type:'video/webm'});await s.clipPut(b,{ex:'squat',label:'测试',durSec:3});const a=await s.clipAll();const n=a.length;await s.clipDel(a[0].id);const n2=(await s.clipAll()).length;return n+'>'+n2;})()`);
@@ -992,7 +983,7 @@ await sleep(250);
 // 34f 训练页标准示范位 + 录制按钮
 await evl(`document.querySelector('.bottom-nav button[data-tab="train"]').click()`);
 await sleep(600);
-(await evl(`!document.getElementById('train-demo').classList.contains('hidden') && document.getElementById('train-demo').querySelectorAll('svg').length >= 1`)) ? ok('训练页显示当前动作的标准示范位图解') : bad('训练页示范位缺失');
+(await evl(`!document.getElementById('train-demo').classList.contains('hidden') && (document.getElementById('train-demo').querySelectorAll('img').length >= 1 || document.getElementById('train-demo').textContent.includes('补充'))`)) ? ok('训练页显示当前动作的真人示范（或补充中提示）位图解') : bad('训练页示范位缺失');
 (await evl(`document.getElementById('train-demo').textContent.includes('100') && document.getElementById('train-demo').textContent.includes('150')`)) ? ok('训练页示范位同时标出判定阈值') : bad('训练页阈值缺失');
 (await evl(`!!document.getElementById('train-rec')`)) ? ok('训练页提供录像按钮（录制自己的标准动作）') : bad('录像按钮缺失');
 // 34g 跟练进行中显示当前动作示范

@@ -94,7 +94,7 @@ function migrateDeviceData(email) {
 }
 const fmtDate = (ts) => new Date(ts).toLocaleString(locale(), { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-const APP_VERSION = 'v2.37.1';
+const APP_VERSION = 'v2.38.0';
 const exName = (e) => (e.custom ? e.name : t(e.nameKey));
 const exDesc = (e) => (e.custom ? e.desc : t(e.descKey));
 const depthTxt = (d) => t('depth' + (d ? d.charAt(0).toUpperCase() + d.slice(1) : 'Ok')) || d;
@@ -4466,7 +4466,7 @@ function renderGuide() {
     <div class="gw-set-line">${t(prog.name)} · ${t('gwLevel')}：${t('gwLv' + gwState.level)}</div>
     <div class="gw-dots">${dots}</div>
     <div class="gw-step-name">${icon(step.icon)} ${t(step.name)}<span class="gw-set-line" style="display:block">${t('gwStepOf', { s: gwState.stepIdx + 1, S: prog.steps.length })}</span></div>
-    ${hasDemo(step.icon) ? '<div class="gw-stepdemo" id="gw-step-demo">' + demoFigure(step.icon, { params: demoParams(step.icon, gwState.phase === 'rest' ? 0 : 0.5), azimuth: 35, w: 190, h: 178 }) + '<button class="btn small" id="gw-step-look">' + t('dmbLook') + '</button></div>' : ''}
+    ${hasDemo(step.icon) ? '<div class="gw-stepdemo" id="gw-step-demo"><img class="dmb-thumb" src="' + realDemo(step.icon) + '" alt=""><button class="btn small" id="gw-step-look">' + t('dmbLook') + '</button></div>' : ''}
     <div class="gw-big">${big}</div>
     <div class="gw-set-line">${sub}</div>
     <div class="gw-bar"><div class="gw-bar-fill" style="width:${barPct}%"></div></div>
@@ -4798,7 +4798,8 @@ function dmbTick(ts) {
   const dur = 2800;
   const u = ((ts - dmbState.t0) % dur) / dur;
   const tri = u < 0.5 ? u * 2 : (1 - u) * 2;   // 去-回，像 GIF 一样循环
-  big.innerHTML = demoFigure(dmbState.key, { params: demoParams(dmbState.key, tri), azimuth: dmbState.az, w: 230, h: 250, ghost: true });
+  big.innerHTML = '';   // v2.38.0：合成人形已下线（改真人示范），动画保留为空实现
+  void tri;
   dmbState.raf = requestAnimationFrame(dmbTick);
 }
 function dmbPlayToggle() {
@@ -4815,32 +4816,24 @@ function renderDemoBody() {
   const d = DEMOS[key];
   const e = EXERCISES[key];
   const az = dmbState.az;
-  const frames = d.frames.map((fr) => '<div class="dmb-fr"><div class="dmb-fr-fig">' +
-    demoFigure(key, { params: fr.p, azimuth: az, w: 150, h: 168 }) + '</div><div class="dmb-fr-cap">' + t(fr.key) + '</div></div>').join('');
-  const faults = d.faults.map((ft) => '<div class="dmb-fr"><div class="dmb-fr-fig">' +
-    demoFigure(key, { params: ft.p, azimuth: az, w: 150, h: 168, fault: true }) + '</div><div class="dmb-fr-cap bad">' + t(ft.key) + '</div></div>').join('') +
-    (d.front ? '<div class="dmb-fr"><div class="dmb-fr-fig">' +
-      demoFigure(key, { fault: 'front', azimuth: 90, w: 150, h: 168 }) + '</div><div class="dmb-fr-cap bad">' + t(d.front.key) + '</div></div>' : '');
+  const frames = '';   // v2.38.0：去掉合成人形，关键帧改由真人动图 + 文字阈值表达
+  const faults = d.faults.concat(d.front ? [{ key: d.front.key }] : []).map((ft) => '<div class="dmb-err">• ' + t(ft.key) + '</div>').join('');
   const real = realDemo(key);
   el.innerHTML =
     (real ? '<div class="dmb-real"><img class="dmb-real-img" src="' + real + '?v=236" alt="真人标准示范"><div class="dmb-real-cap">真人标准示范</div></div>' : '') +
-    '<div class="dmb-top"><div class="dmb-big" id="dmb-big">' +
-      demoFigure(key, { params: demoParams(key, 0.5), azimuth: az, w: 230, h: 250, ghost: true }) + '</div>' +
+    '<div class="dmb-top">' + (real ? '' : '<div class="dmb-sided"><div class="dmb-fr-cap">' + t('dmbNoReal') + '</div></div>') +
       '<div class="dmb-side">' +
         '<div class="dmb-name">' + dmbName(key) + '</div>' +
         (e && e.stdKey ? '<p class="hint">' + t(e.stdKey) + '</p>' : '') +
         '<div class="dmb-angles">' + dmbAngleChips(key) + '</div>' +
-        '<div class="dmb-az"><span class="dmb-chip">' + t('dmbAzTitle') + '</span>' + [[0, 'dmbAzSide'], [35, 'dmbAz35'], [90, 'dmbAzFront']].map(([a, k]) => '<button data-az="' + a + '" class="' + (dmbState.az === a ? 'on' : '') + '">' + t(k) + '</button>').join('') + '</div>' +
-        '<div class="controls"><button class="btn small" id="dmb-play">' + t('dmbPlay') + '</button>' +
-          '<button class="btn small" id="dmb-rec">' + (recState.rec ? t('dmbRecStop') : t('dmbRec')) + '</button></div>' +
-      '</div></div>' +
-    '<div class="dmb-sec">' + t('dmbFrames') + '</div><div class="dmb-row">' + frames + '</div>' +
+        '<div class="controls"><button class="btn small" id="dmb-rec">' + (recState.rec ? t('dmbRecStop') : t('dmbRec')) + '</button></div>' +
+      '</div>' +
+    (frames ? '<div class="dmb-sec">' + t('dmbFrames') + '</div><div class="dmb-row">' + frames + '</div>' : '') +
     (e && e.descKey ? '<div class="dmb-sec">' + t('dmbCues') + '</div><p class="hint">' + t(e.descKey) + '</p>' : '') +
-    '<div class="dmb-sec">' + t('dmbFaults') + '</div><div class="dmb-row">' + faults + '</div>' +
+    '<div class="dmb-sec">' + t('dmbErrTitle') + '</div><div class="dmb-errs">' + faults + '</div>' +
     (real ? '<p class="hint tiny dmb-credit">' + CDC_CREDIT + '</p>' : '') +
     '<p class="hint tiny">' + t('dmbRecHint') + '</p>' +
     '<div class="dmb-sec">' + t('dmbClips') + '</div><div id="dmb-clips" class="dmb-clips"></div>';
-  el.querySelectorAll('[data-az]').forEach((b) => b.addEventListener('click', () => { dmbState.az = Number(b.dataset.az); renderDemoBody(); }));
   const p = $('dmb-play'); if (p) p.addEventListener('click', dmbPlayToggle);
   const rc = $('dmb-rec'); if (rc) rc.addEventListener('click', recToggle);
   renderClips($('dmb-clips'));
@@ -4918,7 +4911,7 @@ function renderDemos() {
   if (!el) return;
   const keys = guideStepKeys();
   el.innerHTML = keys.map((k) => '<div class="dmb-cell">' +
-    '<div class="dmb-cell-fig">' + (realDemo(k) ? '<img class="dmb-thumb" src="' + realDemo(k) + '?v=236" alt="">' : demoFigure(k, { params: demoParams(k, 0.5), azimuth: 35, w: 150, h: 160 })) + '</div>' +
+    '<div class="dmb-cell-fig">' + (realDemo(k) ? '<img class="dmb-thumb" src="' + realDemo(k) + '" alt="">' : '<span class="dmb-cell-none">' + t('dmbNoReal') + '</span>') + '</div>' +
     '<div class="dmb-fr-cap">' + dmbName(k) + '</div>' +
     '<button class="btn small" data-dmb="' + k + '">' + t('dmbLook') + '</button></div>').join('');
   el.querySelectorAll('[data-dmb]').forEach((b) => b.addEventListener('click', () => openDemo(b.dataset.dmb)));
@@ -4944,7 +4937,7 @@ function renderTrainDemo() {
   const e = EXERCISES[id];
   const has = hasDemo(id);
   el.innerHTML = '<h3>' + t('dmbTrainTitle') + ' · ' + dmbName(id) + '</h3>' +
-    (has ? '<div class="dmb-train-fig">' + demoFigure(id, { params: demoParams(id, 0.5), azimuth: dmbState.az, w: 200, h: 215 }) + '</div>' +
+    (realDemo(id) ? '<div class="dmb-train-fig"><img class="dmb-thumb" src="' + realDemo(id) + '" alt=""><div class="dmb-real-cap">' + t('dmbReal') + '</div></div>' +
       '<div class="dmb-angles">' + dmbAngleChips(id) + '</div>'
       : '<p class="hint">' + t('dmbNoDemo') + '</p>') +
     (e && e.stdKey ? '<p class="hint">' + t(e.stdKey) + '</p>' : '') +

@@ -19,6 +19,10 @@ svg .dmb-fault.dmb-b, svg .dmb-fault.dmb-h { fill: var(--red); }
 .dmb-arc2 { stroke: var(--dim); stroke-width: 2; fill: none; }
 .dmb-arc-t { font-size: 12px; fill: var(--yellow); text-anchor: middle; font-weight: 600; }
 .dmb-cap { font-size: 12px; fill: var(--dim); text-anchor: middle; }
+.dmb-errs { display: flex; flex-direction: column; gap: 4px; }
+.dmb-err { font-size: 13px; color: var(--red); font-weight: 600; }
+.dmb-cell-none { font-size: 11px; color: var(--dim); line-height: 1.3; display: block; padding: 0 4px; }
+.dmb-sided { flex: 1; }
 .dmb-real { margin-top: 6px; text-align: center; }
 .dmb-real-img { width: 100%; max-width: 300px; border-radius: var(--radius); background: #fff; }
 .dmb-real-cap { font-size: 12px; color: var(--teal); font-weight: 600; margin-top: 2px; }
