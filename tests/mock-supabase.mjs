@@ -42,6 +42,14 @@ const server = http.createServer((req, res) => {
         const b = await body();
         store.set(b.user_id, b.payload);
         send(201, []);
+      } else if (req.method === 'POST' && u.pathname === '/rest/v1/rpc/delete_my_account') {
+        // v2.36.0：与 supabase/schema.sql 里的 delete_my_account() 对齐 —— 注销账号要连云端数据一起删
+        const auth = String(req.headers['authorization'] || '');
+        const uid = auth.startsWith('Bearer tok-') ? auth.slice('Bearer tok-'.length) : '';
+        if (!uid) { send(401, { msg: 'not authenticated' }); return; }
+        store.delete(uid);
+        for (const [em, v] of [...users.entries()]) { if (v.id === uid) users.delete(em); }
+        send(204, null);
       } else {
         send(404, { msg: 'not found: ' + req.method + ' ' + u.pathname });
       }

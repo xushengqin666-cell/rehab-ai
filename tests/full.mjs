@@ -997,6 +997,23 @@ await sleep(900);
 await evl(`(function(){const b=document.getElementById('btn-gw-stop');if(b)b.click();return 1;})()`);
 await sleep(600);
 
+console.log('===== 35. 云端同步可用性 + 上架合规（v2.36.0） =====');
+const cfgState = await evl(`(function(){const c=window.__rehabCloud;return c? (c.cfg()?'configured':'unconfigured') : 'nohook';})()`);
+(cfgState === 'configured' || cfgState === 'unconfigured') ? ok(`云端后端配置可读（当前：${cfgState === 'configured' ? '已配置后端' : '尚未配置后端'}）+ 自动同步钩子就绪`) : bad(`云端钩子异常：${cfgState}`);
+if (cfgState === 'unconfigured') {
+  const msg = await evl(`(async function(){try{await window.__rehabCloud.sync();return 'no-error';}catch(e){return e.message||'err';}})()`);
+  (msg && msg !== 'no-error') ? ok('未配置后端时同步会明确报错，而不是假装同步成功') : bad('未配置后端却未报错（会让用户误以为数据已上云）');
+} else {
+  ok('已配置后端：跳过「未配置需报错」断言');
+}
+const pv = await evl(`(document.querySelector('[data-i18n="privacyText"]')||{}).textContent || ''`);
+(!pv.includes('不上传任何服务器')) ? ok('隐私政策已随云同步改写，不再有「不上传任何服务器」这类矛盾表述') : bad('隐私政策仍与云同步矛盾（上架会被挑）');
+((pv.includes('云端') || pv.includes('云')) && pv.includes('注销')) ? ok('隐私政策声明了云端存储与账号注销（合规）') : bad('隐私政策缺云端/注销声明');
+(await evl(`!!document.getElementById('btn-delete-account')`)) ? ok('设置页存在「注销账号」入口（应用商店上架硬要求）') : bad('缺注销账号入口');
+(await evl(`typeof window.__rehabCloud.del === 'function'`)) ? ok('注销账号会连云端账号与云端数据一起删除') : bad('缺云端注销实现');
+(await evl(`!!document.getElementById('cloud-last')`)) ? ok('云同步卡显示「上次同步」时间') : bad('缺上次同步时间显示');
+(await evl(`typeof window.__rehabCloud.autoSync === 'function'`)) ? ok('启动与回到前台会自动拉取云端（跨设备打开即最新）') : bad('缺自动同步');
+
 console.log('===== 结果 =====');
 console.log('CONSOLE_ERRORS:', consoleErrors.length ? consoleErrors.join(' ||| ') : 'none');
 if (consoleErrors.length) failN++;

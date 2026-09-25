@@ -668,6 +668,7 @@
         <div class="account-avatar" id="account-avatar">?</div>
         <div style="flex:1;min-width:0">
           <div class="account-email" id="cloud-status" data-i18n="cloudNotLoggedIn">未登录</div>
+      <div class="hint tiny" id="cloud-last"></div>
           <div class="hint" style="margin-top:2px" data-i18n="accountHint">登录后所有数据自动同步到云端，换设备登录即可恢复。</div>
         </div>
       </div>
@@ -792,7 +793,7 @@
 
     <div class="card">
       <h3 data-i18n="privacyTitle">隐私政策</h3>
-      <p class="about" data-i18n="privacyText">1. 全部数据默认只保存在你自己的浏览器（localStorage），不上传任何服务器。<br>2. 摄像头画面只在你的设备上由 AI 本地处理，视频绝不上传。<br>3. 二维码同步仅在你主动操作时，于两台设备之间直接传输，不经过任何服务器。<br>4. 云同步仅在你主动配置并登录 Supabase 账号后启用，数据存入你自己的云端项目。<br>5. 随时可在设置页「清除全部数据」。</p>
+      <p class="about" data-i18n="privacyText">1. 数据默认只保存在你自己的设备（localStorage）。登录账号后，数据会经加密传输保存到你账号的云端存储，用于多设备同步；不登录则完全不上传。<br>2. 摄像头画面只在你的设备上由 AI 本地处理，视频绝不上传。<br>3. 二维码同步仅在你主动操作时，于两台设备之间直接传输，不经过任何服务器。<br>4. 云端数据仅用于同步与恢复，不做个人画像、不用于广告，也不提供给第三方。<br>5. 随时可在设置页「退出登录」停止同步，或用「注销账号」永久删除账号及其全部云端数据。</p>
     </div>
 
     <div class="card">

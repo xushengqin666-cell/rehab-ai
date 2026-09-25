@@ -94,7 +94,7 @@ function migrateDeviceData(email) {
 }
 const fmtDate = (ts) => new Date(ts).toLocaleString(locale(), { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-const APP_VERSION = 'v2.35.0';
+const APP_VERSION = 'v2.36.0';
 const exName = (e) => (e.custom ? e.name : t(e.nameKey));
 const exDesc = (e) => (e.custom ? e.desc : t(e.descKey));
 const depthTxt = (d) => t('depth' + (d ? d.charAt(0).toUpperCase() + d.slice(1) : 'Ok')) || d;
@@ -1504,7 +1504,7 @@ document.querySelectorAll('.bottom-nav button').forEach((btn) => {
   btn.addEventListener('click', () => switchTab(btn.dataset.tab));
 });
 // 切到后台自动暂停分析，回来自动恢复（省电）
-document.addEventListener('visibilitychange', () => { if (!document.hidden) kickLoop(); });
+document.addEventListener('visibilitychange', () => { if (!document.hidden) { kickLoop(); cloudAutoSync(); } });
 
 /* ============ 端手互通：二维码同步（无服务器 · 数据本地压缩加密传输） ============ */
 const SYNC_PREFIX = 'RAS|';
@@ -2076,9 +2076,19 @@ async function cloudSync() {
     body: JSON.stringify({ id: s.uid, user_id: s.uid, payload: merged, updated_at: new Date().toISOString() }),
     headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
   }, cfg);
+  LS.set('rehab_cloud_last', Date.now());   // v2.36.0：记录上次同步时间，用户看得见
   $('cloud-status').textContent = t('cloudOk');
+  renderCloud();
   renderRecords(); renderAssessments(); renderAppts(); renderCustomList(); renderExChips(); renderProfile();
   renderTodayPlan(); renderPlanList(); renderAchievements(); renderCollectCount(); renderGoal();
+}
+// 注销账号：连云端一起删干净（应用商店上架硬要求），删不掉就不算注销成功
+async function cloudDeleteAccount() {
+  const cfg = cloudCfg();
+  const s = cloudSession();
+  if (!cfg || !s) throw new Error(t('cloudNotLoggedIn'));
+  await cloudReq('/rest/v1/rpc/delete_my_account', { method: 'POST', body: JSON.stringify({}) }, cfg);
+  LS.set('rehab_cloud_session', null);
 }
 /* ============ 首次启动引导 + 版本更新检测 ============ */
 const OB_STEPS = [
@@ -2473,7 +2483,10 @@ function renderCloud() {
   $('btn-cloud-sync').classList.toggle('hidden', !s);
   $('btn-cloud-logout').classList.toggle('hidden', !(s || localUser));
   $('btn-open-login').classList.toggle('hidden', !!(s || localUser));
-  $('btn-delete-account').classList.toggle('hidden', !localUser);
+  $('btn-delete-account').classList.toggle('hidden', !(s || localUser));   // v2.36.0：云端账号也能注销
+  const last = LS.get('rehab_cloud_last', 0);
+  const lastEl = $('cloud-last');
+  if (lastEl) lastEl.textContent = last ? t('cloudLast', { t: new Date(last).toLocaleString(locale(), { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) }) : '';
   // 配置入口默认对用户隐藏：密钥写死后用户永远看不到；
   // 开发模式（?cfg=1）或云端未配置时由下方逻辑控制，普通用户界面保持纯净
 }
@@ -2523,6 +2536,15 @@ function scheduleCloudSync() {
   clearTimeout(cloudSyncTimer);
   cloudSyncTimer = setTimeout(() => { cloudSync().catch(() => {}); }, 4000);
 }
+// v2.36.0：启动与回到前台各拉一次，跨设备才会「打开就是最新的」，不用用户手动点
+let cloudAutoAt = 0;
+function cloudAutoSync() {
+  if (!cloudCfg() || !cloudSession()) return;
+  if (Date.now() - cloudAutoAt < 60000) return;   // 一分钟内不重复拉，省流量
+  cloudAutoAt = Date.now();
+  cloudSync().catch(() => {});
+}
+setTimeout(cloudAutoSync, 2500);
 $('btn-open-login').addEventListener('click', () => showAuth(false));
 $('btn-config-server').addEventListener('click', () => showAuth(true));
 $('btn-auth-cfg-toggle').addEventListener('click', () => {
@@ -2560,11 +2582,28 @@ $('btn-cloud-logout').addEventListener('click', () => {
   renderAuth();
   toast(t('toastLogout'));
 });
-$('btn-delete-account').addEventListener('click', () => {
+$('btn-delete-account').addEventListener('click', async () => {
+  const s = cloudSession();
   const u = accountCurrent();
-  if (!u) return;
-  if (!confirm(t('acctDeleteConfirm', { e: u }))) return;
-  accountDelete();
+  const who = (s && s.email) || u;
+  if (!who) return;
+  if (!confirm(t('acctDeleteConfirm', { e: who }))) return;
+  if (s) {
+    if (!confirm(t('cloudDeleteConfirm2'))) return;
+    try {
+      await cloudDeleteAccount();
+      toast(t('acctDeleted'));
+    } catch (e) {
+      toast(t('cloudDeleteFailed', { msg: e.message }));
+      return;   // 云端没删掉就不报销号，避免用户以为删了其实还在
+    }
+  }
+  if (u) accountDelete();
+  localStorage.removeItem('rehab_cloud_session');
+  invalidateCustom();
+  renderCloud(); renderAuth();
+  renderRecords(); renderAssessments(); renderAppts(); renderCustomList(); renderExChips();
+  renderProfile(); renderTodayPlan(); renderPlanList(); renderAchievements(); renderCollectCount(); renderGoal();
 });
 
 /* ============ 语音播报（系统 TTS，离线可用） ============ */
@@ -4887,6 +4926,10 @@ try {
     DEMOS: DEMOS, balanceOf: balanceOf, poseOf: poseOf, demoPose: demoPose,
     clipPut: clipPut, clipAll: clipAll, clipDel: clipDel, idb: idbAvailable };
 } catch (e) { try { console.error('demo hook init failed:', e && e.message); } catch (x) { /* ignore */ } }   // 不再静默：钩子坏掉必须看得见
+// 云端验收钩子
+try {
+  window.__rehabCloud = { cfg: cloudCfg, session: cloudSession, sync: cloudSync, del: cloudDeleteAccount, autoSync: cloudAutoSync };
+} catch (e) { try { console.error('cloud hook init failed:', e && e.message); } catch (x) { /* ignore */ } }
 
 /* ---- 训练页：当前动作的标准示范 + 录制 ---- */
 function renderTrainDemo() {
