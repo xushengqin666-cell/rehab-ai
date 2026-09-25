@@ -957,6 +957,9 @@ await sleep(500);
 (await evl(`(function(){const im=document.querySelector('#dmb-body .dmb-real-img');return !!im && im.complete && im.naturalWidth>20;})()`)) ? ok('弹窗顶部显示真人标准示范动图') : bad('弹窗缺真人示范图');
 (await evl(`document.querySelector('#dmb-body').textContent.includes('公有领域')`)) ? ok('真人示范标注了来源与公有领域许可') : bad('缺来源/许可标注');
 (await evl(`document.querySelectorAll('#dmb-body .dmb-angles .dmb-chip').length >= 2`)) ? ok('弹窗标出应用真实判定阈值（≥2 个）') : bad('弹窗缺阈值标注');
+// 34b1 弹窗结构必须闭合正确：错误清单/录像区不得被套进 flex 布局容器里（曾漏一个闭合标签导致弹窗挤成一团）
+(await evl(`document.querySelectorAll('#dmb-body .dmb-top .dmb-sec').length === 0`)) ? ok('示范弹窗结构闭合正确（后续区块没被挤进布局容器）') : bad('弹窗结构错乱：区块被套进 .dmb-top');
+(await evl(`Array.from(document.querySelectorAll('#dmb-body img, #gw-demos img')).every((im) => im.getAttribute('src') && im.getAttribute('src').length > 3)`)) ? ok('没有空 src 的破图') : bad('存在空 src 的破图');
 // 34b2 弹窗内不得出现合成人形，常见错误改为文字自查
 await sleep(200);
 (await evl(`document.querySelectorAll('#dmb-body .dmb-body, #dmb-body .dmb-fr').length === 0`)) ? ok('示范弹窗内已无合成人形') : bad('弹窗里仍有合成人形');

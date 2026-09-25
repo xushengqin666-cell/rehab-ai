@@ -94,7 +94,7 @@ function migrateDeviceData(email) {
 }
 const fmtDate = (ts) => new Date(ts).toLocaleString(locale(), { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-const APP_VERSION = 'v2.38.0';
+const APP_VERSION = 'v2.38.1';
 const exName = (e) => (e.custom ? e.name : t(e.nameKey));
 const exDesc = (e) => (e.custom ? e.desc : t(e.descKey));
 const depthTxt = (d) => t('depth' + (d ? d.charAt(0).toUpperCase() + d.slice(1) : 'Ok')) || d;
@@ -4466,7 +4466,7 @@ function renderGuide() {
     <div class="gw-set-line">${t(prog.name)} · ${t('gwLevel')}：${t('gwLv' + gwState.level)}</div>
     <div class="gw-dots">${dots}</div>
     <div class="gw-step-name">${icon(step.icon)} ${t(step.name)}<span class="gw-set-line" style="display:block">${t('gwStepOf', { s: gwState.stepIdx + 1, S: prog.steps.length })}</span></div>
-    ${hasDemo(step.icon) ? '<div class="gw-stepdemo" id="gw-step-demo"><img class="dmb-thumb" src="' + realDemo(step.icon) + '" alt=""><button class="btn small" id="gw-step-look">' + t('dmbLook') + '</button></div>' : ''}
+    ${realDemo(step.icon) ? '<div class="gw-stepdemo" id="gw-step-demo"><img class="dmb-thumb" src="' + realDemo(step.icon) + '" alt=""><button class="btn small" id="gw-step-look">' + t('dmbLook') + '</button></div>' : ''}
     <div class="gw-big">${big}</div>
     <div class="gw-set-line">${sub}</div>
     <div class="gw-bar"><div class="gw-bar-fill" style="width:${barPct}%"></div></div>
@@ -4827,7 +4827,7 @@ function renderDemoBody() {
         (e && e.stdKey ? '<p class="hint">' + t(e.stdKey) + '</p>' : '') +
         '<div class="dmb-angles">' + dmbAngleChips(key) + '</div>' +
         '<div class="controls"><button class="btn small" id="dmb-rec">' + (recState.rec ? t('dmbRecStop') : t('dmbRec')) + '</button></div>' +
-      '</div>' +
+      '</div></div>' +
     (frames ? '<div class="dmb-sec">' + t('dmbFrames') + '</div><div class="dmb-row">' + frames + '</div>' : '') +
     (e && e.descKey ? '<div class="dmb-sec">' + t('dmbCues') + '</div><p class="hint">' + t(e.descKey) + '</p>' : '') +
     '<div class="dmb-sec">' + t('dmbErrTitle') + '</div><div class="dmb-errs">' + faults + '</div>' +
