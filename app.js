@@ -8,7 +8,7 @@ import {
   verticalAngle,
 } from './analysis.js';
 import { healthCheck, buildFeedbackReport, logAiError, aiErrors, aiStats, aiStatsGet, aiFeedbackAdd, aiSessionComment, generatePlan } from './ai.js';
-import { DEMOS, hasDemo, demoPose, demoParams, demoFigure, poseOf, demoAngles, balanceOf, clipPut, clipAll, clipDel, clipGet, clipSetForEx, clipForEx, idbAvailable } from './demo.js';
+import { DEMOS, hasDemo, demoPose, demoParams, demoFigure, poseOf, demoAngles, balanceOf, realDemo, REAL_EXTRA, realExtraSvg, CDC_CREDIT, clipPut, clipAll, clipDel, clipGet, clipSetForEx, clipForEx, idbAvailable } from './demo.js';
 
 /* ============ 基础工具 ============ */
 const $ = (id) => document.getElementById(id);
@@ -94,7 +94,7 @@ function migrateDeviceData(email) {
 }
 const fmtDate = (ts) => new Date(ts).toLocaleString(locale(), { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-const APP_VERSION = 'v2.36.0';
+const APP_VERSION = 'v2.37.0';
 const exName = (e) => (e.custom ? e.name : t(e.nameKey));
 const exDesc = (e) => (e.custom ? e.desc : t(e.descKey));
 const depthTxt = (d) => t('depth' + (d ? d.charAt(0).toUpperCase() + d.slice(1) : 'Ok')) || d;
@@ -4821,7 +4821,9 @@ function renderDemoBody() {
     demoFigure(key, { params: ft.p, azimuth: az, w: 150, h: 168, fault: true }) + '</div><div class="dmb-fr-cap bad">' + t(ft.key) + '</div></div>').join('') +
     (d.front ? '<div class="dmb-fr"><div class="dmb-fr-fig">' +
       demoFigure(key, { fault: 'front', azimuth: 90, w: 150, h: 168 }) + '</div><div class="dmb-fr-cap bad">' + t(d.front.key) + '</div></div>' : '');
+  const real = realDemo(key);
   el.innerHTML =
+    (real ? '<div class="dmb-real"><img class="dmb-real-img" src="' + real + '?v=236" alt="真人标准示范"><div class="dmb-real-cap">真人标准示范</div></div>' : '') +
     '<div class="dmb-top"><div class="dmb-big" id="dmb-big">' +
       demoFigure(key, { params: demoParams(key, 0.5), azimuth: az, w: 230, h: 250, ghost: true }) + '</div>' +
       '<div class="dmb-side">' +
@@ -4835,6 +4837,7 @@ function renderDemoBody() {
     '<div class="dmb-sec">' + t('dmbFrames') + '</div><div class="dmb-row">' + frames + '</div>' +
     (e && e.descKey ? '<div class="dmb-sec">' + t('dmbCues') + '</div><p class="hint">' + t(e.descKey) + '</p>' : '') +
     '<div class="dmb-sec">' + t('dmbFaults') + '</div><div class="dmb-row">' + faults + '</div>' +
+    (real ? '<p class="hint tiny dmb-credit">' + CDC_CREDIT + '</p>' : '') +
     '<p class="hint tiny">' + t('dmbRecHint') + '</p>' +
     '<div class="dmb-sec">' + t('dmbClips') + '</div><div id="dmb-clips" class="dmb-clips"></div>';
   el.querySelectorAll('[data-az]').forEach((b) => b.addEventListener('click', () => { dmbState.az = Number(b.dataset.az); renderDemoBody(); }));
@@ -4915,7 +4918,7 @@ function renderDemos() {
   if (!el) return;
   const keys = guideStepKeys();
   el.innerHTML = keys.map((k) => '<div class="dmb-cell">' +
-    '<div class="dmb-cell-fig">' + demoFigure(k, { params: demoParams(k, 0.5), azimuth: 35, w: 150, h: 160 }) + '</div>' +
+    '<div class="dmb-cell-fig">' + (realDemo(k) ? '<img class="dmb-thumb" src="' + realDemo(k) + '?v=236" alt="">' : demoFigure(k, { params: demoParams(k, 0.5), azimuth: 35, w: 150, h: 160 })) + '</div>' +
     '<div class="dmb-fr-cap">' + dmbName(k) + '</div>' +
     '<button class="btn small" data-dmb="' + k + '">' + t('dmbLook') + '</button></div>').join('');
   el.querySelectorAll('[data-dmb]').forEach((b) => b.addEventListener('click', () => openDemo(b.dataset.dmb)));

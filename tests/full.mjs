@@ -939,18 +939,23 @@ await sleep(700);
 // 34a 跟练页示范墙
 const dmbCells = await evl(`document.querySelectorAll('#gw-demos .dmb-cell').length`);
 (dmbCells >= 8) ? ok(`跟练页标准示范墙：${dmbCells} 个动作都有图解`) : bad(`示范墙动作数不足：${dmbCells}`);
-(await evl(`document.querySelectorAll('#gw-demos .dmb-cell svg').length === document.querySelectorAll('#gw-demos .dmb-cell').length`)) ? ok('每个动作都渲染出火柴人示范图') : bad('存在空白示范图');
+(await evl(`Array.from(document.querySelectorAll('#gw-demos .dmb-cell')).every((c) => c.querySelector('svg') || c.querySelector('img'))`)) ? ok('每个动作都有示范图（真人动图或三维图）') : bad('存在空白示范图');
 (await evl(`document.querySelectorAll('#gw-demos .dmb-cell .dmb-fr-cap').length >= 8`)) ? ok('示范图带动作名称') : bad('示范图缺名称');
 // 34a2 示范图必须是三维人体（带粗细的胶囊肢体，靠深度排序表现体积），不是细线
-const sil = await evl(`(function(){const c=document.querySelector('#gw-demos .dmb-cell');if(!c)return 'none';const s=c.querySelector('svg');const b=s.querySelectorAll('.dmb-body');let thin=0;b.forEach(function(e){if(parseFloat(e.getAttribute('stroke-width')||'0')<3)thin++;});return b.length+':'+thin+':'+(s.querySelectorAll('rect,circle').length>=1);})()`);
+const sil = await evl(`(function(){const cells=Array.from(document.querySelectorAll('#gw-demos .dmb-cell'));for(const c of cells){const s=c.querySelector('svg');if(!s)continue;const b=s.querySelectorAll('.dmb-body');let thin=0;b.forEach(function(e){if(parseFloat(e.getAttribute('stroke-width')||'0')<3)thin++;});return b.length+':'+thin+':'+(s.querySelectorAll('rect,circle').length>=1);}return 'none';})()`);
 (/^(1[0-9]|[2-9][0-9]):0:true$/.test(String(sil))) ? ok('示范图是三维人体（≥10 段带粗细的胶囊肢体 + 头，非细线）') : bad(`三维人体异常：${sil}`);
 // 34a3 重心必须落在支撑面内（物理上站得住，不会往后倒）
 const bal = await evl(`(function(){const s=window.__rehabDemo;if(!s||!s.balanceOf)return 'nohook:'+(typeof window.__rehabDemo);const bad=[];Object.keys(s.DEMOS).forEach(function(k){const d=s.DEMOS[k];if(d.view!=='side')return;d.frames.forEach(function(f,i){const b=s.balanceOf(k,f.p);if(b&&!b.wall&&b.margin<=1)bad.push(k+'#'+i+'('+b.margin.toFixed(1)+')');});});return bad.join(',');})()`);
 (bal === '') ? ok('所有站姿动作每个关键帧的重心都落在支撑面内（含深蹲到位）') : bad(`重心出界：${bal}`);
+// 34a4 真人标准示范：动图必须真的加载出来（不是破图），且为公有领域来源
+const realOk = await evl(`(async function(){const imgs=Array.from(document.querySelectorAll('#gw-demos .dmb-cell img'));if(!imgs.length)return 'no-img';let bad=0;for(const im of imgs){if(!im.complete||im.naturalWidth<20)bad++;}return imgs.length+':'+bad;})()`);
+(/^[1-9][0-9]*:0$/.test(String(realOk))) ? ok(`真人示范动图已加载（${String(realOk).split(':')[0]} 张，无破图）`) : bad(`真人动图异常：${realOk}`);
 // 34b 打开示范弹窗
 await evl(`document.querySelector('#gw-demos [data-dmb="squat"]').click()`);
 await sleep(500);
 (await evl(`!document.getElementById('dmb-modal').classList.contains('hidden')`)) ? ok('点「看示范」打开示范弹窗') : bad('示范弹窗没打开');
+(await evl(`(function(){const im=document.querySelector('#dmb-body .dmb-real-img');return !!im && im.complete && im.naturalWidth>20;})()`)) ? ok('弹窗顶部显示真人标准示范动图') : bad('弹窗缺真人示范图');
+(await evl(`document.querySelector('#dmb-body').textContent.includes('公有领域')`)) ? ok('真人示范标注了来源与公有领域许可') : bad('缺来源/许可标注');
 (await evl(`document.querySelectorAll('#dmb-body .dmb-fr').length >= 3`)) ? ok('弹窗含关键帧与错误对照（≥3 格）') : bad('弹窗内容缺失');
 (await evl(`document.querySelectorAll('#dmb-body .dmb-fr-cap.bad').length >= 2`)) ? ok('常见错误单独标红列出（≥2 条）') : bad('错误对照缺失');
 // 34b2 可切换观察角度（多个角度看不清楚的地方）

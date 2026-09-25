@@ -272,6 +272,27 @@ export function figureSvg(key, o) {
   return s;
 }
 
+/* ---------- 真人示范动图（CDC《Growing Stronger》老年力量训练教材·美国政府作品·公有领域） ----------
+   为什么用它：这是康复受众对口的官方标准示范、真人在做、动图能看清全过程，且无版权限制；
+   三维人体图继续保留，用于标注应用真正使用的角度阈值与常见错误对照。 */
+export const REAL_DEMO = {
+  squat: 'demo-media/squat.gif',
+  lunge: 'demo-media/lunge.gif',
+  stepup: 'demo-media/stepup.gif',
+  shoulderraise: 'demo-media/shoulderraise.gif',
+};
+// 其余真人示范（可挂到自定义动作或“更多动作”里）
+export const REAL_EXTRA = [
+  ['wallpushup', '墙俯卧撑'], ['biceps', '臂弯举'], ['chestpress', '胸前推'],
+  ['kneeext', '坐姿伸膝'], ['backext', '俯卧背伸'], ['abdominal', '卷腹'],
+  ['toestand', '提踵'], ['hipabduction', '髋外展'], ['kneecurl', '俯卧屈膝'],
+  ['grip', '握力'], ['fingermarch', '手指爬墙'],
+  ['backstretch', '背部拉伸'], ['cheststretch', '胸部拉伸'], ['hamstringstretch', '腘绳肌拉伸'], ['quadstretch', '股四头肌拉伸'],
+];
+export const realDemo = (key) => REAL_DEMO[key] || '';
+export const realExtraSvg = (file) => 'demo-media/' + file + '.gif';
+export const CDC_CREDIT = '示范动图：CDC《Growing Stronger》老年人力量训练教材（美国政府作品 · 公有领域）';
+
 /* ---------- 三维骨架 + 任意方位角投影（多个角度观察） ---------- */
 const LAT = { hip: 11, knee: 12, ankle: 12, shoulder: 17 };
 function v3(x, y, z) { return [x, y, z]; }

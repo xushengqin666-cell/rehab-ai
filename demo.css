@@ -19,6 +19,11 @@ svg .dmb-fault.dmb-b, svg .dmb-fault.dmb-h { fill: var(--red); }
 .dmb-arc2 { stroke: var(--dim); stroke-width: 2; fill: none; }
 .dmb-arc-t { font-size: 12px; fill: var(--yellow); text-anchor: middle; font-weight: 600; }
 .dmb-cap { font-size: 12px; fill: var(--dim); text-anchor: middle; }
+.dmb-real { margin-top: 6px; text-align: center; }
+.dmb-real-img { width: 100%; max-width: 300px; border-radius: var(--radius); background: #fff; }
+.dmb-real-cap { font-size: 12px; color: var(--teal); font-weight: 600; margin-top: 2px; }
+.dmb-thumb { max-width: 100%; max-height: 108px; border-radius: 10px; background: #fff; }
+.dmb-credit { color: var(--dim); }
 .dmb-az { display: flex; gap: 6px; flex-wrap: wrap; margin: 6px 0; align-items: center; }
 .dmb-az button { font-size: 12px; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--card); color: var(--dim); }
 .dmb-az button.on { background: var(--teal); border-color: var(--teal); color: #fff; }

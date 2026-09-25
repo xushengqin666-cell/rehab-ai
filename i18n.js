@@ -85,7 +85,7 @@ const DICT = {
     // v2.33.0 三块式架构
     navRecheck: '复评',
     cloudLast: '上次同步：{t}', cloudDeleteConfirm2: '云端账号与所有云端数据也会一并永久删除，无法恢复。确定继续？', cloudDeleteFailed: '云端注销失败（{msg}），为免你误以为已删除，本次不执行注销',
-  dmbAzSide: '侧面', dmbAz35: '斜前方', dmbAzFront: '正面', dmbAzTitle: '视角',
+  dmbReal: '真人标准示范（CDC 老年力量训练教材·公有领域）', dmbAzSide: '侧面', dmbAz35: '斜前方', dmbAzFront: '正面', dmbAzTitle: '视角',
   dmbTitle: '标准动作示范', dmbClose: '关闭', dmbLook: '看示范', dmbPlay: '播放示范', dmbPause: '暂停',
   dmbFrames: '关键帧图解', dmbCues: '动作要点', dmbFaults: '常见错误（对照着看）',
   dmbGuideDemos: '标准动作示范（跟练课动作）',
@@ -830,7 +830,7 @@ const DICT = {
     // v2.33.0 Three-block architecture
     navRecheck: 'Re-test',
     cloudLast: 'Last synced: {t}', cloudDeleteConfirm2: 'Your cloud account and all cloud data will be permanently deleted. Continue?', cloudDeleteFailed: 'Cloud deletion failed ({msg}) - aborting so you are not misled',
-  dmbAzSide: 'Side', dmbAz35: 'Three-quarter', dmbAzFront: 'Front', dmbAzTitle: 'View',
+  dmbReal: 'Real-person demonstration (CDC strength training for older adults, public domain)', dmbAzSide: 'Side', dmbAz35: 'Three-quarter', dmbAzFront: 'Front', dmbAzTitle: 'View',
   dmbTitle: 'Standard form demo', dmbClose: 'Close', dmbLook: 'Show form', dmbPlay: 'Play', dmbPause: 'Pause',
   dmbFrames: 'Key frames', dmbCues: 'Form cues', dmbFaults: 'Common mistakes (compare)',
   dmbGuideDemos: 'Standard form demos (class moves)',
