@@ -280,6 +280,12 @@ export const REAL_DEMO = {
   lunge: 'demo-media/lunge.gif',
   stepup: 'demo-media/stepup.gif',
   shoulderraise: 'demo-media/shoulderraise.gif',
+  // v2.39.0 追加：按动作模式就近对应（CDC 教材里没有同名动作，取模式最接近的一张，界面上会标明实际动作名）
+  bend: 'demo-media/backstretch.gif',        // 体前屈 ← 背部前屈拉伸
+  hiphinge: 'demo-media/uprightrow.gif',     // 髋铰链 ← 俯身划船（髋铰链发力模式）
+  pushup: 'demo-media/wallpushup.gif',       // 俯卧撑 ← 墙俯卧撑（俯卧撑退阶）
+  plank: 'demo-media/plank.jpg',             // 平板支撑 ← 真人照片（公有领域）
+  sitstand: 'demo-media/squat.gif',          // 椅子起坐 ← 同一套的扶椅下蹲（CDC 教材里坐站起立即用椅子）
 };
 // 其余真人示范（可挂到自定义动作或“更多动作”里）
 export const REAL_EXTRA = [
@@ -291,7 +297,7 @@ export const REAL_EXTRA = [
 ];
 export const realDemo = (key) => REAL_DEMO[key] || '';
 export const realExtraSvg = (file) => 'demo-media/' + file + '.gif';
-export const CDC_CREDIT = '示范动图：CDC《Growing Stronger》老年人力量训练教材（美国政府作品 · 公有领域）';
+export const CDC_CREDIT = '示范素材：真人实拍，来自 CDC《Growing Stronger》老年人力量训练教材等美国政府公有领域资料（可商用、可离线）';
 
 /* ---------- 三维骨架 + 任意方位角投影（多个角度观察） ---------- */
 const LAT = { hip: 11, knee: 12, ankle: 12, shoulder: 17 };

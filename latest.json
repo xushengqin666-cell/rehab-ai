@@ -1,7 +1,7 @@
 {
-  "version": "2.38.1",
-  "apk": "https://cdn.jsdelivr.net/gh/xushengqin666-cell/rehab-ai@main/downloads/RehabAI-v2.38.1.apk",
+  "version": "2.39.0",
+  "apk": "https://cdn.jsdelivr.net/gh/xushengqin666-cell/rehab-ai@main/downloads/RehabAI-v2.39.0.apk",
   "releaseUrl": "https://github.com/xushengqin666-cell/rehab-ai/releases/latest",
-  "notes": "v2.38.1 修复：上一版去掉合成示范图时漏了一个闭合标签，导致示范弹窗里「常见错误 / 我的录像 / 录制说明」被挤进横向布局容器，出现文字重叠错位的错乱画面；另修复没有真人素材的动作（如平板支撑）仍会渲染一个空图片、显示成怪图的问题。两处都只改出问题的那一点，未扩散改动。新增两条验收护栏：弹窗结构必须闭合正确（后续区块不得被套进布局容器）、页面内不得存在空 src 的破图。验收 256 项全绿。",
+  "notes": "v2.39.0「补齐真人示范」：真人示范从 4 个动作扩到 9 个 —— 新增 前屈拉伸、俯身划船（髋铰链）、墙俯卧撑、平板支撑（真人照片）、椅子起坐。其中「体态改善」这门课的三个动作（平板支撑·举臂·体前屈）现在全部有真人示范，不再出现整门课看不到示范的情况。素材仍取自美国政府公有领域资料（CDC《Growing Stronger》老年人力量训练教材 + 公有领域真人照片），可商用、可离线（已加入离线缓存）。仍缺真人素材的是 墙靠蹲、臀桥 两个动作，界面显示「正在补充」占位——按原则不再用合成图顶替。本次改动为纯新增（只加映射与素材文件，未改旧逻辑）。",
   "important": true
 }

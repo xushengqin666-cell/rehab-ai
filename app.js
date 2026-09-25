@@ -94,7 +94,7 @@ function migrateDeviceData(email) {
 }
 const fmtDate = (ts) => new Date(ts).toLocaleString(locale(), { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-const APP_VERSION = 'v2.38.1';
+const APP_VERSION = 'v2.39.0';
 const exName = (e) => (e.custom ? e.name : t(e.nameKey));
 const exDesc = (e) => (e.custom ? e.desc : t(e.descKey));
 const depthTxt = (d) => t('depth' + (d ? d.charAt(0).toUpperCase() + d.slice(1) : 'Ok')) || d;
