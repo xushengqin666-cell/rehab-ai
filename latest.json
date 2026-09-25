@@ -1,7 +1,7 @@
 {
-  "version": "2.37.0",
-  "apk": "https://cdn.jsdelivr.net/gh/xushengqin666-cell/rehab-ai@main/downloads/RehabAI-v2.37.0.apk",
+  "version": "2.37.1",
+  "apk": "https://cdn.jsdelivr.net/gh/xushengqin666-cell/rehab-ai@main/downloads/RehabAI-v2.37.1.apk",
   "releaseUrl": "https://github.com/xushengqin666-cell/rehab-ai/releases/latest",
-  "notes": "v2.37.0「真人示范动图」：跟练与训练页的标准动作示范改用真人实拍动画（不再只有合成人形）。素材来自美国疾控中心 CDC《Growing Stronger》老年人力量训练教材，美国政府作品·公有领域，可商用、可离线。本次内置 14 张真人示范动图：深蹲、弓步、踏台阶、举臂（过顶推）、墙俯卧撑、臂弯举、坐姿伸膝、俯卧背伸、握力、手指爬墙、以及背部/胸部/腘绳肌/股四头肌拉伸。深蹲、弓步、踏台阶、举臂四个跟练课核心动作，示范墙缩略图与示范弹窗顶部直接显示真人动图；三维人体图继续保留，用于标注应用真正使用的角度阈值与常见错误对照。示范弹窗标注素材来源与公有领域许可；动图已加入离线缓存，断网也能看。验收 253 → 256 项全绿（新增断言：真人动图必须真实加载成功且无破图、弹窗顶部出现真人示范、来源与许可标注）。",
+  "notes": "v2.37.1 紧急修复：v2.37.0 的安装包（APK/AAB）里**漏掉了真人示范动图**——安卓打包脚本只同步根目录文件与 vendor/、wasm/ 两个子目录，新增的 demo-media/ 没被拷进去，装到手机上会显示破图（网页版不受影响）。现已修正打包脚本并强制逐个子目录同步，重出安装包；本版 APK 内已确认含 14 张真人示范动图。功能与 v2.37.0 相同：跟练与训练页改用 CDC 真人实拍示范动图（公有领域），三维人体图保留用于角度阈值与错误对照。",
   "important": true
 }
