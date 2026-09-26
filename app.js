@@ -94,7 +94,7 @@ function migrateDeviceData(email) {
 }
 const fmtDate = (ts) => new Date(ts).toLocaleString(locale(), { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-const APP_VERSION = 'v2.39.0';
+const APP_VERSION = 'v2.40.0';
 const exName = (e) => (e.custom ? e.name : t(e.nameKey));
 const exDesc = (e) => (e.custom ? e.desc : t(e.descKey));
 const depthTxt = (d) => t('depth' + (d ? d.charAt(0).toUpperCase() + d.slice(1) : 'Ok')) || d;
@@ -1484,7 +1484,7 @@ function switchTab(name) {
   try { window.scrollTo(0, 0); } catch { /* ignore */ }
   renderBlockSub();                          // v2.33.0：按所属区块显示子标签栏
   if (name === 'recheck') renderRecheck();   // v2.33.0：进入复评页刷新对比与分析
-  if (name === 'train') { kickLoop(); renderTrainToday(); renderTrainDemo(); }   // 回到训练页立即恢复分析 + 刷新今日任务小条 + 标准示范卡
+  if (name === 'train') { kickLoop(); renderTrainToday(); renderTrainDemo(); renderRealDemoWall(); }   // 回到训练页立即恢复分析 + 刷新今日任务小条 + 标准示范卡 + 全部动作真人示范墙
   if (name === 'guide') renderGuide();   // v2.34.0：进入跟练页刷新示范墙
   if (name !== 'posture') paStop();          // v2.19：离开体态页自动停止体态评估（防摄像头占用）
   if (name !== 'ft') ftStop();               // v2.20：离开功能测试页自动停止（防摄像头占用）
@@ -4928,6 +4928,22 @@ try {
 } catch (e) { try { console.error('cloud hook init failed:', e && e.message); } catch (x) { /* ignore */ } }
 
 /* ---- 训练页：当前动作的标准示范 + 录制 ---- */
+/* v2.40.0 新增：训练页「全部动作 · 真人示范」墙 —— 上面列出的每个动作都能看到真人示范（纯新增，不改旧逻辑） */
+function renderRealDemoWall() {
+  const el = $('real-demo-grid');
+  if (!el) return;
+  const custom = customList();
+  const ids = ['squat', 'lunge', 'pushup', 'sitstand', 'hiphinge', 'stepup', 'shoulderraise', 'standing', 'sitting'].concat(custom.map((e) => e.id));
+  el.innerHTML = ids.map((id) => {
+    const e = EXERCISES[id] || custom.find((x) => x.id === id);
+    const src = realDemo(id);
+    return '<div class="dmb-cell">' +
+      '<div class="dmb-cell-fig">' + (src ? '<img class="dmb-thumb" loading="lazy" decoding="async" src="' + src + '" alt="">' : '<span class="dmb-cell-none">' + t('dmbNoReal') + '</span>') + '</div>' +
+      '<div class="dmb-fr-cap">' + (e ? exName(e) : id) + '</div>' +
+      (hasDemo(id) ? '<button class="btn small" data-dmb="' + id + '">' + t('dmbLook') + '</button>' : '') + '</div>';
+  }).join('');
+  el.querySelectorAll('[data-dmb]').forEach((b) => b.addEventListener('click', () => openDemo(b.dataset.dmb)));
+}
 function renderTrainDemo() {
   const el = $('train-demo');
   if (!el) return;

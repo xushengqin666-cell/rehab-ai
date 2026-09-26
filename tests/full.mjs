@@ -950,6 +950,12 @@ const bal = await evl(`(function(){const s=window.__rehabDemo;if(!s||!s.balanceO
 // 34a4 真人标准示范：动图必须真的加载出来（不是破图），且为公有领域来源
 const realOk = await evl(`(async function(){const imgs=Array.from(document.querySelectorAll('#gw-demos .dmb-cell img'));if(!imgs.length)return 'no-img';let bad=0;for(const im of imgs){if(!im.complete||im.naturalWidth<20)bad++;}return imgs.length+':'+bad;})()`);
 (/^[1-9][0-9]*:0$/.test(String(realOk))) ? ok(`真人示范动图已加载（${String(realOk).split(':')[0]} 张，无破图）`) : bad(`真人动图异常：${realOk}`);
+// 34a5 训练页「全部动作·真人示范」墙：每个列出的动作都必须有真人图（不是只有一个）
+await evl(`document.querySelector('.bottom-nav button[data-tab="train"]').click()`);
+await sleep(900);
+const wall = await evl(`(async function(){const cells=Array.from(document.querySelectorAll('#real-demo-grid .dmb-cell'));if(!cells.length)return 'no-wall';let img=0,bad=0;for(const c of cells){const im=c.querySelector('img');if(im){img++;if(!im.complete||im.naturalWidth<20)bad++;}}return cells.length+':'+img+':'+bad;})()`);
+const wallParts = String(wall).split(':');
+(wallParts.length === 3 && Number(wallParts[0]) >= 9 && Number(wallParts[1]) === Number(wallParts[0]) && Number(wallParts[2]) === 0) ? ok(`训练页全部动作真人示范墙：${wallParts[0]} 个动作全部有真人图且无破图`) : bad(`示范墙异常：${wall}`);
 // 34b 打开示范弹窗
 await evl(`document.querySelector('#gw-demos [data-dmb="squat"]').click()`);
 await sleep(500);

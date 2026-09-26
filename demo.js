@@ -286,6 +286,8 @@ export const REAL_DEMO = {
   pushup: 'demo-media/wallpushup.gif',       // 俯卧撑 ← 墙俯卧撑（俯卧撑退阶）
   plank: 'demo-media/plank.jpg',             // 平板支撑 ← 真人照片（公有领域）
   sitstand: 'demo-media/squat.gif',          // 椅子起坐 ← 同一套的扶椅下蹲（CDC 教材里坐站起立即用椅子）
+  sitting: 'demo-media/kneeext.gif',         // 坐姿 ← 坐姿伸膝（同为人坐姿示范）
+  standing: 'demo-media/toestand.gif',       // 站姿 ← 提踵（同为站立位示范，双脚并拢站立）
 };
 // 其余真人示范（可挂到自定义动作或“更多动作”里）
 export const REAL_EXTRA = [
