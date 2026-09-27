@@ -1,7 +1,7 @@
 {
-  "version": "2.40.0",
-  "apk": "https://cdn.jsdelivr.net/gh/xushengqin666-cell/rehab-ai@main/downloads/RehabAI-v2.40.0.apk",
+  "version": "2.42.0",
+  "apk": "https://cdn.jsdelivr.net/gh/xushengqin666-cell/rehab-ai@main/downloads/RehabAI-v2.42.0.apk",
   "releaseUrl": "https://github.com/xushengqin666-cell/rehab-ai/releases/latest",
-  "notes": "v2.40.0「全部动作都有真人示范」：训练页新增「全部动作 · 真人示范」墙 —— 上面那一排动作（深蹲/弓步/俯卧撑/椅子起坐/髋铰链/踏台阶/举臂/站姿/坐姿）现在**每一个都能看到真人实拍示范**，不再是只显示当前选中的那一个。本轮新增 站姿←提踵、坐姿←坐姿伸膝 两个真人素材，真人示范覆盖达到 11 个动作；跟练课的示范墙同步扩充。图片按需懒加载，不拖慢训练页的摄像头启动。验收 257 项全绿（新增断言：训练页全部动作墙必须每个动作都有真人图且无破图）。仍缺真人素材：墙靠蹲、臀桥（公有领域源里找不到合适的真人示范，显示「正在补充」，坚持不用合成图顶替）。本次为纯新增，未改动旧逻辑。",
+  "notes": "v2.42.0：补齐「臀桥」真人示范（瑜伽桥式 Setu Bandhasana 真人实拍照片，CC BY 3.0 可商用，已压缩到 38KB）；「坐位体前屈」已在 v2.41.0 更正为前屈类真人示范（原来误用了背部后伸/抱膝类的图）。示范墙改为延迟渲染，避免与摄像头启动抢主线程。仍缺「墙靠蹲」的真人素材（公有领域与 CC 图库已逐源排查：Commons 关键词与分类、Openverse、CDC 全套 22 张、NIA 站点 403），显示「正在补充」占位，坚持不用合成图顶替。",
   "important": true
 }
