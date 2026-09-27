@@ -1,5 +1,5 @@
-// 康复AI · 火柴人姿势分析 — 浏览器端 App（手机/电脑通用，数据存本机）
-// 支持：深蹲/弓步蹲/俯卧撑/自定义动作、实时火柴人、数据采集闭环、记录/评估/日程
+﻿// åº·å¤AI Â· ç«æŸ´äººå§¿åŠ¿åˆ†æž â€” æµè§ˆå™¨ç«¯ Appï¼ˆæ‰‹æœº/ç”µè„‘é€šç”¨ï¼Œæ•°æ®å­˜æœ¬æœºï¼‰
+// æ”¯æŒï¼šæ·±è¹²/å¼“æ­¥è¹²/ä¿¯å§æ’‘/è‡ªå®šä¹‰åŠ¨ä½œã€å®žæ—¶ç«æŸ´äººã€æ•°æ®é‡‡é›†é—­çŽ¯ã€è®°å½•/è¯„ä¼°/æ—¥ç¨‹
 import { FilesetResolver, PoseLandmarker } from './vision_bundle.mjs';
 import { t, getLang, locale, initI18n, onLangChanged } from './i18n.js';
 import {
@@ -10,13 +10,13 @@ import {
 import { healthCheck, buildFeedbackReport, logAiError, aiErrors, aiStats, aiStatsGet, aiFeedbackAdd, aiSessionComment, generatePlan } from './ai.js';
 import { DEMOS, hasDemo, demoPose, demoParams, demoFigure, poseOf, demoAngles, balanceOf, realDemo, REAL_EXTRA, realExtraSvg, CDC_CREDIT, clipPut, clipAll, clipDel, clipGet, clipSetForEx, clipForEx, idbAvailable } from './demo.js';
 
-/* ============ 基础工具 ============ */
+/* ============ åŸºç¡€å·¥å…· ============ */
 const $ = (id) => document.getElementById(id);
 const LS = {
   get(k, d) { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } },
   set(k, v) { localStorage.setItem(k, JSON.stringify(v)); },
 };
-// ============ 账号系统：本地账号（PBKDF2 加密）+ 按账号分区存储 ============
+// ============ è´¦å·ç³»ç»Ÿï¼šæœ¬åœ°è´¦å·ï¼ˆPBKDF2 åŠ å¯†ï¼‰+ æŒ‰è´¦å·åˆ†åŒºå­˜å‚¨ ============
 const accountCurrent = () => LS.get('rehab_current_user', null);
 const ukey = (k) => { const u = accountCurrent(); return u ? 'u:' + u + ':' + k : k; };
 const sget = (k, d) => LS.get(ukey(k), d);
@@ -25,7 +25,7 @@ const sdel = (k) => localStorage.removeItem(ukey(k));
 const b64e = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf)));
 const b64d = (s) => new Uint8Array([...atob(s)].map((c) => c.charCodeAt(0)));
 async function pbkdf2(pass, salt) {
-  if (!crypto?.subtle) {   // 非安全环境兜底（简单散列，仅本地体验用）
+  if (!crypto?.subtle) {   // éžå®‰å…¨çŽ¯å¢ƒå…œåº•ï¼ˆç®€å•æ•£åˆ—ï¼Œä»…æœ¬åœ°ä½“éªŒç”¨ï¼‰
     let h = 5381;
     const str = pass + ':' + String.fromCharCode(...new Uint8Array(salt));
     for (let i = 0; i < str.length; i++) h = ((h << 5) + h + str.charCodeAt(i)) | 0;
@@ -58,7 +58,7 @@ function accountLogout() {
   localStorage.removeItem('rehab_guest');
   setCustomKey(ukey('rehab_custom_ex'));
 }
-// 删除账号：清除该账号全部分区数据 + 账号条目（Google Play 政策要求提供账号删除入口）
+// åˆ é™¤è´¦å·ï¼šæ¸…é™¤è¯¥è´¦å·å…¨éƒ¨åˆ†åŒºæ•°æ® + è´¦å·æ¡ç›®ï¼ˆGoogle Play æ”¿ç­–è¦æ±‚æä¾›è´¦å·åˆ é™¤å…¥å£ï¼‰
 function accountDelete() {
   const u = accountCurrent();
   if (!u) return;
@@ -71,13 +71,13 @@ function accountDelete() {
   accountLogout();
   localStorage.removeItem('rehab_cloud_session');
   invalidateCustom();
-  reloadCollectBuf();                               // 删除账号 → 重载缓冲区（访客空间）
+  reloadCollectBuf();                               // åˆ é™¤è´¦å· â†’ é‡è½½ç¼“å†²åŒºï¼ˆè®¿å®¢ç©ºé—´ï¼‰
   renderCloud(); renderAuth();
   renderRecords(); renderAssessments(); renderAppts(); renderCustomList(); renderExChips();
   renderProfile(); renderTodayPlan(); renderPlanList(); renderAchievements(); renderCollectCount(); renderGoal();
   toast(t('acctDeleted'));
 }
-// 首次注册账号时，把本机原有数据迁移进账号空间
+// é¦–æ¬¡æ³¨å†Œè´¦å·æ—¶ï¼ŒæŠŠæœ¬æœºåŽŸæœ‰æ•°æ®è¿ç§»è¿›è´¦å·ç©ºé—´
 function migrateDeviceData(email) {
   if (LS.get('rehab_migrated_to', null)) return;
   const keys = ['rehab_sessions', 'rehab_assessments', 'rehab_appts', 'rehab_custom_ex', 'rehab_collect', 'rehab_plan', 'rehab_plan_done', 'rehab_profile'];
@@ -94,12 +94,12 @@ function migrateDeviceData(email) {
 }
 const fmtDate = (ts) => new Date(ts).toLocaleString(locale(), { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-const APP_VERSION = 'v2.40.0';
+const APP_VERSION = 'v2.41.0';
 const exName = (e) => (e.custom ? e.name : t(e.nameKey));
 const exDesc = (e) => (e.custom ? e.desc : t(e.descKey));
 const depthTxt = (d) => t('depth' + (d ? d.charAt(0).toUpperCase() + d.slice(1) : 'Ok')) || d;
 
-/* ============ 定制图标组（线稿风格，替代 emoji） ============ */
+/* ============ å®šåˆ¶å›¾æ ‡ç»„ï¼ˆçº¿ç¨¿é£Žæ ¼ï¼Œæ›¿ä»£ emojiï¼‰ ============ */
 const ICONS = {
   squat: '<circle cx="12" cy="4.6" r="2.1"/><path d="M12 6.7v5.8M12 12.5 8.6 15.6 10.8 19.6M12 9.6l4.2-.8"/>',
   lunge: '<circle cx="9.8" cy="4.6" r="2.1"/><path d="M9.8 6.7v5.5M9.8 12.2l4.8 2.9 4.6 4.4M9.8 12.2l-4.2 2.3-2.2 4.6M9.8 9l4.4-1"/>',
@@ -150,14 +150,14 @@ function icon(name, cls = '') {
 const fbWrap = (ico, html) => `<span class="fb-ico">${icon(ico)}</span><div class="fb-body">${html}</div>`;
 const emptyBox = (ico, key) => `<div class="empty">${icon(ico)}<span>${t(key)}</span></div>`;
 
-/* ============ 火柴人绘制 ============ */
+/* ============ ç«æŸ´äººç»˜åˆ¶ ============ */
 const BODY = '#4ade80', JOINT = '#22d3ee', BAD = '#ef4444', HEAD = '#facc15';
 const CONNECTIONS = PoseLandmarker.POSE_CONNECTIONS.map((c) => [c.start, c.end]);
 let currentVG = null;
 
 function drawStick(ctx, lms, w, h, mirror) {
   const px = (lm) => { let x = lm.x * w; if (mirror) x = w - x; return [x, lm.y * h]; };
-  const vis = (lm) => (lm.visibility ?? 1) >= 0.5;   // 只画可见关节，避免幽灵线条
+  const vis = (lm) => (lm.visibility ?? 1) >= 0.5;   // åªç”»å¯è§å…³èŠ‚ï¼Œé¿å…å¹½çµçº¿æ¡
   ctx.lineCap = 'round'; ctx.lineJoin = 'round';
   ctx.strokeStyle = BODY; ctx.lineWidth = Math.max(3, w * 0.008);
   ctx.shadowColor = BODY; ctx.shadowBlur = 8;
@@ -183,7 +183,7 @@ function drawStick(ctx, lms, w, h, mirror) {
   ctx.shadowBlur = 0;
 }
 
-/* ============ 状态 ============ */
+/* ============ çŠ¶æ€ ============ */
 const state = {
   running: false, photoMode: false, collectMode: false,
   landmarker: null, videoOn: false,
@@ -200,18 +200,18 @@ const getEx = (id) => {
   if (id === 'auto') return EXERCISES[state.autoEx] || EXERCISES.squat;
   return EXERCISES[id] || customList().find((e) => e.id === id);
 };
-const activeExId = () => LS.get('rehab_active_ex', 'auto');   // 默认智能识别
+const activeExId = () => LS.get('rehab_active_ex', 'auto');   // é»˜è®¤æ™ºèƒ½è¯†åˆ«
 
-/* ============ AI 模型加载（多镜像 + 超时保护） ============ */
-// jsDelivr 镜像国内访问更快（同仓库文件）；googleapis 作最后兜底
+/* ============ AI æ¨¡åž‹åŠ è½½ï¼ˆå¤šé•œåƒ + è¶…æ—¶ä¿æŠ¤ï¼‰ ============ */
+// jsDelivr é•œåƒå›½å†…è®¿é—®æ›´å¿«ï¼ˆåŒä»“åº“æ–‡ä»¶ï¼‰ï¼›googleapis ä½œæœ€åŽå…œåº•
 const CDN_BASE = 'https://cdn.jsdelivr.net/gh/xushengqin666-cell/rehab-ai@main';
 const GOOGLE_MODEL_URL = 'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_full/float16/1/pose_landmarker_full.task';
 const withTimeout = (p, ms) => Promise.race([
   p,
-  new Promise((_, rej) => setTimeout(() => rej(new Error('模型加载超时(网络慢)')), ms)),
+  new Promise((_, rej) => setTimeout(() => rej(new Error('æ¨¡åž‹åŠ è½½è¶…æ—¶(ç½‘ç»œæ…¢)')), ms)),
 ]);
 async function loadModel() {
-  // wasm 运行时：本地优先，失败走 jsDelivr（国内速度快）
+  // wasm è¿è¡Œæ—¶ï¼šæœ¬åœ°ä¼˜å…ˆï¼Œå¤±è´¥èµ° jsDelivrï¼ˆå›½å†…é€Ÿåº¦å¿«ï¼‰
   let vision;
   try { vision = await FilesetResolver.forVisionTasks('./wasm'); }
   catch { vision = await FilesetResolver.forVisionTasks(CDN_BASE + '/wasm'); }
@@ -226,12 +226,12 @@ async function loadModel() {
     try {
       try { return await withTimeout(mk(url, 'GPU'), 90000); }
       catch { return await withTimeout(mk(url, 'CPU'), 90000); }
-    } catch (e) { lastErr = e; console.warn('模型加载失败:', url, e); }
+    } catch (e) { lastErr = e; console.warn('æ¨¡åž‹åŠ è½½å¤±è´¥:', url, e); }
   }
-  throw new Error(t('modelLoadFail') + (lastErr ? ' — ' + lastErr.message : ''));
+  throw new Error(t('modelLoadFail') + (lastErr ? ' â€” ' + lastErr.message : ''));
 }
 
-/* ============ 摄像头（增强版：诊断 / 多设备 / 超时 / 重试） ============ */
+/* ============ æ‘„åƒå¤´ï¼ˆå¢žå¼ºç‰ˆï¼šè¯Šæ–­ / å¤šè®¾å¤‡ / è¶…æ—¶ / é‡è¯•ï¼‰ ============ */
 function detectCameras() {
   return navigator.mediaDevices.enumerateDevices()
     .then((ds) => ds.filter((d) => d.kind === 'videoinput'))
@@ -252,26 +252,26 @@ function cameraErrorText(e) {
 async function openCameraWithTimeout(constraints, ms = 20000) {
   return Promise.race([
     navigator.mediaDevices.getUserMedia(constraints),
-    new Promise((_, rej) => setTimeout(() => rej(new DOMException('打开超时', 'TimeoutError')), ms)),
+    new Promise((_, rej) => setTimeout(() => rej(new DOMException('æ‰“å¼€è¶…æ—¶', 'TimeoutError')), ms)),
   ]);
 }
 async function openCamera() {
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    throw new DOMException('浏览器不支持或非安全环境', 'SecurityError');
+    throw new DOMException('æµè§ˆå™¨ä¸æ”¯æŒæˆ–éžå®‰å…¨çŽ¯å¢ƒ', 'SecurityError');
   }
   state.cameras = await detectCameras();
-  if (!state.cameras.length) throw new DOMException('未检测到摄像头', 'NoCamera');
-  const isIRLabel = (s) => /ir|红外/i.test(s || '');
-  // 红外摄像头拍出来是全黑的 —— 把非 IR 设备排在前面，并跳过 IR 流
+  if (!state.cameras.length) throw new DOMException('æœªæ£€æµ‹åˆ°æ‘„åƒå¤´', 'NoCamera');
+  const isIRLabel = (s) => /ir|çº¢å¤–/i.test(s || '');
+  // çº¢å¤–æ‘„åƒå¤´æ‹å‡ºæ¥æ˜¯å…¨é»‘çš„ â€”â€” æŠŠéž IR è®¾å¤‡æŽ’åœ¨å‰é¢ï¼Œå¹¶è·³è¿‡ IR æµ
   const devs = state.cameras.filter((c) => c.deviceId).sort((a, b) => (isIRLabel(a.label) ? 1 : 0) - (isIRLabel(b.label) ? 1 : 0));
   const nonIR = devs.filter((d) => !isIRLabel(d.label));
-  const cMain = camConstraints({ facingMode: 'user' });      // v2.30.0：按影像偏好（3:4 竖幅默认，同样距离能看到更多身体）
+  const cMain = camConstraints({ facingMode: 'user' });      // v2.30.0ï¼šæŒ‰å½±åƒåå¥½ï¼ˆ3:4 ç«–å¹…é»˜è®¤ï¼ŒåŒæ ·è·ç¦»èƒ½çœ‹åˆ°æ›´å¤šèº«ä½“ï¼‰
   const cAny = camConstraints();
   const candidates = [
     { video: cMain, audio: false },
     { video: cAny, audio: false },
     { video: { width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false },
-    { video: { width: { ideal: 640 }, height: { ideal: 480 } }, audio: false },   // 低配设备兜底
+    { video: { width: { ideal: 640 }, height: { ideal: 480 } }, audio: false },   // ä½Žé…è®¾å¤‡å…œåº•
     ...devs.map((c) => ({
       video: { deviceId: { exact: c.deviceId }, width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false,
     })),
@@ -281,11 +281,11 @@ async function openCamera() {
     try {
       const stream = await openCameraWithTimeout(c);
       const label = stream.getVideoTracks()[0]?.label || '';
-      if (isIRLabel(label) && nonIR.length) {   // 选到了红外摄像头 → 停掉，换下一个候选
+      if (isIRLabel(label) && nonIR.length) {   // é€‰åˆ°äº†çº¢å¤–æ‘„åƒå¤´ â†’ åœæŽ‰ï¼Œæ¢ä¸‹ä¸€ä¸ªå€™é€‰
         stream.getTracks().forEach((t) => t.stop());
         continue;
       }
-      await camApplyZoom(stream);   // v2.30.0：设备支持 zoom 时按偏好拉到最广/指定倍数（iOS 不支持则自动跳过）
+      await camApplyZoom(stream);   // v2.30.0ï¼šè®¾å¤‡æ”¯æŒ zoom æ—¶æŒ‰åå¥½æ‹‰åˆ°æœ€å¹¿/æŒ‡å®šå€æ•°ï¼ˆiOS ä¸æ”¯æŒåˆ™è‡ªåŠ¨è·³è¿‡ï¼‰
       camSaveCaps(stream);
       return stream;
     } catch (e) { lastErr = e; }
@@ -299,11 +299,11 @@ async function bindStream(stream) {
     if (video.readyState >= 1) return res();
     const t = setTimeout(() => {
       video.srcObject = null; stream.getTracks().forEach((x) => x.stop());
-      rej(new DOMException('视频初始化超时', 'TimeoutError'));
+      rej(new DOMException('è§†é¢‘åˆå§‹åŒ–è¶…æ—¶', 'TimeoutError'));
     }, 6000);
     video.onloadedmetadata = () => { clearTimeout(t); res(); };
   });
-  try { await video.play(); } catch { /* 自动播放被拦时等待用户再点 */ }
+  try { await video.play(); } catch { /* è‡ªåŠ¨æ’­æ”¾è¢«æ‹¦æ—¶ç­‰å¾…ç”¨æˆ·å†ç‚¹ */ }
   state.videoOn = true;
   $('placeholder').classList.add('hidden');
 }
@@ -318,7 +318,7 @@ function showCameraError(e, modelFail = false) {
   box.classList.remove('hidden');
   state._lastCamErr = e;
   state._lastCamIsModel = modelFail;
-  aiStats(modelFail ? 'modelFail' : 'cameraFail');      // AI 管家记录诊断
+  aiStats(modelFail ? 'modelFail' : 'cameraFail');      // AI ç®¡å®¶è®°å½•è¯Šæ–­
   logAiError(modelFail ? 'model' : 'camera', (e && (e.message || e.name)) || 'unknown');
   const cams = state.cameras || [];
   const camBtns = !modelFail && cams.length > 1
@@ -361,7 +361,7 @@ function stopCamera() {
   video.srcObject = null;
   state.videoOn = false;
 }
-// 手动选择摄像头（黑屏时切换用）
+// æ‰‹åŠ¨é€‰æ‹©æ‘„åƒå¤´ï¼ˆé»‘å±æ—¶åˆ‡æ¢ç”¨ï¼‰
 function showCamPicker() {
   const box = $('cam-retry');
   box.classList.remove('hidden');
@@ -380,11 +380,11 @@ function showCamPicker() {
   }));
 }
 
-/* ============ 智能动作识别（自动分类，无需手动选动作） ============ */
-// 两层判断：
-//   1) 运动层：髋部近 1.5 秒纵向位移幅度 → 区分「运动」(动态动作) 与「静止」(体态)
-//   2) 几何层：动态 → 按关节角度判深蹲/弓步/台阶/搬物/肩上举/俯卧撑；静止 → 站姿/坐姿/俯卧撑支撑/搬物保持
-// hist = [{ y, t }] 髋部中点高度历史（t 用 performance.now 同一时间轴）；now 供测试注入
+/* ============ æ™ºèƒ½åŠ¨ä½œè¯†åˆ«ï¼ˆè‡ªåŠ¨åˆ†ç±»ï¼Œæ— éœ€æ‰‹åŠ¨é€‰åŠ¨ä½œï¼‰ ============ */
+// ä¸¤å±‚åˆ¤æ–­ï¼š
+//   1) è¿åŠ¨å±‚ï¼šé«‹éƒ¨è¿‘ 1.5 ç§’çºµå‘ä½ç§»å¹…åº¦ â†’ åŒºåˆ†ã€Œè¿åŠ¨ã€(åŠ¨æ€åŠ¨ä½œ) ä¸Žã€Œé™æ­¢ã€(ä½“æ€)
+//   2) å‡ ä½•å±‚ï¼šåŠ¨æ€ â†’ æŒ‰å…³èŠ‚è§’åº¦åˆ¤æ·±è¹²/å¼“æ­¥/å°é˜¶/æ¬ç‰©/è‚©ä¸Šä¸¾/ä¿¯å§æ’‘ï¼›é™æ­¢ â†’ ç«™å§¿/åå§¿/ä¿¯å§æ’‘æ”¯æ’‘/æ¬ç‰©ä¿æŒ
+// hist = [{ y, t }] é«‹éƒ¨ä¸­ç‚¹é«˜åº¦åŽ†å²ï¼ˆt ç”¨ performance.now åŒä¸€æ—¶é—´è½´ï¼‰ï¼›now ä¾›æµ‹è¯•æ³¨å…¥
 function classifyAuto(lms, hist, now) {
   const L = { shoulder: 11, hip: 23, knee: 25, ankle: 27, elbow: 13, wrist: 15 };
   const R = { shoulder: 12, hip: 24, knee: 26, ankle: 28, elbow: 14, wrist: 16 };
@@ -394,42 +394,42 @@ function classifyAuto(lms, hist, now) {
   const s = pickSide(lms);
   const lean = verticalAngle(lms[s.shoulder], lms[s.hip]);
   const elbow = angle3(lms[s.shoulder], lms[s.elbow], lms[s.wrist]);
-  const armRaised = (lms[s.shoulder].y - lms[s.wrist].y) > 0.18;   // 手腕明显高于肩膀
+  const armRaised = (lms[s.shoulder].y - lms[s.wrist].y) > 0.18;   // æ‰‹è…•æ˜Žæ˜¾é«˜äºŽè‚©è†€
   const wristNearShoulder = Math.abs(lms[s.wrist].x - lms[s.shoulder].x) < 0.18;
   const bodyLow = lms[s.hip].y > 0.58;
   const hipY = (lms[23].y + lms[24].y) / 2;
   const tNow = now === undefined ? performance.now() : now;
 
-  // 静止/运动判定：最近 1.5 秒髋部高度 P90-P10 差 <6% 画面高 → 静止
-  // 用百分位差而非 max-min：摄像头噪声/身体自然晃动的个别跳点不会把「静止」误判成「运动」
+  // é™æ­¢/è¿åŠ¨åˆ¤å®šï¼šæœ€è¿‘ 1.5 ç§’é«‹éƒ¨é«˜åº¦ P90-P10 å·® <6% ç”»é¢é«˜ â†’ é™æ­¢
+  // ç”¨ç™¾åˆ†ä½å·®è€Œéž max-minï¼šæ‘„åƒå¤´å™ªå£°/èº«ä½“è‡ªç„¶æ™ƒåŠ¨çš„ä¸ªåˆ«è·³ç‚¹ä¸ä¼šæŠŠã€Œé™æ­¢ã€è¯¯åˆ¤æˆã€Œè¿åŠ¨ã€
   const win = (hist || []).filter((h) => h.t > tNow - 1500);
-  let yRange = 1;                                        // 样本不足按运动处理（安全：不误判体态）
+  let yRange = 1;                                        // æ ·æœ¬ä¸è¶³æŒ‰è¿åŠ¨å¤„ç†ï¼ˆå®‰å…¨ï¼šä¸è¯¯åˆ¤ä½“æ€ï¼‰
   if (win.length >= 8) {
     const ys = win.map((h) => h.y).sort((a, b) => a - b);
     yRange = ys[Math.floor(ys.length * 0.9)] - ys[Math.floor(ys.length * 0.1)];
   }
 
-  // —— 俯身类：俯卧撑（手在肩下+髋低） / 搬重物髋铰链 ——
+  // â€”â€” ä¿¯èº«ç±»ï¼šä¿¯å§æ’‘ï¼ˆæ‰‹åœ¨è‚©ä¸‹+é«‹ä½Žï¼‰ / æ¬é‡ç‰©é«‹é“°é“¾ â€”â€”
   if (lean > 55 && bodyLow) {
-    if (wristNearShoulder && kneeMin > 110) return 'pushup';   // 含平板支撑（直臂）
+    if (wristNearShoulder && kneeMin > 110) return 'pushup';   // å«å¹³æ¿æ”¯æ’‘ï¼ˆç›´è‡‚ï¼‰
     return 'hiphinge';
   }
-  // —— 静止坐姿：髋在坐高、膝中等弯曲(80–130°)或双腿前伸、躯干较直立/微前倾(<40°，桌前学习常见) ——
-  const legsOut = kneeMin > 150 && Math.abs(lms[s.ankle].y - hipY) < 0.15;   // 腿伸直坐（踝接近髋高）
+  // â€”â€” é™æ­¢åå§¿ï¼šé«‹åœ¨åé«˜ã€è†ä¸­ç­‰å¼¯æ›²(80â€“130Â°)æˆ–åŒè…¿å‰ä¼¸ã€èº¯å¹²è¾ƒç›´ç«‹/å¾®å‰å€¾(<40Â°ï¼Œæ¡Œå‰å­¦ä¹ å¸¸è§) â€”â€”
+  const legsOut = kneeMin > 150 && Math.abs(lms[s.ankle].y - hipY) < 0.15;   // è…¿ä¼¸ç›´åï¼ˆè¸æŽ¥è¿‘é«‹é«˜ï¼‰
   if (yRange < 0.06 && hipY > 0.40 && hipY < 0.80 && lean < 40 && ((kneeMin >= 80 && kneeMin <= 130) || legsOut)) return 'sitting';
-  // —— 运动：动态动作 ——
+  // â€”â€” è¿åŠ¨ï¼šåŠ¨æ€åŠ¨ä½œ â€”â€”
   if (yRange >= 0.06) {
     if (kneeDiff > 35) return kneeMax > 150 ? 'stepup' : 'lunge';
-    if (kneeMin < 115) return 'squat';          // 深蹲/椅子起坐（屈膝下蹲）
+    if (kneeMin < 115) return 'squat';          // æ·±è¹²/æ¤…å­èµ·åï¼ˆå±ˆè†ä¸‹è¹²ï¼‰
     if (lean > 45) return 'hiphinge';
     if (armRaised && elbow > 150) return 'shoulderraise';
   }
-  // —— 静止保持 ——
-  if (lean > 45 && kneeMin > 130) return 'hiphinge';   // 搬物静止保持
-  if (kneeMin < 115) return 'squat';                   // 深蹲底部保持/椅子起坐停顿
-  return 'standing';                                   // 自然站立/行走停顿
+  // â€”â€” é™æ­¢ä¿æŒ â€”â€”
+  if (lean > 45 && kneeMin > 130) return 'hiphinge';   // æ¬ç‰©é™æ­¢ä¿æŒ
+  if (kneeMin < 115) return 'squat';                   // æ·±è¹²åº•éƒ¨ä¿æŒ/æ¤…å­èµ·ååœé¡¿
+  return 'standing';                                   // è‡ªç„¶ç«™ç«‹/è¡Œèµ°åœé¡¿
 }
-// 投票裁决：得票率 ≥66% 且最近 4 帧全是赢家 → 返回赢家 id，否则 null（防抖）
+// æŠ•ç¥¨è£å†³ï¼šå¾—ç¥¨çŽ‡ â‰¥66% ä¸”æœ€è¿‘ 4 å¸§å…¨æ˜¯èµ¢å®¶ â†’ è¿”å›žèµ¢å®¶ idï¼Œå¦åˆ™ nullï¼ˆé˜²æŠ–ï¼‰
 function autoSwitchOk(votes, last4) {
   if (!votes || !Object.keys(votes).length) return null;
   const winner = Object.entries(votes).sort((a, b) => b[1] - a[1])[0][0];
@@ -439,7 +439,7 @@ function autoSwitchOk(votes, last4) {
   return margin >= 0.66 && streakOk ? winner : null;
 }
 
-/* ============ 界面：动作选择 + 统计 ============ */
+/* ============ ç•Œé¢ï¼šåŠ¨ä½œé€‰æ‹© + ç»Ÿè®¡ ============ */
 function featureNames(ex) {
   if (ex.id === 'squat') return ['knee', 'hip', 'lean', 'valgus'];
   if (ex.id === 'lunge') return ['frontKnee', 'backKnee', 'lean'];
@@ -463,17 +463,17 @@ function renderExChips() {
   $('ex-chips').querySelectorAll('.chip[data-ex]').forEach((b) =>
     b.addEventListener('click', () => { LS.set('rehab_active_ex', b.dataset.ex); switchEx(); }));
   $('chip-add').addEventListener('click', () => { openCustomForm(null); switchTab('settings'); });
-  renderTrainDemo();   // v2.34.0：动作换了，标准示范与录像卡一起换
+  renderTrainDemo();   // v2.34.0ï¼šåŠ¨ä½œæ¢äº†ï¼Œæ ‡å‡†ç¤ºèŒƒä¸Žå½•åƒå¡ä¸€èµ·æ¢
   const ex = getEx(activeExId());
   if (ex) {
-    const autoLabel = activeExId() === 'auto' ? `<span class="std">✨ ${t('autoDetected', { name: exName(ex) })}</span><br>` : '';
+    const autoLabel = activeExId() === 'auto' ? `<span class="std">âœ¨ ${t('autoDetected', { name: exName(ex) })}</span><br>` : '';
     $('ex-desc').innerHTML = autoLabel + exDesc(ex) + '<br><span class="std">' + exStd(ex) + '</span>';
   } else {
     $('ex-desc').innerHTML = '';
   }
   renderGoal();
 }
-// 训练页「今日目标」进度条（与康复计划联动）
+// è®­ç»ƒé¡µã€Œä»Šæ—¥ç›®æ ‡ã€è¿›åº¦æ¡ï¼ˆä¸Žåº·å¤è®¡åˆ’è”åŠ¨ï¼‰
 function renderGoal() {
   const el = $('goal-line');
   if (!el) return;
@@ -485,7 +485,7 @@ function renderGoal() {
   const okv = done >= item.reps;
   el.classList.remove('hidden');
   el.classList.toggle('on', okv);
-  el.innerHTML = `<span class="goal-ico">${icon(okv ? 'check' : 'target')}</span><span>${t('goalLine', { name: exName(ex), n: item.reps })} · ${t('goalProgress', { d: Math.min(done, item.reps), t: item.reps })}</span>`;
+  el.innerHTML = `<span class="goal-ico">${icon(okv ? 'check' : 'target')}</span><span>${t('goalLine', { name: exName(ex), n: item.reps })} Â· ${t('goalProgress', { d: Math.min(done, item.reps), t: item.reps })}</span>`;
 }
 function renderChips(res) {
   const ex = getEx(activeExId());
@@ -495,7 +495,7 @@ function renderChips(res) {
   $('chips').innerHTML = chips + `
     <div class="stat big"><span class="s-label">${hold ? t('holdLabel') : t('repsLabel')}</span><span class="s-value" id="st-reps">0</span></div>`;
 }
-// 每帧只改数值，不重建 DOM（移动端省电）
+// æ¯å¸§åªæ”¹æ•°å€¼ï¼Œä¸é‡å»º DOMï¼ˆç§»åŠ¨ç«¯çœç”µï¼‰
 function updateStats(res) {
   const els = $('chips').querySelectorAll('[data-stat]');
   res.chips.forEach((c, i) => {
@@ -507,7 +507,7 @@ function updateStats(res) {
   });
 }
 const renderCollectCount = () => { $('collect-count').textContent = t('collectCount', { n: state.collectBuf.length }); };
-// 账号切换后重载采集缓冲区（内存中的 collectBuf 属于上一个账号，必须重读，否则会串数据）
+// è´¦å·åˆ‡æ¢åŽé‡è½½é‡‡é›†ç¼“å†²åŒºï¼ˆå†…å­˜ä¸­çš„ collectBuf å±žäºŽä¸Šä¸€ä¸ªè´¦å·ï¼Œå¿…é¡»é‡è¯»ï¼Œå¦åˆ™ä¼šä¸²æ•°æ®ï¼‰
 const reloadCollectBuf = () => { state.collectBuf = sget('rehab_collect', []); renderCollectCount(); };
 function renderCollectLabels(ex) {
   $('collect-labels').innerHTML = ex.labelSet.map((l) =>
@@ -524,13 +524,13 @@ function renderCollectLabels(ex) {
     }));
 }
 
-/* ============ 主分析循环 ============ */
+/* ============ ä¸»åˆ†æžå¾ªçŽ¯ ============ */
 const ctx = $('overlay').getContext('2d');
 
 function resetAgg() {
   const ex = getEx(activeExId());
   state.counter = { state: 'up', reps: 0, ex: ex.id, d: ex.rep.downBelow, u: ex.rep.upAbove, belowT: 0, lastRepTs: 0, confirmMs: 120, minGapMs: 350, holdMs: 0, lastHoldTs: 0, wasBad: false };
-  state.autoHist = [];                 // 新会话清空运动历史（避免上一次训练的位移污染静止/运动判定）
+  state.autoHist = [];                 // æ–°ä¼šè¯æ¸…ç©ºè¿åŠ¨åŽ†å²ï¼ˆé¿å…ä¸Šä¸€æ¬¡è®­ç»ƒçš„ä½ç§»æ±¡æŸ“é™æ­¢/è¿åŠ¨åˆ¤å®šï¼‰
   state.agg = { frames: 0, startTS: Date.now(), depth: {}, badFrames: 0, valgusFrames: 0, riskFrames: 0 };
   state.lastResult = null;
   state.statsKey = null;
@@ -542,7 +542,7 @@ function resetAgg() {
   document.querySelectorAll('#chips [data-stat]').forEach((el) => { el.textContent = '--'; });
   const save = $('btn-save'); if (save) save.disabled = true;
 }
-// 计数状态机（防抖）：低于阈值需连续 confirmMs，两次计数间隔 ≥ minGapMs
+// è®¡æ•°çŠ¶æ€æœºï¼ˆé˜²æŠ–ï¼‰ï¼šä½ŽäºŽé˜ˆå€¼éœ€è¿žç»­ confirmMsï¼Œä¸¤æ¬¡è®¡æ•°é—´éš” â‰¥ minGapMs
 function counterUpdate(c, value, ts = performance.now()) {
   if (c.state === 'up' && value < c.d) {
     if (!c.belowT) c.belowT = ts;
@@ -556,7 +556,7 @@ function counterUpdate(c, value, ts = performance.now()) {
   }
   return c.reps;
 }
-// 保持型动作（站姿/坐姿）：只有姿态合格的时间才累计，满 30 秒计 1 次（姿势崩了计时暂停）
+// ä¿æŒåž‹åŠ¨ä½œï¼ˆç«™å§¿/åå§¿ï¼‰ï¼šåªæœ‰å§¿æ€åˆæ ¼çš„æ—¶é—´æ‰ç´¯è®¡ï¼Œæ»¡ 30 ç§’è®¡ 1 æ¬¡ï¼ˆå§¿åŠ¿å´©äº†è®¡æ—¶æš‚åœï¼‰
 function counterHold(ex, res, ts) {
   const c = state.counter;
   const bad = res.depth !== 'ok' || res.msgsIsBad;
@@ -567,7 +567,7 @@ function counterHold(ex, res, ts) {
   return c.reps;
 }
 
-// 每帧质量统计：深度类别 / 不合格帧 / 内扣帧（修复：之前保存记录时这些一直是 0）
+// æ¯å¸§è´¨é‡ç»Ÿè®¡ï¼šæ·±åº¦ç±»åˆ« / ä¸åˆæ ¼å¸§ / å†…æ‰£å¸§ï¼ˆä¿®å¤ï¼šä¹‹å‰ä¿å­˜è®°å½•æ—¶è¿™äº›ä¸€ç›´æ˜¯ 0ï¼‰
 function recordFrame(res) {
   const a = state.agg;
   a.frames++;
@@ -577,7 +577,7 @@ function recordFrame(res) {
   if ((res.riskLevel || 0) >= 2) a.riskFrames++;
 }
 
-// 单一调度入口：只在训练页可见且页面在前台时排帧（省电）
+// å•ä¸€è°ƒåº¦å…¥å£ï¼šåªåœ¨è®­ç»ƒé¡µå¯è§ä¸”é¡µé¢åœ¨å‰å°æ—¶æŽ’å¸§ï¼ˆçœç”µï¼‰
 function kickLoop() {
   if (state.loopScheduled) return;
   if (!state.running || state.photoMode || state.tab !== 'train' || document.hidden) return;
@@ -585,8 +585,8 @@ function kickLoop() {
   requestAnimationFrame(() => { state.loopScheduled = false; loop(); });
 }
 
-// 身体完整性：只检查「正在分析的那一侧」（侧面时另一侧会被身体遮挡，不算缺失）
-// 判定：可见度 <0.4 或 坐标出画面边界（贴近边缘 2% 内）→ 认为该部位没照全
+// èº«ä½“å®Œæ•´æ€§ï¼šåªæ£€æŸ¥ã€Œæ­£åœ¨åˆ†æžçš„é‚£ä¸€ä¾§ã€ï¼ˆä¾§é¢æ—¶å¦ä¸€ä¾§ä¼šè¢«èº«ä½“é®æŒ¡ï¼Œä¸ç®—ç¼ºå¤±ï¼‰
+// åˆ¤å®šï¼šå¯è§åº¦ <0.4 æˆ– åæ ‡å‡ºç”»é¢è¾¹ç•Œï¼ˆè´´è¿‘è¾¹ç¼˜ 2% å†…ï¼‰â†’ è®¤ä¸ºè¯¥éƒ¨ä½æ²¡ç…§å…¨
 function partVisible(lms, i) {
   const lm = lms[i];
   if (!lm) return false;
@@ -596,7 +596,7 @@ function partVisible(lms, i) {
 }
 function bodyMissing(lms, ex) {
   const s = pickSide(lms);
-  // 坐姿检查：脚常被书桌/办公桌挡住，不把脚踝算作缺失
+  // åå§¿æ£€æŸ¥ï¼šè„šå¸¸è¢«ä¹¦æ¡Œ/åŠžå…¬æ¡ŒæŒ¡ä½ï¼Œä¸æŠŠè„šè¸ç®—ä½œç¼ºå¤±
   const need = [[s.shoulder, 'jShoulder'], [s.hip, 'jHip'], [s.knee, 'jKnee']];
   if (!ex || ex.id !== 'sitting') need.push([s.ankle, 'jAnkle']);
   const miss = new Set();
@@ -604,7 +604,7 @@ function bodyMissing(lms, ex) {
   return [...miss];
 }
 
-// 画面亮度检测：连续 ~3 秒全黑 → 提示切换摄像头（红外摄像头/隐私盖问题）
+// ç”»é¢äº®åº¦æ£€æµ‹ï¼šè¿žç»­ ~3 ç§’å…¨é»‘ â†’ æç¤ºåˆ‡æ¢æ‘„åƒå¤´ï¼ˆçº¢å¤–æ‘„åƒå¤´/éšç§ç›–é—®é¢˜ï¼‰
 function checkBlackFrame() {
   const v = $('video');
   if (!state.videoOn || v.readyState < 2 || !v.videoWidth) return;
@@ -663,16 +663,16 @@ function loop() {
   if ($('overlay').width !== cw || $('overlay').height !== ch) { $('overlay').width = cw; $('overlay').height = ch; }
   ctx.clearRect(0, 0, cw, ch);
   drawStick(ctx, lms, cw, ch, true);
-  camGuideUpdate(lms);            // v2.30.0：入镜/距离引导（可关）
+  camGuideUpdate(lms);            // v2.30.0ï¼šå…¥é•œ/è·ç¦»å¼•å¯¼ï¼ˆå¯å…³ï¼‰
 
-  // 身体完整性检测：关键部位没照全 → 持续 ~5 帧才提醒（防单帧误判闪烁），并暂停分析
-  // 智能识别模式例外：只有脚踝没照到时不暂停（坐姿时脚常在桌下），让投票切到坐姿分析
+  // èº«ä½“å®Œæ•´æ€§æ£€æµ‹ï¼šå…³é”®éƒ¨ä½æ²¡ç…§å…¨ â†’ æŒç»­ ~5 å¸§æ‰æé†’ï¼ˆé˜²å•å¸§è¯¯åˆ¤é—ªçƒï¼‰ï¼Œå¹¶æš‚åœåˆ†æž
+  // æ™ºèƒ½è¯†åˆ«æ¨¡å¼ä¾‹å¤–ï¼šåªæœ‰è„šè¸æ²¡ç…§åˆ°æ—¶ä¸æš‚åœï¼ˆåå§¿æ—¶è„šå¸¸åœ¨æ¡Œä¸‹ï¼‰ï¼Œè®©æŠ•ç¥¨åˆ‡åˆ°åå§¿åˆ†æž
   const missingParts = bodyMissing(lms, getEx(activeExId()));
   const autoAnkleOnly = activeExId() === 'auto' && missingParts.length === 1 && missingParts[0] === t('jAnkle');
   if (missingParts.length && !autoAnkleOnly) {
     state.missingFrames = (state.missingFrames || 0) + 1;
     if (state.missingFrames < 5) { kickLoop(); return; }
-    const msg = fbWrap('alert', t('bodyCutOff', { parts: missingParts.join('、') }) + '<br>' + t('bodyCutOffHint'));
+    const msg = fbWrap('alert', t('bodyCutOff', { parts: missingParts.join('ã€') }) + '<br>' + t('bodyCutOffHint'));
     if (fb._last !== msg) { fb.innerHTML = msg; fb._last = msg; }
     fb.className = 'feedback warn';
     kickLoop();
@@ -680,8 +680,8 @@ function loop() {
   }
   state.missingFrames = 0;
 
-  // 智能识别模式：每帧投票，稳定后自动切换分析引擎（不重置计数）
-  // 防抖：得票率 ≥66% 且最近 4 帧连续一致才切换，避免动作交替时来回跳
+  // æ™ºèƒ½è¯†åˆ«æ¨¡å¼ï¼šæ¯å¸§æŠ•ç¥¨ï¼Œç¨³å®šåŽè‡ªåŠ¨åˆ‡æ¢åˆ†æžå¼•æ“Žï¼ˆä¸é‡ç½®è®¡æ•°ï¼‰
+  // é˜²æŠ–ï¼šå¾—ç¥¨çŽ‡ â‰¥66% ä¸”æœ€è¿‘ 4 å¸§è¿žç»­ä¸€è‡´æ‰åˆ‡æ¢ï¼Œé¿å…åŠ¨ä½œäº¤æ›¿æ—¶æ¥å›žè·³
   if (activeExId() === 'auto') {
     state.autoHist = state.autoHist || [];
     state.autoHist.push({ y: (lms[23].y + lms[24].y) / 2, t: ts });
@@ -701,10 +701,10 @@ function loop() {
         state.counter.ex = winner;
         if (nex.rep.downBelow != null) { state.counter.d = nex.rep.downBelow; state.counter.u = nex.rep.upAbove; }
         if (nex.rep.hold || prevHold) {
-          // 进出保持型动作 → 重新计数（30 秒 1 次，不与动态次数混算）
+          // è¿›å‡ºä¿æŒåž‹åŠ¨ä½œ â†’ é‡æ–°è®¡æ•°ï¼ˆ30 ç§’ 1 æ¬¡ï¼Œä¸ä¸ŽåŠ¨æ€æ¬¡æ•°æ··ç®—ï¼‰
           state.counter.reps = 0; state.counter.holdMs = 0; state.counter.lastHoldTs = 0; state.voiceReps = 0;
         }
-        state.statsKey = null;                       // 统计卡下一帧按新动作重建
+        state.statsKey = null;                       // ç»Ÿè®¡å¡ä¸‹ä¸€å¸§æŒ‰æ–°åŠ¨ä½œé‡å»º
         renderExChips();
         renderCollectLabels(getEx('auto'));
       }
@@ -722,13 +722,13 @@ function loop() {
   if (state.statsKey !== ex.id) { renderChips(res); state.statsKey = ex.id; }
   else updateStats(res);
   $('st-reps').textContent = ex.rep.hold ? String(Math.round((state.counter.holdMs || 0) / 1000)) : String(reps);
-  // 语音播报：每 5 次报一次数
+  // è¯­éŸ³æ’­æŠ¥ï¼šæ¯ 5 æ¬¡æŠ¥ä¸€æ¬¡æ•°
   if (reps > 0 && reps % 5 === 0 && reps !== state.voiceReps) {
     state.voiceReps = reps;
     speak(t('voiceRep', { n: reps }));
   }
 
-  // 受伤风险：1=提醒(warn) 2=警报(alarm，声音+震动+闪烁+语音)
+  // å—ä¼¤é£Žé™©ï¼š1=æé†’(warn) 2=è­¦æŠ¥(alarmï¼Œå£°éŸ³+éœ‡åŠ¨+é—ªçƒ+è¯­éŸ³)
   const riskLevel = res.riskLevel || 0;
   if (riskLevel >= 2) {
     if (!state.alarmOn) { state.alarmOn = true; state.alarmTS = ts; alarmBurst(); }
@@ -738,7 +738,7 @@ function loop() {
   }
   const riskMsgs = (res.risk && res.risk.length) ? res.risk : [];
   if (riskMsgs.length) {
-    if (riskLevel >= 2 && ts - state.voiceTS > 8000) { state.voiceTS = ts; speak(t('alarmTitle') + '，' + riskMsgs[0]); }
+    if (riskLevel >= 2 && ts - state.voiceTS > 8000) { state.voiceTS = ts; speak(t('alarmTitle') + 'ï¼Œ' + riskMsgs[0]); }
     else if (riskLevel === 1 && ts - state.voiceTS > 8000) { state.voiceTS = ts; speak(riskMsgs[0]); }
   }
   const bodyMsgs = riskMsgs.length ? riskMsgs : (res.badMsgs.length ? res.badMsgs : res.goodMsgs);
@@ -754,7 +754,7 @@ function loop() {
 }
 function drawEmpty() { ctx.clearRect(0, 0, $('overlay').width, $('overlay').height); }
 
-/* ============ 受伤风险警报（声音 + 震动） ============ */
+/* ============ å—ä¼¤é£Žé™©è­¦æŠ¥ï¼ˆå£°éŸ³ + éœ‡åŠ¨ï¼‰ ============ */
 let audioCtx = null;
 function ensureAudio() {
   if (!audioCtx) { try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch { /* ignore */ } }
@@ -779,20 +779,20 @@ function alarmBurst() {
   }
 }
 
-/* ============ 开始 / 停止 / 图片 ============ */
+/* ============ å¼€å§‹ / åœæ­¢ / å›¾ç‰‡ ============ */
 function setStartBtn(key, ico) {
   $('btn-start-label').textContent = t(key);
   $('btn-start-ico').innerHTML = icon(ico || 'play');
 }
 async function toggleStart() {
   const btn = $('btn-start');
-  ensureAudio();   // 用户点击手势内创建音频上下文（警报声用）
+  ensureAudio();   // ç”¨æˆ·ç‚¹å‡»æ‰‹åŠ¿å†…åˆ›å»ºéŸ³é¢‘ä¸Šä¸‹æ–‡ï¼ˆè­¦æŠ¥å£°ç”¨ï¼‰
   if (state.running) {
     state.running = false; stopCamera(); releaseWake();
-    drawEmpty();                                   // 清掉火柴人，避免黑屏上残留
-    $('placeholder').classList.remove('hidden');   // 恢复「点击开始分析」占位图
-    $('stats-box').classList.add('hidden');        // v2.20.2：清掉残留统计，不留过期数字
-    $('feedback').classList.add('hidden');         // v2.20.2：清掉残留提示，不留旧文案
+    drawEmpty();                                   // æ¸…æŽ‰ç«æŸ´äººï¼Œé¿å…é»‘å±ä¸Šæ®‹ç•™
+    $('placeholder').classList.remove('hidden');   // æ¢å¤ã€Œç‚¹å‡»å¼€å§‹åˆ†æžã€å ä½å›¾
+    $('stats-box').classList.add('hidden');        // v2.20.2ï¼šæ¸…æŽ‰æ®‹ç•™ç»Ÿè®¡ï¼Œä¸ç•™è¿‡æœŸæ•°å­—
+    $('feedback').classList.add('hidden');         // v2.20.2ï¼šæ¸…æŽ‰æ®‹ç•™æç¤ºï¼Œä¸ç•™æ—§æ–‡æ¡ˆ
     btn.disabled = false; setStartBtn('btnStart', 'play');
     aiSessionEnd();
     return;
@@ -809,13 +809,13 @@ async function toggleStart() {
       setStartBtn('btnDetecting', 'loader-spin');
       stream = await openCamera();
     }
-    // 摄像头画面立刻显示（不再被黑色加载遮罩挡住）
+    // æ‘„åƒå¤´ç”»é¢ç«‹åˆ»æ˜¾ç¤ºï¼ˆä¸å†è¢«é»‘è‰²åŠ è½½é®ç½©æŒ¡ä½ï¼‰
     await bindStream(stream);
     state.running = true; state.photoMode = false;
-    acquireWake();                               // 训练中屏幕常亮，不自动锁屏
-    if (state.restTimer) { clearInterval(state.restTimer); state.restTimer = null; }   // 开始训练自动结束休息计时
+    acquireWake();                               // è®­ç»ƒä¸­å±å¹•å¸¸äº®ï¼Œä¸è‡ªåŠ¨é”å±
+    if (state.restTimer) { clearInterval(state.restTimer); state.restTimer = null; }   // å¼€å§‹è®­ç»ƒè‡ªåŠ¨ç»“æŸä¼‘æ¯è®¡æ—¶
     resetAgg();
-    await startCountdown();                      // 新增：3-2-1 开始倒计时（对标 NTC/Keep）
+    await startCountdown();                      // æ–°å¢žï¼š3-2-1 å¼€å§‹å€’è®¡æ—¶ï¼ˆå¯¹æ ‡ NTC/Keepï¼‰
     btn.disabled = false;
     setStartBtn('btnStop', 'stop');
     $('stats-box').classList.remove('hidden');
@@ -823,7 +823,7 @@ async function toggleStart() {
     $('feedback').innerHTML = fbWrap('camera', t('detecting'));
     $('feedback').className = 'feedback';
     $('feedback')._last = null;
-    // AI 模型在后台加载：画面可见，只有一个小进度胶囊
+    // AI æ¨¡åž‹åœ¨åŽå°åŠ è½½ï¼šç”»é¢å¯è§ï¼Œåªæœ‰ä¸€ä¸ªå°è¿›åº¦èƒ¶å›Š
     if (!state.landmarker) {
       const t0 = Date.now();
       $('loading').innerHTML = icon('loader-spin') + '<span>' + t('loading') + ' 0s</span>';
@@ -834,12 +834,12 @@ async function toggleStart() {
       try {
         state.landmarker = await loadModel();
       } catch (e) {
-        console.error('模型加载失败:', e);
+        console.error('æ¨¡åž‹åŠ è½½å¤±è´¥:', e);
         stopCamera(); releaseWake(); drawEmpty();
         state.running = false;
         setStartBtn('btnStart', 'play');
         $('placeholder').classList.remove('hidden');
-        showCameraError(e, true);   // 摄像头没问题，是模型/网络问题
+        showCameraError(e, true);   // æ‘„åƒå¤´æ²¡é—®é¢˜ï¼Œæ˜¯æ¨¡åž‹/ç½‘ç»œé—®é¢˜
         return;
       } finally {
         clearInterval(tick);
@@ -856,8 +856,8 @@ async function toggleStart() {
   }
 }
 
-/* ============ 新增功能（v2.18）：3-2-1 倒计时 / 组间休息 / 久坐提醒 / AI 计划 ============ */
-// 3-2-1 开始倒计时：在画面上显示大数字，结束后清屏进入分析
+/* ============ æ–°å¢žåŠŸèƒ½ï¼ˆv2.18ï¼‰ï¼š3-2-1 å€’è®¡æ—¶ / ç»„é—´ä¼‘æ¯ / ä¹…åæé†’ / AI è®¡åˆ’ ============ */
+// 3-2-1 å¼€å§‹å€’è®¡æ—¶ï¼šåœ¨ç”»é¢ä¸Šæ˜¾ç¤ºå¤§æ•°å­—ï¼Œç»“æŸåŽæ¸…å±è¿›å…¥åˆ†æž
 function startCountdown() {
   return new Promise((resolve) => {
     const c = $('overlay');
@@ -880,7 +880,7 @@ function startCountdown() {
     step();
   });
 }
-// 组间休息计时器（默认 60 秒，结束响铃 + 提示）
+// ç»„é—´ä¼‘æ¯è®¡æ—¶å™¨ï¼ˆé»˜è®¤ 60 ç§’ï¼Œç»“æŸå“é“ƒ + æç¤ºï¼‰
 function startRest(seconds = 60) {
   if (state.restTimer) clearInterval(state.restTimer);
   let left = seconds;
@@ -906,13 +906,13 @@ function startRest(seconds = 60) {
     }
   }, 1000);
 }
-// v2.20.2：训练中先停止分析再进入休息，避免休息倒计时被分析循环覆盖
+// v2.20.2ï¼šè®­ç»ƒä¸­å…ˆåœæ­¢åˆ†æžå†è¿›å…¥ä¼‘æ¯ï¼Œé¿å…ä¼‘æ¯å€’è®¡æ—¶è¢«åˆ†æžå¾ªçŽ¯è¦†ç›–
 $('btn-rest').addEventListener('click', () => { if (state.running) toggleStart(); startRest(60); });
 
-// 久坐提醒：按设置间隔（30/45/60 分钟）提醒起身活动
+// ä¹…åæé†’ï¼šæŒ‰è®¾ç½®é—´éš”ï¼ˆ30/45/60 åˆ†é’Ÿï¼‰æé†’èµ·èº«æ´»åŠ¨
 const sedGet = () => LS.get('rehab_sedentary', { on: false, min: 45 });
 let sedLastActive = Date.now();
-document.addEventListener('click', () => { sedLastActive = Date.now(); }, true);   // 任何操作都算活动
+document.addEventListener('click', () => { sedLastActive = Date.now(); }, true);   // ä»»ä½•æ“ä½œéƒ½ç®—æ´»åŠ¨
 function renderSedentary() {
   const s = sedGet();
   $('sed-interval').value = String(s.min || 45);
@@ -940,11 +940,11 @@ setInterval(() => {
   if (Date.now() - sedLastActive >= s.min * 60000) {
     sedLastActive = Date.now();
     toast(t('sedToast'));
-    if (navigator.vibrate) { try { navigator.vibrate(200); } catch { /* 忽略 */ } }
+    if (navigator.vibrate) { try { navigator.vibrate(200); } catch { /* å¿½ç•¥ */ } }
   }
 }, 30000);
 
-// AI 一键生成康复计划（按个人资料里的康复目标）
+// AI ä¸€é”®ç”Ÿæˆåº·å¤è®¡åˆ’ï¼ˆæŒ‰ä¸ªäººèµ„æ–™é‡Œçš„åº·å¤ç›®æ ‡ï¼‰
 $('btn-ai-plan').addEventListener('click', () => {
   const goal = profileGet().goal || 'other';
   const items = generatePlan(goal);
@@ -1017,15 +1017,15 @@ $('photo-input').addEventListener('change', async (ev) => {
     }
     const lms = result.landmarks[0];
     currentVG = kneeValgus(lms);
-    // 身体完整性：关键部位没照全 → 提醒，不做分析（智能识别模式下仅缺脚踝可放行）
+    // èº«ä½“å®Œæ•´æ€§ï¼šå…³é”®éƒ¨ä½æ²¡ç…§å…¨ â†’ æé†’ï¼Œä¸åšåˆ†æžï¼ˆæ™ºèƒ½è¯†åˆ«æ¨¡å¼ä¸‹ä»…ç¼ºè„šè¸å¯æ”¾è¡Œï¼‰
     const missingParts = bodyMissing(lms, getEx(activeExId()));
     const autoAnkleOnly = activeExId() === 'auto' && missingParts.length === 1 && missingParts[0] === t('jAnkle');
     if (missingParts.length && !autoAnkleOnly) {
-      $('feedback').innerHTML = fbWrap('alert', t('bodyCutOff', { parts: missingParts.join('、') }) + '<br>' + t('bodyCutOffHint'));
+      $('feedback').innerHTML = fbWrap('alert', t('bodyCutOff', { parts: missingParts.join('ã€') }) + '<br>' + t('bodyCutOffHint'));
       $('feedback').className = 'feedback warn';
       return;
     }
-    // 智能识别模式：照片按「静止体态」分类一次（照片没有运动历史，站姿/坐姿检查才是照片的典型用途）
+    // æ™ºèƒ½è¯†åˆ«æ¨¡å¼ï¼šç…§ç‰‡æŒ‰ã€Œé™æ­¢ä½“æ€ã€åˆ†ç±»ä¸€æ¬¡ï¼ˆç…§ç‰‡æ²¡æœ‰è¿åŠ¨åŽ†å²ï¼Œç«™å§¿/åå§¿æ£€æŸ¥æ‰æ˜¯ç…§ç‰‡çš„å…¸åž‹ç”¨é€”ï¼‰
     if (activeExId() === 'auto') {
       const tN = performance.now();
       const y = (lms[23].y + lms[24].y) / 2;
@@ -1049,7 +1049,7 @@ $('photo-input').addEventListener('change', async (ev) => {
   ev.target.value = '';
 });
 
-/* ============ 保存记录 ============ */
+/* ============ ä¿å­˜è®°å½• ============ */
 $('btn-save').addEventListener('click', () => {
   const a = state.agg;
   if (!a.frames) return;
@@ -1068,7 +1068,7 @@ $('btn-save').addEventListener('click', () => {
   const list = sget('rehab_sessions', []);
   list.unshift(session);
   sset('rehab_sessions', list);
-  // 自动核对今日计划目标：达标即自动打卡
+  // è‡ªåŠ¨æ ¸å¯¹ä»Šæ—¥è®¡åˆ’ç›®æ ‡ï¼šè¾¾æ ‡å³è‡ªåŠ¨æ‰“å¡
   const t0 = new Date(); t0.setHours(0, 0, 0, 0);
   const tReps = list.reduce((a, s) => (new Date(s.ts) >= t0 && s.ex === ex.id ? a + s.reps : a), 0);
   const tPlan = planForToday().find((p) => p.ex === ex.id);
@@ -1092,7 +1092,7 @@ $('btn-save').addEventListener('click', () => {
   scheduleCloudSync();
 });
 
-/* ============ 记录打卡页 ============ */
+/* ============ è®°å½•æ‰“å¡é¡µ ============ */
 function renderRecords() {
   const sessions = sget('rehab_sessions', []);
   const today = new Date(); today.setHours(0, 0, 0, 0);
@@ -1119,7 +1119,7 @@ function renderRecords() {
   $('summary-line').textContent = sessions.length
     ? t('summaryLine', { n: sessions.length, r: totalReps, s: streak })
     : t('noSessions');
-  // v2.21.6：本周单日最佳
+  // v2.21.6ï¼šæœ¬å‘¨å•æ—¥æœ€ä½³
   const bestDay = Math.max(0, ...days.map((d) => d.reps));
   const bestEl = $('week-best');
   if (bestEl) bestEl.textContent = bestDay > 0 ? t('weekBest', { d: bestDay }) : '';
@@ -1133,25 +1133,25 @@ function renderRecords() {
       return `
       <div class="item">
         <div>
-          <div class="t"><span class="t-ico">${icon(builtin ? builtin.icon : 'custom')}</span>${name} · ${fmtDate(s.ts)} · ${t('repsN', { n: s.reps })} · ${s.dur ?? '?'}s · ${depthTxt(s.depth)}</div>
-          <div class="d">${t('badFramesPct', { p: s.badPct })}${s.badPct >= 30 ? ' ⚠️' : ''}${s.riskPct ? ' · ' + t('riskFramesPct', { p: s.riskPct }) + ' 🚨' : ''}${s.valgusPct ? ' · ' + t('valgusFramesPct', { p: s.valgusPct }) : ''}${s.collectCount ? ' · ' + t('collectN', { n: s.collectCount }) : ''}</div>
+          <div class="t"><span class="t-ico">${icon(builtin ? builtin.icon : 'custom')}</span>${name} Â· ${fmtDate(s.ts)} Â· ${t('repsN', { n: s.reps })} Â· ${s.dur ?? '?'}s Â· ${depthTxt(s.depth)}</div>
+          <div class="d">${t('badFramesPct', { p: s.badPct })}${s.badPct >= 30 ? ' âš ï¸' : ''}${s.riskPct ? ' Â· ' + t('riskFramesPct', { p: s.riskPct }) + ' ðŸš¨' : ''}${s.valgusPct ? ' Â· ' + t('valgusFramesPct', { p: s.valgusPct }) : ''}${s.collectCount ? ' Â· ' + t('collectN', { n: s.collectCount }) : ''}</div>
         </div>
-        <button class="del" data-id="${s.id}">✕</button>
+        <button class="del" data-id="${s.id}">âœ•</button>
       </div>`;
     }).join('');
     list.querySelectorAll('.del').forEach((btn) => btn.addEventListener('click', () => {
-      if (!confirm(t('confirmDelSession'))) return;   // v2.21.6：删除前确认，防误删训练记录
+      if (!confirm(t('confirmDelSession'))) return;   // v2.21.6ï¼šåˆ é™¤å‰ç¡®è®¤ï¼Œé˜²è¯¯åˆ è®­ç»ƒè®°å½•
       sset('rehab_sessions', sessions.filter((s) => s.id !== btn.dataset.id));
       renderRecords();
     }));
   }
-  // 统计报表 + 成就
+  // ç»Ÿè®¡æŠ¥è¡¨ + æˆå°±
   renderTrends();
   renderDist();
   renderAchievements();
 }
 
-/* ============ 评估反馈页 ============ */
+/* ============ è¯„ä¼°åé¦ˆé¡µ ============ */
 $('tab-assess').querySelectorAll('.seg').forEach((seg) => {
   seg.addEventListener('click', (e) => {
     const btn = e.target.closest('button');
@@ -1178,14 +1178,14 @@ $('btn-assess').addEventListener('click', () => {
   const prev = list[0];
   list.unshift(report);
   sset('rehab_assessments', list);
-  const gradeKey = score <= 1 ? 'assessGrade0' : score <= 3 ? 'assessGrade1' : 'assessGrade2';   // v2.21.7：结果分级
+  const gradeKey = score <= 1 ? 'assessGrade0' : score <= 3 ? 'assessGrade1' : 'assessGrade2';   // v2.21.7ï¼šç»“æžœåˆ†çº§
   let deltaHtml = '';
   if (prev) {
     const d = score - prev.score;
     if (d !== 0) deltaHtml = '<span class="hint tiny">' + t('paHistoryDelta', { v: d < 0 ? t('assessBetter', { d: -d }) : t('assessWorse', { d }) }) + '</span><br>';
   }
   const el = $('assess-result');
-  el.innerHTML = `<b>${t('assessScore', { s: score })} · ${t(gradeKey)}</b><br>${deltaHtml}${adviceKeys.map((k) => t(k)).join('<br>')}`;
+  el.innerHTML = `<b>${t('assessScore', { s: score })} Â· ${t(gradeKey)}</b><br>${deltaHtml}${adviceKeys.map((k) => t(k)).join('<br>')}`;
   el.classList.remove('hidden');
   renderAssessments();
   scheduleCloudSync();
@@ -1199,22 +1199,22 @@ function renderAssessments() {
     <div class="item">
       <div>
         <div class="t">${t('assessScoreShort', { t: fmtDate(r.ts), s: r.score })}</div>
-        <div class="d">${adviceText(r).replace(/<[^>]+>/g, '').slice(0, 60)}…</div>
+        <div class="d">${adviceText(r).replace(/<[^>]+>/g, '').slice(0, 60)}â€¦</div>
       </div>
-      <button class="del" data-id="${r.id}">✕</button>
+      <button class="del" data-id="${r.id}">âœ•</button>
     </div>`).join('');
   el.querySelectorAll('.del').forEach((btn) => btn.addEventListener('click', () => {
-    if (!confirm(t('confirmDelAssess'))) return;   // v2.21.7：删除前确认
+    if (!confirm(t('confirmDelAssess'))) return;   // v2.21.7ï¼šåˆ é™¤å‰ç¡®è®¤
     sset('rehab_assessments', list.filter((r) => r.id !== btn.dataset.id));
     renderAssessments();
     scheduleCloudSync();
   }));
-  // 评估分数趋势
+  // è¯„ä¼°åˆ†æ•°è¶‹åŠ¿
   const scores = [...list].reverse().slice(-10).map((r) => r.score);
   $('assess-trend').innerHTML = scores.length ? lineChart(scores, '#0e7c66', 'a') : emptyBox('assess', 'emptyAssess');
 }
 
-/* ============ 预约日程页 ============ */
+/* ============ é¢„çº¦æ—¥ç¨‹é¡µ ============ */
 $('appt-form').addEventListener('submit', (e) => {
   e.preventDefault();
   const appt = {
@@ -1240,31 +1240,31 @@ function renderAppts() {
   const tomorrow = new Date(now); tomorrow.setDate(now.getDate() + 1);
   const tomorrowStr = d2(tomorrow);
   el.innerHTML = list.map((a) => {
-    // 修复：之前用 < 23:59 比较，导致今天还没到的预约也被标成已过期
+    // ä¿®å¤ï¼šä¹‹å‰ç”¨ < 23:59 æ¯”è¾ƒï¼Œå¯¼è‡´ä»Šå¤©è¿˜æ²¡åˆ°çš„é¢„çº¦ä¹Ÿè¢«æ ‡æˆå·²è¿‡æœŸ
     const past = a.date < todayStr || (a.date === todayStr && a.time <= nowTime);
     const daysUntil = Math.round((new Date(a.date + 'T00:00:00') - new Date(todayStr + 'T00:00:00')) / 86400000);
     const tag = past ? `<b style="color:var(--red)">${t('tagPast')}</b>`
       : a.date === todayStr ? `<b style="color:var(--green)">${t('tagToday')}</b>`
       : a.date === tomorrowStr ? `<b style="color:var(--yellow)">${t('tagTomorrow')}</b>`
-      : `<b style="color:var(--teal)">${t('apptIn', { n: daysUntil })}</b>`;   // v2.21.8：未来预约倒计时
+      : `<b style="color:var(--teal)">${t('apptIn', { n: daysUntil })}</b>`;   // v2.21.8ï¼šæœªæ¥é¢„çº¦å€’è®¡æ—¶
     return `
     <div class="item" style="${past ? 'opacity:.55' : ''}">
       <div>
-        <div class="t"><span class="t-ico">${icon('schedule')}</span>${a.date} ${a.time} · ${a.place}${tag ? ' ' + tag : ''}</div>
+        <div class="t"><span class="t-ico">${icon('schedule')}</span>${a.date} ${a.time} Â· ${a.place}${tag ? ' ' + tag : ''}</div>
         <div class="d">${a.note || t('noNote')}</div>
       </div>
-      <button class="del" data-id="${a.id}">✕</button>
+      <button class="del" data-id="${a.id}">âœ•</button>
     </div>`;
   }).join('');
   el.querySelectorAll('.del').forEach((btn) => btn.addEventListener('click', () => {
-    if (!confirm(t('confirmDelAppt'))) return;   // v2.21.8：删除确认
+    if (!confirm(t('confirmDelAppt'))) return;   // v2.21.8ï¼šåˆ é™¤ç¡®è®¤
     sset('rehab_appts', list.filter((a) => a.id !== btn.dataset.id));
     renderAppts();
     scheduleCloudSync();
   }));
 }
 
-/* ============ 设置页：自定义动作 ============ */
+/* ============ è®¾ç½®é¡µï¼šè‡ªå®šä¹‰åŠ¨ä½œ ============ */
 let editingCustomId = null;
 function renderCustomList() {
   const list = loadCustomExercises();
@@ -1274,7 +1274,7 @@ function renderCustomList() {
     <div class="item">
       <div>
         <div class="t"><span class="t-ico">${icon('custom')}</span>${e.name}</div>
-        <div class="d">${e.angles.map((a) => a.name).join(' · ')}</div>
+        <div class="d">${e.angles.map((a) => a.name).join(' Â· ')}</div>
       </div>
       <div style="display:flex;gap:4px">
         <button class="mini" data-edit="${e.id}">${icon('edit')}</button>
@@ -1297,20 +1297,20 @@ function openCustomForm(id) {
   $('cf-title').textContent = id ? t('cfTitleEdit') : t('cfTitleNew');
   $('cf-name').value = ex.name;
   $('cf-desc').value = ex.desc || '';
-  // 角度1
+  // è§’åº¦1
   $('cf-a1-name').value = ex.angles[0].name;
   $('cf-a1-type').value = ex.angles[0].type;
   const a1 = ex.angles[0];
   $('cf-a1-a').innerHTML = jSel('cf-a1-a', a1.a);
   $('cf-a1-b').innerHTML = jSel('cf-a1-b', a1.b);
   $('cf-a1-c').innerHTML = jSel('cf-a1-c', a1.c ?? 'knee');
-  // 角度2（可无）
+  // è§’åº¦2ï¼ˆå¯æ— ï¼‰
   const a2 = ex.angles[1];
   $('cf-a2-name').value = a2?.name || t('fallbackLean');
   $('cf-a2-type').value = a2?.type || 'vertical';
   $('cf-a2-a').innerHTML = jSel('cf-a2-a', a2?.a ?? 'shoulder');
   $('cf-a2-b').innerHTML = jSel('cf-a2-b', a2?.b ?? 'hip');
-  // 规则
+  // è§„åˆ™
   $('cf-r1-min').value = ex.rules[0].min ?? '';
   $('cf-r1-max').value = ex.rules[0].max ?? '';
   $('cf-r1-good').value = ex.rules[0].msgGood;
@@ -1320,7 +1320,7 @@ function openCustomForm(id) {
   $('cf-r2-max').value = r2?.max ?? '';
   $('cf-r2-good').value = r2?.msgGood || '';
   $('cf-r2-bad').value = r2?.msgBad || '';
-  // 计次
+  // è®¡æ¬¡
   $('cf-rep-metric').value = ex.reps.metric;
   $('cf-rep-down').value = ex.reps.downBelow;
   $('cf-rep-up').value = ex.reps.upAbove;
@@ -1357,7 +1357,7 @@ $('cf-save').addEventListener('click', () => {
   scheduleCloudSync();
 });
 
-/* ============ 设置页：数据采集导出 ============ */
+/* ============ è®¾ç½®é¡µï¼šæ•°æ®é‡‡é›†å¯¼å‡º ============ */
 $('btn-export-collect').addEventListener('click', () => {
   if (!state.collectBuf.length) { toast(t('toastNoCollect')); return; }
   const exIds = [...new Set(state.collectBuf.map((r) => r.ex))];
@@ -1382,12 +1382,12 @@ $('btn-clear-collect').addEventListener('click', () => {
   if (!confirm(t('confirmClearCollect'))) return;
   state.collectBuf = []; sset('rehab_collect', []);
   renderCollectCount();
-  renderStorageSize();   // v2.21.9：采集数据清空后同步刷新「本机数据占用」
+  renderStorageSize();   // v2.21.9ï¼šé‡‡é›†æ•°æ®æ¸…ç©ºåŽåŒæ­¥åˆ·æ–°ã€Œæœ¬æœºæ•°æ®å ç”¨ã€
   toast(t('toastClearedCollect'));
 });
 
-/* ============ 设置页：导出 / 导入 / 清空 ============ */
-// v2.21.9：本机数据键清单（备份 / 导入 / 清空共用同一份，新增数据模块时只改这里，防遗漏）
+/* ============ è®¾ç½®é¡µï¼šå¯¼å‡º / å¯¼å…¥ / æ¸…ç©º ============ */
+// v2.21.9ï¼šæœ¬æœºæ•°æ®é”®æ¸…å•ï¼ˆå¤‡ä»½ / å¯¼å…¥ / æ¸…ç©ºå…±ç”¨åŒä¸€ä»½ï¼Œæ–°å¢žæ•°æ®æ¨¡å—æ—¶åªæ”¹è¿™é‡Œï¼Œé˜²é—æ¼ï¼‰
 const DATA_KEYS = [
   'rehab_sessions', 'rehab_assessments', 'rehab_appts', 'rehab_custom_ex', 'rehab_collect',
   'rehab_plan', 'rehab_plan_done', 'rehab_profile',
@@ -1400,9 +1400,9 @@ const DATA_KEYS = [
   'rehab_cam_prefs',
 ];
 const bakCount = (a) => (Array.isArray(a) ? a.length : 0);
-// v2.21.9：备份内容补全（原缺 计划/计划打卡/个人资料/功能测试/体态报告/运动指数历史）
+// v2.21.9ï¼šå¤‡ä»½å†…å®¹è¡¥å…¨ï¼ˆåŽŸç¼º è®¡åˆ’/è®¡åˆ’æ‰“å¡/ä¸ªäººèµ„æ–™/åŠŸèƒ½æµ‹è¯•/ä½“æ€æŠ¥å‘Š/è¿åŠ¨æŒ‡æ•°åŽ†å²ï¼‰
 const bakData = () => ({
-  app: '康复AI', version: 3, exportedAt: new Date().toISOString(),
+  app: 'åº·å¤AI', version: 3, exportedAt: new Date().toISOString(),
   sessions: sget('rehab_sessions', []),
   assessments: sget('rehab_assessments', []),
   appts: sget('rehab_appts', []),
@@ -1429,7 +1429,7 @@ $('btn-export').addEventListener('click', () => {
   a.download = `${t('fileBackup')}-${new Date().toISOString().slice(0, 10)}.json`;
   a.click();
   URL.revokeObjectURL(a.href);
-  sset('rehab_last_backup', Date.now());   // v2.21.9：记录上次导出时间，备份卡显示「上次导出备份」
+  sset('rehab_last_backup', Date.now());   // v2.21.9ï¼šè®°å½•ä¸Šæ¬¡å¯¼å‡ºæ—¶é—´ï¼Œå¤‡ä»½å¡æ˜¾ç¤ºã€Œä¸Šæ¬¡å¯¼å‡ºå¤‡ä»½ã€
   renderLastBackup();
   toast(t('toastExportBackup'));
 });
@@ -1440,19 +1440,19 @@ $('import-input').addEventListener('change', async (ev) => {
   try {
     const data = JSON.parse(await file.text());
     if (!data || !Array.isArray(data.sessions)) throw new Error(t('importFormatErr'));
-    // v2.32.0：导入 = 「端手接力」——从手机导出的文件在电脑导入时是**合并**（去重、保留双方数据），不再覆盖本机
+    // v2.32.0ï¼šå¯¼å…¥ = ã€Œç«¯æ‰‹æŽ¥åŠ›ã€â€”â€”ä»Žæ‰‹æœºå¯¼å‡ºçš„æ–‡ä»¶åœ¨ç”µè„‘å¯¼å…¥æ—¶æ˜¯**åˆå¹¶**ï¼ˆåŽ»é‡ã€ä¿ç•™åŒæ–¹æ•°æ®ï¼‰ï¼Œä¸å†è¦†ç›–æœ¬æœº
     if (!confirm(t('importConfirm', { s: bakCount(data.sessions), a: bakCount(data.assessments), p: bakCount(data.appts), f: bakCount(data.ftHistory), r: bakCount(data.paHistory) }))) {
       ev.target.value = '';
       return;
     }
     const before = { s: sget('rehab_sessions', []).length, p: painHistory().length, r: romHistory().length };
-    const m = mergeSyncData(data);   // 与二维码同步共用同一个合并引擎（按 id 去重、双方保留）
+    const m = mergeSyncData(data);   // ä¸ŽäºŒç»´ç åŒæ­¥å…±ç”¨åŒä¸€ä¸ªåˆå¹¶å¼•æ“Žï¼ˆæŒ‰ id åŽ»é‡ã€åŒæ–¹ä¿ç•™ï¼‰
     const added = {
       s: Math.max(0, sget('rehab_sessions', []).length - before.s),
       p: Math.max(0, painHistory().length - before.p),
       r: Math.max(0, romHistory().length - before.r),
     };
-    refreshAllData();   // 导入后所有依赖模块一起刷新
+    refreshAllData();   // å¯¼å…¥åŽæ‰€æœ‰ä¾èµ–æ¨¡å—ä¸€èµ·åˆ·æ–°
     toast(t('importMerged', { s: added.s, p: added.p, r: added.r, t: m.s + m.a + m.p + m.c }));
     scheduleCloudSync();
   } catch (e) { toast(t('toastImportFail', { msg: e.message })); }
@@ -1460,7 +1460,7 @@ $('import-input').addEventListener('change', async (ev) => {
 });
 $('btn-clear').addEventListener('click', () => {
   if (!confirm(t('confirmClearAll'))) return;
-  DATA_KEYS.forEach((k) => sdel(k));   // v2.21.9：清单化，补齐 功能测试/体态报告/运动指数 历史（原实现残留）
+  DATA_KEYS.forEach((k) => sdel(k));   // v2.21.9ï¼šæ¸…å•åŒ–ï¼Œè¡¥é½ åŠŸèƒ½æµ‹è¯•/ä½“æ€æŠ¥å‘Š/è¿åŠ¨æŒ‡æ•° åŽ†å²ï¼ˆåŽŸå®žçŽ°æ®‹ç•™ï¼‰
   state.collectBuf = [];
   invalidateCustom();
   refreshAllData();
@@ -1468,7 +1468,7 @@ $('btn-clear').addEventListener('click', () => {
   scheduleCloudSync();
 });
 
-/* ============ 导航 ============ */
+/* ============ å¯¼èˆª ============ */
 function switchTab(name) {
   state.tab = name;
   document.querySelectorAll('.bottom-nav button').forEach((b) => b.classList.remove('active'));
@@ -1476,25 +1476,25 @@ function switchTab(name) {
   const navBtn = document.querySelector(`.bottom-nav button[data-tab="${name}"]`);
   if (navBtn) navBtn.classList.add('active');
   $('tab-' + name).classList.add('active');
-  // v2.21.10 全局：切页时同步无障碍状态（aria-current），并把长页面滚动位置复位到顶部
+  // v2.21.10 å…¨å±€ï¼šåˆ‡é¡µæ—¶åŒæ­¥æ— éšœç¢çŠ¶æ€ï¼ˆaria-currentï¼‰ï¼Œå¹¶æŠŠé•¿é¡µé¢æ»šåŠ¨ä½ç½®å¤ä½åˆ°é¡¶éƒ¨
   document.querySelectorAll('.bottom-nav button').forEach((b) => {
     if (b === navBtn) b.setAttribute('aria-current', 'page');
     else b.removeAttribute('aria-current');
   });
   try { window.scrollTo(0, 0); } catch { /* ignore */ }
-  renderBlockSub();                          // v2.33.0：按所属区块显示子标签栏
-  if (name === 'recheck') renderRecheck();   // v2.33.0：进入复评页刷新对比与分析
-  if (name === 'train') { kickLoop(); renderTrainToday(); renderTrainDemo(); renderRealDemoWall(); }   // 回到训练页立即恢复分析 + 刷新今日任务小条 + 标准示范卡 + 全部动作真人示范墙
-  if (name === 'guide') renderGuide();   // v2.34.0：进入跟练页刷新示范墙
-  if (name !== 'posture') paStop();          // v2.19：离开体态页自动停止体态评估（防摄像头占用）
-  if (name !== 'ft') ftStop();               // v2.20：离开功能测试页自动停止（防摄像头占用）
-  if (name === 'home') { renderHome(); renderCareLoop(); }   // v2.21/v2.31：进入今日页刷新总览与闭环
-  if (name !== 'guide') gwStop();            // v2.21：离开跟练页自动结束跟练计时
-  if (name === 'settings') renderStorageSize();   // v2.21.9：进入设置页刷新数据占用
-  if (name === 'record') renderReport();          // v2.24.0：进入记录页刷新治疗师报告摘要
-  if (name === 'schedule') renderPath();          // v2.29.0：进入日程页刷新康复路径
-  if (name !== 'posture') romStop();              // v2.26.0：离开体态页自动停止 ROM 测量
-  // v2.33.1：进入评估块（体态/功能测试/量表）即刷新其面板 —— 否则导入/二维码同步进来的新数据要重启才看得见
+  renderBlockSub();                          // v2.33.0ï¼šæŒ‰æ‰€å±žåŒºå—æ˜¾ç¤ºå­æ ‡ç­¾æ 
+  if (name === 'recheck') renderRecheck();   // v2.33.0ï¼šè¿›å…¥å¤è¯„é¡µåˆ·æ–°å¯¹æ¯”ä¸Žåˆ†æž
+  if (name === 'train') { kickLoop(); renderTrainToday(); renderTrainDemo(); renderRealDemoWall(); }   // å›žåˆ°è®­ç»ƒé¡µç«‹å³æ¢å¤åˆ†æž + åˆ·æ–°ä»Šæ—¥ä»»åŠ¡å°æ¡ + æ ‡å‡†ç¤ºèŒƒå¡ + å…¨éƒ¨åŠ¨ä½œçœŸäººç¤ºèŒƒå¢™
+  if (name === 'guide') renderGuide();   // v2.34.0ï¼šè¿›å…¥è·Ÿç»ƒé¡µåˆ·æ–°ç¤ºèŒƒå¢™
+  if (name !== 'posture') paStop();          // v2.19ï¼šç¦»å¼€ä½“æ€é¡µè‡ªåŠ¨åœæ­¢ä½“æ€è¯„ä¼°ï¼ˆé˜²æ‘„åƒå¤´å ç”¨ï¼‰
+  if (name !== 'ft') ftStop();               // v2.20ï¼šç¦»å¼€åŠŸèƒ½æµ‹è¯•é¡µè‡ªåŠ¨åœæ­¢ï¼ˆé˜²æ‘„åƒå¤´å ç”¨ï¼‰
+  if (name === 'home') { renderHome(); renderCareLoop(); }   // v2.21/v2.31ï¼šè¿›å…¥ä»Šæ—¥é¡µåˆ·æ–°æ€»è§ˆä¸Žé—­çŽ¯
+  if (name !== 'guide') gwStop();            // v2.21ï¼šç¦»å¼€è·Ÿç»ƒé¡µè‡ªåŠ¨ç»“æŸè·Ÿç»ƒè®¡æ—¶
+  if (name === 'settings') renderStorageSize();   // v2.21.9ï¼šè¿›å…¥è®¾ç½®é¡µåˆ·æ–°æ•°æ®å ç”¨
+  if (name === 'record') renderReport();          // v2.24.0ï¼šè¿›å…¥è®°å½•é¡µåˆ·æ–°æ²»ç–—å¸ˆæŠ¥å‘Šæ‘˜è¦
+  if (name === 'schedule') renderPath();          // v2.29.0ï¼šè¿›å…¥æ—¥ç¨‹é¡µåˆ·æ–°åº·å¤è·¯å¾„
+  if (name !== 'posture') romStop();              // v2.26.0ï¼šç¦»å¼€ä½“æ€é¡µè‡ªåŠ¨åœæ­¢ ROM æµ‹é‡
+  // v2.33.1ï¼šè¿›å…¥è¯„ä¼°å—ï¼ˆä½“æ€/åŠŸèƒ½æµ‹è¯•/é‡è¡¨ï¼‰å³åˆ·æ–°å…¶é¢æ¿ â€”â€” å¦åˆ™å¯¼å…¥/äºŒç»´ç åŒæ­¥è¿›æ¥çš„æ–°æ•°æ®è¦é‡å¯æ‰çœ‹å¾—è§
   if (name === 'posture' || name === 'ft' || name === 'assess') {
     renderPaUI(); renderFtUI(); renderRomHistory(); renderRomResult(romHistory()[0] || null);
     renderPromHistory(); renderPain(); renderReport(); renderCareLoop();
@@ -1503,10 +1503,10 @@ function switchTab(name) {
 document.querySelectorAll('.bottom-nav button').forEach((btn) => {
   btn.addEventListener('click', () => switchTab(btn.dataset.tab));
 });
-// 切到后台自动暂停分析，回来自动恢复（省电）
+// åˆ‡åˆ°åŽå°è‡ªåŠ¨æš‚åœåˆ†æžï¼Œå›žæ¥è‡ªåŠ¨æ¢å¤ï¼ˆçœç”µï¼‰
 document.addEventListener('visibilitychange', () => { if (!document.hidden) { kickLoop(); cloudAutoSync(); } });
 
-/* ============ 端手互通：二维码同步（无服务器 · 数据本地压缩加密传输） ============ */
+/* ============ ç«¯æ‰‹äº’é€šï¼šäºŒç»´ç åŒæ­¥ï¼ˆæ— æœåŠ¡å™¨ Â· æ•°æ®æœ¬åœ°åŽ‹ç¼©åŠ å¯†ä¼ è¾“ï¼‰ ============ */
 const SYNC_PREFIX = 'RAS|';
 const syncState = { scanning: false, got: [], total: null, last: 0, off: null, showing: false, frameIdx: 0, chunks: [], frameTimer: null };
 
@@ -1535,20 +1535,20 @@ function makeSyncData(includeCollect = false) {
     plan: sget('rehab_plan', []),
     planDone: sget('rehab_plan_done', {}),
     profile: sget('rehab_profile', {}),
-    // v2.21.9：补传 功能测试记录 / 体态报告 / 运动指数历史（原来换设备后这三页是空的）
+    // v2.21.9ï¼šè¡¥ä¼  åŠŸèƒ½æµ‹è¯•è®°å½• / ä½“æ€æŠ¥å‘Š / è¿åŠ¨æŒ‡æ•°åŽ†å²ï¼ˆåŽŸæ¥æ¢è®¾å¤‡åŽè¿™ä¸‰é¡µæ˜¯ç©ºçš„ï¼‰
     ftHistory: sget('rehab_ft_history', []),
     paHistory: sget('rehab_pa_history', []),
     homeIdx: sget('rehab_home_idx', []),
-    painHistory: sget('rehab_pain_history', []),   // v2.22.0：疼痛记录一并端手互通
-    romHistory: sget('rehab_rom_history', []),     // v2.26.0：ROM 测量一并端手互通
-    promsHistory: sget('rehab_proms_history', []), // v2.27.0：PROMs 量表一并端手互通
-    aiPrefs: sget('rehab_ai_prefs', {}),           // v2.28.0：智能引擎设置一并端手互通
-    path: sget('rehab_path', null),                // v2.29.0：康复路径状态一并端手互通
+    painHistory: sget('rehab_pain_history', []),   // v2.22.0ï¼šç–¼ç—›è®°å½•ä¸€å¹¶ç«¯æ‰‹äº’é€š
+    romHistory: sget('rehab_rom_history', []),     // v2.26.0ï¼šROM æµ‹é‡ä¸€å¹¶ç«¯æ‰‹äº’é€š
+    promsHistory: sget('rehab_proms_history', []), // v2.27.0ï¼šPROMs é‡è¡¨ä¸€å¹¶ç«¯æ‰‹äº’é€š
+    aiPrefs: sget('rehab_ai_prefs', {}),           // v2.28.0ï¼šæ™ºèƒ½å¼•æ“Žè®¾ç½®ä¸€å¹¶ç«¯æ‰‹äº’é€š
+    path: sget('rehab_path', null),                // v2.29.0ï¼šåº·å¤è·¯å¾„çŠ¶æ€ä¸€å¹¶ç«¯æ‰‹äº’é€š
   };
   if (includeCollect) d.collect = state.collectBuf;
   return d;
 }
-// 按 id 合并：双方都保留，同 id 以对方为准；按时间倒序
+// æŒ‰ id åˆå¹¶ï¼šåŒæ–¹éƒ½ä¿ç•™ï¼ŒåŒ id ä»¥å¯¹æ–¹ä¸ºå‡†ï¼›æŒ‰æ—¶é—´å€’åº
 function mergeSyncData(data) {
   const mergeById = (cur, inc) => {
     const m = new Map(cur.map((x) => [x.id, x]));
@@ -1573,7 +1573,7 @@ function mergeSyncData(data) {
   if (data.profile && (data.profile.name || data.profile.injury)) {
     sset('rehab_profile', { ...(sget('rehab_profile', {})), ...data.profile });
   }
-  // v2.21.9：三类历史（记录本身无 id，按 项目/类型 + 时间戳 去重；日期型按 d 去重）
+  // v2.21.9ï¼šä¸‰ç±»åŽ†å²ï¼ˆè®°å½•æœ¬èº«æ—  idï¼ŒæŒ‰ é¡¹ç›®/ç±»åž‹ + æ—¶é—´æˆ³ åŽ»é‡ï¼›æ—¥æœŸåž‹æŒ‰ d åŽ»é‡ï¼‰
   if (Array.isArray(data.ftHistory) && data.ftHistory.length) {
     const m = new Map(ftHistory().map((r) => [r.key + '|' + r.ts, r]));
     data.ftHistory.forEach((r) => { if (r && r.ts) m.set(r.key + '|' + r.ts, r); });
@@ -1590,19 +1590,19 @@ function mergeSyncData(data) {
     sset('rehab_home_idx', [...m.values()].sort((a, b) => (a.d < b.d ? 1 : -1)).slice(0, 30));
   }
   if (Array.isArray(data.painHistory) && data.painHistory.length) {
-    painSave(mergeById(painHistory(), data.painHistory));   // 疼痛记录有 id，按 id 合并
+    painSave(mergeById(painHistory(), data.painHistory));   // ç–¼ç—›è®°å½•æœ‰ idï¼ŒæŒ‰ id åˆå¹¶
   }
   if (Array.isArray(data.romHistory) && data.romHistory.length) {
-    romSave(mergeById(romHistory(), data.romHistory));      // v2.26.0：ROM 记录按 id 合并
+    romSave(mergeById(romHistory(), data.romHistory));      // v2.26.0ï¼šROM è®°å½•æŒ‰ id åˆå¹¶
   }
   if (Array.isArray(data.promsHistory) && data.promsHistory.length) {
-    promSave(mergeById(promHistory(), data.promsHistory));  // v2.27.0：PROMs 记录按 id 合并
+    promSave(mergeById(promHistory(), data.promsHistory));  // v2.27.0ï¼šPROMs è®°å½•æŒ‰ id åˆå¹¶
   }
   if (data.aiPrefs && typeof data.aiPrefs === 'object') {
-    sset('rehab_ai_prefs', Object.assign({}, aiPrefs(), data.aiPrefs));   // v2.28.0：智能引擎设置合并
+    sset('rehab_ai_prefs', Object.assign({}, aiPrefs(), data.aiPrefs));   // v2.28.0ï¼šæ™ºèƒ½å¼•æ“Žè®¾ç½®åˆå¹¶
   }
   if (data.path && typeof data.path === 'object') {
-    sset('rehab_path', Object.assign({}, pathCfg(), data.path));          // v2.29.0：康复路径合并
+    sset('rehab_path', Object.assign({}, pathCfg(), data.path));          // v2.29.0ï¼šåº·å¤è·¯å¾„åˆå¹¶
   }
   if (Array.isArray(data.collect) && data.collect.length) {
     const seen = new Set(state.collectBuf.map((r) => r.ex + '|' + r.label + '|' + (r.feats || []).join(',')));
@@ -1615,7 +1615,7 @@ function mergeSyncData(data) {
   return { s: (data.sessions || []).length, a: (data.assessments || []).length, p: (data.appts || []).length, c: (data.customExercises || []).length };
 }
 
-/* ---------- 显示二维码（发送端） ---------- */
+/* ---------- æ˜¾ç¤ºäºŒç»´ç ï¼ˆå‘é€ç«¯ï¼‰ ---------- */
 async function startSyncShow() {
   const data = makeSyncData();
   if (!data.sessions.length && !data.assessments.length && !data.appts.length && !data.customExercises.length
@@ -1662,7 +1662,7 @@ function stopSyncShow() {
   $('qr-modal').classList.add('hidden');
 }
 
-/* ---------- 扫描二维码（接收端） ---------- */
+/* ---------- æ‰«æäºŒç»´ç ï¼ˆæŽ¥æ”¶ç«¯ï¼‰ ---------- */
 async function startSyncScan() {
   if (syncState.scanning) return;
   try {
@@ -1718,7 +1718,7 @@ async function finishSyncScan() {
     const data = JSON.parse(json);
     if (!Array.isArray(data.sessions)) throw new Error('bad payload');
     const r = mergeSyncData(data);
-    refreshAllData();   // v2.21.9：同步后全模块刷新（原只刷记录/评估/预约/自定义，今日与计划不刷新）
+    refreshAllData();   // v2.21.9ï¼šåŒæ­¥åŽå…¨æ¨¡å—åˆ·æ–°ï¼ˆåŽŸåªåˆ·è®°å½•/è¯„ä¼°/é¢„çº¦/è‡ªå®šä¹‰ï¼Œä»Šæ—¥ä¸Žè®¡åˆ’ä¸åˆ·æ–°ï¼‰
     toast(t('scanDone', { s: r.s, a: r.a, p: r.p, c: r.c }));
   } catch (e) {
     toast(t('scanError', { msg: e.message }));
@@ -1736,7 +1736,7 @@ $('btn-sync-scan').addEventListener('click', startSyncScan);
 $('btn-sync-cancel').addEventListener('click', cancelSyncScan);
 $('qr-close').addEventListener('click', stopSyncShow);
 
-/* ============ 个人资料 ============ */
+/* ============ ä¸ªäººèµ„æ–™ ============ */
 const profileGet = () => sget('rehab_profile', { name: '', goal: 'knee', injury: '' });
 function renderProfile() {
   const p = profileGet();
@@ -1750,7 +1750,7 @@ $('btn-save-profile').addEventListener('click', () => {
   scheduleCloudSync();
 });
 
-/* ============ 统计报表（30 天趋势 / 动作分布） ============ */
+/* ============ ç»Ÿè®¡æŠ¥è¡¨ï¼ˆ30 å¤©è¶‹åŠ¿ / åŠ¨ä½œåˆ†å¸ƒï¼‰ ============ */
 function lineChart(points, color, uid) {
   const W = 320, H = 72, P = 8;
   const n = points.length;
@@ -1793,7 +1793,7 @@ function renderDist() {
   const entries = Object.entries(totals).sort((a, b) => b[1] - a[1]);
   if (!entries.length) { $('dist-chart').innerHTML = emptyBox('record', 'emptyList'); return; }
   const max = entries[0][1];
-  const total = entries.reduce((a, [, n]) => a + n, 0);   // v2.21.6：占比
+  const total = entries.reduce((a, [, n]) => a + n, 0);   // v2.21.6ï¼šå æ¯”
   $('dist-chart').innerHTML = entries.map(([id, n]) => {
     const e = EXERCISES[id];
     return `<div class="dist-row">
@@ -1804,7 +1804,7 @@ function renderDist() {
   }).join('');
 }
 
-/* ============ 成就系统 ============ */
+/* ============ æˆå°±ç³»ç»Ÿ ============ */
 function calcStreak(sessions) {
   const today = new Date(); today.setHours(0, 0, 0, 0);
   let streak = 0;
@@ -1844,12 +1844,12 @@ function renderAchievements() {
       <div class="ach-desc">${t(a.descKey)}</div>
     </div>`;
   }).join('');
-  const unlocked = ACHIEVEMENTS.filter((a) => a.test(stats)).length;   // v2.21.6：解锁进度
+  const unlocked = ACHIEVEMENTS.filter((a) => a.test(stats)).length;   // v2.21.6ï¼šè§£é”è¿›åº¦
   const acEl = $('ach-count');
   if (acEl) acEl.textContent = t('achCount', { n: unlocked, t: ACHIEVEMENTS.length });
 }
 
-/* ============ 康复计划 ============ */
+/* ============ åº·å¤è®¡åˆ’ ============ */
 const planGet = () => sget('rehab_plan', []);
 const planDoneGet = () => sget('rehab_plan_done', {});
 const todayKeyStr = () => {
@@ -1872,7 +1872,7 @@ function renderTodayPlan() {
     return `<div class="item">
       <button class="todo-check ${isDone ? 'on' : ''}" data-ex="${p.ex}">${isDone ? icon('check') : ''}</button>
       <div style="flex:1">
-        <div class="t"><span class="t-ico">${icon(e ? e.icon : 'custom')}</span>${e ? exName(e) : p.ex} · ${t('repsN', { n: p.reps })}</div>
+        <div class="t"><span class="t-ico">${icon(e ? e.icon : 'custom')}</span>${e ? exName(e) : p.ex} Â· ${t('repsN', { n: p.reps })}</div>
       </div>
     </div>`;
   }).join('') + `<div class="plan-progress">
@@ -1902,13 +1902,13 @@ function renderPlanList() {
   const weekS = sget('rehab_sessions', []).filter((s) => new Date(s.ts) >= wk);
   el.innerHTML = list.map((p) => {
     const e = getEx(p.ex);
-    const g = p.reps * (p.days || []).length;                       // v2.21.8：周目标
+    const g = p.reps * (p.days || []).length;                       // v2.21.8ï¼šå‘¨ç›®æ ‡
     const done = weekS.filter((s) => s.ex === p.ex).reduce((a, s) => a + s.reps, 0);
     const pct = Math.min(100, Math.round(100 * done / Math.max(1, g)));
     return `<div class="item">
       <div style="flex:1">
-        <div class="t"><span class="t-ico">${icon(e ? e.icon : 'custom')}</span>${e ? exName(e) : p.ex} · ${t('repsN', { n: p.reps })}</div>
-        <div class="d">${(p.days || []).map((d) => new Date(2024, 0, 7 + d).toLocaleDateString(locale(), { weekday: 'short' })).join(' · ')}</div>
+        <div class="t"><span class="t-ico">${icon(e ? e.icon : 'custom')}</span>${e ? exName(e) : p.ex} Â· ${t('repsN', { n: p.reps })}</div>
+        <div class="d">${(p.days || []).map((d) => new Date(2024, 0, 7 + d).toLocaleDateString(locale(), { weekday: 'short' })).join(' Â· ')}</div>
         <div class="plan-bar" style="margin-top:6px"><div class="plan-fill" style="width:${pct}%"></div></div>
         <div class="hint tiny" style="margin-top:3px">${t('planWeekProg', { d: Math.min(done, g), g })}</div>
       </div>
@@ -1916,7 +1916,7 @@ function renderPlanList() {
     </div>`;
   }).join('');
   el.querySelectorAll('[data-plan-del]').forEach((b) => b.addEventListener('click', () => {
-    if (!confirm(t('confirmDelPlan'))) return;   // v2.21.8：删除确认
+    if (!confirm(t('confirmDelPlan'))) return;   // v2.21.8ï¼šåˆ é™¤ç¡®è®¤
     sset('rehab_plan', planGet().filter((p) => p.ex !== b.dataset.planDel));
     renderPlanList(); renderTodayPlan();
     scheduleCloudSync();
@@ -1969,7 +1969,7 @@ $('btn-plan-save').addEventListener('click', () => {
   scheduleCloudSync();
 });
 
-/* ============ 训练提醒 ============ */
+/* ============ è®­ç»ƒæé†’ ============ */
 const remGet = () => LS.get('rehab_reminder', { on: false, time: '18:00' });
 function renderReminder() {
   const r = remGet();
@@ -2015,7 +2015,7 @@ function fireReminder() {
   if ('Notification' in window && Notification.permission === 'granted') { try { new Notification(t('appTitle'), { body: msg }); } catch { /* ignore */ } }
   toast(msg);
 }
-// 补发：今天错过了提醒时间，打开 App 时补一次（不再等到明天）
+// è¡¥å‘ï¼šä»Šå¤©é”™è¿‡äº†æé†’æ—¶é—´ï¼Œæ‰“å¼€ App æ—¶è¡¥ä¸€æ¬¡ï¼ˆä¸å†ç­‰åˆ°æ˜Žå¤©ï¼‰
 function reminderCatchUp() {
   const r = remGet();
   if (!r.on || !r.time) return;
@@ -2028,9 +2028,9 @@ function reminderCatchUp() {
   }
 }
 
-/* ============ 云同步（Supabase 账号系统） ============ */
-// ★ 写死配置位：把 Supabase 项目信息填进这里（如 { url: 'https://xxx.supabase.co', anonKey: 'eyJ...' }），
-//   云端同步即刻对所有用户生效，用户界面不会出现任何配置项。填 null 时云端功能待启用。
+/* ============ äº‘åŒæ­¥ï¼ˆSupabase è´¦å·ç³»ç»Ÿï¼‰ ============ */
+// â˜… å†™æ­»é…ç½®ä½ï¼šæŠŠ Supabase é¡¹ç›®ä¿¡æ¯å¡«è¿›è¿™é‡Œï¼ˆå¦‚ { url: 'https://xxx.supabase.co', anonKey: 'eyJ...' }ï¼‰ï¼Œ
+//   äº‘ç«¯åŒæ­¥å³åˆ»å¯¹æ‰€æœ‰ç”¨æˆ·ç”Ÿæ•ˆï¼Œç”¨æˆ·ç•Œé¢ä¸ä¼šå‡ºçŽ°ä»»ä½•é…ç½®é¡¹ã€‚å¡« null æ—¶äº‘ç«¯åŠŸèƒ½å¾…å¯ç”¨ã€‚
 const CLOUD_HARDCODED = null;
 const cloudCfg = () => CLOUD_HARDCODED || LS.get('rehab_cloud', null);
 const cloudSession = () => LS.get('rehab_cloud_session', null);
@@ -2067,7 +2067,7 @@ async function cloudSync() {
   const s = cloudSession();
   if (!cfg || !s) throw new Error(t('cloudNotLoggedIn'));
   $('cloud-status').textContent = t('cloudSyncing');
-  // 拉取云端全部快照 → 按时间升序合并 → 合并本地 → 写回一条快照
+  // æ‹‰å–äº‘ç«¯å…¨éƒ¨å¿«ç…§ â†’ æŒ‰æ—¶é—´å‡åºåˆå¹¶ â†’ åˆå¹¶æœ¬åœ° â†’ å†™å›žä¸€æ¡å¿«ç…§
   const rows = await cloudReq(`/rest/v1/userdata?user_id=eq.${s.uid}&select=payload,updated_at&order=updated_at.asc`, {}, cfg);
   for (const row of rows || []) mergeSyncData(row.payload || {});
   const merged = makeSyncData(true);
@@ -2076,13 +2076,13 @@ async function cloudSync() {
     body: JSON.stringify({ id: s.uid, user_id: s.uid, payload: merged, updated_at: new Date().toISOString() }),
     headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
   }, cfg);
-  LS.set('rehab_cloud_last', Date.now());   // v2.36.0：记录上次同步时间，用户看得见
+  LS.set('rehab_cloud_last', Date.now());   // v2.36.0ï¼šè®°å½•ä¸Šæ¬¡åŒæ­¥æ—¶é—´ï¼Œç”¨æˆ·çœ‹å¾—è§
   $('cloud-status').textContent = t('cloudOk');
   renderCloud();
   renderRecords(); renderAssessments(); renderAppts(); renderCustomList(); renderExChips(); renderProfile();
   renderTodayPlan(); renderPlanList(); renderAchievements(); renderCollectCount(); renderGoal();
 }
-// 注销账号：连云端一起删干净（应用商店上架硬要求），删不掉就不算注销成功
+// æ³¨é”€è´¦å·ï¼šè¿žäº‘ç«¯ä¸€èµ·åˆ å¹²å‡€ï¼ˆåº”ç”¨å•†åº—ä¸Šæž¶ç¡¬è¦æ±‚ï¼‰ï¼Œåˆ ä¸æŽ‰å°±ä¸ç®—æ³¨é”€æˆåŠŸ
 async function cloudDeleteAccount() {
   const cfg = cloudCfg();
   const s = cloudSession();
@@ -2090,7 +2090,7 @@ async function cloudDeleteAccount() {
   await cloudReq('/rest/v1/rpc/delete_my_account', { method: 'POST', body: JSON.stringify({}) }, cfg);
   LS.set('rehab_cloud_session', null);
 }
-/* ============ 首次启动引导 + 版本更新检测 ============ */
+/* ============ é¦–æ¬¡å¯åŠ¨å¼•å¯¼ + ç‰ˆæœ¬æ›´æ–°æ£€æµ‹ ============ */
 const OB_STEPS = [
   { ico: 'squat', titleKey: 'obTitle1', textKey: 'obText1' },
   { ico: 'schedule', titleKey: 'obTitle2', textKey: 'obText2' },
@@ -2122,7 +2122,7 @@ $('btn-ob-next').addEventListener('click', () => {
   else closeOnboard();
 });
 $('btn-ob-skip').addEventListener('click', closeOnboard);
-/* ============ 自主更新（自动检查 → 网页版自动重启 / 安卓版下载安装） ============ */
+/* ============ è‡ªä¸»æ›´æ–°ï¼ˆè‡ªåŠ¨æ£€æŸ¥ â†’ ç½‘é¡µç‰ˆè‡ªåŠ¨é‡å¯ / å®‰å“ç‰ˆä¸‹è½½å®‰è£…ï¼‰ ============ */
 function verCmp(a, b) {
   const pa = String(a).replace(/^v/, '').split('.').map((n) => parseInt(n, 10) || 0);
   const pb = String(b).replace(/^v/, '').split('.').map((n) => parseInt(n, 10) || 0);
@@ -2138,7 +2138,7 @@ const UPDATE_JSON = 'https://cdn.jsdelivr.net/gh/xushengqin666-cell/rehab-ai@mai
 const UPDATE_GH = 'https://api.github.com/repos/xushengqin666-cell/rehab-ai/releases/latest';
 const UPD_DAY = 86400000;
 const updState = { info: null, swReg: null, waiting: false, autoApply: false, applied: false };
-// 双源裁决：版本更高者胜；版本相同时优先 jsDelivr 的 APK 链接（国内可下载）
+// åŒæºè£å†³ï¼šç‰ˆæœ¬æ›´é«˜è€…èƒœï¼›ç‰ˆæœ¬ç›¸åŒæ—¶ä¼˜å…ˆ jsDelivr çš„ APK é“¾æŽ¥ï¼ˆå›½å†…å¯ä¸‹è½½ï¼‰
 function pickLatest(best, info) {
   if (!info) return best;
   if (!best) return info;
@@ -2149,8 +2149,8 @@ function pickLatest(best, info) {
 }
 
 async function fetchLatest() {
-  // 双源并行取最新：jsDelivr（国内可访问，但边缘缓存偶尔陈旧）+ GitHub API（准确，国内可能连不上）
-  // 两者都成功时取版本号较大者——CDN 缓存回退不会漏更新
+  // åŒæºå¹¶è¡Œå–æœ€æ–°ï¼šjsDelivrï¼ˆå›½å†…å¯è®¿é—®ï¼Œä½†è¾¹ç¼˜ç¼“å­˜å¶å°”é™ˆæ—§ï¼‰+ GitHub APIï¼ˆå‡†ç¡®ï¼Œå›½å†…å¯èƒ½è¿žä¸ä¸Šï¼‰
+  // ä¸¤è€…éƒ½æˆåŠŸæ—¶å–ç‰ˆæœ¬å·è¾ƒå¤§è€…â€”â€”CDN ç¼“å­˜å›žé€€ä¸ä¼šæ¼æ›´æ–°
   let best = null;
   const take = (info) => { best = pickLatest(best, info); };
   const jobs = [
@@ -2167,7 +2167,7 @@ async function fetchLatest() {
             important: !!j.important,
           });
         }
-      } catch { /* 忽略 */ }
+      } catch { /* å¿½ç•¥ */ }
     })(),
     (async () => {
       try {
@@ -2180,7 +2180,7 @@ async function fetchLatest() {
             take({ version: tag, apk: apkAsset ? apkAsset.browser_download_url : '', releaseUrl: j.html_url || '', notes: String(j.body || '').split('\n')[0].slice(0, 120), important: false });
           }
         }
-      } catch { /* 忽略 */ }
+      } catch { /* å¿½ç•¥ */ }
     })(),
   ];
   await Promise.all(jobs);
@@ -2206,19 +2206,19 @@ function showUpdateCard(info) {
 
 async function applyUpdate(info, manual) {
   const btn = $('btn-upd-now');
-  if (btn) { btn.disabled = true; btn.querySelector('span').textContent = '…'; }
-  if (isAndroidNative()) {                      // 安卓 App：下载 APK 并唤起系统安装
+  if (btn) { btn.disabled = true; btn.querySelector('span').textContent = 'â€¦'; }
+  if (isAndroidNative()) {                      // å®‰å“ Appï¼šä¸‹è½½ APK å¹¶å”¤èµ·ç³»ç»Ÿå®‰è£…
     try {
       if (!info.apk) throw new Error('no apk url');
       const upd = window.Capacitor.Plugins.AutoUpdater;
-      try { upd.addListener('progress', (p) => toast(t('updDownloading', { p: p.percent }))); } catch { /* 无进度回调也兼容 */ }
+      try { upd.addListener('progress', (p) => toast(t('updDownloading', { p: p.percent }))); } catch { /* æ— è¿›åº¦å›žè°ƒä¹Ÿå…¼å®¹ */ }
       if (!manual) {
-        // 全自动：静默下载 → 空闲时自动唤起安装
+        // å…¨è‡ªåŠ¨ï¼šé™é»˜ä¸‹è½½ â†’ ç©ºé—²æ—¶è‡ªåŠ¨å”¤èµ·å®‰è£…
         toast(t('updDownloading', { p: 0 }));
         const r = await upd.download({ url: info.apk });
         if (r && r.ready) {
           if (!state.running) { await upd.install({}); return; }
-          updState.pendingInstall = true;        // 训练中 → 等空闲再装
+          updState.pendingInstall = true;        // è®­ç»ƒä¸­ â†’ ç­‰ç©ºé—²å†è£…
           updState.installWatch = setInterval(async () => {
             if (state.running) return;
             clearInterval(updState.installWatch);
@@ -2244,12 +2244,12 @@ async function applyUpdate(info, manual) {
     }
     return;
   }
-  // 网页版：Service Worker 下载新版本 → 自动切换 → 自动重启
+  // ç½‘é¡µç‰ˆï¼šService Worker ä¸‹è½½æ–°ç‰ˆæœ¬ â†’ è‡ªåŠ¨åˆ‡æ¢ â†’ è‡ªåŠ¨é‡å¯
   if (updState.swReg) {
     toast(t('updRestarting'));
     updState.autoApply = true;
-    try { await updState.swReg.update(); } catch { /* 忽略 */ }
-    setTimeout(() => {                          // 15 秒后仍未切换 → 打开下载页兜底
+    try { await updState.swReg.update(); } catch { /* å¿½ç•¥ */ }
+    setTimeout(() => {                          // 15 ç§’åŽä»æœªåˆ‡æ¢ â†’ æ‰“å¼€ä¸‹è½½é¡µå…œåº•
       if (!updState.applied && info.releaseUrl) window.open(info.releaseUrl, '_blank');
     }, 15000);
   } else if (info.releaseUrl) {
@@ -2261,9 +2261,9 @@ const updModeGet = () => LS.get('rehab_upd_mode', 'auto');
 
 async function checkUpdate(manual) {
   if (!manual) {
-    if (updModeGet() === 'off') return;          // 用户关闭自动更新（手动检查仍可用）
+    if (updModeGet() === 'off') return;          // ç”¨æˆ·å…³é—­è‡ªåŠ¨æ›´æ–°ï¼ˆæ‰‹åŠ¨æ£€æŸ¥ä»å¯ç”¨ï¼‰
     const last = LS.get('rehab_update_check', 0);
-    if (Date.now() - last < UPD_DAY) return;    // 自动检查：每天最多一次
+    if (Date.now() - last < UPD_DAY) return;    // è‡ªåŠ¨æ£€æŸ¥ï¼šæ¯å¤©æœ€å¤šä¸€æ¬¡
     LS.set('rehab_update_check', Date.now());
   }
   if (manual) toast(t('updChecking'));
@@ -2272,26 +2272,26 @@ async function checkUpdate(manual) {
   if (verCmp(info.version, APP_VERSION) <= 0) {
     if (manual) toast(t('updLatest', { v: APP_VERSION.replace(/^v/, '') }));
     updState.info = null;
-    aiRun();                                     // AI 管家刷新（无更新项）
+    aiRun();                                     // AI ç®¡å®¶åˆ·æ–°ï¼ˆæ— æ›´æ–°é¡¹ï¼‰
     return;
   }
   updState.info = info;
-  aiRun();                                       // AI 管家感知新版本
+  aiRun();                                       // AI ç®¡å®¶æ„ŸçŸ¥æ–°ç‰ˆæœ¬
   const auto = updModeGet() === 'auto';
   if (!manual && auto && !isAndroidNative() && !state.running) {
-    // 网页版空闲时全自动：静默下载 + 自动重启
-    try { await applyUpdate(info, false); } catch { /* 下次再试 */ }
+    // ç½‘é¡µç‰ˆç©ºé—²æ—¶å…¨è‡ªåŠ¨ï¼šé™é»˜ä¸‹è½½ + è‡ªåŠ¨é‡å¯
+    try { await applyUpdate(info, false); } catch { /* ä¸‹æ¬¡å†è¯• */ }
     return;
   }
   if (!manual && auto && isAndroidNative()) {
-    // 安卓全自动：后台静默下载 → 空闲时唤起安装（不弹卡片）
-    try { await applyUpdate(info, false); } catch { /* 下载失败 → 弹卡片兜底 */ showUpdateCard(info); }
+    // å®‰å“å…¨è‡ªåŠ¨ï¼šåŽå°é™é»˜ä¸‹è½½ â†’ ç©ºé—²æ—¶å”¤èµ·å®‰è£…ï¼ˆä¸å¼¹å¡ç‰‡ï¼‰
+    try { await applyUpdate(info, false); } catch { /* ä¸‹è½½å¤±è´¥ â†’ å¼¹å¡ç‰‡å…œåº• */ showUpdateCard(info); }
     return;
   }
   showUpdateCard(info);
 }
 
-/* ============ AI 系统管家：体检 + 建议 + 反馈收集 ============ */
+/* ============ AI ç³»ç»Ÿç®¡å®¶ï¼šä½“æ£€ + å»ºè®® + åé¦ˆæ”¶é›† ============ */
 const aiEnv = () => {
   const sessions = sget('rehab_sessions', []);
   const stats = aiStatsGet();
@@ -2326,10 +2326,10 @@ const aiEnv = () => {
     cameraFails: stats.cameraFail || 0,
     modelFails: stats.modelFail || 0,
     daysSinceTrain: lastTs ? (Date.now() - lastTs) / 86400000 : null,
-    painMax: painRecentMax(7),          // v2.22.0：近 7 天最高疼痛（供 AI 管家提示）
+    painMax: painRecentMax(7),          // v2.22.0ï¼šè¿‘ 7 å¤©æœ€é«˜ç–¼ç—›ï¼ˆä¾› AI ç®¡å®¶æç¤ºï¼‰
     painCount: painHistory().filter((r) => r.ts >= Date.now() - 7 * 86400000).length,
-    painSpike: painSpike() ? painSpike().delta : 0,   // v2.23.0：当天训练后疼痛上升 ≥2 分
-    promBad: promBadCount(),                          // v2.27.0：重度受限的量表份数
+    painSpike: painSpike() ? painSpike().delta : 0,   // v2.23.0ï¼šå½“å¤©è®­ç»ƒåŽç–¼ç—›ä¸Šå‡ â‰¥2 åˆ†
+    promBad: promBadCount(),                          // v2.27.0ï¼šé‡åº¦å—é™çš„é‡è¡¨ä»½æ•°
   };
 };
 let aiLast = null;
@@ -2372,13 +2372,13 @@ function openFeedback() {
 }
 let fbRating = () => {
   let v = 5;
-  try { v = JSON.parse(localStorage.getItem('rehab_fb_rating') || '5'); } catch { /* 忽略 */ }
+  try { v = JSON.parse(localStorage.getItem('rehab_fb_rating') || '5'); } catch { /* å¿½ç•¥ */ }
   return v;
 };
 function renderFbStars() {
   const r = fbRating();
   const box = $('fb-stars');
-  box.innerHTML = [1, 2, 3, 4, 5].map((i) => `<button class="fb-star${i <= r ? ' on' : ''}" data-r="${i}">★</button>`).join('');
+  box.innerHTML = [1, 2, 3, 4, 5].map((i) => `<button class="fb-star${i <= r ? ' on' : ''}" data-r="${i}">â˜…</button>`).join('');
   box.querySelectorAll('.fb-star').forEach((b) => b.addEventListener('click', () => {
     localStorage.setItem('rehab_fb_rating', b.dataset.r);
     renderFbStars();
@@ -2401,7 +2401,7 @@ function copyFeedback() {
   const report = buildFeedbackReport(env, fbRating(), $('fb-text').value);
   navigator.clipboard.writeText(report.title + '\n\n' + report.body).then(() => toast(t('aiFbCopied'))).catch(() => toast(t('shareFail')));
 }
-// 启动后 AI 管家主动提醒一次（仅当有警告级问题）
+// å¯åŠ¨åŽ AI ç®¡å®¶ä¸»åŠ¨æé†’ä¸€æ¬¡ï¼ˆä»…å½“æœ‰è­¦å‘Šçº§é—®é¢˜ï¼‰
 function aiProactive() {
   const hc = aiRun();
   const warn = hc.items.find((i) => i.level === 'warn');
@@ -2413,28 +2413,28 @@ function renderUpdMode() {
   sel.value = updModeGet();
 }
 
-/* ============ 训练中屏幕常亮（Screen Wake Lock） ============ */
+/* ============ è®­ç»ƒä¸­å±å¹•å¸¸äº®ï¼ˆScreen Wake Lockï¼‰ ============ */
 let wakeLock = null;
 async function acquireWake() {
   try {
     if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen');
-  } catch { /* 部分浏览器不支持，忽略 */ }
+  } catch { /* éƒ¨åˆ†æµè§ˆå™¨ä¸æ”¯æŒï¼Œå¿½ç•¥ */ }
 }
 async function releaseWake() {
-  try { if (wakeLock) await wakeLock.release(); } catch { /* 忽略 */ }
+  try { if (wakeLock) await wakeLock.release(); } catch { /* å¿½ç•¥ */ }
   wakeLock = null;
 }
 document.addEventListener('visibilitychange', () => {
-  if (!document.hidden && state.running) acquireWake();   // 切回前台时重新常亮
+  if (!document.hidden && state.running) acquireWake();   // åˆ‡å›žå‰å°æ—¶é‡æ–°å¸¸äº®
 });
 
-/* ============ 训练结束：AI 小结 ============ */
+/* ============ è®­ç»ƒç»“æŸï¼šAI å°ç»“ ============ */
 function aiSessionEnd() {
   const agg = state.agg || {};
   const frames = agg.frames || 0;
   const secs = Math.max(0, Math.round((Date.now() - (agg.startTS || Date.now())) / 1000));
   const reps = (state.counter && state.counter.reps) || 0;
-  if (!(reps > 0 || secs >= 30)) return;              // 太短/没计数 → 不打扰
+  if (!(reps > 0 || secs >= 30)) return;              // å¤ªçŸ­/æ²¡è®¡æ•° â†’ ä¸æ‰“æ‰°
   const quality = frames > 30 ? Math.round((1 - (agg.badFrames || 0) / frames) * 100) : null;
   const comment = aiSessionComment({ reps, quality, riskEvents: agg.riskFrames || 0, seconds: secs }, !!(ex.rep && ex.rep.hold));
   const ex = state.counter && state.counter.ex ? getEx(state.counter.ex) : getEx(activeExId());
@@ -2443,20 +2443,20 @@ function aiSessionEnd() {
   fb.innerHTML = fbWrap('check', `
     <b>${t('aiSessTitle')}</b>
     <div class="hint">${t('aiSessLine', { ex: exName(ex), n: reps, q: quality == null ? '--' : quality })}</div>
-    <div class="hint">🤖 ${t(comment.key, comment.args)}</div>`);
+    <div class="hint">ðŸ¤– ${t(comment.key, comment.args)}</div>`);
   fb.className = 'feedback';
   fb._last = null;
-  aiRun();                                            // 训练数据变了 → 重新体检
+  aiRun();                                            // è®­ç»ƒæ•°æ®å˜äº† â†’ é‡æ–°ä½“æ£€
 }
 
-/* ============ PWA：安装到桌面提示 ============ */
+/* ============ PWAï¼šå®‰è£…åˆ°æ¡Œé¢æç¤º ============ */
 let deferredPrompt = null;
 window.addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault();
   deferredPrompt = e;
   if (isAndroidNative() || LS.get('rehab_pwa_prompt_closed', 0)) return;
   const fb = $('feedback');
-  if (fb && !fb.classList.contains('hidden')) return; // 有更重要的提示时不抢
+  if (fb && !fb.classList.contains('hidden')) return; // æœ‰æ›´é‡è¦çš„æç¤ºæ—¶ä¸æŠ¢
   fb.classList.remove('hidden');
   fb.innerHTML = fbWrap('download', `
     <b>${t('pwaTitle')}</b>
@@ -2478,19 +2478,19 @@ function renderCloud() {
   const s = cloudSession();
   const localUser = accountCurrent();
   const av = $('account-avatar');
-  if (av) av.textContent = ((s && s.email) || localUser || (cfg ? '?' : '☁'))[0].toUpperCase();
+  if (av) av.textContent = ((s && s.email) || localUser || (cfg ? '?' : 'â˜'))[0].toUpperCase();
   $('cloud-status').textContent = s ? t('cloudLoggedIn', { e: s.email }) : localUser ? t('cloudLoggedIn', { e: localUser }) : (cfg ? t('cloudNotLoggedIn') : t('cloudUnconfigured'));
   $('btn-cloud-sync').classList.toggle('hidden', !s);
   $('btn-cloud-logout').classList.toggle('hidden', !(s || localUser));
   $('btn-open-login').classList.toggle('hidden', !!(s || localUser));
-  $('btn-delete-account').classList.toggle('hidden', !(s || localUser));   // v2.36.0：云端账号也能注销
+  $('btn-delete-account').classList.toggle('hidden', !(s || localUser));   // v2.36.0ï¼šäº‘ç«¯è´¦å·ä¹Ÿèƒ½æ³¨é”€
   const last = LS.get('rehab_cloud_last', 0);
   const lastEl = $('cloud-last');
   if (lastEl) lastEl.textContent = last ? t('cloudLast', { t: new Date(last).toLocaleString(locale(), { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) }) : '';
-  // 配置入口默认对用户隐藏：密钥写死后用户永远看不到；
-  // 开发模式（?cfg=1）或云端未配置时由下方逻辑控制，普通用户界面保持纯净
+  // é…ç½®å…¥å£é»˜è®¤å¯¹ç”¨æˆ·éšè—ï¼šå¯†é’¥å†™æ­»åŽç”¨æˆ·æ°¸è¿œçœ‹ä¸åˆ°ï¼›
+  // å¼€å‘æ¨¡å¼ï¼ˆ?cfg=1ï¼‰æˆ–äº‘ç«¯æœªé…ç½®æ—¶ç”±ä¸‹æ–¹é€»è¾‘æŽ§åˆ¶ï¼Œæ™®é€šç”¨æˆ·ç•Œé¢ä¿æŒçº¯å‡€
 }
-// 登录屏：未登录账号 → 启动即显示（真实 App 体验）；访客模式跳过后不再打扰
+// ç™»å½•å±ï¼šæœªç™»å½•è´¦å· â†’ å¯åŠ¨å³æ˜¾ç¤ºï¼ˆçœŸå®ž App ä½“éªŒï¼‰ï¼›è®¿å®¢æ¨¡å¼è·³è¿‡åŽä¸å†æ‰“æ‰°
 function renderAuth() {
   const show = !accountCurrent() && !cloudSession() && !LS.get('rehab_guest', false);
   $('auth-screen').classList.toggle('hidden', !show);
@@ -2504,7 +2504,7 @@ function showAuth(openConfig = false) {
 async function linkCloudAfterLogin(email, pass) {
   if (!cloudCfg()) return;
   try { await cloudAuth(email, pass, false); }
-  catch { try { await cloudAuth(email, pass, true); } catch { /* 云端不可用则静默，本地账号照常 */ } }
+  catch { try { await cloudAuth(email, pass, true); } catch { /* äº‘ç«¯ä¸å¯ç”¨åˆ™é™é»˜ï¼Œæœ¬åœ°è´¦å·ç…§å¸¸ */ } }
 }
 async function authLogin(register) {
   const email = $('auth-email').value.trim();
@@ -2519,7 +2519,7 @@ async function authLogin(register) {
     }
     await accountLogin(email, pass);
     $('auth-screen').classList.add('hidden');
-    reloadCollectBuf();                              // 切到新账号 → 重载采集缓冲区
+    reloadCollectBuf();                              // åˆ‡åˆ°æ–°è´¦å· â†’ é‡è½½é‡‡é›†ç¼“å†²åŒº
     renderCloud();
     renderRecords(); renderAssessments(); renderAppts(); renderCustomList(); renderExChips();
     renderProfile(); renderTodayPlan(); renderPlanList(); renderAchievements(); renderCollectCount(); renderGoal();
@@ -2529,18 +2529,18 @@ async function authLogin(register) {
     $('auth-status').textContent = t('cloudErr', { msg: e.message });
   }
 }
-// 登录后数据变更 → 4 秒防抖自动同步（像真 App 一样无感）
+// ç™»å½•åŽæ•°æ®å˜æ›´ â†’ 4 ç§’é˜²æŠ–è‡ªåŠ¨åŒæ­¥ï¼ˆåƒçœŸ App ä¸€æ ·æ— æ„Ÿï¼‰
 let cloudSyncTimer = null;
 function scheduleCloudSync() {
   if (!cloudCfg() || !cloudSession()) return;
   clearTimeout(cloudSyncTimer);
   cloudSyncTimer = setTimeout(() => { cloudSync().catch(() => {}); }, 4000);
 }
-// v2.36.0：启动与回到前台各拉一次，跨设备才会「打开就是最新的」，不用用户手动点
+// v2.36.0ï¼šå¯åŠ¨ä¸Žå›žåˆ°å‰å°å„æ‹‰ä¸€æ¬¡ï¼Œè·¨è®¾å¤‡æ‰ä¼šã€Œæ‰“å¼€å°±æ˜¯æœ€æ–°çš„ã€ï¼Œä¸ç”¨ç”¨æˆ·æ‰‹åŠ¨ç‚¹
 let cloudAutoAt = 0;
 function cloudAutoSync() {
   if (!cloudCfg() || !cloudSession()) return;
-  if (Date.now() - cloudAutoAt < 60000) return;   // 一分钟内不重复拉，省流量
+  if (Date.now() - cloudAutoAt < 60000) return;   // ä¸€åˆ†é’Ÿå†…ä¸é‡å¤æ‹‰ï¼Œçœæµé‡
   cloudAutoAt = Date.now();
   cloudSync().catch(() => {});
 }
@@ -2575,7 +2575,7 @@ $('btn-cloud-logout').addEventListener('click', () => {
   accountLogout();
   localStorage.removeItem('rehab_cloud_session');
   invalidateCustom();
-  reloadCollectBuf();                               // 退出账号 → 重载缓冲区（访客空间）
+  reloadCollectBuf();                               // é€€å‡ºè´¦å· â†’ é‡è½½ç¼“å†²åŒºï¼ˆè®¿å®¢ç©ºé—´ï¼‰
   renderCloud();
   renderRecords(); renderAssessments(); renderAppts(); renderCustomList(); renderExChips();
   renderProfile(); renderTodayPlan(); renderPlanList(); renderAchievements(); renderCollectCount(); renderGoal();
@@ -2595,7 +2595,7 @@ $('btn-delete-account').addEventListener('click', async () => {
       toast(t('acctDeleted'));
     } catch (e) {
       toast(t('cloudDeleteFailed', { msg: e.message }));
-      return;   // 云端没删掉就不报销号，避免用户以为删了其实还在
+      return;   // äº‘ç«¯æ²¡åˆ æŽ‰å°±ä¸æŠ¥é”€å·ï¼Œé¿å…ç”¨æˆ·ä»¥ä¸ºåˆ äº†å…¶å®žè¿˜åœ¨
     }
   }
   if (u) accountDelete();
@@ -2606,7 +2606,7 @@ $('btn-delete-account').addEventListener('click', async () => {
   renderProfile(); renderTodayPlan(); renderPlanList(); renderAchievements(); renderCollectCount(); renderGoal();
 });
 
-/* ============ 语音播报（系统 TTS，离线可用） ============ */
+/* ============ è¯­éŸ³æ’­æŠ¥ï¼ˆç³»ç»Ÿ TTSï¼Œç¦»çº¿å¯ç”¨ï¼‰ ============ */
 const voiceEnabled = () => LS.get('rehab_voice', false);
 function speak(text) {
   if (!voiceEnabled() || !('speechSynthesis' in window)) return;
@@ -2629,13 +2629,13 @@ $('btn-voice-toggle').addEventListener('click', () => {
   speak(t('voiceOn'));
 });
 
-/* ============ 轻提示 ============ */
+/* ============ è½»æç¤º ============ */
 function toast(msg) {
   let t = $('toast');
   if (!t) {
     t = document.createElement('div');
     t.id = 'toast';
-    t.setAttribute('role', 'status');          // v2.21.10：提示条可被读屏播报
+    t.setAttribute('role', 'status');          // v2.21.10ï¼šæç¤ºæ¡å¯è¢«è¯»å±æ’­æŠ¥
     t.setAttribute('aria-live', 'polite');
     document.body.appendChild(t);
   }
@@ -2645,64 +2645,64 @@ function toast(msg) {
   t._tm = setTimeout(() => { t.style.opacity = 0; t.style.transform = 'translate(-50%, 12px)'; }, 2200);
 }
 
-/* ============ 内置自测（#selftest，供开发/证据用） ============ */
+/* ============ å†…ç½®è‡ªæµ‹ï¼ˆ#selftestï¼Œä¾›å¼€å‘/è¯æ®ç”¨ï¼‰ ============ */
 async function selfTest() {
   const out = $('selftest-out');
   const log = (name, ok, detail) => {
-    out.innerHTML += `<div class="${ok ? 'st-pass' : 'st-fail'}">${ok ? '✅' : '❌'} ${name} ${detail || ''}</div>`;
+    out.innerHTML += `<div class="${ok ? 'st-pass' : 'st-fail'}">${ok ? 'âœ…' : 'âŒ'} ${name} ${detail || ''}</div>`;
     console.log('SELFTEST:', name, ok ? 'PASS' : 'FAIL', detail || '');
   };
   try {
-    // 构造正面站姿骨架（肩-髋-膝-踝）
+    // æž„é€ æ­£é¢ç«™å§¿éª¨æž¶ï¼ˆè‚©-é«‹-è†-è¸ï¼‰
     const mk = (x, y, vis = 1) => ({ x, y, z: 0, visibility: vis });
     const base = () => {
       const lms = new Array(33).fill(null);
       const set = (i, x, y) => { lms[i] = mk(x, y); };
-      set(0, 0.5, 0.10);               // 鼻
-      set(11, 0.42, 0.22); set(12, 0.58, 0.22);  // 肩
-      set(23, 0.44, 0.45); set(24, 0.56, 0.45);  // 髋
-      set(25, 0.46, 0.65); set(26, 0.54, 0.65);  // 膝
-      set(27, 0.48, 0.85); set(28, 0.52, 0.85);  // 踝
-      set(13, 0.40, 0.30); set(14, 0.60, 0.30);  // 肘
-      set(15, 0.38, 0.38); set(16, 0.62, 0.38);  // 腕
+      set(0, 0.5, 0.10);               // é¼»
+      set(11, 0.42, 0.22); set(12, 0.58, 0.22);  // è‚©
+      set(23, 0.44, 0.45); set(24, 0.56, 0.45);  // é«‹
+      set(25, 0.46, 0.65); set(26, 0.54, 0.65);  // è†
+      set(27, 0.48, 0.85); set(28, 0.52, 0.85);  // è¸
+      set(13, 0.40, 0.30); set(14, 0.60, 0.30);  // è‚˜
+      set(15, 0.38, 0.38); set(16, 0.62, 0.38);  // è…•
       for (let i = 0; i < 33; i++) if (!lms[i]) lms[i] = mk(0.5, 0.5, 0);
       return lms;
     };
-    // 1. 角度数学
+    // 1. è§’åº¦æ•°å­¦
     const p = mk(0, 0), q = mk(0, 1), r = mk(1, 1);
     const ang = angle3(p, q, r);
     log(t('stAngle'), Math.abs(ang - 90) < 0.5, `got ${ang.toFixed(1)}`);
-    // 2. 深蹲判定：标准（膝角 ~100）
+    // 2. æ·±è¹²åˆ¤å®šï¼šæ ‡å‡†ï¼ˆè†è§’ ~100ï¼‰
     let lms = base();
     const res = analyzeAny(lms, EXERCISES.squat);
     log(t('stSquat'), Array.isArray(res.features) && res.features.length === 4, JSON.stringify(res.features));
-    // 3. 内扣检测：右膝向内偏移 → valgus
-    const vgLms = base(); vgLms[26].x = 0.50;  // 右膝移到髋-踝中点内侧
+    // 3. å†…æ‰£æ£€æµ‹ï¼šå³è†å‘å†…åç§» â†’ valgus
+    const vgLms = base(); vgLms[26].x = 0.50;  // å³è†ç§»åˆ°é«‹-è¸ä¸­ç‚¹å†…ä¾§
     const vg = kneeValgus(vgLms);
     log(t('stValgus'), vg.valgus === true, `L${vg.left} R${vg.right}`);
-    // 4. 计数状态机（含防抖：需持续低于阈值 + 两次计数最小间隔）
+    // 4. è®¡æ•°çŠ¶æ€æœºï¼ˆå«é˜²æŠ–ï¼šéœ€æŒç»­ä½ŽäºŽé˜ˆå€¼ + ä¸¤æ¬¡è®¡æ•°æœ€å°é—´éš”ï¼‰
     let c = { state: 'up', reps: 0, d: 100, u: 150, belowT: 0, lastRepTs: 0, confirmMs: 120, minGapMs: 350 };
-    counterUpdate(c, 80, 1000); counterUpdate(c, 80, 1150); const mid = c.state; const reps1 = c.reps; // 持续120ms → down
-    counterUpdate(c, 160, 1300); const reps2 = c.reps;                                                // → up, reps=1
-    counterUpdate(c, 80, 1400); counterUpdate(c, 80, 1530); const mid2 = c.state; const reps3 = c.reps; // 间隔<350ms 不重计
+    counterUpdate(c, 80, 1000); counterUpdate(c, 80, 1150); const mid = c.state; const reps1 = c.reps; // æŒç»­120ms â†’ down
+    counterUpdate(c, 160, 1300); const reps2 = c.reps;                                                // â†’ up, reps=1
+    counterUpdate(c, 80, 1400); counterUpdate(c, 80, 1530); const mid2 = c.state; const reps3 = c.reps; // é—´éš”<350ms ä¸é‡è®¡
     counterUpdate(c, 160, 1700); counterUpdate(c, 80, 1900); counterUpdate(c, 80, 2040);
     counterUpdate(c, 160, 2200); const repsFinal = c.reps;
     log(t('stCounter'), mid === 'down' && reps1 === 0 && reps2 === 1, `reps=${reps2}`);
     log(t('stDebounce'), mid2 === 'up' && reps3 === 1 && repsFinal === 2, `final reps=${repsFinal}`);
-    // 5. 弓步蹲/俯卧撑 能跑通
+    // 5. å¼“æ­¥è¹²/ä¿¯å§æ’‘ èƒ½è·‘é€š
     const lunge = analyzeAny(base(), EXERCISES.lunge);
     log(t('stLunge'), lunge.features.length === 3, JSON.stringify(lunge.features));
     const pushup = analyzeAny(base(), EXERCISES.pushup);
     log(t('stPushup'), pushup.features.length === 2, JSON.stringify(pushup.features));
-    // 6. 自定义动作引擎
+    // 6. è‡ªå®šä¹‰åŠ¨ä½œå¼•æ“Ž
     const custom = customDefault();
     const cres = analyzeAny(base(), custom);
     log(t('stCustom'), cres.features.length === 2 && typeof cres.repValue === 'number', JSON.stringify(cres.features));
-    // 7. 自定义规则触发
-    const c2 = customDefault(); c2.rules[0].max = 50;   // a1(≈128°) 超出 max=50 → bad
+    // 7. è‡ªå®šä¹‰è§„åˆ™è§¦å‘
+    const c2 = customDefault(); c2.rules[0].max = 50;   // a1(â‰ˆ128Â°) è¶…å‡º max=50 â†’ bad
     const c2res = analyzeAny(base(), c2);
     log(t('stCustomRule'), c2res.depth === 'bad' && c2res.badMsgs.length > 0, c2res.badMsgs.join('|'));
-    // 8. 日常高频动作引擎
+    // 8. æ—¥å¸¸é«˜é¢‘åŠ¨ä½œå¼•æ“Ž
     const ss = analyzeAny(base(), EXERCISES.sitstand);
     log(t('stSitStand'), ss.features.length === 3 && typeof ss.repValue === 'number', JSON.stringify(ss.features));
     const hh = analyzeAny(base(), EXERCISES.hiphinge);
@@ -2711,19 +2711,19 @@ async function selfTest() {
     log(t('stStepUp'), su.features.length === 3, JSON.stringify(su.features));
     const sr = analyzeAny(base(), EXERCISES.shoulderraise);
     log(t('stShoulderRaise'), sr.features.length === 3, JSON.stringify(sr.features));
-    // 9. 受伤风险警报：弯腰+直腿搬物 → 弓背风险 2 级
+    // 9. å—ä¼¤é£Žé™©è­¦æŠ¥ï¼šå¼¯è…°+ç›´è…¿æ¬ç‰© â†’ å¼“èƒŒé£Žé™© 2 çº§
     const hh2 = base();
     hh2[11] = mk(0.18, 0.46); hh2[12] = mk(0.20, 0.46);
     const hhRisk = analyzeAny(hh2, EXERCISES.hiphinge);
     log(t('stRiskAlarm'), hhRisk.riskLevel === 2 && hhRisk.risk.length > 0, `level=${hhRisk.riskLevel} ${hhRisk.risk.join('|')}`);
-    // 10. 身体完整性检测：右踝不可见 → 提醒缺「踝」；另一侧被遮挡不算缺失（侧面视角不误报）
+    // 10. èº«ä½“å®Œæ•´æ€§æ£€æµ‹ï¼šå³è¸ä¸å¯è§ â†’ æé†’ç¼ºã€Œè¸ã€ï¼›å¦ä¸€ä¾§è¢«é®æŒ¡ä¸ç®—ç¼ºå¤±ï¼ˆä¾§é¢è§†è§’ä¸è¯¯æŠ¥ï¼‰
     const inc = base(); inc[28].visibility = 0;
     const miss = bodyMissing(inc);
     log(t('stBodyCheck'), miss.length === 1 && miss[0] === t('jAnkle'), miss.join(','));
     const side = base(); side[23].visibility = 0; side[25].visibility = 0; side[27].visibility = 0;
     const miss2 = bodyMissing(side);
     log(t('stBodySide'), miss2.length === 0, miss2.join(',') || 'OK');
-    // 11. 智能识别分类（5 种合成姿势）
+    // 11. æ™ºèƒ½è¯†åˆ«åˆ†ç±»ï¼ˆ5 ç§åˆæˆå§¿åŠ¿ï¼‰
     const mkPose = (mutate) => { const b = base(); mutate(b); return b; };
     const squatP = mkPose((b) => { [23, 24].forEach((i) => { b[i].x = 0.5; b[i].y = 0.55; }); [25, 26].forEach((i) => { b[i].x = 0.62; b[i].y = 0.70; }); });
     const hingeP = mkPose((b) => { [11, 12].forEach((i) => { b[i].x = 0.25; b[i].y = 0.5; }); });
@@ -2739,7 +2739,7 @@ async function selfTest() {
     const raiseP = mkPose((b) => { b[14].x = 0.58; b[14].y = 0.12; b[16].x = 0.58; b[16].y = 0.03; });
     const autoRes = [classifyAuto(squatP), classifyAuto(hingeP), classifyAuto(pushP), classifyAuto(stepP), classifyAuto(raiseP)];
     log(t('stAutoClass'), autoRes.join(',') === 'squat,hiphinge,pushup,stepup,shoulderraise', autoRes.join(','));
-    // 11b. 智能识别·静止姿态：站姿/坐姿（稳定历史 → 静态判定）
+    // 11b. æ™ºèƒ½è¯†åˆ«Â·é™æ­¢å§¿æ€ï¼šç«™å§¿/åå§¿ï¼ˆç¨³å®šåŽ†å² â†’ é™æ€åˆ¤å®šï¼‰
     const tN = performance.now();
     const still = (y) => [0, 1, 2, 3, 4, 5, 6, 7].map((i) => ({ y, t: tN - 1000 + i * 100 }));
     const sitP = mkPose((b) => {
@@ -2751,12 +2751,12 @@ async function selfTest() {
     const standCls = classifyAuto(base(), still(0.45), tN);
     const sitCls = classifyAuto(sitP, still(0.52), tN);
     log(t('stAutoPosture'), standCls === 'standing' && sitCls === 'sitting', `${standCls},${sitCls}`);
-    // 11b2. 噪声晃动下仍判静止（修复「一直显示深蹲」：摄像头噪声+身体微晃不再误判为运动）
+    // 11b2. å™ªå£°æ™ƒåŠ¨ä¸‹ä»åˆ¤é™æ­¢ï¼ˆä¿®å¤ã€Œä¸€ç›´æ˜¾ç¤ºæ·±è¹²ã€ï¼šæ‘„åƒå¤´å™ªå£°+èº«ä½“å¾®æ™ƒä¸å†è¯¯åˆ¤ä¸ºè¿åŠ¨ï¼‰
     const noisy = (y, amp) => [0, 1, 2, 3, 4, 5, 6, 7].map((i) => ({ y: y + amp * (i % 3 - 1), t: tN - 1000 + i * 100 }));
     const standNoisyCls = classifyAuto(base(), noisy(0.45, 0.02), tN);
     const sitNoisyCls = classifyAuto(sitP, noisy(0.52, 0.02), tN);
     log(t('stAutoNoise'), standNoisyCls === 'standing' && sitNoisyCls === 'sitting', `${standNoisyCls},${sitNoisyCls}`);
-    // 11b3. 桌前坐姿（躯干前倾 25–40°）也识别为坐姿（修复「坐着被认成站着」）
+    // 11b3. æ¡Œå‰åå§¿ï¼ˆèº¯å¹²å‰å€¾ 25â€“40Â°ï¼‰ä¹Ÿè¯†åˆ«ä¸ºåå§¿ï¼ˆä¿®å¤ã€Œåç€è¢«è®¤æˆç«™ç€ã€ï¼‰
     const sitLeanP = mkPose((b) => {
       [23, 24].forEach((i) => { b[i].x = 0.40; b[i].y = 0.52; });
       [25, 26].forEach((i) => { b[i].x = 0.56; b[i].y = 0.64; });
@@ -2765,7 +2765,7 @@ async function selfTest() {
     });
     const sitLeanCls = classifyAuto(sitLeanP, still(0.52), tN);
     log(t('stSitLean'), sitLeanCls === 'sitting', `${sitLeanCls} lean=${EXERCISES.sitting.analyze(sitLeanP).metrics.lean.toFixed(0)}`);
-    // 11c. 站姿/坐姿分析
+    // 11c. ç«™å§¿/åå§¿åˆ†æž
     const stRes = EXERCISES.standing.analyze(base());
     const stBad = EXERCISES.standing.analyze(mkPose((b) => { [11, 12].forEach((i) => { b[i].x = 0.40; b[i].y = 0.35; }); b[0].x = 0.35; b[0].y = 0.28; }));
     log(t('stStanding'), stRes.depth === 'ok' && stBad.depth === 'bad', `lean=${stRes.metrics.lean.toFixed(1)}/${stBad.metrics.lean.toFixed(1)}`);
@@ -2778,18 +2778,18 @@ async function selfTest() {
     });
     const siBad = EXERCISES.sitting.analyze(siBadP);
     log(t('stSitting'), siRes.depth === 'ok' && siBad.depth === 'bad', `lean=${siRes.metrics.lean.toFixed(1)}/${siBad.metrics.lean.toFixed(1)}`);
-    // 12. 自主更新：版本比较
+    // 12. è‡ªä¸»æ›´æ–°ï¼šç‰ˆæœ¬æ¯”è¾ƒ
     const vc = verCmp('2.14.0', '2.13.9') === 1 && verCmp('v2.9.1', '2.10.0') === -1
       && verCmp('2.15.0', 'v2.15.0') === 0 && verCmp('2.3.10', '2.3.9') === 1 && verCmp('1.0', '1.0.1') === -1;
     log(t('stVerCmp'), vc, '5/5');
-    // 13. AI 系统管家：体检 + 反馈报告
+    // 13. AI ç³»ç»Ÿç®¡å®¶ï¼šä½“æ£€ + åé¦ˆæŠ¥å‘Š
     const aiGood = healthCheck({ version: 'v2.16.0', latest: null, sessions: [{ ts: Date.now(), reps: 20 }], streak: 1, dist: [{ ex: 'squat', reps: 20 }], profile: { name: 'x', goal: 'knee' }, planCount: 1, errors: [], cameraFails: 0, modelFails: 0, daysSinceTrain: 0 });
     log(t('stAiHealth'), aiGood.score === 100 && aiGood.items.length >= 1, `score=${aiGood.score}`);
     const aiBad = healthCheck({ version: 'v2.16.0', latest: null, sessions: [], streak: 0, dist: [], profile: {}, planCount: 0, errors: [{ t: Date.now(), tag: 'js', msg: 'x' }, { t: Date.now(), tag: 'camera', msg: 'y' }], cameraFails: 3, modelFails: 0, daysSinceTrain: 10 });
     log(t('stAiHealth'), aiBad.score <= 60 && aiBad.items.some((i) => i.level === 'warn'), `score=${aiBad.score} items=${aiBad.items.length}`);
-    const rep = buildFeedbackReport({ version: 'v2.16.0', platform: 'Web', lang: 'zh', sessions: [], streak: 0, dist: [], cameraFails: 0, modelFails: 0, errors: [] }, 5, '很好用');
-    log(t('stAiReport'), rep.body.includes('v2.16.0') && rep.body.includes('系统体检') && rep.body.includes('很好用'), rep.title);
-    // 14. 保持计时器：合格时间才累计 + 连续不合格暂停
+    const rep = buildFeedbackReport({ version: 'v2.16.0', platform: 'Web', lang: 'zh', sessions: [], streak: 0, dist: [], cameraFails: 0, modelFails: 0, errors: [] }, 5, 'å¾ˆå¥½ç”¨');
+    log(t('stAiReport'), rep.body.includes('v2.16.0') && rep.body.includes('ç³»ç»Ÿä½“æ£€') && rep.body.includes('å¾ˆå¥½ç”¨'), rep.title);
+    // 14. ä¿æŒè®¡æ—¶å™¨ï¼šåˆæ ¼æ—¶é—´æ‰ç´¯è®¡ + è¿žç»­ä¸åˆæ ¼æš‚åœ
     const holdC = { reps: 0, holdMs: 29000, lastHoldTs: tN, wasBad: false };
     const savedCounter = state.counter;
     state.counter = holdC;
@@ -2801,21 +2801,21 @@ async function selfTest() {
     const pauseHold = holdC.holdMs === h1;
     state.counter = savedCounter;
     log(t('stHoldTimer'), okHold && pauseHold, `reps=${holdC.reps} hold=${holdC.holdMs}`);
-    // 15. AI 错误 7 天窗口：老错误不再扣分
+    // 15. AI é”™è¯¯ 7 å¤©çª—å£ï¼šè€é”™è¯¯ä¸å†æ‰£åˆ†
     const oldErr = healthCheck({ version: APP_VERSION, latest: null, sessions: [{ ts: Date.now(), reps: 5 }], streak: 1, dist: [{ ex: 'squat', reps: 5 }], profile: { name: 'x', goal: 'knee' }, planCount: 1, errors: [{ t: Date.now() - 8 * 86400000, tag: 'js', msg: 'old' }], cameraFails: 0, modelFails: 0, daysSinceTrain: 0 });
     log(t('stErrWindow'), oldErr.score === 100, `score=${oldErr.score}`);
-    // 16. 智能识别投票防抖：66% 票数 + 连续 4 帧
+    // 16. æ™ºèƒ½è¯†åˆ«æŠ•ç¥¨é˜²æŠ–ï¼š66% ç¥¨æ•° + è¿žç»­ 4 å¸§
     const v1 = autoSwitchOk({ squat: 10, lunge: 2 }, ['squat', 'squat', 'squat', 'squat']) === 'squat';
     const v2 = autoSwitchOk({ squat: 7, lunge: 5 }, ['lunge', 'squat', 'lunge', 'squat']) === null;
     const v3 = autoSwitchOk({ squat: 10, lunge: 2 }, ['lunge', 'lunge', 'lunge', 'lunge']) === null;
-    log(t('stAutoVote'), v1 && v2 && v3, '3 组裁决');
-    // 16b. 双源更新裁决：版本高者胜；等版本时保留 jsDelivr 链接
+    log(t('stAutoVote'), v1 && v2 && v3, '3 ç»„è£å†³');
+    // 16b. åŒæºæ›´æ–°è£å†³ï¼šç‰ˆæœ¬é«˜è€…èƒœï¼›ç­‰ç‰ˆæœ¬æ—¶ä¿ç•™ jsDelivr é“¾æŽ¥
     const p1 = pickLatest(null, { version: '2.17.3', apk: 'https://github.com/x.apk' });
     const p2 = pickLatest(p1, { version: '2.17.3', apk: 'https://cdn.jsdelivr.net/x.apk' });
     const p3 = pickLatest(p2, { version: '2.17.1', apk: 'https://y.apk' });
     const p4 = pickLatest(p2, { version: '2.17.4', apk: 'https://github.com/z.apk' });
     log(t('stPickLatest'), p1.version === '2.17.3' && p2.apk.includes('jsdelivr') && p3.version === '2.17.3' && p4.version === '2.17.4', `${p2.version}/${p4.version}`);
-    // 16c. AI 一键生成计划（按康复目标）
+    // 16c. AI ä¸€é”®ç”Ÿæˆè®¡åˆ’ï¼ˆæŒ‰åº·å¤ç›®æ ‡ï¼‰
     const pk = generatePlan('knee');
     const pp = generatePlan('posture');
     const pf2 = generatePlan('fitness');
@@ -2825,7 +2825,7 @@ async function selfTest() {
       && pf2.length >= 5 && po.length >= 3
       && [pk, pp, pf2, po].every((pl) => pl.every((x) => x.reps > 0 && Array.isArray(x.days) && x.days.length >= 3 && x.days.every((d) => d >= 0 && d <= 6)));
     log(t('stPlanGen'), planOk, `knee=${pk.length} posture=${pp.length} fitness=${pf2.length} other=${po.length}`);
-    // 17. 腿伸直坐姿识别 + 体态小结专属文案
+    // 17. è…¿ä¼¸ç›´åå§¿è¯†åˆ« + ä½“æ€å°ç»“ä¸“å±žæ–‡æ¡ˆ
     const sitLegs = mkPose((b) => {
       [23, 24].forEach((i) => { b[i].x = 0.42; b[i].y = 0.52; });
       [25, 26].forEach((i) => { b[i].x = 0.55; b[i].y = 0.52; });
@@ -2835,28 +2835,28 @@ async function selfTest() {
     const sitLegsCls = classifyAuto(sitLegs, still(0.52), tN);
     const holdComment = aiSessionComment({ reps: 0, quality: null, riskEvents: 0 }, true);
     log(t('stAutoPosture'), sitLegsCls === 'sitting' && holdComment.key === 'aiSessHoldNone', `${sitLegsCls},${holdComment.key}`);
-    // 18. 全身体态评估引擎（v2.19）：好/坏骨架评分 + 指导性建议
+    // 18. å…¨èº«ä½“æ€è¯„ä¼°å¼•æ“Žï¼ˆv2.19ï¼‰ï¼šå¥½/åéª¨æž¶è¯„åˆ† + æŒ‡å¯¼æ€§å»ºè®®
     const paGood = paBuildReport('standing', paEvalStanding(Array(30).fill(base())));
     const paBadLms = (() => { const b = base(); b[0].x = 0.44; b[0].y = 0.14; [11, 12].forEach((i) => { b[i].x = 0.56; b[i].y = 0.31; }); b[11].y = 0.30; return b; })();
     const paBad = paBuildReport('standing', paEvalStanding(Array(30).fill(paBadLms)));
     const paAdviceOk = paBad.priorities.length >= 1 && paBad.priorities.every((i) => i.advice && i.advice.length > 2);
     log(t('stPaStand'), paGood.score >= 80 && paBad.score < 80 && paAdviceOk, `good=${paGood.score} bad=${paBad.score} advice=${paAdviceOk}`);
-    // 18b. 单腿站立评价（含保持时间项）
+    // 18b. å•è…¿ç«™ç«‹è¯„ä»·ï¼ˆå«ä¿æŒæ—¶é—´é¡¹ï¼‰
     const paSingleLms = (() => { const b = base(); b[28].y = 0.78; b[26].y = 0.70; return b; })();
     const paSi = paBuildReport('single', paEvalSingle(Array(30).fill(paSingleLms)));
     log(t('stPaSingle'), paSi.items.length >= 4 && paSi.items.some((i) => i.key === 'mSingleHold'), `items=${paSi.items.length}`);
-    // 18c. 深蹲评价：右膝内扣 → valgus 项 bad
+    // 18c. æ·±è¹²è¯„ä»·ï¼šå³è†å†…æ‰£ â†’ valgus é¡¹ bad
     const paSqLms = (() => { const b = base(); [23, 24].forEach((i) => { b[i].y = 0.50; }); [25, 26].forEach((i) => { b[i].x = 0.50; b[i].y = 0.68; }); return b; })();
     const paSq = paBuildReport('squat', paEvalSquat(Array(30).fill(paSqLms)));
     const paValgus = paSq.items.find((i) => i.key === 'mSquatValgus');
     log(t('stPaSquat'), paValgus && paValgus.level !== 'good', `valgus=${paValgus ? paValgus.level : '?'}`);
-    // 18d. 步频检测：合成 1.83Hz 正弦髋部轨迹 → ≈110 步/分
+    // 18d. æ­¥é¢‘æ£€æµ‹ï¼šåˆæˆ 1.83Hz æ­£å¼¦é«‹éƒ¨è½¨è¿¹ â†’ â‰ˆ110 æ­¥/åˆ†
     paState.steps = []; paState.hipHist = [];
     for (let i = 0; i < 300; i++) { const tt = tN - 10000 + i * 33; paState.hipHist.push({ y: 0.5 + 0.02 * Math.sin(2 * Math.PI * 1.833 * (tt - tN) / 1000), t: tt }); }
     paDetectSteps(tN);
     const paCad = paCadence();
     log(t('stPaWalk'), paCad.cad > 100 && paCad.cad < 120, `cad=${paCad.cad.toFixed(0)} steps=${paState.steps.length}`);
-    // 18e. 完整性门控：缺右踝 → 不评价；脚出画 → 不评价
+    // 18e. å®Œæ•´æ€§é—¨æŽ§ï¼šç¼ºå³è¸ â†’ ä¸è¯„ä»·ï¼›è„šå‡ºç”» â†’ ä¸è¯„ä»·
     paState.hipHist = [];
     const paInc = base(); paInc[28].visibility = 0;
     const paGate1 = paCompleteness(paInc, 'standing', tN);
@@ -2865,11 +2865,11 @@ async function selfTest() {
     const paGateOk = paGate1.ok === false && paGate1.items.some((i) => i.key === 'body' && !i.ok)
       && paGate2.ok === false && paGate2.items.some((i) => i.key === 'frame' && !i.ok);
     log(t('stPaGate'), paGateOk, `missing=${!paGate1.ok} outframe=${!paGate2.ok}`);
-    // 18f. 单腿站立抬起侧识别（v2.21.4：踝更高一侧 = 抬起侧）
+    // 18f. å•è…¿ç«™ç«‹æŠ¬èµ·ä¾§è¯†åˆ«ï¼ˆv2.21.4ï¼šè¸æ›´é«˜ä¸€ä¾§ = æŠ¬èµ·ä¾§ï¼‰
     const paLiftLms = (() => { const b = base(); b[28].y = 0.78; b[26].y = 0.70; return b; })();
     const paLiftHold = paEvalSingle(Array(30).fill(paLiftLms)).find((i) => i.key === 'mSingleHold');
     log(t('stPaLift'), paLiftHold && paLiftHold.text.includes(t('paLiftR')), paLiftHold ? paLiftHold.text : '?');
-    // 19. 运动功能测试引擎（v2.20）：动态深蹲合成 3 次 → 分割+全指标+评分
+    // 19. è¿åŠ¨åŠŸèƒ½æµ‹è¯•å¼•æ“Žï¼ˆv2.20ï¼‰ï¼šåŠ¨æ€æ·±è¹²åˆæˆ 3 æ¬¡ â†’ åˆ†å‰²+å…¨æŒ‡æ ‡+è¯„åˆ†
     const ftFrames = [];
     const ftSkel = (kneeL, kneeR, vgShift = 0) => {
       const b = base();
@@ -2908,24 +2908,24 @@ async function selfTest() {
     const ftPrev = { depth: 135, asym: 14, valgus: 0.28 };
     const ftNow = { depth: 118, asym: 9, valgus: 0.18 };
     const ftD1 = ftDelta(ftPrev, ftNow, 'depth'), ftD2 = ftDelta(ftPrev, ftNow, 'valgus');
-    log(t('stFtVsLast'), ftD1 && ftD1.better === true && ftD2 && ftD2.better === true, `depth↓${ftD1.pct}% valgus↓${ftD2.pct}%`);
-    // 19b. 零次数保护：超时/空数据 → 分析、评分、报告项全部安全
+    log(t('stFtVsLast'), ftD1 && ftD1.better === true && ftD2 && ftD2.better === true, `depthâ†“${ftD1.pct}% valgusâ†“${ftD2.pct}%`);
+    // 19b. é›¶æ¬¡æ•°ä¿æŠ¤ï¼šè¶…æ—¶/ç©ºæ•°æ® â†’ åˆ†æžã€è¯„åˆ†ã€æŠ¥å‘Šé¡¹å…¨éƒ¨å®‰å…¨
     const ftZero = ftAnalyze('squat', []);
     const ftZeroS = ftScoreMovement('squat', ftZero);
     const ftZeroIss = ftIssues('squat', ftZero);
     const ftZeroOk = ftZero.reps === 0 && typeof ftZeroS.total === 'number' && ftZeroIss.length > 0
       && ftZeroIss.every((i) => typeof i.val === 'string' && typeof i.text === 'string');
     log(t('stFtZeroRep'), ftZeroOk, `reps=0 score=${ftZeroS.total} items=${ftZeroIss.length}`);
-    // 20. 今日总览与跟练（v2.21）：指数加权 + 课程完整性 + 记录生成
+    // 20. ä»Šæ—¥æ€»è§ˆä¸Žè·Ÿç»ƒï¼ˆv2.21ï¼‰ï¼šæŒ‡æ•°åŠ æƒ + è¯¾ç¨‹å®Œæ•´æ€§ + è®°å½•ç”Ÿæˆ
     const hIdx1 = gwCalcIndex(90, null, 50), hIdx2 = gwCalcIndex(80, 70, 100), hIdx3 = gwCalcIndex(null, null, 50);
     const gwProgOk = Object.values(GW_PROGRAMS).every((p) => p.steps.length >= 2 && p.steps.every((s) => s.sets > 0 && ((s.reps > 0) || (s.hold > 0)) && s.cue && s.name && s.icon));
     const gwRec = gwMakeSession(GW_PROGRAMS.knee, 30, 600);
-    log(t('stHomeIndex'), hIdx1 === 67 && hIdx2 === 85 && hIdx3 === 50, `${hIdx1}/${hIdx2}/${hIdx3}（期望 67/85/50）`);
-    log(t('stGwProg'), gwProgOk && gwRec.id && gwRec.ex === 'guided' && gwRec.reps === 30 && gwRec.dur === 600, `steps ok rec=${gwRec.ex}/${gwRec.reps}×${gwRec.dur}s`);
-    // 20b. 跟练难度自适应：进阶（2 级）每节 +2 次，保持类不变
+    log(t('stHomeIndex'), hIdx1 === 67 && hIdx2 === 85 && hIdx3 === 50, `${hIdx1}/${hIdx2}/${hIdx3}ï¼ˆæœŸæœ› 67/85/50ï¼‰`);
+    log(t('stGwProg'), gwProgOk && gwRec.id && gwRec.ex === 'guided' && gwRec.reps === 30 && gwRec.dur === 600, `steps ok rec=${gwRec.ex}/${gwRec.reps}Ã—${gwRec.dur}s`);
+    // 20b. è·Ÿç»ƒéš¾åº¦è‡ªé€‚åº”ï¼šè¿›é˜¶ï¼ˆ2 çº§ï¼‰æ¯èŠ‚ +2 æ¬¡ï¼Œä¿æŒç±»ä¸å˜
     const gwLvOk = gwStepReps({ reps: 10 }, 1) === 10 && gwStepReps({ reps: 10 }, 2) === 12 && gwStepReps({ hold: 30 }, 2) === 30;
     log(t('stGwLevel'), gwLvOk, `10/12/30 got ${gwStepReps({ reps: 10 }, 1)}/${gwStepReps({ reps: 10 }, 2)}/${gwStepReps({ hold: 30 }, 2)}`);
-    // 20c. 功能测试阶段判定：站直/过渡/底部，峰值型（上举）同样成立
+    // 20c. åŠŸèƒ½æµ‹è¯•é˜¶æ®µåˆ¤å®šï¼šç«™ç›´/è¿‡æ¸¡/åº•éƒ¨ï¼Œå³°å€¼åž‹ï¼ˆä¸Šä¸¾ï¼‰åŒæ ·æˆç«‹
     const ftPh1 = ftPhaseOf('squat', 170) === 0 && ftPhaseOf('squat', 130) === 1 && ftPhaseOf('squat', 100) === 2;
     const ftPh2 = ftPhaseOf('arm', 0.02) === 0 && ftPhaseOf('arm', 0.05) === 1 && ftPhaseOf('arm', 0.2) === 2;
     log(t('stFtPhase'), ftPh1 && ftPh2, `squat 170/130/100=${ftPhaseOf('squat', 170)}/${ftPhaseOf('squat', 130)}/${ftPhaseOf('squat', 100)} arm 0.02/0.05/0.2=${ftPhaseOf('arm', 0.02)}/${ftPhaseOf('arm', 0.05)}/${ftPhaseOf('arm', 0.2)}`);
@@ -2937,10 +2937,10 @@ async function selfTest() {
   }
 }
 
-/* ============ 新增功能（v2.19）：全身体态评估 ============ */
-// 流程：选体态 → 采集（摄像头或演示模式）→ 识别完整性门控（人体/全身可见/画幅/姿势到位/稳定或节律）
-//      → 门控全部通过且保持达标时长 → 才开始评价 → 逐项指出不足 + 改进建议 + 综合评分 → 存历史
-// 纯新增：不修改任何旧功能逻辑；复用旧函数只调用不修改（loadModel/openCamera/drawStick/icon/toast）
+/* ============ æ–°å¢žåŠŸèƒ½ï¼ˆv2.19ï¼‰ï¼šå…¨èº«ä½“æ€è¯„ä¼° ============ */
+// æµç¨‹ï¼šé€‰ä½“æ€ â†’ é‡‡é›†ï¼ˆæ‘„åƒå¤´æˆ–æ¼”ç¤ºæ¨¡å¼ï¼‰â†’ è¯†åˆ«å®Œæ•´æ€§é—¨æŽ§ï¼ˆäººä½“/å…¨èº«å¯è§/ç”»å¹…/å§¿åŠ¿åˆ°ä½/ç¨³å®šæˆ–èŠ‚å¾‹ï¼‰
+//      â†’ é—¨æŽ§å…¨éƒ¨é€šè¿‡ä¸”ä¿æŒè¾¾æ ‡æ—¶é•¿ â†’ æ‰å¼€å§‹è¯„ä»· â†’ é€é¡¹æŒ‡å‡ºä¸è¶³ + æ”¹è¿›å»ºè®® + ç»¼åˆè¯„åˆ† â†’ å­˜åŽ†å²
+// çº¯æ–°å¢žï¼šä¸ä¿®æ”¹ä»»ä½•æ—§åŠŸèƒ½é€»è¾‘ï¼›å¤ç”¨æ—§å‡½æ•°åªè°ƒç”¨ä¸ä¿®æ”¹ï¼ˆloadModel/openCamera/drawStick/icon/toastï¼‰
 const PA_META = {
   standing: { nameKey: 'paKindStand', guideKey: 'paGuideStand', hold: 6 },
   single: { nameKey: 'paKindSingle', guideKey: 'paGuideSingle', hold: 8 },
@@ -2967,7 +2967,7 @@ const paMed = (arr) => { const s = [...arr].sort((a, b) => a - b); return s[Math
 const paMean = (arr) => (arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0);
 const paStd = (arr) => { if (arr.length < 2) return 0; const m = paMean(arr); return Math.sqrt(paMean(arr.map((x) => (x - m) * (x - m)))); };
 
-// 识别完整性门控：人体 → 关键点可见 → 画幅 → 姿势到位 → 稳定/节律
+// è¯†åˆ«å®Œæ•´æ€§é—¨æŽ§ï¼šäººä½“ â†’ å…³é”®ç‚¹å¯è§ â†’ ç”»å¹… â†’ å§¿åŠ¿åˆ°ä½ â†’ ç¨³å®š/èŠ‚å¾‹
 function paCompleteness(lms, kind, ts) {
   const items = [{ key: 'person', ok: !!lms, label: t('paCheckPerson') }];
   if (!lms) return { ok: false, items };
@@ -2976,7 +2976,7 @@ function paCompleteness(lms, kind, ts) {
   if ((kind === 'walk' || kind === 'run') && !paVis(lms, 27) && !paVis(lms, 28)) missing.push(27, 28);
   items.push({
     key: 'body', ok: !missing.length, label: t('paCheckBody'),
-    note: missing.length ? t('paMissing', { parts: missing.map((i) => t('paPart' + i)).join('、') }) : '',
+    note: missing.length ? t('paMissing', { parts: missing.map((i) => t('paPart' + i)).join('ã€') }) : '',
   });
   const xs = [], ys = [];
   for (let i = 0; i < 33; i++) if (paVis(lms, i)) { xs.push(lms[i].x); ys.push(lms[i].y); }
@@ -3008,7 +3008,7 @@ function paCompleteness(lms, kind, ts) {
 }
 function paResetStable() { paState.stableMs = 0; paState._lastOkT = 0; }
 
-// 步态节律：髋部高度振荡 → 步峰检测 → 步频 + 左右对称
+// æ­¥æ€èŠ‚å¾‹ï¼šé«‹éƒ¨é«˜åº¦æŒ¯è¡ â†’ æ­¥å³°æ£€æµ‹ â†’ æ­¥é¢‘ + å·¦å³å¯¹ç§°
 function paDetectSteps(ts) {
   const hist = paState.hipHist.filter((h) => h.t > ts - 10000);
   if (hist.length < 20) return;
@@ -3016,7 +3016,7 @@ function paDetectSteps(ts) {
   const amp = Math.max(...ys) - Math.min(...ys);
   if (amp < 0.01) { paState.steps = []; return; }
   const mid = paMed(ys);
-  const threshold = mid + amp * 0.22;   // 峰须明显高于中位（抗噪声）
+  const threshold = mid + amp * 0.22;   // å³°é¡»æ˜Žæ˜¾é«˜äºŽä¸­ä½ï¼ˆæŠ—å™ªå£°ï¼‰
   const raw = [];
   for (let i = 2; i < hist.length - 2; i++) {
     if (hist[i].y <= threshold) continue;
@@ -3043,7 +3043,7 @@ function paCadence() {
   return { cad, sym };
 }
 
-// 单项评分：good(100) / warn(65) / bad(30)，非良好项必带改进建议
+// å•é¡¹è¯„åˆ†ï¼šgood(100) / warn(65) / bad(30)ï¼Œéžè‰¯å¥½é¡¹å¿…å¸¦æ”¹è¿›å»ºè®®
 function paItem(key, v, level, fmt, advice, textKey) {
   const texts = { good: key + 'G', warn: key + 'W', bad: key + 'B' };
   return {
@@ -3054,35 +3054,35 @@ function paItem(key, v, level, fmt, advice, textKey) {
 }
 const paLevelOf = (v, a, b) => (v < a ? 'good' : v < b ? 'warn' : 'bad');
 
-// 五套体态评价（正面/侧面单摄像头 2D 视角下的可靠指标）
+// äº”å¥—ä½“æ€è¯„ä»·ï¼ˆæ­£é¢/ä¾§é¢å•æ‘„åƒå¤´ 2D è§†è§’ä¸‹çš„å¯é æŒ‡æ ‡ï¼‰
 function paEvalStanding(smps) {
   const med = (f) => paMed(smps.map(f));
   const items = [];
-  items.push(paItem('mStandHead', med((l) => verticalAngle(l[0], paMid(l, 11, 12))), paLevelOf(med((l) => verticalAngle(l[0], paMid(l, 11, 12))), 12, 20), (v) => v.toFixed(0) + '°', t('mStandHeadA')));
+  items.push(paItem('mStandHead', med((l) => verticalAngle(l[0], paMid(l, 11, 12))), paLevelOf(med((l) => verticalAngle(l[0], paMid(l, 11, 12))), 12, 20), (v) => v.toFixed(0) + 'Â°', t('mStandHeadA')));
   items.push(paItem('mStandShoulder', med((l) => Math.abs(l[11].y - l[12].y) / paTorso(l)), paLevelOf(med((l) => Math.abs(l[11].y - l[12].y) / paTorso(l)), 0.03, 0.06), (v) => (v * 100).toFixed(0) + '%', t('mStandShoulderA')));
-  items.push(paItem('mStandTrunk', med((l) => verticalAngle(paMid(l, 11, 12), paMid(l, 23, 24))), paLevelOf(med((l) => verticalAngle(paMid(l, 11, 12), paMid(l, 23, 24))), 8, 15), (v) => v.toFixed(0) + '°', t('mStandTrunkA')));
+  items.push(paItem('mStandTrunk', med((l) => verticalAngle(paMid(l, 11, 12), paMid(l, 23, 24))), paLevelOf(med((l) => verticalAngle(paMid(l, 11, 12), paMid(l, 23, 24))), 8, 15), (v) => v.toFixed(0) + 'Â°', t('mStandTrunkA')));
   items.push(paItem('mStandPelvis', med((l) => Math.abs(l[23].y - l[24].y) / paTorso(l)), paLevelOf(med((l) => Math.abs(l[23].y - l[24].y) / paTorso(l)), 0.03, 0.06), (v) => (v * 100).toFixed(0) + '%', t('mStandPelvisA')));
-  items.push(paItem('mStandKnee', med((l) => Math.max(Math.abs(180 - angle3(l[23], l[25], l[27])), Math.abs(180 - angle3(l[24], l[26], l[28])))), paLevelOf(med((l) => Math.max(Math.abs(180 - angle3(l[23], l[25], l[27])), Math.abs(180 - angle3(l[24], l[26], l[28])))), 8, 15), (v) => v.toFixed(0) + '°', t('mStandKneeA')));
+  items.push(paItem('mStandKnee', med((l) => Math.max(Math.abs(180 - angle3(l[23], l[25], l[27])), Math.abs(180 - angle3(l[24], l[26], l[28])))), paLevelOf(med((l) => Math.max(Math.abs(180 - angle3(l[23], l[25], l[27])), Math.abs(180 - angle3(l[24], l[26], l[28])))), 8, 15), (v) => v.toFixed(0) + 'Â°', t('mStandKneeA')));
   items.push(paItem('mStandWeight', med((l) => Math.abs(paMid(l, 23, 24).x - paMid(l, 27, 28).x) / Math.max(0.05, Math.abs(l[24].x - l[23].x))), paLevelOf(med((l) => Math.abs(paMid(l, 23, 24).x - paMid(l, 27, 28).x) / Math.max(0.05, Math.abs(l[24].x - l[23].x))), 0.3, 0.6), (v) => (v * 100).toFixed(0) + '%', t('mStandWeightA')));
   return items;
 }
 function paEvalSingle(smps) {
   const items = [];
   const supKnee = smps.map((l) => {
-    const isL = l[27].y >= l[28].y;   // 支撑腿 = 踝更低的一侧
+    const isL = l[27].y >= l[28].y;   // æ”¯æ’‘è…¿ = è¸æ›´ä½Žçš„ä¸€ä¾§
     return angle3(l[isL ? 23 : 24], l[isL ? 25 : 26], l[isL ? 27 : 28]);
   });
   const sway = smps.map((l) => paMid(l, 23, 24).x / Math.max(0.05, paTorso(l)));
   const lean = paMed(smps.map((l) => verticalAngle(paMid(l, 11, 12), paMid(l, 23, 24))));
   const pel = paMed(smps.map((l) => Math.abs(l[23].y - l[24].y) / paTorso(l)));
   const kStd = paStd(supKnee);
-  items.push(paItem('mSingleKnee', kStd, paLevelOf(kStd, 4, 8), (v) => v.toFixed(0) + '°', t('mSingleKneeA')));
+  items.push(paItem('mSingleKnee', kStd, paLevelOf(kStd, 4, 8), (v) => v.toFixed(0) + 'Â°', t('mSingleKneeA')));
   items.push(paItem('mSinglePelvis', pel, paLevelOf(pel, 0.10, 0.16), (v) => (v * 100).toFixed(0) + '%', t('mSinglePelvisA')));
-  items.push(paItem('mSingleTrunk', lean, paLevelOf(lean, 10, 16), (v) => v.toFixed(0) + '°', t('mSingleTrunkA')));
+  items.push(paItem('mSingleTrunk', lean, paLevelOf(lean, 10, 16), (v) => v.toFixed(0) + 'Â°', t('mSingleTrunkA')));
   items.push(paItem('mSingleSway', paStd(sway), paLevelOf(paStd(sway), 0.03, 0.06), (v) => (v * 100).toFixed(0) + '%', t('mSingleSwayA')));
-  // v2.21.4：识别抬起的是哪条腿（踝更高的一侧 = 抬起侧）
+  // v2.21.4ï¼šè¯†åˆ«æŠ¬èµ·çš„æ˜¯å“ªæ¡è…¿ï¼ˆè¸æ›´é«˜çš„ä¸€ä¾§ = æŠ¬èµ·ä¾§ï¼‰
   const liftRight = smps.reduce((a, l) => a + (l[28].y < l[27].y ? 1 : -1), 0) > 0;
-  items.push({ key: 'mSingleHold', level: 'good', val: t('mSingleHoldI', { s: PA_META.single.hold }) + ' · ' + t(liftRight ? 'paLiftR' : 'paLiftL'), score: 100, label: t('mSingleHold'), text: t('mSingleHoldI', { s: PA_META.single.hold }) + ' · ' + t(liftRight ? 'paLiftR' : 'paLiftL'), advice: t('mSingleHoldA') });
+  items.push({ key: 'mSingleHold', level: 'good', val: t('mSingleHoldI', { s: PA_META.single.hold }) + ' Â· ' + t(liftRight ? 'paLiftR' : 'paLiftL'), score: 100, label: t('mSingleHold'), text: t('mSingleHoldI', { s: PA_META.single.hold }) + ' Â· ' + t(liftRight ? 'paLiftR' : 'paLiftL'), advice: t('mSingleHoldA') });
   return items;
 }
 function paEvalSquat(smps) {
@@ -3090,16 +3090,16 @@ function paEvalSquat(smps) {
   const kL = smps.map((l) => angle3(l[23], l[25], l[27])), kR = smps.map((l) => angle3(l[24], l[26], l[28]));
   const depth = paMed(smps.map((l) => Math.min(angle3(l[23], l[25], l[27]), angle3(l[24], l[26], l[28]))));
   const depthLv = depth <= 120 ? 'good' : depth <= 140 ? 'warn' : 'bad';
-  items.push(paItem('mSquatDepth', depth, depthLv, (v) => v.toFixed(0) + '°', t('mSquatDepthA')));
+  items.push(paItem('mSquatDepth', depth, depthLv, (v) => v.toFixed(0) + 'Â°', t('mSquatDepthA')));
   const sym = paMed(smps.map((_, i) => Math.abs(kL[i] - kR[i])));
-  items.push(paItem('mSquatSym', sym, paLevelOf(sym, 10, 20), (v) => v.toFixed(0) + '°', t('mSquatSymA')));
+  items.push(paItem('mSquatSym', sym, paLevelOf(sym, 10, 20), (v) => v.toFixed(0) + 'Â°', t('mSquatSymA')));
   const valgus = paMed(smps.map((l) => { const vg = kneeValgus(l); return Math.max(vg.left, vg.right); }));
   items.push(paItem('mSquatValgus', valgus, paLevelOf(valgus, 0.15, 0.30), (v) => (v * 100).toFixed(0) + '%', t('mSquatValgusA')));
   const lean = paMed(smps.map((l) => verticalAngle(paMid(l, 11, 12), paMid(l, 23, 24))));
   const leanLv = lean >= 10 && lean <= 35 ? 'good' : lean <= 50 ? 'warn' : 'bad';
-  items.push(paItem('mSquatTrunk', lean, leanLv, (v) => v.toFixed(0) + '°', t('mSquatTrunkA')));
+  items.push(paItem('mSquatTrunk', lean, leanLv, (v) => v.toFixed(0) + 'Â°', t('mSquatTrunkA')));
   const wob = paStd(kL);
-  items.push(paItem('mSquatHold', wob, paLevelOf(wob, 5, 9), (v) => v.toFixed(0) + '°', t('mSquatHoldA')));
+  items.push(paItem('mSquatHold', wob, paLevelOf(wob, 5, 9), (v) => v.toFixed(0) + 'Â°', t('mSquatHoldA')));
   return items;
 }
 function paEvalWalk(smps) {
@@ -3115,7 +3115,7 @@ function paEvalWalk(smps) {
   });
   items.push(paItem('mWalkSym', sym, paLevelOf(sym, 10, 20), (v) => v.toFixed(0) + '%', t('mWalkSymA')));
   const lean = paMed(smps.map((l) => verticalAngle(paMid(l, 11, 12), paMid(l, 23, 24))));
-  items.push(paItem('mWalkTrunk', lean, paLevelOf(lean, 8, 15), (v) => v.toFixed(0) + '°', t('mWalkTrunkA')));
+  items.push(paItem('mWalkTrunk', lean, paLevelOf(lean, 8, 15), (v) => v.toFixed(0) + 'Â°', t('mWalkTrunkA')));
   const xs = smps.map((l) => paMid(l, 23, 24).x / Math.max(0.05, paTorso(l))).sort((a, b) => a - b);
   const sway = xs[Math.floor(xs.length * 0.9)] - xs[Math.floor(xs.length * 0.1)];
   items.push(paItem('mWalkSway', sway, paLevelOf(sway, 0.05, 0.09), (v) => (v * 100).toFixed(0) + '%', t('mWalkSwayA')));
@@ -3141,7 +3141,7 @@ function paEvalRun(smps) {
   items.push(paItem('mRunBounce', bounce, paLevelOf(bounce, 0.12, 0.20), (v) => (v * 100).toFixed(0) + '%', t('mRunBounceA')));
   const lean = paMed(smps.map((l) => verticalAngle(paMid(l, 11, 12), paMid(l, 23, 24))));
   const leanLv = lean >= 5 && lean <= 15 ? 'good' : lean <= 25 ? 'warn' : 'bad';
-  items.push(paItem('mRunLean', lean, leanLv, (v) => v.toFixed(0) + '°', t('mRunLeanA')));
+  items.push(paItem('mRunLean', lean, leanLv, (v) => v.toFixed(0) + 'Â°', t('mRunLeanA')));
   items.push(paItem('mRunSym', sym, paLevelOf(sym, 10, 20), (v) => v.toFixed(0) + '%', t('mRunSymA')));
   const armS = smps.map((l) => ((l[15].y + l[16].y) / 2 - (l[23].y + l[24].y) / 2) / paTorso(l)).sort((a, b) => a - b);
   const arm = armS[Math.floor(armS.length * 0.9)] - armS[Math.floor(armS.length * 0.1)];
@@ -3161,14 +3161,14 @@ function paBuildReport(kind, items) {
   const score = Math.round(items.reduce((a, i) => a + i.score, 0) / Math.max(1, items.length));
   const grade = score >= 85 ? 'A' : score >= 70 ? 'B' : score >= 55 ? 'C' : 'D';
   const priorities = items.filter((i) => i.level !== 'good').sort((a, b) => a.score - b.score);
-  // v2.25.0：报告附一张骨架快照（只含火柴人，不含真人照片），供治疗师报告对比
+  // v2.25.0ï¼šæŠ¥å‘Šé™„ä¸€å¼ éª¨æž¶å¿«ç…§ï¼ˆåªå«ç«æŸ´äººï¼Œä¸å«çœŸäººç…§ç‰‡ï¼‰ï¼Œä¾›æ²»ç–—å¸ˆæŠ¥å‘Šå¯¹æ¯”
   return { kind, ts: Date.now(), score, grade, items, priorities, demo: paState.demo, snap: paSnapShot() };
 }
 function paHistory() { return sget('rehab_pa_history', []); }
 function paSaveReport(r) {
   const h = paHistory(); h.unshift(r);
   if (h.length > 30) h.length = 30;
-  h.forEach((x, i) => { if (i >= 8 && x.snap) delete x.snap; });   // v2.25.0：快照只留最近 8 份
+  h.forEach((x, i) => { if (i >= 8 && x.snap) delete x.snap; });   // v2.25.0ï¼šå¿«ç…§åªç•™æœ€è¿‘ 8 ä»½
   sset('rehab_pa_history', h);
 }
 
@@ -3180,7 +3180,7 @@ const paItemHtml = (i) => `
       <span class="pa-item-val">${i.val}</span>
     </div>
     <div class="pa-item-text">${i.text}</div>
-    ${i.advice ? `<div class="pa-item-advice"><b>${t('paAdvice')}</b>：${i.advice}</div>` : ''}
+    ${i.advice ? `<div class="pa-item-advice"><b>${t('paAdvice')}</b>ï¼š${i.advice}</div>` : ''}
   </div>`;
 function renderPaReport(r, scroll = true) {
   const el = $('pa-report');
@@ -3189,18 +3189,18 @@ function renderPaReport(r, scroll = true) {
   const demoBadge = r.demo ? `<span class="pa-demo-badge">${t('paDemoNote')}</span>` : '';
   el.innerHTML = `
     ${demoBadge}
-    <h3>${t('paReportTitle')} · ${t((PA_META[r.kind] || PA_META.standing).nameKey)}</h3>
+    <h3>${t('paReportTitle')} Â· ${t((PA_META[r.kind] || PA_META.standing).nameKey)}</h3>
     <div class="pa-score">
-      <div class="pa-score-num">${r.score != null ? r.score : '—'}</div>
+      <div class="pa-score-num">${r.score != null ? r.score : 'â€”'}</div>
       <div>
-        <div class="pa-score-grade">${t('paScore')}${r.grade ? ' · ' + t('paGrade' + r.grade) : ''}</div>
+        <div class="pa-score-grade">${t('paScore')}${r.grade ? ' Â· ' + t('paGrade' + r.grade) : ''}</div>
         <div class="pa-score-sub">${t('paSafety')}</div>
       </div>
     </div>
     <div class="pa-items">${r.items.map(paItemHtml).join('')}</div>
     <div class="pa-priority">
       <h4 style="margin-bottom:8px">${t('paPriority')}</h4>
-      ${r.priorities.length ? '<ul>' + r.priorities.map((i) => `<li><b>${i.label}</b> — ${i.advice}</li>`).join('') + '</ul>' : `<p class="hint">${t('paNoIssue')}</p>`}
+      ${r.priorities.length ? '<ul>' + r.priorities.map((i) => `<li><b>${i.label}</b> â€” ${i.advice}</li>`).join('') + '</ul>' : `<p class="hint">${t('paNoIssue')}</p>`}
     </div>
     <div class="controls"><button class="btn" id="btn-pa-redo"><span>${t('paRedo')}</span></button></div>`;
   $('btn-pa-redo').addEventListener('click', () => { paStop(); el.classList.add('hidden'); paState.report = null; });
@@ -3218,20 +3218,20 @@ function renderPaHistory() {
     const when = new Date(r.ts);
     const date = when.toLocaleDateString(locale(), { month: 'numeric', day: 'numeric' }) + ' ' + when.toLocaleTimeString(locale(), { hour: '2-digit', minute: '2-digit' });
     const kindIcon = { standing: 'standing', single: 'standing', squat: 'squat', walk: 'stepup', run: 'stepup' }[r.kind] || 'standing';
-    const meta = PA_META[r.kind] || PA_META.standing;   // v2.33.1：导入/同步来的旧记录可能缺 kind，兜底防整条历史列表崩掉
-    const prev = h.find((x) => x.kind === r.kind && x.ts < r.ts);   // v2.21.4：与上次同体态对比
+    const meta = PA_META[r.kind] || PA_META.standing;   // v2.33.1ï¼šå¯¼å…¥/åŒæ­¥æ¥çš„æ—§è®°å½•å¯èƒ½ç¼º kindï¼Œå…œåº•é˜²æ•´æ¡åŽ†å²åˆ—è¡¨å´©æŽ‰
+    const prev = h.find((x) => x.kind === r.kind && x.ts < r.ts);   // v2.21.4ï¼šä¸Žä¸Šæ¬¡åŒä½“æ€å¯¹æ¯”
     const canDelta = prev && Number.isFinite(Number(r.score)) && Number.isFinite(Number(prev.score));
-    const delta = canDelta ? `<span class="ft-delta ${Number(r.score) >= Number(prev.score) ? 'up' : 'down'}">${t('paHistoryDelta', { v: (Number(r.score) >= Number(prev.score) ? '↑' : '↓') + Math.abs(Number(r.score) - Number(prev.score)) })}</span>` : '';
+    const delta = canDelta ? `<span class="ft-delta ${Number(r.score) >= Number(prev.score) ? 'up' : 'down'}">${t('paHistoryDelta', { v: (Number(r.score) >= Number(prev.score) ? 'â†‘' : 'â†“') + Math.abs(Number(r.score) - Number(prev.score)) })}</span>` : '';
     return `
     <div class="item">
-      <div class="t">${icon(kindIcon)}${t(meta.nameKey)}${r.demo ? ' · ' + t('paBtnDemo') : ''} — ${date} ${delta}</div>
-      <div class="d">${t('paScore')} ${r.score != null ? r.score : '—'}${r.grade ? ' · ' + t('paGrade' + r.grade) : ''}${Array.isArray(r.priorities) && r.priorities.length ? ' · ' + r.priorities.length + ' ' + t('paPriority') : ''}</div>
+      <div class="t">${icon(kindIcon)}${t(meta.nameKey)}${r.demo ? ' Â· ' + t('paBtnDemo') : ''} â€” ${date} ${delta}</div>
+      <div class="d">${t('paScore')} ${r.score != null ? r.score : 'â€”'}${r.grade ? ' Â· ' + t('paGrade' + r.grade) : ''}${Array.isArray(r.priorities) && r.priorities.length ? ' Â· ' + r.priorities.length + ' ' + t('paPriority') : ''}</div>
       <div class="controls" style="margin-top:6px"><button class="btn small" data-pa-view="${r.ts}"><span>${t('paView')}</span></button></div>
     </div>`;
   }).join('');
   el.querySelectorAll('[data-pa-view]').forEach((b) => b.addEventListener('click', () => {
     const r = paHistory().find((x) => String(x.ts) === b.dataset.paView);
-    if (r) { paState.report = r; renderPaReport(r); }   // 记录当前查看的报告，语言切换时可重渲染
+    if (r) { paState.report = r; renderPaReport(r); }   // è®°å½•å½“å‰æŸ¥çœ‹çš„æŠ¥å‘Šï¼Œè¯­è¨€åˆ‡æ¢æ—¶å¯é‡æ¸²æŸ“
   }));
 }
 function renderPaChecks(g) {
@@ -3240,7 +3240,7 @@ function renderPaChecks(g) {
   if (!g.items.length) { el.innerHTML = ''; return; }
   el.innerHTML = g.items.map((i) => `
     <div class="pa-check ${i.ok ? 'ok' : 'bad'}">
-      <span class="pa-check-dot">${i.ok ? '✓' : '✕'}</span>
+      <span class="pa-check-dot">${i.ok ? 'âœ“' : 'âœ•'}</span>
       <span>${i.label}</span>
       ${i.note ? `<span class="pa-check-note">${i.note}</span>` : ''}
     </div>`).join('');
@@ -3259,7 +3259,7 @@ function renderPaUI() {
 async function paStart(demo = false) {
   if (!$('pa-video')) return;
   if (paState.active) { paStop(); return; }
-  // 旧训练会话冲突 → 先停止旧会话（只调用旧函数，不改动）
+  // æ—§è®­ç»ƒä¼šè¯å†²çª â†’ å…ˆåœæ­¢æ—§ä¼šè¯ï¼ˆåªè°ƒç”¨æ—§å‡½æ•°ï¼Œä¸æ”¹åŠ¨ï¼‰
   if (state.running) { await toggleStart(); }
   paState.active = true; paState.demo = demo;
   paState.samples = []; paState.hipHist = []; paState.steps = [];
@@ -3282,10 +3282,10 @@ async function paStart(demo = false) {
       v.srcObject = stream;
       await new Promise((res, rej) => {
         if (v.readyState >= 1) return res();
-        const t0 = setTimeout(() => { v.srcObject = null; stream.getTracks().forEach((x) => x.stop()); rej(new DOMException('视频初始化超时', 'TimeoutError')); }, 6000);
+        const t0 = setTimeout(() => { v.srcObject = null; stream.getTracks().forEach((x) => x.stop()); rej(new DOMException('è§†é¢‘åˆå§‹åŒ–è¶…æ—¶', 'TimeoutError')); }, 6000);
         v.onloadedmetadata = () => { clearTimeout(t0); res(); };
       });
-      try { await v.play(); } catch { /* 自动播放被拦 */ }
+      try { await v.play(); } catch { /* è‡ªåŠ¨æ’­æ”¾è¢«æ‹¦ */ }
       paState.stream = stream; paState.videoOn = true;
       $('pa-placeholder').classList.add('hidden');
     } catch (e) {
@@ -3319,7 +3319,7 @@ function paStop() {
   const ph = $('pa-placeholder');
   if (ph) { ph.classList.remove('hidden'); $('pa-placeholder-text').textContent = t('paPlaceholderShort'); }
   const gate = $('pa-gate');
-  if (gate) gate.classList.add('hidden');          // v2.20.2：手动停止后收起完整性检查面板，不留过期勾选
+  if (gate) gate.classList.add('hidden');          // v2.20.2ï¼šæ‰‹åŠ¨åœæ­¢åŽæ”¶èµ·å®Œæ•´æ€§æ£€æŸ¥é¢æ¿ï¼Œä¸ç•™è¿‡æœŸå‹¾é€‰
   paResetStable();
   setPaStartBtn();
 }
@@ -3355,7 +3355,7 @@ function paLoop() {
   if (c.width !== cw || c.height !== ch) { c.width = cw; c.height = ch; }
   const ctx2 = c.getContext('2d');
   ctx2.clearRect(0, 0, cw, ch);
-  if (lms) drawStick(ctx2, lms, cw, ch, !paState.demo);   // 真实摄像头镜像，演示不镜像
+  if (lms) drawStick(ctx2, lms, cw, ch, !paState.demo);   // çœŸå®žæ‘„åƒå¤´é•œåƒï¼Œæ¼”ç¤ºä¸é•œåƒ
   const g = paCompleteness(lms, paState.kind, ts);
   paState.lastGate = g;
   renderPaChecks(g);
@@ -3378,13 +3378,13 @@ function paLoop() {
     paDetectSteps(ts);
     $('pa-progress-fill').style.width = Math.min(100, (paState.steps.length / meta.need) * 100) + '%';
     $('pa-hint').textContent = t('paProgressSteps', { n: Math.min(paState.steps.length, meta.need), m: meta.need })
-      + (paState.steps.length >= 4 ? ' · ' + t('paCadenceLive', { c: Math.round(paCadence().cad) }) : '');   // v2.21.4：实时步频
+      + (paState.steps.length >= 4 ? ' Â· ' + t('paCadenceLive', { c: Math.round(paCadence().cad) }) : '');   // v2.21.4ï¼šå®žæ—¶æ­¥é¢‘
     if (g.ok && paState.steps.length >= meta.need) { paFinish(); return; }
   }
   requestAnimationFrame(paLoop);
 }
 
-// 演示模式：模拟姿态骨架（无摄像头跑完整流程；站立带轻微头前倾/躯干前倾，深蹲带轻微内扣，走跑带轻微不对称）
+// æ¼”ç¤ºæ¨¡å¼ï¼šæ¨¡æ‹Ÿå§¿æ€éª¨æž¶ï¼ˆæ— æ‘„åƒå¤´è·‘å®Œæ•´æµç¨‹ï¼›ç«™ç«‹å¸¦è½»å¾®å¤´å‰å€¾/èº¯å¹²å‰å€¾ï¼Œæ·±è¹²å¸¦è½»å¾®å†…æ‰£ï¼Œèµ°è·‘å¸¦è½»å¾®ä¸å¯¹ç§°ï¼‰
 function paDemoFrame(kind, ts) {
   const tSec = ts / 1000;
   const mk = (x, y, vis = 1) => ({ x, y, z: 0, visibility: vis });
@@ -3403,27 +3403,27 @@ function paDemoFrame(kind, ts) {
   };
   if (kind === 'standing') {
     body(0.47 + nz(1), 0.12 + nz(1), 0.225 + nz(1), 0.45 + nz(1), 0.66 + nz(1), 0.87 + nz(1), 0.41, 0.59, 0.44, 0.56, 0.455, 0.545, 0.46, 0.54, 0.30, 0.38);
-    set(11, mk(0.41, 0.235));       // 轻微高低肩
+    set(11, mk(0.41, 0.235));       // è½»å¾®é«˜ä½Žè‚©
     set(12, mk(0.59, 0.225));
   } else if (kind === 'single') {
     body(0.5, 0.10, 0.22, 0.45, 0.66, 0.87, 0.41, 0.59, 0.44, 0.56, 0.46, 0.54, 0.47, 0.53, 0.30, 0.37);
-    set(28, 0.545, 0.80);      // v2.21.4：抬右腿（修复 mk 嵌套坐标 bug，此前踝 y 为 undefined 导致门控永不通过）
+    set(28, 0.545, 0.80);      // v2.21.4ï¼šæŠ¬å³è…¿ï¼ˆä¿®å¤ mk åµŒå¥—åæ ‡ bugï¼Œæ­¤å‰è¸ y ä¸º undefined å¯¼è‡´é—¨æŽ§æ°¸ä¸é€šè¿‡ï¼‰
     set(26, 0.55, 0.70);
   } else if (kind === 'squat') {
     body(0.475, 0.16, 0.30, 0.52, 0.68, 0.87, 0.40, 0.60, 0.44, 0.56, 0.475, 0.585, 0.46, 0.555, 0.40, 0.48);
   } else if (kind === 'walk' || kind === 'run') {
-    const f = kind === 'walk' ? 1.83 : 2.83;   // 110 / 170 步/分
+    const f = kind === 'walk' ? 1.83 : 2.83;   // 110 / 170 æ­¥/åˆ†
     const ph = 2 * Math.PI * f * tSec;
     const bounce = kind === 'walk' ? 0.02 : 0.018;
     const hipY = 0.48 + Math.sin(ph) * bounce;
     const step = Math.sin(ph);
     const swingL = Math.sin(ph) * 0.045, swingR = -swingL;
     const armL = -swingL * 0.8, armR = -swingR * 0.8;
-    const shX = kind === 'run' ? 0.035 : 0;    // 跑步前倾 8° 左右
+    const shX = kind === 'run' ? 0.035 : 0;    // è·‘æ­¥å‰å€¾ 8Â° å·¦å³
     body(0.5 + nz(1), 0.12 + Math.sin(ph) * bounce * 1.15, 0.245 + nz(1), hipY, 0.66 + nz(1), 0.87 + nz(1),
       0.41 - shX, 0.59 - shX, 0.44, 0.56, 0.452 + step * 0.01, 0.548 - step * 0.01,
       0.445 + swingL, 0.555 + swingR, 0.30 + armL, 0.385 + armL);
-    // 步行交替步幅（左右脚前后错位由踝/膝体现）
+    // æ­¥è¡Œäº¤æ›¿æ­¥å¹…ï¼ˆå·¦å³è„šå‰åŽé”™ä½ç”±è¸/è†ä½“çŽ°ï¼‰
     set(27, mk(0.44 + swingL, 0.87));
     set(28, mk(0.56 + swingR, 0.87));
   }
@@ -3431,10 +3431,10 @@ function paDemoFrame(kind, ts) {
   return lms;
 }
 
-/* ============ 新增功能（v2.20）：运动功能测试（动态动作分析 · 运动学引擎 · 知识库 · 长期追踪） ============ */
-// 流程：选动作（或 5 项连测）→ 采集整个动作过程 → 运动学引擎（平滑→极值分割→ROM/对称/速度/稳定/一致）
-//      → 六维加权评分（静态对称20·排列20·动态25·稳定15·活动度10·一致10）→ 标准模板相似度
-//      → 「问题→训练」知识库处方 → 复测自动对比上次进步 → 数字人体档案。纯新增，旧功能零改动。
+/* ============ æ–°å¢žåŠŸèƒ½ï¼ˆv2.20ï¼‰ï¼šè¿åŠ¨åŠŸèƒ½æµ‹è¯•ï¼ˆåŠ¨æ€åŠ¨ä½œåˆ†æž Â· è¿åŠ¨å­¦å¼•æ“Ž Â· çŸ¥è¯†åº“ Â· é•¿æœŸè¿½è¸ªï¼‰ ============ */
+// æµç¨‹ï¼šé€‰åŠ¨ä½œï¼ˆæˆ– 5 é¡¹è¿žæµ‹ï¼‰â†’ é‡‡é›†æ•´ä¸ªåŠ¨ä½œè¿‡ç¨‹ â†’ è¿åŠ¨å­¦å¼•æ“Žï¼ˆå¹³æ»‘â†’æžå€¼åˆ†å‰²â†’ROM/å¯¹ç§°/é€Ÿåº¦/ç¨³å®š/ä¸€è‡´ï¼‰
+//      â†’ å…­ç»´åŠ æƒè¯„åˆ†ï¼ˆé™æ€å¯¹ç§°20Â·æŽ’åˆ—20Â·åŠ¨æ€25Â·ç¨³å®š15Â·æ´»åŠ¨åº¦10Â·ä¸€è‡´10ï¼‰â†’ æ ‡å‡†æ¨¡æ¿ç›¸ä¼¼åº¦
+//      â†’ ã€Œé—®é¢˜â†’è®­ç»ƒã€çŸ¥è¯†åº“å¤„æ–¹ â†’ å¤æµ‹è‡ªåŠ¨å¯¹æ¯”ä¸Šæ¬¡è¿›æ­¥ â†’ æ•°å­—äººä½“æ¡£æ¡ˆã€‚çº¯æ–°å¢žï¼Œæ—§åŠŸèƒ½é›¶æ”¹åŠ¨ã€‚
 const FT_MOVES = {
   squat: { name: 'ftMvSquat', guide: 'ftGuideSquat', metric: 'knee', target: 'valley', thr: 25, need: 3, thrLow: 115, thrHigh: 150 },
   lunge: { name: 'ftMvLunge', guide: 'ftGuideLunge', metric: 'knee', target: 'valley', thr: 25, need: 4, thrLow: 115, thrHigh: 150 },
@@ -3475,7 +3475,7 @@ function ftGate(lms) {
   const missing = req.filter((i) => !paVis(lms, i));
   items.push({
     key: 'body', ok: !missing.length, label: t('ftCheckBody'),
-    note: missing.length ? t('ftMissing', { parts: missing.map((i) => t('paPart' + i)).join('、') }) : '',
+    note: missing.length ? t('ftMissing', { parts: missing.map((i) => t('paPart' + i)).join('ã€') }) : '',
   });
   const xs = [], ys = [];
   for (let i = 0; i < 33; i++) if (paVis(lms, i)) { xs.push(lms[i].x); ys.push(lms[i].y); }
@@ -3498,7 +3498,7 @@ function ftExtrema(series, target, thr) {
     if (up && !down) rawPeaks.push(i);
     if (down && !up) rawValleys.push(i);
   }
-  const merge = (list, keepLow) => {   // 相邻平台期极值去重（谷留最低、峰留最高）
+  const merge = (list, keepLow) => {   // ç›¸é‚»å¹³å°æœŸæžå€¼åŽ»é‡ï¼ˆè°·ç•™æœ€ä½Žã€å³°ç•™æœ€é«˜ï¼‰
     const out = [];
     for (const i of list) {
       const last = out[out.length - 1];
@@ -3569,7 +3569,7 @@ function ftAnalyze(key, frames) {
     m.stab = paMed(bottomStd);
   }
   m.cons = Math.min(m.cons, 100);
-  // v2.21：动作轨迹（Tempo 式回放）：取第一次动作的关键点路径，13 点采样
+  // v2.21ï¼šåŠ¨ä½œè½¨è¿¹ï¼ˆTempo å¼å›žæ”¾ï¼‰ï¼šå–ç¬¬ä¸€æ¬¡åŠ¨ä½œçš„å…³é”®ç‚¹è·¯å¾„ï¼Œ13 ç‚¹é‡‡æ ·
   m.traj = null;
   if (reps.length) {
     const r = reps[0];
@@ -3584,7 +3584,7 @@ function ftAnalyze(key, frames) {
     }
     if (pts.length >= 5) m.traj = pts;
   }
-  // 零次数/超时保护：所有指标归一化为安全数值，防止报告渲染时 toFixed 崩溃
+  // é›¶æ¬¡æ•°/è¶…æ—¶ä¿æŠ¤ï¼šæ‰€æœ‰æŒ‡æ ‡å½’ä¸€åŒ–ä¸ºå®‰å…¨æ•°å€¼ï¼Œé˜²æ­¢æŠ¥å‘Šæ¸²æŸ“æ—¶ toFixed å´©æºƒ
   const norm = (v, d = 0) => (v == null || Number.isNaN(v)) ? d : v;
   m.rom = norm(m.rom); m.downSec = norm(m.downSec); m.upSec = norm(m.upSec); m.stab = norm(m.stab);
   m.cons = norm(m.cons); m.valgus = norm(m.valgus); m.trunkLean = norm(m.trunkLean);
@@ -3636,10 +3636,10 @@ function ftIssues(key, m) {
   if (key === 'bend') {
     if (m.center > 0.05) push('center', m.center > 0.10 ? 'bad' : 'warn', t('ftMetricCenter'), m.center.toFixed(2), t('ftIssueCenter', { v: m.center.toFixed(2) }), t('ftAdvCenter'));
     else ok('center', t('ftMetricCenter'), m.center.toFixed(2), t('ftIssueCenterOk'));
-    if (180 - m.kneeExt > 25) push('kneeBend', (180 - m.kneeExt) > 45 ? 'bad' : 'warn', t('ftMetricKneeExt'), (180 - m.kneeExt).toFixed(0) + '°', t('ftIssueKneeExt', { v: (180 - m.kneeExt).toFixed(0) }), t('ftAdvKneeExt'));
-    else ok('kneeBend', t('ftMetricKneeExt'), (180 - m.kneeExt).toFixed(0) + '°', t('ftIssueKneeExtOk'));
-    if (m.flexion < 50) push('rom', m.flexion < 35 ? 'bad' : 'warn', t('ftMetricRom'), m.flexion.toFixed(0) + '°', t('ftIssueRom', { v: m.flexion.toFixed(0) }), t('ftAdvRom'));
-    else ok('rom', t('ftMetricRom'), m.flexion.toFixed(0) + '°', t('ftIssueRomOk', { v: m.flexion.toFixed(0) }));
+    if (180 - m.kneeExt > 25) push('kneeBend', (180 - m.kneeExt) > 45 ? 'bad' : 'warn', t('ftMetricKneeExt'), (180 - m.kneeExt).toFixed(0) + 'Â°', t('ftIssueKneeExt', { v: (180 - m.kneeExt).toFixed(0) }), t('ftAdvKneeExt'));
+    else ok('kneeBend', t('ftMetricKneeExt'), (180 - m.kneeExt).toFixed(0) + 'Â°', t('ftIssueKneeExtOk'));
+    if (m.flexion < 50) push('rom', m.flexion < 35 ? 'bad' : 'warn', t('ftMetricRom'), m.flexion.toFixed(0) + 'Â°', t('ftIssueRom', { v: m.flexion.toFixed(0) }), t('ftAdvRom'));
+    else ok('rom', t('ftMetricRom'), m.flexion.toFixed(0) + 'Â°', t('ftIssueRomOk', { v: m.flexion.toFixed(0) }));
     if (m.downSec < 1.2) push('speed', m.downSec < 0.8 ? 'bad' : 'warn', t('ftMetricSpeed'), m.downSec.toFixed(1) + 's', t('ftIssueSpeed', { v: m.downSec.toFixed(1) }), t('ftAdvSpeed'));
     else ok('speed', t('ftMetricSpeed'), m.downSec.toFixed(1) + 's', t('ftIssueSpeedOk', { v: m.downSec.toFixed(1) }));
     if (m.cons > 15) push('cons', m.cons > 25 ? 'bad' : 'warn', t('ftMetricCons'), m.cons.toFixed(0) + '%', t('ftIssueCons', { v: m.cons.toFixed(0) }), t('ftAdvCons'));
@@ -3651,33 +3651,33 @@ function ftIssues(key, m) {
     else ok('arm', t('ftMetricRaise'), m.raise.toFixed(2), t('ftIssueRaiseOk', { v: m.raise.toFixed(2) }));
     if (m.asym > 0.04) push('arm', m.asym > 0.09 ? 'bad' : 'warn', t('ftMetricSym'), m.asym.toFixed(2), t('ftIssueArmSym', { v: m.asym.toFixed(2) }), t('ftAdvSym'));
     else ok('arm', t('ftMetricSym'), m.asym.toFixed(2), t('ftIssueArmSymOk', { v: m.asym.toFixed(2) }));
-    if (m.trunkLean > 10) push('trunk', m.trunkLean > 16 ? 'bad' : 'warn', t('ftMetricTrunk'), m.trunkLean.toFixed(0) + '°', t('ftIssueTrunk', { v: m.trunkLean.toFixed(0) }), t('ftAdvTrunk'));
-    else ok('trunk', t('ftMetricTrunk'), m.trunkLean.toFixed(0) + '°', t('ftIssueTrunkOk', { v: m.trunkLean.toFixed(0) }));
+    if (m.trunkLean > 10) push('trunk', m.trunkLean > 16 ? 'bad' : 'warn', t('ftMetricTrunk'), m.trunkLean.toFixed(0) + 'Â°', t('ftIssueTrunk', { v: m.trunkLean.toFixed(0) }), t('ftAdvTrunk'));
+    else ok('trunk', t('ftMetricTrunk'), m.trunkLean.toFixed(0) + 'Â°', t('ftIssueTrunkOk', { v: m.trunkLean.toFixed(0) }));
     if (m.upSec < 0.45 || m.upSec > 1.8) push('speed', m.upSec < 0.3 || m.upSec > 2.4 ? 'bad' : 'warn', t('ftMetricSpeed'), m.upSec.toFixed(1) + 's', t('ftIssueSpeed', { v: m.upSec.toFixed(1) }), t('ftAdvSpeed'));
     else ok('speed', t('ftMetricSpeed'), m.upSec.toFixed(1) + 's', t('ftIssueSpeedOk', { v: m.upSec.toFixed(1) }));
     if (m.cons > 15) push('cons', m.cons > 25 ? 'bad' : 'warn', t('ftMetricCons'), m.cons.toFixed(0) + '%', t('ftIssueCons', { v: m.cons.toFixed(0) }), t('ftAdvCons'));
     else ok('cons', t('ftMetricCons'), m.cons.toFixed(0) + '%', t('ftIssueConsOk'));
     return out;
   }
-  if (m.depth > 120) push('depth', m.depth > 140 ? 'bad' : 'warn', t('ftMetricDepth'), m.depth.toFixed(0) + '°', t('ftIssueDepth', { v: m.depth.toFixed(0) }), t('ftAdvDepth'));
-  else ok('depth', t('ftMetricDepth'), m.depth.toFixed(0) + '°', t('ftIssueDepthOk', { v: m.depth.toFixed(0) }));
+  if (m.depth > 120) push('depth', m.depth > 140 ? 'bad' : 'warn', t('ftMetricDepth'), m.depth.toFixed(0) + 'Â°', t('ftIssueDepth', { v: m.depth.toFixed(0) }), t('ftAdvDepth'));
+  else ok('depth', t('ftMetricDepth'), m.depth.toFixed(0) + 'Â°', t('ftIssueDepthOk', { v: m.depth.toFixed(0) }));
   if (m.asym > 8) push('asym', m.asym > 15 ? 'bad' : 'warn', t('ftMetricSym'), m.asym.toFixed(0) + '%', t('ftIssueSym', { v: m.asym.toFixed(0), l: m.asymL.toFixed(0), r: m.asymR.toFixed(0) }), t('ftAdvSym'));
   else ok('asym', t('ftMetricSym'), m.asym.toFixed(0) + '%', t('ftIssueSymOk', { v: m.asym.toFixed(0) }));
   if (m.valgus > 0.15) push('valgus', m.valgus > 0.30 ? 'bad' : 'warn', t('ftMetricValgus'), m.valgus.toFixed(2), t('ftIssueValgus', { v: m.valgus.toFixed(2) }), t('ftAdvValgus'));
   else ok('valgus', t('ftMetricValgus'), m.valgus.toFixed(2), t('ftIssueValgusOk'));
-  if (m.trunkLean > 40) push('trunk', m.trunkLean > 55 ? 'bad' : 'warn', t('ftMetricTrunk'), m.trunkLean.toFixed(0) + '°', t('ftIssueTrunk', { v: m.trunkLean.toFixed(0) }), t('ftAdvTrunk'));
-  else ok('trunk', t('ftMetricTrunk'), m.trunkLean.toFixed(0) + '°', t('ftIssueTrunkOk', { v: m.trunkLean.toFixed(0) }));
+  if (m.trunkLean > 40) push('trunk', m.trunkLean > 55 ? 'bad' : 'warn', t('ftMetricTrunk'), m.trunkLean.toFixed(0) + 'Â°', t('ftIssueTrunk', { v: m.trunkLean.toFixed(0) }), t('ftAdvTrunk'));
+  else ok('trunk', t('ftMetricTrunk'), m.trunkLean.toFixed(0) + 'Â°', t('ftIssueTrunkOk', { v: m.trunkLean.toFixed(0) }));
   if (m.downSec < 0.5 || m.downSec > 1.6) push('speed', m.downSec < 0.35 || m.downSec > 2.2 ? 'bad' : 'warn', t('ftMetricSpeed'), m.downSec.toFixed(1) + 's', t('ftIssueSpeed', { v: m.downSec.toFixed(1) }), t('ftAdvSpeed'));
   else ok('speed', t('ftMetricSpeed'), m.downSec.toFixed(1) + 's', t('ftIssueSpeedOk', { v: m.downSec.toFixed(1) }));
-  if (m.stab > 5) push('stab', m.stab > 9 ? 'bad' : 'warn', t('ftMetricStab'), m.stab.toFixed(0) + '°', t('ftIssueStab', { v: m.stab.toFixed(0) }), t('ftAdvStab'));
-  else ok('stab', t('ftMetricStab'), m.stab.toFixed(0) + '°', t('ftIssueStabOk'));
-  if (m.rom < 30) push('rom', m.rom < 22 ? 'bad' : 'warn', t('ftMetricRom'), m.rom.toFixed(0) + '°', t('ftIssueRom', { v: m.rom.toFixed(0) }), t('ftAdvRom'));
-  else ok('rom', t('ftMetricRom'), m.rom.toFixed(0) + '°', t('ftIssueRomOk', { v: m.rom.toFixed(0) }));
+  if (m.stab > 5) push('stab', m.stab > 9 ? 'bad' : 'warn', t('ftMetricStab'), m.stab.toFixed(0) + 'Â°', t('ftIssueStab', { v: m.stab.toFixed(0) }), t('ftAdvStab'));
+  else ok('stab', t('ftMetricStab'), m.stab.toFixed(0) + 'Â°', t('ftIssueStabOk'));
+  if (m.rom < 30) push('rom', m.rom < 22 ? 'bad' : 'warn', t('ftMetricRom'), m.rom.toFixed(0) + 'Â°', t('ftIssueRom', { v: m.rom.toFixed(0) }), t('ftAdvRom'));
+  else ok('rom', t('ftMetricRom'), m.rom.toFixed(0) + 'Â°', t('ftIssueRomOk', { v: m.rom.toFixed(0) }));
   if (m.cons > 15) push('cons', m.cons > 25 ? 'bad' : 'warn', t('ftMetricCons'), m.cons.toFixed(0) + '%', t('ftIssueCons', { v: m.cons.toFixed(0) }), t('ftAdvCons'));
   else ok('cons', t('ftMetricCons'), m.cons.toFixed(0) + '%', t('ftIssueConsOk'));
   return out;
 }
-// 专业知识库：问题 → 可能因素 → 推荐训练 → 注意事项 → 复测
+// ä¸“ä¸šçŸ¥è¯†åº“ï¼šé—®é¢˜ â†’ å¯èƒ½å› ç´  â†’ æŽ¨èè®­ç»ƒ â†’ æ³¨æ„äº‹é¡¹ â†’ å¤æµ‹
 const FT_KB = {
   valgus: { problem: 'ftMetricValgus', factor: 'ftFactorValgus', ex: ['ftExClam', 'ftExBandWalk', 'ftExBridge', 'ftExStepDown', 'ftExAssist'], caution: 'ftCautionValgus' },
   depth: { problem: 'ftMetricDepth', factor: 'ftFactorDepth', ex: ['ftExWallSquat', 'ftExWallSit'], caution: 'ftCautionDepth' },
@@ -3693,7 +3693,7 @@ const FT_KB = {
   kneeBend: { problem: 'ftMetricKneeExt', factor: 'ftFactorKneeBend', ex: ['ftExHam'], caution: 'ftCautionKneeBend' },
   center: { problem: 'ftMetricCenter', factor: 'ftFactorCenter', ex: ['ftExPlank', 'ftExBridge'], caution: 'ftCautionCenter' },
 };
-// 标准动作模板（时间归一化参考曲线）
+// æ ‡å‡†åŠ¨ä½œæ¨¡æ¿ï¼ˆæ—¶é—´å½’ä¸€åŒ–å‚è€ƒæ›²çº¿ï¼‰
 function ftRefSeries(key, n = 100) {
   const s = [];
   const rampUp = (x, x0, x1, a, b) => Math.max(a, Math.min(b, a + (b - a) * Math.sin(((x - x0) / (x1 - x0)) * Math.PI / 2)));
@@ -3744,7 +3744,7 @@ function ftDelta(prevM, m, metric) {
 function ftHistory() { return sget('rehab_ft_history', []); }
 function ftSaveRecord(rec) { const h = ftHistory(); h.unshift(rec); if (h.length > 60) h.length = 60; sset('rehab_ft_history', h); }
 
-// 实时教练：每帧只挑一个最重要的错误（优先级：内扣 > 躯干 > 深度 > 速度 > 对称）
+// å®žæ—¶æ•™ç»ƒï¼šæ¯å¸§åªæŒ‘ä¸€ä¸ªæœ€é‡è¦çš„é”™è¯¯ï¼ˆä¼˜å…ˆçº§ï¼šå†…æ‰£ > èº¯å¹² > æ·±åº¦ > é€Ÿåº¦ > å¯¹ç§°ï¼‰
 function ftCueFor(key, m) {
   if (key === 'bend') {
     if (m.trunk < 150 && 180 - m.kneeExt > 25) return t('ftIssueKneeExt', { v: (180 - m.kneeExt).toFixed(0) });
@@ -3776,10 +3776,10 @@ function ftLiveReps(m, ts) {
   }
   return st.count;
 }
-// v2.21.3：阶段判定（0 站直/放下 · 1 下降或上升 · 2 底部或顶部），纯函数供自测
+// v2.21.3ï¼šé˜¶æ®µåˆ¤å®šï¼ˆ0 ç«™ç›´/æ”¾ä¸‹ Â· 1 ä¸‹é™æˆ–ä¸Šå‡ Â· 2 åº•éƒ¨æˆ–é¡¶éƒ¨ï¼‰ï¼Œçº¯å‡½æ•°ä¾›è‡ªæµ‹
 function ftPhaseOf(key, v) {
   const mv = FT_MOVES[key];
-  if (mv.target === 'peak') return v >= mv.thrHigh ? 2 : v <= mv.thrLow ? 0 : 1;   // 峰值型：高阈=举起，低阈=放下
+  if (mv.target === 'peak') return v >= mv.thrHigh ? 2 : v <= mv.thrLow ? 0 : 1;   // å³°å€¼åž‹ï¼šé«˜é˜ˆ=ä¸¾èµ·ï¼Œä½Žé˜ˆ=æ”¾ä¸‹
   return v > mv.thrHigh ? 0 : v < mv.thrLow ? 2 : 1;
 }
 function renderFtChecks(g) {
@@ -3788,7 +3788,7 @@ function renderFtChecks(g) {
   if (!g.items.length) { el.innerHTML = ''; return; }
   el.innerHTML = g.items.map((i) => `
     <div class="pa-check ${i.ok ? 'ok' : 'bad'}">
-      <span class="pa-check-dot">${i.ok ? '✓' : '✕'}</span><span>${i.label}</span>
+      <span class="pa-check-dot">${i.ok ? 'âœ“' : 'âœ•'}</span><span>${i.label}</span>
       ${i.note ? `<span class="pa-check-note">${i.note}</span>` : ''}
     </div>`).join('');
 }
@@ -3796,10 +3796,10 @@ function renderFtLive(m, reps, need, ts) {
   const el = $('ft-live-metrics');
   if (!el) return;
   const mv = FT_MOVES[ftState.key];
-  const main = mv.metric === 'knee' ? [t('ftLiveKnee'), m.knee.toFixed(0) + '°'] : mv.metric === 'raise' ? [t('ftLiveRaise'), m.raise.toFixed(2)] : [t('ftLiveBend'), m.trunk.toFixed(0) + '°'];
+  const main = mv.metric === 'knee' ? [t('ftLiveKnee'), m.knee.toFixed(0) + 'Â°'] : mv.metric === 'raise' ? [t('ftLiveRaise'), m.raise.toFixed(2)] : [t('ftLiveBend'), m.trunk.toFixed(0) + 'Â°'];
   el.innerHTML = `
     <div class="stat big"><span class="s-label">${main[0]}</span><span class="s-value">${main[1]}</span></div>
-    <div class="stat"><span class="s-label">${t('ftLiveTrunk')}</span><span class="s-value">${m.trunkLean.toFixed(0)}°</span></div>
+    <div class="stat"><span class="s-label">${t('ftLiveTrunk')}</span><span class="s-value">${m.trunkLean.toFixed(0)}Â°</span></div>
     <div class="stat"><span class="s-label">${t('ftLiveValgus')}</span><span class="s-value">${m.valgus.toFixed(2)}</span></div>
     <div class="stat"><span class="s-label">${t('ftCapturing')}</span><span class="s-value">${Math.min(reps, need)}/${need}</span></div>`;
   const cue = ftCueFor(ftState.key, m);
@@ -3807,19 +3807,19 @@ function renderFtLive(m, reps, need, ts) {
   const now = ts || performance.now();
   if (cue && cue !== ftState.cueLast) {
     ftState.cueLast = cue;
-    cueEl.innerHTML = icon('alert') + '<span>' + t('ftCueTitle') + '：' + cue + '</span>';
+    cueEl.innerHTML = icon('alert') + '<span>' + t('ftCueTitle') + 'ï¼š' + cue + '</span>';
     cueEl.className = 'ft-cue';
-    if (!ftState.cueSpokeAt || now - ftState.cueSpokeAt > 3500) { speak(cue); ftState.cueSpokeAt = now; }   // 语音防刷屏
+    if (!ftState.cueSpokeAt || now - ftState.cueSpokeAt > 3500) { speak(cue); ftState.cueSpokeAt = now; }   // è¯­éŸ³é˜²åˆ·å±
   } else if (!cue && ftState.cueLast !== t('ftCueNone')) {
     ftState.cueLast = t('ftCueNone');
     cueEl.innerHTML = icon('check') + '<span>' + t('ftCueNone') + '</span>';
     cueEl.className = 'ft-cue ok';
   }
-  const battPrefix = ftState.mode === 'battery' ? t('ftBatteryProgress', { i: ftState.queueIdx + 1, n: ftState.queue.length }) + ' · ' : '';
+  const battPrefix = ftState.mode === 'battery' ? t('ftBatteryProgress', { i: ftState.queueIdx + 1, n: ftState.queue.length }) + ' Â· ' : '';
   $('ft-hint').textContent = reps >= need ? t('ftAutoDone')
     : reps > 0 ? t('ftRepDone', { n: reps, m: need })
       : battPrefix + t(FT_MOVES[ftState.key].guide);
-  // v2.21.3：阶段指示 + 次数进度条
+  // v2.21.3ï¼šé˜¶æ®µæŒ‡ç¤º + æ¬¡æ•°è¿›åº¦æ¡
   const subEl = $('ft-live-sub');
   if (subEl) {
     const ph = ftPhaseOf(ftState.key, m[mv.metric]);
@@ -3827,7 +3827,7 @@ function renderFtLive(m, reps, need, ts) {
     subEl.classList.remove('hidden');
     subEl.innerHTML = `
       <div style="display:flex;align-items:center;gap:8px;margin-top:10px">
-        <span style="flex:none">${t('ftPhase')}：<b>${t(phaseKey)}</b></span>
+        <span style="flex:none">${t('ftPhase')}ï¼š<b>${t(phaseKey)}</b></span>
         <div class="gw-bar" style="flex:1"><div class="gw-bar-fill" style="width:${Math.min(100, (reps / Math.max(1, need)) * 100).toFixed(0)}%"></div></div>
         <span style="flex:none">${Math.min(reps, need)}/${need}</span>
       </div>`;
@@ -3838,7 +3838,7 @@ function setFtStartBtn() { $('btn-ft-start-label').textContent = ftState.active 
 async function ftStart(kind, demo = false) {
   if (!$('ft-video')) return;
   if (ftState.active) { ftStop(); return; }
-  if (state.running) { await toggleStart(); }          // 只调用旧函数，不改动
+  if (state.running) { await toggleStart(); }          // åªè°ƒç”¨æ—§å‡½æ•°ï¼Œä¸æ”¹åŠ¨
   ftState.active = true; ftState.demo = demo;
   ftState.mode = kind === 'battery' ? 'battery' : 'single';
   ftState.queue = ftState.mode === 'battery' ? FT_ORDER.slice() : [kind];
@@ -3864,7 +3864,7 @@ async function ftStart(kind, demo = false) {
       v.srcObject = stream;
       await new Promise((res, rej) => {
         if (v.readyState >= 1) return res();
-        const t0 = setTimeout(() => { v.srcObject = null; stream.getTracks().forEach((x) => x.stop()); rej(new DOMException('视频初始化超时', 'TimeoutError')); }, 6000);
+        const t0 = setTimeout(() => { v.srcObject = null; stream.getTracks().forEach((x) => x.stop()); rej(new DOMException('è§†é¢‘åˆå§‹åŒ–è¶…æ—¶', 'TimeoutError')); }, 6000);
         v.onloadedmetadata = () => { clearTimeout(t0); res(); };
       });
       try { await v.play(); } catch { /* ignore */ }
@@ -3899,7 +3899,7 @@ function ftStop() {
   const ph = $('ft-placeholder');
   if (ph) { ph.classList.remove('hidden'); $('ft-placeholder-text').textContent = t('ftPlaceholderShort'); }
   const gate = $('ft-gate'), live = $('ft-live');
-  if (gate) gate.classList.add('hidden');          // v2.20.2：手动停止后收起门控与实时面板，不留过期数据
+  if (gate) gate.classList.add('hidden');          // v2.20.2ï¼šæ‰‹åŠ¨åœæ­¢åŽæ”¶èµ·é—¨æŽ§ä¸Žå®žæ—¶é¢æ¿ï¼Œä¸ç•™è¿‡æœŸæ•°æ®
   if (live) live.classList.add('hidden');
   setFtStartBtn();
 }
@@ -3930,8 +3930,8 @@ function ftLoop() {
   if (!lms) { requestAnimationFrame(ftLoop); return; }
   if (!g.ok) { requestAnimationFrame(ftLoop); return; }
   const m = ftFrameMetrics(lms);
-  if (ftState.gapUntil && ts < ftState.gapUntil) {   // v2.20.2：连测换姿势缓冲期内不采集
-    $('ft-hint').textContent = t('ftNext', { name: t(FT_MOVES[ftState.key].name) }) + ' · ' + Math.max(1, Math.ceil((ftState.gapUntil - ts) / 1000));
+  if (ftState.gapUntil && ts < ftState.gapUntil) {   // v2.20.2ï¼šè¿žæµ‹æ¢å§¿åŠ¿ç¼“å†²æœŸå†…ä¸é‡‡é›†
+    $('ft-hint').textContent = t('ftNext', { name: t(FT_MOVES[ftState.key].name) }) + ' Â· ' + Math.max(1, Math.ceil((ftState.gapUntil - ts) / 1000));
     requestAnimationFrame(ftLoop);
     return;
   }
@@ -3943,7 +3943,7 @@ function ftLoop() {
   const timeout = ts - ftState.t0 > 30000;
   if (reps >= FT_MOVES[ftState.key].need || timeout) {
     if (reps >= FT_MOVES[ftState.key].need) {
-      setTimeout(() => { if (ftState.active) ftFinish(ftState.key); }, 700);   // 稳定后再分析
+      setTimeout(() => { if (ftState.active) ftFinish(ftState.key); }, 700);   // ç¨³å®šåŽå†åˆ†æž
       return;
     }
     ftFinish(ftState.key);
@@ -3972,14 +3972,14 @@ function ftFinish(key) {
     ftState.frames = []; ftState.repState = { phase: 'up', count: 0, lastRepT: 0 };
     ftState.cueLast = null; ftState.cueSpokeAt = 0; ftState.t0 = performance.now(); ftState.startFrame = null;
     ftState.lastT = 0;
-    ftState.gapUntil = ftState.demo ? 0 : performance.now() + 3000;   // v2.20.2：真人连测换姿势缓冲 3 秒
+    ftState.gapUntil = ftState.demo ? 0 : performance.now() + 3000;   // v2.20.2ï¼šçœŸäººè¿žæµ‹æ¢å§¿åŠ¿ç¼“å†² 3 ç§’
     renderFtMoves();
     $('ft-hint').textContent = ftState.demo ? t('ftNext', { name: t(FT_MOVES[next].name) }) : t('ftCapturing');
     requestAnimationFrame(ftLoop);
     return;
   }
   if (isBattery) {
-    // 聚合 5 项为一条综合记录（六维加权 + 起始站姿静态对称性计入 20%）
+    // èšåˆ 5 é¡¹ä¸ºä¸€æ¡ç»¼åˆè®°å½•ï¼ˆå…­ç»´åŠ æƒ + èµ·å§‹ç«™å§¿é™æ€å¯¹ç§°æ€§è®¡å…¥ 20%ï¼‰
     const h2 = ftHistory();
     const parts = FT_ORDER.map((k) => h2.find((r) => r.key === k)).filter(Boolean);
     const n = Math.max(1, parts.length);
@@ -4021,7 +4021,7 @@ function renderFtReport(mode, scroll = true) {
   const el = $('ft-report');
   if (!el) return;
   el.classList.remove('hidden');
-  ftState.lastView = { mode };                       // 语言切换时可按此重渲染
+  ftState.lastView = { mode };                       // è¯­è¨€åˆ‡æ¢æ—¶å¯æŒ‰æ­¤é‡æ¸²æŸ“
   const h = ftHistory();
   const battery = mode === 'battery';
   const keys = battery ? FT_ORDER : [ftState.key];
@@ -4045,7 +4045,7 @@ function renderFtReport(mode, scroll = true) {
       <div class="pa-items">${keys.map((k) => {
         const r = h.find((x) => x.key === k);
         return r ? `<div class="pa-item"><div class="ft-mv-head"><span class="pa-item-name">${t(FT_MOVES[k].name)}</span><span class="ft-mv-sim">${t('ftSimilarity')} ${r.sim}%</span><span class="ft-mv-score">${r.score}</span></div><div class="pa-item-text">${r.issues.filter((i) => i.level !== 'good').slice(0, 2).map((i) => i.text).join('<br>') || t('ftNoIssue')}</div></div>`
-          : `<div class="pa-item"><div class="pa-item-text">${t(FT_MOVES[k].name)} — ${t('ftMore', { n: 1 })}</div></div>`;
+          : `<div class="pa-item"><div class="pa-item-text">${t(FT_MOVES[k].name)} â€” ${t('ftMore', { n: 1 })}</div></div>`;
       }).join('')}</div>`;
   } else {
     const rec = recs[0];
@@ -4057,7 +4057,7 @@ function renderFtReport(mode, scroll = true) {
         ? `<span class="ft-delta ${rec.score >= prev.score ? 'up' : 'down'}">${rec.score >= prev.score ? t('ftImproved', { p: Math.round((rec.score - prev.score) / Math.max(1, prev.score) * 100) }) : t('ftWorse', { p: Math.round((prev.score - rec.score) / Math.max(1, prev.score) * 100) })}</span>`
         : `<span class="hint tiny">${t('ftFirstTest')}</span>`;
       body += `
-        <h3>${t('ftReportTitle')} · ${t(FT_MOVES[rec.key].name)}</h3>
+        <h3>${t('ftReportTitle')} Â· ${t(FT_MOVES[rec.key].name)}</h3>
         <div class="pa-score"><div class="pa-score-num">${rec.score}</div><div><div class="pa-score-grade">${t('ftScore')} ${vs}</div><div class="pa-score-sub">${t('ftSafety')}</div></div></div>
         ${rec.m && rec.m.reps === 0 ? `<p class="hint" style="margin-top:10px;color:#b45309">${t('ftNoReps')}</p>` : ''}
         <div class="pa-items"><h4 style="margin-bottom:8px">${t('ftMetrics')}</h4>
@@ -4065,22 +4065,22 @@ function renderFtReport(mode, scroll = true) {
             <div class="pa-item">
               <div class="pa-item-head"><span class="pa-lv ${i.level}">${t(i.level === 'good' ? 'paGood' : i.level === 'warn' ? 'paWarn' : 'paBad')}</span><span class="pa-item-name">${i.label}</span><span class="pa-item-val">${i.val}</span></div>
               <div class="pa-item-text">${i.text}</div>
-              ${i.advice ? `<div class="pa-item-advice"><b>${t('paAdvice')}</b>：${i.advice}</div>` : ''}
+              ${i.advice ? `<div class="pa-item-advice"><b>${t('paAdvice')}</b>ï¼š${i.advice}</div>` : ''}
               ${prev && i.level !== 'good' ? ftDeltaHtml(prev.m, rec.m, i) : ''}
             </div>`).join('')}
         </div>`;
       if (rec.sim) {
         const simGrade = rec.sim >= 85 ? 'A' : rec.sim >= 70 ? 'B' : rec.sim >= 55 ? 'C' : 'D';
-        body += `<div class="ft-sim"><div class="ft-sim-head"><span>${t('ftSimilarity')}</span><b>${rec.sim}% · ${t('paGrade' + simGrade)}</b></div><canvas class="ft-curve" id="ft-curve"></canvas>
-          <div class="hint tiny" style="margin-top:4px">${t('ftLegendYou')} <span style="color:#0e7c66;font-weight:800">——</span> · ${t('ftLegendStd')} <span style="color:#c9cdd4;font-weight:800">- -</span></div></div>`;
+        body += `<div class="ft-sim"><div class="ft-sim-head"><span>${t('ftSimilarity')}</span><b>${rec.sim}% Â· ${t('paGrade' + simGrade)}</b></div><canvas class="ft-curve" id="ft-curve"></canvas>
+          <div class="hint tiny" style="margin-top:4px">${t('ftLegendYou')} <span style="color:#0e7c66;font-weight:800">â€”â€”</span> Â· ${t('ftLegendStd')} <span style="color:#c9cdd4;font-weight:800">- -</span></div></div>`;
       }
       if (rec.traj && rec.traj.length) {
         body += `<div class="ft-sim"><div class="ft-sim-head"><span>${t('ftTrajTitle')}</span></div><canvas class="ft-traj" id="ft-traj"></canvas>
-          <div class="hint tiny" style="margin-top:4px">${t('ftLegendYou')} <span style="color:#0e7c66;font-weight:800">——</span> · ${t('ftLegendStd')} <span style="color:#c9cdd4;font-weight:800">- -</span></div></div>`;
+          <div class="hint tiny" style="margin-top:4px">${t('ftLegendYou')} <span style="color:#0e7c66;font-weight:800">â€”â€”</span> Â· ${t('ftLegendStd')} <span style="color:#c9cdd4;font-weight:800">- -</span></div></div>`;
       }
     }
   }
-  // 知识库处方（聚合所有非良好问题的 kb，去重）
+  // çŸ¥è¯†åº“å¤„æ–¹ï¼ˆèšåˆæ‰€æœ‰éžè‰¯å¥½é—®é¢˜çš„ kbï¼ŒåŽ»é‡ï¼‰
   const allIssues = recs.flatMap((r) => (r ? r.issues : [])).filter((i) => i.level !== 'good');
   const kbIds = [...new Set(allIssues.map((i) => i.kb))].filter((id) => FT_KB[id]);
   if (kbIds.length) {
@@ -4088,11 +4088,11 @@ function renderFtReport(mode, scroll = true) {
       const kb = FT_KB[id];
       return `<div class="ft-presc-item">
         <div class="ft-presc-prob">${t(kb.problem)}</div>
-        <div class="ft-presc-row"><b>${t('ftPrescFactors')}</b>：${t(kb.factor)}</div>
+        <div class="ft-presc-row"><b>${t('ftPrescFactors')}</b>ï¼š${t(kb.factor)}</div>
         <div class="ft-presc-row"><b>${t('ftPrescEx')}</b></div>
         <div class="ft-ex-list">${kb.ex.map((e) => `<div class="ft-ex"><b>${t(e)}</b><span>${t(e + 'N')}</span></div>`).join('')}</div>
-        <div class="ft-presc-row"><b>${t('ftPrescCaution')}</b>：${t(kb.caution)}</div>
-        <div class="ft-presc-row"><b>${t('ftPrescRetest')}</b>：${t('ftRetestCommon')}</div>
+        <div class="ft-presc-row"><b>${t('ftPrescCaution')}</b>ï¼š${t(kb.caution)}</div>
+        <div class="ft-presc-row"><b>${t('ftPrescRetest')}</b>ï¼š${t('ftRetestCommon')}</div>
       </div>`;
     }).join('') + `</div>`;
   } else {
@@ -4119,7 +4119,7 @@ function ftDeltaHtml(prevM, m, issue) {
   if (!metric) return '';
   const d = ftDelta(prevM, m, metric);
   if (!d) return '';
-  return `<div class="pa-item-advice" style="color:#b45309"><b>${t('ftVsLast')}</b>：${d.better ? t('ftImproved', { p: d.pct }) : t('ftWorse', { p: d.pct })}</div>`;
+  return `<div class="pa-item-advice" style="color:#b45309"><b>${t('ftVsLast')}</b>ï¼š${d.better ? t('ftImproved', { p: d.pct }) : t('ftWorse', { p: d.pct })}</div>`;
 }
 function renderFtMoves() {
   const el = $('ft-moves');
@@ -4134,7 +4134,7 @@ function renderFtMoves() {
     $('ft-report').classList.add('hidden');
     renderFtMoves();
   }));
-  $('ft-guide').textContent = t(FT_MOVES[ftState.key].guide) + '（' + t('ftTargetN', { n: FT_MOVES[ftState.key].need }) + '）';
+  $('ft-guide').textContent = t(FT_MOVES[ftState.key].guide) + 'ï¼ˆ' + t('ftTargetN', { n: FT_MOVES[ftState.key].need }) + 'ï¼‰';
   const batBtn = $('btn-ft-battery');
   if (batBtn) batBtn.classList.toggle('on', ftState.mode === 'battery' && ftState.active);
 }
@@ -4147,8 +4147,8 @@ function renderFtHistory() {
     const when = new Date(r.ts);
     const date = when.toLocaleDateString(locale(), { month: 'numeric', day: 'numeric' }) + ' ' + when.toLocaleTimeString(locale(), { hour: '2-digit', minute: '2-digit' });
     return `<div class="item">
-      <div class="t">${icon('record')}${r.battery ? t('ftBatteryReport') : t(FT_MOVES[r.key].name)}${r.demo ? ' · ' + t('ftBtnDemo') : ''} — ${date}</div>
-      <div class="d">${t('ftScore')} ${r.score} · ${t('ftSimilarity')} ${r.sim}%${r.m ? ' · ' + t('ftRepsDone', { n: r.m.reps, m: r.m.need }) : ''}</div>
+      <div class="t">${icon('record')}${r.battery ? t('ftBatteryReport') : t(FT_MOVES[r.key].name)}${r.demo ? ' Â· ' + t('ftBtnDemo') : ''} â€” ${date}</div>
+      <div class="d">${t('ftScore')} ${r.score} Â· ${t('ftSimilarity')} ${r.sim}%${r.m ? ' Â· ' + t('ftRepsDone', { n: r.m.reps, m: r.m.need }) : ''}</div>
       <div class="controls" style="margin-top:6px"><button class="btn small" data-ft-view="${r.ts}"><span>${t('ftView')}</span></button></div>
     </div>`;
   }).join('');
@@ -4171,16 +4171,16 @@ function renderFtProfile() {
     const r = h.find((x) => x.key === k);
     if (!r) return null;
     const m = r.m;
-    const val = k === 'arm' ? (m.raise ? '↑' + m.raise.toFixed(2) : '—') : k === 'bend' ? (m.flexion ? m.flexion.toFixed(0) + '°' : '—') : (m.depth ? m.depth.toFixed(0) + '°' : '—');
-    const asym = k === 'arm' ? m.asym.toFixed(2) : k === 'bend' ? m.center.toFixed(2) : m.asym ? m.asym.toFixed(0) + '%' : '—';
+    const val = k === 'arm' ? (m.raise ? 'â†‘' + m.raise.toFixed(2) : 'â€”') : k === 'bend' ? (m.flexion ? m.flexion.toFixed(0) + 'Â°' : 'â€”') : (m.depth ? m.depth.toFixed(0) + 'Â°' : 'â€”');
+    const asym = k === 'arm' ? m.asym.toFixed(2) : k === 'bend' ? m.center.toFixed(2) : m.asym ? m.asym.toFixed(0) + '%' : 'â€”';
     return `<tr><td>${t(FT_MOVES[k].name)}</td><td class="num">${r.score}</td><td class="num">${val}</td><td class="num">${asym}</td><td class="num">${r.sim}%</td></tr>`;
   }).filter(Boolean).join('');
   el.innerHTML = `
     <div class="ft-profile-last">
       <div class="ft-profile-score">${last.score}</div>
       <div class="ft-profile-meta">
-        <b>${t('ftProfileLast')}</b>：${date}（${last.battery ? t('ftBatteryReport') : t(FT_MOVES[last.key].name)}）<br>
-        ${t('navRecord')}：${sessions} · ${t('ftSafety')}
+        <b>${t('ftProfileLast')}</b>ï¼š${date}ï¼ˆ${last.battery ? t('ftBatteryReport') : t(FT_MOVES[last.key].name)}ï¼‰<br>
+        ${t('navRecord')}ï¼š${sessions} Â· ${t('ftSafety')}
       </div>
     </div>
     <table class="ft-table">
@@ -4191,12 +4191,12 @@ function renderFtProfile() {
 function renderFtUI() {
   renderFtMoves();
   if (ftState.active && ftState.lastGate) renderFtChecks(ftState.lastGate);
-  if (ftState.lastView && !$('ft-report').classList.contains('hidden')) renderFtReport(ftState.lastView.mode, false);   // 语言切换时刷新可见报告
+  if (ftState.lastView && !$('ft-report').classList.contains('hidden')) renderFtReport(ftState.lastView.mode, false);   // è¯­è¨€åˆ‡æ¢æ—¶åˆ·æ–°å¯è§æŠ¥å‘Š
   renderFtHistory();
   renderFtProfile();
   setFtStartBtn();
 }
-// 演示模式：按动作合成整段运动（含轻度缺陷：右腿浅 12° + 轻微内扣），走与真实一致的管线
+// æ¼”ç¤ºæ¨¡å¼ï¼šæŒ‰åŠ¨ä½œåˆæˆæ•´æ®µè¿åŠ¨ï¼ˆå«è½»åº¦ç¼ºé™·ï¼šå³è…¿æµ… 12Â° + è½»å¾®å†…æ‰£ï¼‰ï¼Œèµ°ä¸ŽçœŸå®žä¸€è‡´çš„ç®¡çº¿
 function ftDemoFrame(key, ts) {
   const tSec = ts / 1000;
   const mk = (x, y, vis = 1) => ({ x, y, z: 0, visibility: vis });
@@ -4209,21 +4209,21 @@ function ftDemoFrame(key, ts) {
   let kneeL = 172, kneeR = 172, raise = 0.02, bendAng = 172;
   if (key === 'squat' || key === 'lunge' || key === 'single') {
     kneeL = curve(0.12, 0.55, 0.14, 172, key === 'single' ? 108 : 96);
-    kneeR = curve(0.12, 0.55, 0.14, 172, key === 'single' ? 172 : 108);   // 右腿浅 → 不对称 ~12%
+    kneeR = curve(0.12, 0.55, 0.14, 172, key === 'single' ? 172 : 108);   // å³è…¿æµ… â†’ ä¸å¯¹ç§° ~12%
   } else if (key === 'arm') {
     raise = curve(0.12, 0.55, 0.14, 0.02, 0.26);
   } else {
     bendAng = curve(0.12, 0.55, 0.16, 172, 88);
   }
-  const bendRad = ((180 - bendAng) * Math.PI) / 180;                       // 前屈角（0=直立）
-  const kneeOf = (hipX, ankleX, angDeg) => {                               // 由膝角反推膝位置（等腰三角形垂距）
+  const bendRad = ((180 - bendAng) * Math.PI) / 180;                       // å‰å±ˆè§’ï¼ˆ0=ç›´ç«‹ï¼‰
+  const kneeOf = (hipX, ankleX, angDeg) => {                               // ç”±è†è§’åæŽ¨è†ä½ç½®ï¼ˆç­‰è…°ä¸‰è§’å½¢åž‚è·ï¼‰
     const H = { x: hipX, y: 0.52 }, A = { x: ankleX, y: 0.87 };
     const mx = (H.x + A.x) / 2, my = (H.y + A.y) / 2, l = Math.hypot(H.x - A.x, H.y - A.y);
     const d = Math.max(0, Math.min(0.20, (l / 2) / Math.tan((angDeg * Math.PI) / 360)));
     return { x: mx + d, y: my };
   };
   const kL = kneeOf(0.44, 0.46, kneeL), kR = kneeOf(0.56, 0.54, kneeR);
-  const valgusShift = kneeL < 130 ? 0.02 : 0;                              // 底部轻微内扣
+  const valgusShift = kneeL < 130 ? 0.02 : 0;                              // åº•éƒ¨è½»å¾®å†…æ‰£
   const shX = 0.5 + 0.23 * Math.sin(bendRad);
   const shY = 0.52 - 0.23 * Math.cos(bendRad);
   set(0, shX + 0.09 * Math.sin(bendRad), shY - 0.09 * Math.cos(bendRad));
@@ -4234,7 +4234,7 @@ function ftDemoFrame(key, ts) {
   set(23, 0.44, 0.52); set(24, 0.56, 0.52);
   set(25, kL.x + valgusShift, kL.y); set(26, kR.x - valgusShift, kR.y);
   set(27, 0.46, 0.87); set(28, 0.54, 0.87);
-  if (key === 'single') {          // v2.20.2：单腿蹲演示须抬起右腿，否则过不了「姿势到位」门控
+  if (key === 'single') {          // v2.20.2ï¼šå•è…¿è¹²æ¼”ç¤ºé¡»æŠ¬èµ·å³è…¿ï¼Œå¦åˆ™è¿‡ä¸äº†ã€Œå§¿åŠ¿åˆ°ä½ã€é—¨æŽ§
     set(28, 0.545, 0.80);
     set(26, 0.55, 0.70);
   }
@@ -4242,8 +4242,8 @@ function ftDemoFrame(key, ts) {
   return lms;
 }
 
-/* ============ 新增功能（v2.21）：今日总览 + AI 跟练 + 动作轨迹（对标 Tonal 分数体系/课程、Tempo 轨迹回放） ============ */
-// 全部纯新增：不修改旧功能；跟练完成后写入标准 rehab_sessions 记录，自动流入旧有的记录/趋势/成就（数据级串联，旧代码零改动）
+/* ============ æ–°å¢žåŠŸèƒ½ï¼ˆv2.21ï¼‰ï¼šä»Šæ—¥æ€»è§ˆ + AI è·Ÿç»ƒ + åŠ¨ä½œè½¨è¿¹ï¼ˆå¯¹æ ‡ Tonal åˆ†æ•°ä½“ç³»/è¯¾ç¨‹ã€Tempo è½¨è¿¹å›žæ”¾ï¼‰ ============ */
+// å…¨éƒ¨çº¯æ–°å¢žï¼šä¸ä¿®æ”¹æ—§åŠŸèƒ½ï¼›è·Ÿç»ƒå®ŒæˆåŽå†™å…¥æ ‡å‡† rehab_sessions è®°å½•ï¼Œè‡ªåŠ¨æµå…¥æ—§æœ‰çš„è®°å½•/è¶‹åŠ¿/æˆå°±ï¼ˆæ•°æ®çº§ä¸²è”ï¼Œæ—§ä»£ç é›¶æ”¹åŠ¨ï¼‰
 const GW_PROGRAMS = {
   knee: {
     name: 'gwKnee', desc: 'gwKneeD', mins: 10, tag: 'knee',
@@ -4278,7 +4278,7 @@ const gwState = {
   stepReps: 0, lastDone: null,
 };
 const gwLevel = () => { const ftB = ftHistory().find((r) => r.battery); const s = ftB ? ftB.score : null; return s == null ? 1 : s >= 75 ? 2 : 1; };
-// v2.21.2：难度真正生效——进阶（白银+）每节次数 +2，保持类动作时长不变
+// v2.21.2ï¼šéš¾åº¦çœŸæ­£ç”Ÿæ•ˆâ€”â€”è¿›é˜¶ï¼ˆç™½é“¶+ï¼‰æ¯èŠ‚æ¬¡æ•° +2ï¼Œä¿æŒç±»åŠ¨ä½œæ—¶é•¿ä¸å˜
 const gwStepReps = (step, level) => (step.reps ? step.reps + (level - 1) * 2 : step.hold);
 const gwCalcIndex = (paS, ftS, consist) => {
   const parts = [];
@@ -4320,7 +4320,7 @@ function gwStart(progId) {
   gwState.lastDone = null;
   gwState.stepReps = gwStepReps(prog.steps[0], gwState.level);
   gwBeepInit();
-  speak(t('gwStepOf', { s: 1, S: prog.steps.length }) + ' · ' + t(prog.steps[0].name));
+  speak(t('gwStepOf', { s: 1, S: prog.steps.length }) + ' Â· ' + t(prog.steps[0].name));
   renderGuide();
   gwState.tick = setInterval(gwTick, 1000);
 }
@@ -4359,13 +4359,13 @@ function gwTick() {
   } else if (st.phase === 'rest') {
     st.restLeft--;
     if (st.restLeft <= 0) {
-      gwBeep(1320);   // 休息结束提示音
+      gwBeep(1320);   // ä¼‘æ¯ç»“æŸæç¤ºéŸ³
       if (st.setIdx >= step.sets) {
         st.setIdx = 0; st.stepIdx++;
         if (st.stepIdx >= prog.steps.length) { gwFinish(true); return; }
         st.phase = 'prep'; st.prepLeft = 3;
         st.stepReps = gwStepReps(prog.steps[st.stepIdx], st.level);
-        speak(t('gwStepOf', { s: st.stepIdx + 1, S: prog.steps.length }) + ' · ' + t(prog.steps[st.stepIdx].name));
+        speak(t('gwStepOf', { s: st.stepIdx + 1, S: prog.steps.length }) + ' Â· ' + t(prog.steps[st.stepIdx].name));
       } else {
         st.phase = 'prep'; st.prepLeft = 3;
         speak(t('gwGo'));
@@ -4374,7 +4374,7 @@ function gwTick() {
   }
   renderGuide();
 }
-function gwTap() {   // 手动 +1（自动计数不准时用手点）
+function gwTap() {   // æ‰‹åŠ¨ +1ï¼ˆè‡ªåŠ¨è®¡æ•°ä¸å‡†æ—¶ç”¨æ‰‹ç‚¹ï¼‰
   if (!gwState.active || gwState.phase !== 'rep') return;
   gwState.repN++; gwState.repsTotal++;
   if (gwState.repN >= gwState.stepReps) {
@@ -4397,7 +4397,7 @@ function gwFinish(completed) {
   gwState.active = false; gwState.phase = 'idle';
   if (reps > 0) {
     const rec = gwMakeSession(prog, reps, durSec);
-    sset('rehab_sessions', [rec, ...sget('rehab_sessions', [])]);   // 写入标准训练记录：自动流入记录/趋势/成就/热力图
+    sset('rehab_sessions', [rec, ...sget('rehab_sessions', [])]);   // å†™å…¥æ ‡å‡†è®­ç»ƒè®°å½•ï¼šè‡ªåŠ¨æµå…¥è®°å½•/è¶‹åŠ¿/æˆå°±/çƒ­åŠ›å›¾
   }
   gwState.lastDone = { completed, progId: gwState.progId, reps, durSec };
   renderGuide();
@@ -4409,7 +4409,7 @@ function renderGuide() {
   const activeEl = $('gw-active');
   const stageEl = $('gw-stage');
   if (!listEl) return;
-  renderDemos();   // v2.34.0：示范墙随语言与状态刷新
+  renderDemos();   // v2.34.0ï¼šç¤ºèŒƒå¢™éšè¯­è¨€ä¸ŽçŠ¶æ€åˆ·æ–°
   if (!gwState.active) {
     const wk = new Date(); wk.setHours(0, 0, 0, 0); wk.setDate(wk.getDate() - 6);
     const gwWeek = sget('rehab_sessions', []).filter((s) => s.ex === 'guided' && new Date(s.ts) >= wk).length;
@@ -4421,7 +4421,7 @@ function renderGuide() {
         <div class="gw-done-ico">${icon(d.completed ? 'check' : 'stop')}</div>
         <div style="flex:1;min-width:0">
           <div class="gw-card-name">${d.completed ? t('gwDone') : t('gwFinishEarly')}</div>
-          <div class="gw-card-desc">${t('gwComplete', { n: d.reps, m: Math.max(1, Math.round(d.durSec / 60)) })}${d.reps > 0 ? ' · ' + t('gwSavedCard') : ''}</div>
+          <div class="gw-card-desc">${t('gwComplete', { n: d.reps, m: Math.max(1, Math.round(d.durSec / 60)) })}${d.reps > 0 ? ' Â· ' + t('gwSavedCard') : ''}</div>
         </div>
       </div>
       <div class="controls" style="margin-top:8px">
@@ -4436,7 +4436,7 @@ function renderGuide() {
           <span class="gw-card-ico">${icon(p.steps[0].icon)}</span>
           <div style="flex:1;min-width:0">
             <div class="gw-card-name">${t(p.name)}</div>
-            <div class="gw-card-desc">${t(p.desc)}<br>${p.steps.length} ${t('gwSections')} · ${sets} ${t('gwSets')}</div>
+            <div class="gw-card-desc">${t(p.desc)}<br>${p.steps.length} ${t('gwSections')} Â· ${sets} ${t('gwSets')}</div>
           </div>
           <span class="hm-lv">${t('gwLv' + gwLevel())}</span>
         </div>
@@ -4457,13 +4457,13 @@ function renderGuide() {
   const prog = GW_PROGRAMS[gwState.progId];
   const step = prog.steps[gwState.stepIdx];
   let big, sub, barPct;
-  if (gwState.phase === 'prep') { big = gwState.prepLeft > 0 ? gwState.prepLeft : t('gwGo'); sub = `${t('gwPrep')} · ${t(step.name)}`; barPct = 0; }
-  else if (gwState.phase === 'rep') { big = gwState.repN + '/' + gwState.stepReps; sub = `${t('gwSet', { s: gwState.setIdx + 1, S: step.sets })} · ${gwState.metroDown ? t('gwDown') : t('gwUp')}`; barPct = (100 * gwState.repN / Math.max(1, gwState.stepReps)).toFixed(0); }
-  else if (gwState.phase === 'hold') { big = gwState.holdLeft; sub = `${t('gwSet', { s: gwState.setIdx + 1, S: step.sets })} · ${t('gwHold', { n: step.hold })}`; barPct = (100 * (1 - gwState.holdLeft / Math.max(1, step.hold))).toFixed(0); }
+  if (gwState.phase === 'prep') { big = gwState.prepLeft > 0 ? gwState.prepLeft : t('gwGo'); sub = `${t('gwPrep')} Â· ${t(step.name)}`; barPct = 0; }
+  else if (gwState.phase === 'rep') { big = gwState.repN + '/' + gwState.stepReps; sub = `${t('gwSet', { s: gwState.setIdx + 1, S: step.sets })} Â· ${gwState.metroDown ? t('gwDown') : t('gwUp')}`; barPct = (100 * gwState.repN / Math.max(1, gwState.stepReps)).toFixed(0); }
+  else if (gwState.phase === 'hold') { big = gwState.holdLeft; sub = `${t('gwSet', { s: gwState.setIdx + 1, S: step.sets })} Â· ${t('gwHold', { n: step.hold })}`; barPct = (100 * (1 - gwState.holdLeft / Math.max(1, step.hold))).toFixed(0); }
   else { big = gwState.restLeft; sub = t('gwRest', { n: step.rest }); barPct = (100 * (1 - gwState.restLeft / Math.max(1, step.rest))).toFixed(0); }
   const dots = prog.steps.map((s, i) => `<span class="gw-dot ${i === gwState.stepIdx ? 'on' : ''} ${i < gwState.stepIdx ? 'done' : ''}"></span>`).join('');
   stageEl.innerHTML = `
-    <div class="gw-set-line">${t(prog.name)} · ${t('gwLevel')}：${t('gwLv' + gwState.level)}</div>
+    <div class="gw-set-line">${t(prog.name)} Â· ${t('gwLevel')}ï¼š${t('gwLv' + gwState.level)}</div>
     <div class="gw-dots">${dots}</div>
     <div class="gw-step-name">${icon(step.icon)} ${t(step.name)}<span class="gw-set-line" style="display:block">${t('gwStepOf', { s: gwState.stepIdx + 1, S: prog.steps.length })}</span></div>
     ${realDemo(step.icon) ? '<div class="gw-stepdemo" id="gw-step-demo"><img class="dmb-thumb" src="' + realDemo(step.icon) + '" alt=""><button class="btn small" id="gw-step-look">' + t('dmbLook') + '</button></div>' : ''}
@@ -4476,14 +4476,14 @@ function renderGuide() {
       <button class="btn" id="btn-gw-stop"><span>${t('gwStop')}</span></button>
       <button class="gw-btn-big" id="btn-gw-tap"><span>+1</span></button>
     </div>
-    <p class="hint tiny" data-i18n="gwTap">点一下 +1（自动计数不准时用手点）</p>`;
+    <p class="hint tiny" data-i18n="gwTap">ç‚¹ä¸€ä¸‹ +1ï¼ˆè‡ªåŠ¨è®¡æ•°ä¸å‡†æ—¶ç”¨æ‰‹ç‚¹ï¼‰</p>`;
   $('btn-gw-stop').addEventListener('click', () => gwFinish(false));
   $('btn-gw-tap').addEventListener('click', gwTap);
   const gsl = $('gw-step-look');
-  if (gsl) gsl.addEventListener('click', () => openDemo(step.icon));   // v2.34.0：边练边看标准示范
+  if (gsl) gsl.addEventListener('click', () => openDemo(step.icon));   // v2.34.0ï¼šè¾¹ç»ƒè¾¹çœ‹æ ‡å‡†ç¤ºèŒƒ
 }
 
-/* ---- 今日总览：综合运动指数（体态 30% + 功能 30% + 坚持 40%）+ 恢复建议 + 热力图 + 周小结 ---- */
+/* ---- ä»Šæ—¥æ€»è§ˆï¼šç»¼åˆè¿åŠ¨æŒ‡æ•°ï¼ˆä½“æ€ 30% + åŠŸèƒ½ 30% + åšæŒ 40%ï¼‰+ æ¢å¤å»ºè®® + çƒ­åŠ›å›¾ + å‘¨å°ç»“ ---- */
 function homeIndex() {
   const pa = paHistory()[0];
   const ftB = ftHistory().find((r) => r.battery) || ftHistory()[0];
@@ -4520,8 +4520,8 @@ function renderHome() {
   const el = $('home-index');
   if (!el) return;
   const raw = homeIndex();
-  // v2.21.9：完全没有数据时（新装 App / 刚「清除全部数据」）按无数据态渲染，
-  // 既不显示 0 分卡，也不写入一条空的指数历史（原来清空后会被立刻写回）
+  // v2.21.9ï¼šå®Œå…¨æ²¡æœ‰æ•°æ®æ—¶ï¼ˆæ–°è£… App / åˆšã€Œæ¸…é™¤å…¨éƒ¨æ•°æ®ã€ï¼‰æŒ‰æ— æ•°æ®æ€æ¸²æŸ“ï¼Œ
+  // æ—¢ä¸æ˜¾ç¤º 0 åˆ†å¡ï¼Œä¹Ÿä¸å†™å…¥ä¸€æ¡ç©ºçš„æŒ‡æ•°åŽ†å²ï¼ˆåŽŸæ¥æ¸…ç©ºåŽä¼šè¢«ç«‹åˆ»å†™å›žï¼‰
   const idx = (raw.pa == null && raw.ft == null && raw.days30 === 0) ? { ...raw, score: null } : raw;
   const advice = homeAdvice(idx);
   if (idx.score == null) {
@@ -4545,7 +4545,7 @@ function renderHome() {
       <div class="hm-index">
         <div class="hm-score">${idx.score}</div>
         <div>
-          <span class="hm-lv">${t('homeLevel')} · ${t('gwLv' + idx.level)}</span>
+          <span class="hm-lv">${t('homeLevel')} Â· ${t('gwLv' + idx.level)}</span>
           ${delta != null ? `<span class="hm-lv" style="margin-left:6px;background:rgba(245,158,11,.15);color:#b45309">${t('homeIdxTrend', { v: delta >= 0 ? t('homeUp', { d: delta }) : t('homeDown', { d: -delta }) })}</span>` : ''}
           <div class="hm-parts">
             ${idx.pa != null ? `<div class="hm-part"><span>${t('paTitle')}</span><b>${idx.pa}</b><div class="hm-bar"><div class="hm-bar-fill" style="width:${idx.pa}%"></div></div></div>` : ''}
@@ -4555,12 +4555,12 @@ function renderHome() {
           ${toNext ? `<div class="hint tiny" style="margin-top:6px">${t('homeToNext', { l: t('gwLv' + nextLv), d: toNext })}</div>` : ''}
         </div>
       </div>
-      <div class="hm-advice">💡 ${advice.text}${advice.action ? ` <a class="link-btn" id="hm-adv-btn" style="margin-left:6px">${advice.action === 'guide' ? t('homeAdvGuideBtn') : advice.action === 'train' ? t('homeAdvGoBtn') : t('homeQuickPosture')} →</a>` : ''}</div>`;
+      <div class="hm-advice">ðŸ’¡ ${advice.text}${advice.action ? ` <a class="link-btn" id="hm-adv-btn" style="margin-left:6px">${advice.action === 'guide' ? t('homeAdvGuideBtn') : advice.action === 'train' ? t('homeAdvGoBtn') : t('homeQuickPosture')} â†’</a>` : ''}</div>`;
     if (advice.action) {
       $('hm-adv-btn').addEventListener('click', () => switchTab(advice.action === 'posture' ? 'posture' : advice.action));
     }
   }
-  // 今日任务：与日程页同一数据源（planForToday + 按 p.ex 打卡），可一键完成
+  // ä»Šæ—¥ä»»åŠ¡ï¼šä¸Žæ—¥ç¨‹é¡µåŒä¸€æ•°æ®æºï¼ˆplanForToday + æŒ‰ p.ex æ‰“å¡ï¼‰ï¼Œå¯ä¸€é”®å®Œæˆ
   const todays = planForToday();
   const doneArr = planDoneGet()[todayKeyStr()] || [];
   const listEl = $('home-today');
@@ -4568,8 +4568,8 @@ function renderHome() {
     listEl.innerHTML = `
       <div class="empty">${icon('schedule')}<span>${t('homeTodayNone')}</span></div>
       <div class="controls" style="margin-top:10px">
-        <button class="btn small" id="hm-sched"><span>${t('navSchedule')} →</span></button>
-        <button class="btn small" id="hm-guide2"><span>${t('navGuide')} →</span></button>
+        <button class="btn small" id="hm-sched"><span>${t('navSchedule')} â†’</span></button>
+        <button class="btn small" id="hm-guide2"><span>${t('navGuide')} â†’</span></button>
       </div>`;
     $('hm-sched').addEventListener('click', () => switchTab('schedule'));
     $('hm-guide2').addEventListener('click', () => switchTab('guide'));
@@ -4580,18 +4580,18 @@ function renderHome() {
       const isDone = doneArr.includes(p.ex);
       return `<div class="item">
         <button class="todo-check ${isDone ? 'on' : ''}" data-hex="${p.ex}">${isDone ? icon('check') : ''}</button>
-        <div style="flex:1"><div class="t"><span class="t-ico">${icon(e ? e.icon : 'custom')}</span>${e ? exName(e) : p.ex} · ${t('repsN', { n: p.reps })}</div></div>
+        <div style="flex:1"><div class="t"><span class="t-ico">${icon(e ? e.icon : 'custom')}</span>${e ? exName(e) : p.ex} Â· ${t('repsN', { n: p.reps })}</div></div>
       </div>`;
     }).join('') + `<div class="plan-progress">
       <div class="plan-progress-txt">${t('planProgress', { d: doneCount, t: todays.length })}</div>
       <div class="plan-bar"><div class="plan-fill" style="width:${(100 * doneCount / todays.length).toFixed(0)}%"></div></div>
     </div>`;
     listEl.querySelectorAll('.todo-check').forEach((b) => b.addEventListener('click', () => {
-      togglePlanDone(b.dataset.hex);   // 旧函数只调用不修改：写计划完成 + 刷新旧日程页
-      renderHome();                    // 刷新今日页自身
+      togglePlanDone(b.dataset.hex);   // æ—§å‡½æ•°åªè°ƒç”¨ä¸ä¿®æ”¹ï¼šå†™è®¡åˆ’å®Œæˆ + åˆ·æ–°æ—§æ—¥ç¨‹é¡µ
+      renderHome();                    // åˆ·æ–°ä»Šæ—¥é¡µè‡ªèº«
     }));
   }
-  // 30 天热力图 + 汇总
+  // 30 å¤©çƒ­åŠ›å›¾ + æ±‡æ€»
   const sessions = sget('rehab_sessions', []);
   const counts = {};
   sessions.forEach((s) => { const k = new Date(s.ts).toDateString(); counts[k] = (counts[k] || 0) + 1; });
@@ -4601,7 +4601,7 @@ function renderHome() {
     const k = d.toDateString();
     const n = counts[k] || 0;
     const lvl = n >= 3 ? 3 : n >= 2 ? 2 : n >= 1 ? 1 : 0;
-    cells.push(`<div class="hm-cell hm${lvl}${i === 0 ? ' today' : ''}" title="${d.toLocaleDateString(locale())} · ${n}"></div>`);
+    cells.push(`<div class="hm-cell hm${lvl}${i === 0 ? ' today' : ''}" title="${d.toLocaleDateString(locale())} Â· ${n}"></div>`);
   }
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const from30 = new Date(today); from30.setDate(from30.getDate() - 29);
@@ -4609,7 +4609,7 @@ function renderHome() {
   const wkStart = new Date(today); wkStart.setDate(wkStart.getDate() - 6);
   const d7 = new Set(sessions.filter((s) => new Date(s.ts) >= wkStart).map((s) => new Date(s.ts).toDateString())).size;
   $('home-heat').innerHTML = cells.join('') + `<div class="hint tiny" style="margin-top:6px">${t('homeHeatSum', { d30, d7 })}</div>`;
-  // 本周小结 + 上周对比 + 风险
+  // æœ¬å‘¨å°ç»“ + ä¸Šå‘¨å¯¹æ¯” + é£Žé™©
   const weekS = sessions.filter((s) => new Date(s.ts) >= wkStart);
   const rTotal = weekS.reduce((a, s) => a + (s.reps || 0), 0);
   const qAvg = weekS.length ? Math.round(100 - weekS.reduce((a, s) => a + (s.badPct || 0), 0) / weekS.length) : null;
@@ -4618,20 +4618,20 @@ function renderHome() {
   const weekPrev = sessions.filter((s) => new Date(s.ts) >= wkPrevStart && new Date(s.ts) < wkStart).length;
   const deltaW = weekS.length - weekPrev;
   $('home-week').innerHTML = weekS.length
-    ? `<div class="summary-line">${t('homeWeekLine', { n: weekS.length, r: rTotal, q: qAvg })}${riskN ? ' · ' + t('homeRisk', { n: riskN }) : ''}
+    ? `<div class="summary-line">${t('homeWeekLine', { n: weekS.length, r: rTotal, q: qAvg })}${riskN ? ' Â· ' + t('homeRisk', { n: riskN }) : ''}
         <span class="hint tiny" style="display:block">${t('homeWeekDelta', { v: (deltaW >= 0 ? '+' : '') + deltaW })}</span>
-        <button class="btn small" id="hm-record" style="margin-top:6px"><span>${t('homeGoRecord')} →</span></button>
+        <button class="btn small" id="hm-record" style="margin-top:6px"><span>${t('homeGoRecord')} â†’</span></button>
       </div>`
     : `<div class="empty">${icon('record')}<span>${t('homeWeekNone')}</span></div>`;
   if ($('hm-record')) $('hm-record').addEventListener('click', () => switchTab('record'));
 }
 
-/* ---- 动作轨迹（Tempo 式轨迹回放：你 vs 标准） ---- */
+/* ---- åŠ¨ä½œè½¨è¿¹ï¼ˆTempo å¼è½¨è¿¹å›žæ”¾ï¼šä½  vs æ ‡å‡†ï¼‰ ---- */
 function ftRefTraj(key, n = 13) {
   const pts = [];
   for (let i = 0; i < n; i++) {
     const t = i / (n - 1);
-    const d = Math.sin(t * Math.PI);   // 0→1→0
+    const d = Math.sin(t * Math.PI);   // 0â†’1â†’0
     if (key === 'arm') pts.push([0.5, 0.36 - 0.30 * d]);
     else if (key === 'bend') pts.push([0.5 + 0.12 * d, 0.30 + 0.20 * d]);
     else pts.push([0.5, 0.46 + 0.06 * d]);
@@ -4671,9 +4671,9 @@ function ftDrawTraj(canvas, user, ref) {
   if (user) plot(user, '#0e7c66', false);
 }
 
-/* ============ 新增功能（v2.21.5）：训练模块细化 ============ */
-// 纯新增（不动旧分析循环）：①训练页「今日任务」小条（与日程/今日同源，可一键打卡）
-// ②训练时长计时器（画面右上角，轮询 state.running 状态，零侵入）
+/* ============ æ–°å¢žåŠŸèƒ½ï¼ˆv2.21.5ï¼‰ï¼šè®­ç»ƒæ¨¡å—ç»†åŒ– ============ */
+// çº¯æ–°å¢žï¼ˆä¸åŠ¨æ—§åˆ†æžå¾ªçŽ¯ï¼‰ï¼šâ‘ è®­ç»ƒé¡µã€Œä»Šæ—¥ä»»åŠ¡ã€å°æ¡ï¼ˆä¸Žæ—¥ç¨‹/ä»Šæ—¥åŒæºï¼Œå¯ä¸€é”®æ‰“å¡ï¼‰
+// â‘¡è®­ç»ƒæ—¶é•¿è®¡æ—¶å™¨ï¼ˆç”»é¢å³ä¸Šè§’ï¼Œè½®è¯¢ state.running çŠ¶æ€ï¼Œé›¶ä¾µå…¥ï¼‰
 function renderTrainToday() {
   const el = $('train-today');
   if (!el) return;
@@ -4687,11 +4687,11 @@ function renderTrainToday() {
     const isDone = doneArr.includes(p.ex);
     return `<div class="item">
       <button class="todo-check ${isDone ? 'on' : ''}" data-tex="${p.ex}">${isDone ? icon('check') : ''}</button>
-      <div style="flex:1"><div class="t"><span class="t-ico">${icon(e ? e.icon : 'custom')}</span>${e ? exName(e) : p.ex} · ${t('repsN', { n: p.reps })}</div></div>
+      <div style="flex:1"><div class="t"><span class="t-ico">${icon(e ? e.icon : 'custom')}</span>${e ? exName(e) : p.ex} Â· ${t('repsN', { n: p.reps })}</div></div>
     </div>`;
   }).join('') + `<div class="plan-progress"><div class="plan-progress-txt">${t('planProgress', { d: doneCount, t: todays.length })}</div><div class="plan-bar"><div class="plan-fill" style="width:${(100 * doneCount / todays.length).toFixed(0)}%"></div></div></div>`;
   el.querySelectorAll('.todo-check').forEach((b) => b.addEventListener('click', () => {
-    togglePlanDone(b.dataset.tex);   // 旧函数只调用不修改
+    togglePlanDone(b.dataset.tex);   // æ—§å‡½æ•°åªè°ƒç”¨ä¸ä¿®æ”¹
     renderTrainToday();
     renderHome();
   }));
@@ -4708,7 +4708,7 @@ function trainTimerTick() {
   }
   if (running) {
     const s = Math.floor((trainTimer.acc + (performance.now() - trainTimer.start)) / 1000);
-    el.textContent = '⏱ ' + String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
+    el.textContent = 'â± ' + String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
     el.classList.remove('hidden');
   } else {
     el.classList.add('hidden');
@@ -4716,8 +4716,8 @@ function trainTimerTick() {
 }
 setInterval(trainTimerTick, 500);
 
-// v2.21.9：设置页「本机数据占用」（只读统计，纯新增）
-// 修复：登录后数据写在账号分区键 u:<邮箱>:rehab_*，原实现只认 'rehab' 前缀 → 已登录时统计偏小
+// v2.21.9ï¼šè®¾ç½®é¡µã€Œæœ¬æœºæ•°æ®å ç”¨ã€ï¼ˆåªè¯»ç»Ÿè®¡ï¼Œçº¯æ–°å¢žï¼‰
+// ä¿®å¤ï¼šç™»å½•åŽæ•°æ®å†™åœ¨è´¦å·åˆ†åŒºé”® u:<é‚®ç®±>:rehab_*ï¼ŒåŽŸå®žçŽ°åªè®¤ 'rehab' å‰ç¼€ â†’ å·²ç™»å½•æ—¶ç»Ÿè®¡åå°
 const STG_APP_KEY = /^(u:.*:)?rehab/;
 const stgBytes = (s) => { try { return new Blob([s]).size; } catch { return s.length * 2; } };
 const stgFmt = (b) => (b < 1024 ? b + ' B' : b < 1048576 ? (b / 1024).toFixed(1) + ' KB' : (b / 1048576).toFixed(2) + ' MB');
@@ -4747,7 +4747,7 @@ function renderStorageSize() {
       : t('stgBreak', { r: stgFmt(g.records), c: stgFmt(g.collect), m: stgFmt(g.custom), o: stgFmt(Math.max(0, g.total - g.records - g.collect - g.custom)) });
   }
 }
-// v2.21.9：备份卡「上次导出备份」提示（≥7 天标黄提醒）
+// v2.21.9ï¼šå¤‡ä»½å¡ã€Œä¸Šæ¬¡å¯¼å‡ºå¤‡ä»½ã€æç¤ºï¼ˆâ‰¥7 å¤©æ ‡é»„æé†’ï¼‰
 function renderLastBackup() {
   const el = $('last-backup');
   if (!el) return;
@@ -4757,11 +4757,11 @@ function renderLastBackup() {
   el.textContent = t(days <= 0 ? 'bakToday' : 'bakDaysAgo', { d: days });
   el.classList.toggle('warn', days >= 7);
 }
-// v2.21.9：数据被替换/清空/同步后统一刷新全部依赖模块（导入、清空、二维码同步共用）
-/* ============ v2.34.0 标准动作示范（图解）+ 示范录像 ============ */
-const dmbState = { key: null, playing: false, raf: 0, t0: 0, az: 35 };   // az=观察方位角：0 侧面 / 35 斜前 / 90 正面
+// v2.21.9ï¼šæ•°æ®è¢«æ›¿æ¢/æ¸…ç©º/åŒæ­¥åŽç»Ÿä¸€åˆ·æ–°å…¨éƒ¨ä¾èµ–æ¨¡å—ï¼ˆå¯¼å…¥ã€æ¸…ç©ºã€äºŒç»´ç åŒæ­¥å…±ç”¨ï¼‰
+/* ============ v2.34.0 æ ‡å‡†åŠ¨ä½œç¤ºèŒƒï¼ˆå›¾è§£ï¼‰+ ç¤ºèŒƒå½•åƒ ============ */
+const dmbState = { key: null, playing: false, raf: 0, t0: 0, az: 35 };   // az=è§‚å¯Ÿæ–¹ä½è§’ï¼š0 ä¾§é¢ / 35 æ–œå‰ / 90 æ­£é¢
 const recState = { rec: null, t0: 0 };
-// 跟练课里出现过的动作，按课程顺序去重（跟练是日常最常走的路）
+// è·Ÿç»ƒè¯¾é‡Œå‡ºçŽ°è¿‡çš„åŠ¨ä½œï¼ŒæŒ‰è¯¾ç¨‹é¡ºåºåŽ»é‡ï¼ˆè·Ÿç»ƒæ˜¯æ—¥å¸¸æœ€å¸¸èµ°çš„è·¯ï¼‰
 function guideStepKeys() {
   const seen = [];
   Object.values(GW_PROGRAMS).forEach((p) => p.steps.forEach((s) => {
@@ -4797,8 +4797,8 @@ function dmbTick(ts) {
   if (!dmbState.t0) dmbState.t0 = ts;
   const dur = 2800;
   const u = ((ts - dmbState.t0) % dur) / dur;
-  const tri = u < 0.5 ? u * 2 : (1 - u) * 2;   // 去-回，像 GIF 一样循环
-  big.innerHTML = '';   // v2.38.0：合成人形已下线（改真人示范），动画保留为空实现
+  const tri = u < 0.5 ? u * 2 : (1 - u) * 2;   // åŽ»-å›žï¼Œåƒ GIF ä¸€æ ·å¾ªçŽ¯
+  big.innerHTML = '';   // v2.38.0ï¼šåˆæˆäººå½¢å·²ä¸‹çº¿ï¼ˆæ”¹çœŸäººç¤ºèŒƒï¼‰ï¼ŒåŠ¨ç”»ä¿ç•™ä¸ºç©ºå®žçŽ°
   void tri;
   dmbState.raf = requestAnimationFrame(dmbTick);
 }
@@ -4816,11 +4816,11 @@ function renderDemoBody() {
   const d = DEMOS[key];
   const e = EXERCISES[key];
   const az = dmbState.az;
-  const frames = '';   // v2.38.0：去掉合成人形，关键帧改由真人动图 + 文字阈值表达
-  const faults = d.faults.concat(d.front ? [{ key: d.front.key }] : []).map((ft) => '<div class="dmb-err">• ' + t(ft.key) + '</div>').join('');
+  const frames = '';   // v2.38.0ï¼šåŽ»æŽ‰åˆæˆäººå½¢ï¼Œå…³é”®å¸§æ”¹ç”±çœŸäººåŠ¨å›¾ + æ–‡å­—é˜ˆå€¼è¡¨è¾¾
+  const faults = d.faults.concat(d.front ? [{ key: d.front.key }] : []).map((ft) => '<div class="dmb-err">â€¢ ' + t(ft.key) + '</div>').join('');
   const real = realDemo(key);
   el.innerHTML =
-    (real ? '<div class="dmb-real"><img class="dmb-real-img" src="' + real + '?v=236" alt="真人标准示范"><div class="dmb-real-cap">真人标准示范</div></div>' : '') +
+    (real ? '<div class="dmb-real"><img class="dmb-real-img" src="' + real + '?v=236" alt="çœŸäººæ ‡å‡†ç¤ºèŒƒ"><div class="dmb-real-cap">çœŸäººæ ‡å‡†ç¤ºèŒƒ</div></div>' : '') +
     '<div class="dmb-top">' + (real ? '' : '<div class="dmb-sided"><div class="dmb-fr-cap">' + t('dmbNoReal') + '</div></div>') +
       '<div class="dmb-side">' +
         '<div class="dmb-name">' + dmbName(key) + '</div>' +
@@ -4839,7 +4839,7 @@ function renderDemoBody() {
   renderClips($('dmb-clips'));
 }
 
-/* ---- 录像：录的是分析画布（摄像头画面 + 骨架叠加），只存本机 ---- */
+/* ---- å½•åƒï¼šå½•çš„æ˜¯åˆ†æžç”»å¸ƒï¼ˆæ‘„åƒå¤´ç”»é¢ + éª¨æž¶å åŠ ï¼‰ï¼Œåªå­˜æœ¬æœº ---- */
 async function recToggle() {
   if (recState.rec) { try { recState.rec.stop(); } catch (e) { /* ignore */ } return; }
   const cv = $('overlay');
@@ -4878,8 +4878,8 @@ async function renderClips(host) {
   host.innerHTML = all.map((c) => '<div class="dmb-clip" data-clip="' + c.id + '">' +
     '<div class="dmb-clip-meta"><b>' + (c.label || c.ex || t('dmbClip')) + '</b>' +
       '<span class="hint tiny"> ' + new Date(c.ts).toLocaleString(locale(), { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) +
-      ' · ' + c.durSec + 's · ' + Math.max(1, Math.round((c.bytes || 0) / 1048576 * 10) / 10) + 'MB' +
-      (c.forEx ? ' · ' + t('dmbDemoFor', { n: dmbName(c.forEx) }) : '') + '</span></div>' +
+      ' Â· ' + c.durSec + 's Â· ' + Math.max(1, Math.round((c.bytes || 0) / 1048576 * 10) / 10) + 'MB' +
+      (c.forEx ? ' Â· ' + t('dmbDemoFor', { n: dmbName(c.forEx) }) : '') + '</span></div>' +
     '<div class="controls"><button class="btn small" data-clip-play="' + c.id + '">' + t('dmbPlayClip') + '</button>' +
       '<button class="btn small" data-clip-set="' + c.id + '">' + t('dmbSetAsDemo') + '</button>' +
       '<button class="btn small" data-clip-del="' + c.id + '">' + t('dmbDel') + '</button></div>' +
@@ -4903,10 +4903,10 @@ async function renderClips(host) {
   }));
 }
 
-/* ---- 跟练页示范墙 ---- */
+/* ---- è·Ÿç»ƒé¡µç¤ºèŒƒå¢™ ---- */
 function renderDemos() {
   const card = $('gw-demos-card');
-  if (card) card.classList.toggle('hidden', !!gwState.active);   // 跟练进行中不占屏幕，示范直接显示在训练台
+  if (card) card.classList.toggle('hidden', !!gwState.active);   // è·Ÿç»ƒè¿›è¡Œä¸­ä¸å å±å¹•ï¼Œç¤ºèŒƒç›´æŽ¥æ˜¾ç¤ºåœ¨è®­ç»ƒå°
   const el = $('gw-demos');
   if (!el) return;
   const keys = guideStepKeys();
@@ -4916,19 +4916,19 @@ function renderDemos() {
     '<button class="btn small" data-dmb="' + k + '">' + t('dmbLook') + '</button></div>').join('');
   el.querySelectorAll('[data-dmb]').forEach((b) => b.addEventListener('click', () => openDemo(b.dataset.dmb)));
 }
-// 验收用钩子：把示范图与录像存取暴露给自动化测试（不影响正常功能）
+// éªŒæ”¶ç”¨é’©å­ï¼šæŠŠç¤ºèŒƒå›¾ä¸Žå½•åƒå­˜å–æš´éœ²ç»™è‡ªåŠ¨åŒ–æµ‹è¯•ï¼ˆä¸å½±å“æ­£å¸¸åŠŸèƒ½ï¼‰
 try {
   window.__rehabDemo = { hasDemo: hasDemo, demoAngles: demoAngles, demoFigure: demoFigure, demoParams: demoParams,
     DEMOS: DEMOS, balanceOf: balanceOf, poseOf: poseOf, demoPose: demoPose,
     clipPut: clipPut, clipAll: clipAll, clipDel: clipDel, idb: idbAvailable };
-} catch (e) { try { console.error('demo hook init failed:', e && e.message); } catch (x) { /* ignore */ } }   // 不再静默：钩子坏掉必须看得见
-// 云端验收钩子
+} catch (e) { try { console.error('demo hook init failed:', e && e.message); } catch (x) { /* ignore */ } }   // ä¸å†é™é»˜ï¼šé’©å­åæŽ‰å¿…é¡»çœ‹å¾—è§
+// äº‘ç«¯éªŒæ”¶é’©å­
 try {
   window.__rehabCloud = { cfg: cloudCfg, session: cloudSession, sync: cloudSync, del: cloudDeleteAccount, autoSync: cloudAutoSync };
 } catch (e) { try { console.error('cloud hook init failed:', e && e.message); } catch (x) { /* ignore */ } }
 
-/* ---- 训练页：当前动作的标准示范 + 录制 ---- */
-/* v2.40.0 新增：训练页「全部动作 · 真人示范」墙 —— 上面列出的每个动作都能看到真人示范（纯新增，不改旧逻辑） */
+/* ---- è®­ç»ƒé¡µï¼šå½“å‰åŠ¨ä½œçš„æ ‡å‡†ç¤ºèŒƒ + å½•åˆ¶ ---- */
+/* v2.40.0 æ–°å¢žï¼šè®­ç»ƒé¡µã€Œå…¨éƒ¨åŠ¨ä½œ Â· çœŸäººç¤ºèŒƒã€å¢™ â€”â€” ä¸Šé¢åˆ—å‡ºçš„æ¯ä¸ªåŠ¨ä½œéƒ½èƒ½çœ‹åˆ°çœŸäººç¤ºèŒƒï¼ˆçº¯æ–°å¢žï¼Œä¸æ”¹æ—§é€»è¾‘ï¼‰ */
 function renderRealDemoWall() {
   const el = $('real-demo-grid');
   if (!el) return;
@@ -4952,7 +4952,7 @@ function renderTrainDemo() {
   el.classList.remove('hidden');
   const e = EXERCISES[id];
   const has = hasDemo(id);
-  el.innerHTML = '<h3>' + t('dmbTrainTitle') + ' · ' + dmbName(id) + '</h3>' +
+  el.innerHTML = '<h3>' + t('dmbTrainTitle') + ' Â· ' + dmbName(id) + '</h3>' +
     (realDemo(id) ? '<div class="dmb-train-fig"><img class="dmb-thumb" src="' + realDemo(id) + '" alt=""><div class="dmb-real-cap">' + t('dmbReal') + '</div></div>' +
       '<div class="dmb-angles">' + dmbAngleChips(id) + '</div>'
       : '<p class="hint">' + t('dmbNoDemo') + '</p>') +
@@ -4971,14 +4971,14 @@ function refreshAllData() {
   renderCollectCount(); renderProfile(); renderTodayPlan(); renderPlanList(); renderPlanPick();
   renderAchievements(); renderGoal(); renderHome(); renderTrainToday();
   renderPaUI(); renderFtUI(); renderStorageSize(); renderLastBackup();
-  renderPain(); renderPainStrip(); renderReport();   // v2.22.0/v2.24.0：疼痛与报告数据一起刷新
-  renderRomHistory(); renderRomResult(romHistory()[0] || null);   // v2.26.0：ROM 数据一起刷新
-  renderPromHistory();                                  // v2.27.0：PROMs 数据一起刷新
-  renderAiPlan(); renderAiEngine(); renderPath(); renderCareLoop(); renderRecheck();   // v2.28-v2.33：引擎·路径·闭环·复评一起刷新
+  renderPain(); renderPainStrip(); renderReport();   // v2.22.0/v2.24.0ï¼šç–¼ç—›ä¸ŽæŠ¥å‘Šæ•°æ®ä¸€èµ·åˆ·æ–°
+  renderRomHistory(); renderRomResult(romHistory()[0] || null);   // v2.26.0ï¼šROM æ•°æ®ä¸€èµ·åˆ·æ–°
+  renderPromHistory();                                  // v2.27.0ï¼šPROMs æ•°æ®ä¸€èµ·åˆ·æ–°
+  renderAiPlan(); renderAiEngine(); renderPath(); renderCareLoop(); renderRecheck();   // v2.28-v2.33ï¼šå¼•æ“ŽÂ·è·¯å¾„Â·é—­çŽ¯Â·å¤è¯„ä¸€èµ·åˆ·æ–°
 }
 
-/* ============ v2.33.0 新模块：三块式架构（评估 / 训练 / 复评）+ 肌群分析 ============ */
-// 底部导航收敛为 6 个主入口，评估与训练两块用子标签容纳各自的页面；复评页做前后对比与薄弱肌群分析。
+/* ============ v2.33.0 æ–°æ¨¡å—ï¼šä¸‰å—å¼æž¶æž„ï¼ˆè¯„ä¼° / è®­ç»ƒ / å¤è¯„ï¼‰+ è‚Œç¾¤åˆ†æž ============ */
+// åº•éƒ¨å¯¼èˆªæ”¶æ•›ä¸º 6 ä¸ªä¸»å…¥å£ï¼Œè¯„ä¼°ä¸Žè®­ç»ƒä¸¤å—ç”¨å­æ ‡ç­¾å®¹çº³å„è‡ªçš„é¡µé¢ï¼›å¤è¯„é¡µåšå‰åŽå¯¹æ¯”ä¸Žè–„å¼±è‚Œç¾¤åˆ†æžã€‚
 const BLOCK_DEF = {
   assess: { label: 'blockAssess', items: [['posture', 'subPosture'], ['ft', 'subFt'], ['assess', 'subAssess']] },
   train: { label: 'blockTrain', items: [['guide', 'subGuide'], ['schedule', 'subSchedule'], ['train', 'subTrain']] },
@@ -4995,14 +4995,14 @@ function renderBlockSub() {
     BLOCK_DEF[blk].items.map(([k, key]) => `<button class="bs-btn ${cur === k ? 'on' : ''}" data-bs="${k}">${t(key)}</button>`).join('');
   el.querySelectorAll('[data-bs]').forEach((b) => b.addEventListener('click', () => switchTab(b.dataset.bs)));
 }
-// 肌群映射：把"问题"翻译成"要练哪块肌肉 + 练什么"
+// è‚Œç¾¤æ˜ å°„ï¼šæŠŠ"é—®é¢˜"ç¿»è¯‘æˆ"è¦ç»ƒå“ªå—è‚Œè‚‰ + ç»ƒä»€ä¹ˆ"
 const MUSCLE_MAP = [
-  { test: (s) => s.paItems.some((x) => /shoulder|肩/i.test(x)) || s.dims && s.dims.sym != null && s.dims.sym < 80, key: 'gluteMed', ex: ['stepup', 'lunge'] },
-  { test: (s) => s.paItems.some((x) => /knee|膝/i.test(x)) || (s.dims && s.dims.align != null && s.dims.align < 75), key: 'quadVmo', ex: ['sitstand', 'squat'] },
-  { test: (s) => s.paItems.some((x) => /hip|髋|骨盆|pelvis/i.test(x)), key: 'gluteMax', ex: ['hiphinge', 'bridge'] },
-  { test: (s) => s.paItems.some((x) => /back|腰|脊柱|spine/i.test(x)) || (s.dims && s.dims.stab != null && s.dims.stab < 75), key: 'coreDeep', ex: ['plank', 'hiphinge'] },
-  { test: (s) => s.paItems.some((x) => /neck|颈|head|头/i.test(x)), key: 'neckDeep', ex: ['shoulderraise', 'standing'] },
-  { test: (s) => s.paItems.some((x) => /ankle|踝|foot|足/i.test(x)) || (s.dims && s.dims.rom != null && s.dims.rom < 75), key: 'calfAnkle', ex: ['squat', 'stepup'] },
+  { test: (s) => s.paItems.some((x) => /shoulder|è‚©/i.test(x)) || s.dims && s.dims.sym != null && s.dims.sym < 80, key: 'gluteMed', ex: ['stepup', 'lunge'] },
+  { test: (s) => s.paItems.some((x) => /knee|è†/i.test(x)) || (s.dims && s.dims.align != null && s.dims.align < 75), key: 'quadVmo', ex: ['sitstand', 'squat'] },
+  { test: (s) => s.paItems.some((x) => /hip|é«‹|éª¨ç›†|pelvis/i.test(x)), key: 'gluteMax', ex: ['hiphinge', 'bridge'] },
+  { test: (s) => s.paItems.some((x) => /back|è…°|è„ŠæŸ±|spine/i.test(x)) || (s.dims && s.dims.stab != null && s.dims.stab < 75), key: 'coreDeep', ex: ['plank', 'hiphinge'] },
+  { test: (s) => s.paItems.some((x) => /neck|é¢ˆ|head|å¤´/i.test(x)), key: 'neckDeep', ex: ['shoulderraise', 'standing'] },
+  { test: (s) => s.paItems.some((x) => /ankle|è¸|foot|è¶³/i.test(x)) || (s.dims && s.dims.rom != null && s.dims.rom < 75), key: 'calfAnkle', ex: ['squat', 'stepup'] },
 ];
 function bodyAnalysis() {
   const s = assessSnapshot();
@@ -5033,7 +5033,7 @@ function renderBodyAnalysis() {
   const el = $('body-analysis');
   if (!el) return;
   const a = bodyAnalysis();
-  el.innerHTML = `<div class="an-find">${a.findings.map((f) => `<div class="an-item ${f.kind}">• ${f.text}</div>`).join('')}</div>
+  el.innerHTML = `<div class="an-find">${a.findings.map((f) => `<div class="an-item ${f.kind}">â€¢ ${f.text}</div>`).join('')}</div>
     ${a.muscles.length ? `<div class="an-cols"><div><b>${t('anMuscles')}</b><ul>${a.muscles.map((m) => `<li>${t('mus' + m.charAt(0).toUpperCase() + m.slice(1))}</li>`).join('')}</ul></div>
     <div><b>${t('anExercises')}</b><ul>${a.ex.map((x) => { const e = getEx(x); return `<li>${e ? exName(e) : x}</li>`; }).join('')}</ul></div></div>
     <div class="controls"><button id="btn-an-plan" class="btn primary">${t('anMakePlan')}</button>
@@ -5049,25 +5049,25 @@ function renderRecheck() {
   const s = assessSnapshot();
   const rom = romHistory();
   const rows = [];
-  // 活动度：同项同侧 最近 vs 上一次
+  // æ´»åŠ¨åº¦ï¼šåŒé¡¹åŒä¾§ æœ€è¿‘ vs ä¸Šä¸€æ¬¡
   ROM_ITEMS.forEach((it) => {
     const list = rom.filter((r) => r.key === it.key && r.rom != null);
     const now = list[0], prev = list.find((r, i) => i > 0 && r.side === (now && now.side));
-    if (now) rows.push({ k: t('romItem' + it.key.charAt(0).toUpperCase() + it.key.slice(1)) + (now.side === 'L' ? ' 左' : ' 右'), now: now.rom + '°', prev: prev ? prev.rom + '°' : '—', d: prev ? now.rom - prev.rom : null, better: prev ? now.rom >= prev.rom : null, unit: '°' });
+    if (now) rows.push({ k: t('romItem' + it.key.charAt(0).toUpperCase() + it.key.slice(1)) + (now.side === 'L' ? ' å·¦' : ' å³'), now: now.rom + 'Â°', prev: prev ? prev.rom + 'Â°' : 'â€”', d: prev ? now.rom - prev.rom : null, better: prev ? now.rom >= prev.rom : null, unit: 'Â°' });
   });
-  // 疼痛：训练前 vs 训练后（越低越好）
+  // ç–¼ç—›ï¼šè®­ç»ƒå‰ vs è®­ç»ƒåŽï¼ˆè¶Šä½Žè¶Šå¥½ï¼‰
   const pairs = painTodayPair();
   if (pairs) rows.push({ k: t('painTitle'), now: pairs.post + '', prev: pairs.pre + '', d: pairs.post - pairs.pre, better: pairs.post <= pairs.pre, unit: '' });
-  // 功能测试综合
+  // åŠŸèƒ½æµ‹è¯•ç»¼åˆ
   const ftAll = ftHistory().filter((r) => r.score != null);
   if (ftAll.length >= 2) rows.push({ k: t('repFt'), now: String(ftAll[0].score), prev: String(ftAll[1].score), d: ftAll[0].score - ftAll[1].score, better: ftAll[0].score >= ftAll[1].score, unit: '' });
-  // 体态 / 量表
+  // ä½“æ€ / é‡è¡¨
   const paAll = paHistory();
   if (paAll.length >= 2) rows.push({ k: t('repPa'), now: String(paAll[0].score), prev: String(paAll[1].score), d: paAll[0].score - paAll[1].score, better: paAll[0].score >= paAll[1].score, unit: '' });
   const prAll = promHistory();
   if (prAll.length >= 2 && prAll[0].key === prAll[1].key) rows.push({ k: t(promNameKey(prAll[0].key)), now: String(prAll[0].total), prev: String(prAll[1].total), d: prAll[0].total - prAll[1].total, better: promDef(prAll[0].key).type === 'ratio' ? prAll[0].total <= prAll[1].total : prAll[0].total >= prAll[1].total, unit: '' });
   el.innerHTML = rows.length
-    ? rows.map((r) => `<div class="rc-row"><span class="rc-k">${r.k}</span><span class="rc-prev">${r.prev}${r.unit}</span><span class="rc-arrow">→</span><span class="rc-now">${r.now}${r.unit}</span>
+    ? rows.map((r) => `<div class="rc-row"><span class="rc-k">${r.k}</span><span class="rc-prev">${r.prev}${r.unit}</span><span class="rc-arrow">â†’</span><span class="rc-now">${r.now}${r.unit}</span>
         ${r.d == null ? '' : `<span class="rc-d ${r.better ? 'ok' : 'warn'}">${r.d > 0 ? '+' : ''}${r.d}${r.unit}</span>`}</div>`).join('')
     : `<p class="hint tiny">${t('rcNoData')}</p>`;
   const tr = $('rc-trend');
@@ -5083,7 +5083,7 @@ $('btn-rc-report') && $('btn-rc-report').addEventListener('click', () => $('btn-
 $('btn-rc-assess') && $('btn-rc-assess').addEventListener('click', () => switchTab('posture'));
 $('btn-rc-trend') && $('btn-rc-trend').addEventListener('click', () => { const e3 = $('rc-trend'); if (e3) e3.scrollIntoView({ behavior: 'smooth' }); });
 
-/* ============ v2.32.0 新模块：端手接力（手机 ⇄ 电脑 数据合并式互通） ============ */
+/* ============ v2.32.0 æ–°æ¨¡å—ï¼šç«¯æ‰‹æŽ¥åŠ›ï¼ˆæ‰‹æœº â‡„ ç”µè„‘ æ•°æ®åˆå¹¶å¼äº’é€šï¼‰ ============ */
 function renderRelayState() {
   const el = $('relay-state');
   if (!el) return;
@@ -5091,13 +5091,13 @@ function renderRelayState() {
   const last = LS.get('rehab_last_backup', 0);
   el.textContent = t('relayState', { n, d: last ? new Date(last).toLocaleDateString(locale()) : t('repNone') });
 }
-// 入口放在今日页最上方：导出 → 传文件 → 导入并合并（与二维码同步共用 mergeSyncData 合并引擎）
+// å…¥å£æ”¾åœ¨ä»Šæ—¥é¡µæœ€ä¸Šæ–¹ï¼šå¯¼å‡º â†’ ä¼ æ–‡ä»¶ â†’ å¯¼å…¥å¹¶åˆå¹¶ï¼ˆä¸ŽäºŒç»´ç åŒæ­¥å…±ç”¨ mergeSyncData åˆå¹¶å¼•æ“Žï¼‰
 $('btn-relay-export') && $('btn-relay-export').addEventListener('click', () => $('btn-export').click());
 $('btn-relay-import') && $('btn-relay-import').addEventListener('click', () => $('btn-import').click());
 $('btn-relay-qr') && $('btn-relay-qr').addEventListener('click', () => { startSyncShow(); });
 
-/* ============ v2.31.0 新模块：康复闭环（把评估/问题/训练/复评/对比串成一条主线） ============ */
-// 解决“各模块各说各话”：所有评估 → 问题清单 → 生成训练计划 → 训练后记疼痛 → 复评 → 前后对比，全部互相调用。
+/* ============ v2.31.0 æ–°æ¨¡å—ï¼šåº·å¤é—­çŽ¯ï¼ˆæŠŠè¯„ä¼°/é—®é¢˜/è®­ç»ƒ/å¤è¯„/å¯¹æ¯”ä¸²æˆä¸€æ¡ä¸»çº¿ï¼‰ ============ */
+// è§£å†³â€œå„æ¨¡å—å„è¯´å„è¯â€ï¼šæ‰€æœ‰è¯„ä¼° â†’ é—®é¢˜æ¸…å• â†’ ç”Ÿæˆè®­ç»ƒè®¡åˆ’ â†’ è®­ç»ƒåŽè®°ç–¼ç—› â†’ å¤è¯„ â†’ å‰åŽå¯¹æ¯”ï¼Œå…¨éƒ¨äº’ç›¸è°ƒç”¨ã€‚
 function assessSnapshot() {
   const pa = paHistory()[0] || null;
   const ft = ftHistory().find((r) => r.battery && r.dims) || ftHistory()[0] || null;
@@ -5106,7 +5106,7 @@ function assessSnapshot() {
   const ts = Math.max(pa ? pa.ts || 0 : 0, ft ? ft.ts || 0 : 0, rom ? rom.ts || 0 : 0, prom ? prom.ts || 0 : 0);
   return { pa, ft, rom, prom, ts, painMax: painRecentMax(7), painLast: painHistory()[0] || null };
 }
-// 问题清单：把五类评估的弱项汇总成可执行条目（每条都知道自己来自哪个模块、该练什么）
+// é—®é¢˜æ¸…å•ï¼šæŠŠäº”ç±»è¯„ä¼°çš„å¼±é¡¹æ±‡æ€»æˆå¯æ‰§è¡Œæ¡ç›®ï¼ˆæ¯æ¡éƒ½çŸ¥é“è‡ªå·±æ¥è‡ªå“ªä¸ªæ¨¡å—ã€è¯¥ç»ƒä»€ä¹ˆï¼‰
 function issueList() {
   const s = assessSnapshot();
   const out = [];
@@ -5134,12 +5134,12 @@ function issueList() {
   const bad = promHistory().find((r) => r.level === 'bad');
   if (bad) out.push({ key: 'prom:' + bad.key, src: t('loopSrcProm'), name: t(promNameKey(bad.key)), detail: t('loopPromBad', { v: bad.total }), sev: 'bad', go: 'assess' });
   if (s.painMax != null && s.painMax >= 4) out.push({
-    key: 'pain', src: t('loopSrcPain'), name: t('painTitle'), detail: t('loopPain', { v: s.painMax, p: s.painLast ? t('painPart' + String(s.painLast.part || 'other').replace(/^\w/, (c) => c.toUpperCase()).replace('Lowback', 'LowBack')) : '—' }),
+    key: 'pain', src: t('loopSrcPain'), name: t('painTitle'), detail: t('loopPain', { v: s.painMax, p: s.painLast ? t('painPart' + String(s.painLast.part || 'other').replace(/^\w/, (c) => c.toUpperCase()).replace('Lowback', 'LowBack')) : 'â€”' }),
     sev: s.painMax >= 7 ? 'bad' : 'warn', go: 'record',
   });
   return out.sort((a, b) => SEV[a.sev] - SEV[b.sev]);
 }
-// 闭环五步 + 当前该做的一件事
+// é—­çŽ¯äº”æ­¥ + å½“å‰è¯¥åšçš„ä¸€ä»¶äº‹
 function careLoop() {
   const s = assessSnapshot();
   const sessions = sget('rehab_sessions', []);
@@ -5173,7 +5173,7 @@ function careLoop() {
   else next = { act: 'compare', label: t('loopNextCompare') };
   return { s, steps, issues, next, cmp, trainedToday };
 }
-// 按问题清单一键生成今日计划（体态/功能测试/ROM/量表/疼痛 → 动作）
+// æŒ‰é—®é¢˜æ¸…å•ä¸€é”®ç”Ÿæˆä»Šæ—¥è®¡åˆ’ï¼ˆä½“æ€/åŠŸèƒ½æµ‹è¯•/ROM/é‡è¡¨/ç–¼ç—› â†’ åŠ¨ä½œï¼‰
 function loopPlanFromIssues() {
   const issues = issueList();
   const map = { pa: 'posture', ft: 'fa', rom: 'squat', prom: 'sitstand', pain: 'hiphinge' };
@@ -5205,7 +5205,7 @@ function renderCareLoop() {
   const el = $('care-loop');
   if (!el) return;
   const L = careLoop();
-  const chips = L.steps.map((x) => `<span class="loop-step ${x.done ? 'on' : ''}">${x.done ? '✓' : '○'} ${x.label}</span>`).join('<span class="loop-arrow">→</span>');
+  const chips = L.steps.map((x) => `<span class="loop-step ${x.done ? 'on' : ''}">${x.done ? 'âœ“' : 'â—‹'} ${x.label}</span>`).join('<span class="loop-arrow">â†’</span>');
   const issues = L.issues.slice(0, 3).map((it) => `<div class="loop-issue ${it.sev}">
       <span class="loop-tag">${it.src}</span><b>${it.name}</b><span class="loop-detail">${it.detail}</span>
       <button class="link-btn" data-loop-go="${it.go}">${t('loopGo')}</button></div>`).join('');
@@ -5216,7 +5216,7 @@ function renderCareLoop() {
     <div class="loop-now"><b>${t('loopNow')}</b> ${L.next.label}
       <button id="btn-loop-next" class="btn primary small">${t('loopDo')}</button></div>
     ${issues ? `<div class="loop-issues">${issues}</div>` : `<p class="hint tiny">${t('loopNoIssues')}</p>`}
-    ${cmp.length ? `<p class="hint tiny">${t('loopCompare')}：${cmp.join(' · ')}</p>` : ''}`;
+    ${cmp.length ? `<p class="hint tiny">${t('loopCompare')}ï¼š${cmp.join(' Â· ')}</p>` : ''}`;
   const nb = $('btn-loop-next');
   if (nb) nb.addEventListener('click', () => {
     const a = L.next.act;
@@ -5228,9 +5228,9 @@ function renderCareLoop() {
   el.querySelectorAll('[data-loop-go]').forEach((b) => b.addEventListener('click', () => switchTab(b.dataset.loopGo)));
 }
 
-/* ============ v2.30.0 新模块：影像能力升级（视野自适应 · 距离引导 · 设备能力可视化） ============ */
-// 目标：手机不用放很远也能拍全 —— 默认竖幅 3:4（同距离能看到更多身体）、支持 zoom 的设备自动拉到最广、
-// 识别不到全身时给出「后退/靠近/抬手机」的具体引导，而不是一句“失败了”。
+/* ============ v2.30.0 æ–°æ¨¡å—ï¼šå½±åƒèƒ½åŠ›å‡çº§ï¼ˆè§†é‡Žè‡ªé€‚åº” Â· è·ç¦»å¼•å¯¼ Â· è®¾å¤‡èƒ½åŠ›å¯è§†åŒ–ï¼‰ ============ */
+// ç›®æ ‡ï¼šæ‰‹æœºä¸ç”¨æ”¾å¾ˆè¿œä¹Ÿèƒ½æ‹å…¨ â€”â€” é»˜è®¤ç«–å¹… 3:4ï¼ˆåŒè·ç¦»èƒ½çœ‹åˆ°æ›´å¤šèº«ä½“ï¼‰ã€æ”¯æŒ zoom çš„è®¾å¤‡è‡ªåŠ¨æ‹‰åˆ°æœ€å¹¿ã€
+// è¯†åˆ«ä¸åˆ°å…¨èº«æ—¶ç»™å‡ºã€ŒåŽé€€/é è¿‘/æŠ¬æ‰‹æœºã€çš„å…·ä½“å¼•å¯¼ï¼Œè€Œä¸æ˜¯ä¸€å¥â€œå¤±è´¥äº†â€ã€‚
 const CAM_PREFS_DEF = { aspect: '34', follow: true, guide: true, zoom: null, deviceId: null };
 const camPrefs = () => Object.assign({}, CAM_PREFS_DEF, sget('rehab_cam_prefs', {}) || {});
 const camPrefSet = (patch) => { sset('rehab_cam_prefs', Object.assign(camPrefs(), patch)); renderCamCard(); };
@@ -5261,7 +5261,7 @@ function camSaveCaps(stream) {
     renderCamCard();
   } catch { /* ignore */ }
 }
-// 入镜比例：以头到脚（或肩到踝）的归一化高度估计“离得够不够远”
+// å…¥é•œæ¯”ä¾‹ï¼šä»¥å¤´åˆ°è„šï¼ˆæˆ–è‚©åˆ°è¸ï¼‰çš„å½’ä¸€åŒ–é«˜åº¦ä¼°è®¡â€œç¦»å¾—å¤Ÿä¸å¤Ÿè¿œâ€
 function camFitInfo(lms) {
   if (!lms) return null;
   const ys = [];
@@ -5280,7 +5280,7 @@ function camGuideUpdate(lms) {
   el.textContent = f.level === 'far' ? t('camGuideFar') : f.level === 'close' ? t('camGuideClose') : t('camGuideOk', { p: Math.round(f.h * 100) });
   el.className = 'cam-guide ' + (f.level === 'ok' ? 'ok' : 'warn');
 }
-// 自动挑选“最广视野”的摄像头：逐个候选打开，量同一个人在同一位置的入镜高度，取最小者（越小=视野越广）
+// è‡ªåŠ¨æŒ‘é€‰â€œæœ€å¹¿è§†é‡Žâ€çš„æ‘„åƒå¤´ï¼šé€ä¸ªå€™é€‰æ‰“å¼€ï¼Œé‡åŒä¸€ä¸ªäººåœ¨åŒä¸€ä½ç½®çš„å…¥é•œé«˜åº¦ï¼Œå–æœ€å°è€…ï¼ˆè¶Šå°=è§†é‡Žè¶Šå¹¿ï¼‰
 async function camAutoPickWidest() {
   const btn = $('btn-cam-pick');
   if (btn) btn.disabled = true;
@@ -5307,7 +5307,7 @@ async function camAutoPickWidest() {
           await new Promise((r2) => setTimeout(r2, 180));
         }
         results.push({ id: d.deviceId, label: d.label || d.deviceId.slice(0, 6), h: best });
-      } catch { /* 该设备打不开就跳过 */ }
+      } catch { /* è¯¥è®¾å¤‡æ‰“ä¸å¼€å°±è·³è¿‡ */ }
       finally { if (stream) stream.getTracks().forEach((x) => x.stop()); }
     }
     const ok = results.filter((r) => r.h != null).sort((a, b) => a.h - b.h);
@@ -5341,17 +5341,17 @@ function renderCamCard() {
   const st = $('cam-status');
   if (st) {
     const parts = [];
-    parts.push(t('camStRes', { w: camCaps.w || '—', h: camCaps.h || '—' }));
+    parts.push(t('camStRes', { w: camCaps.w || 'â€”', h: camCaps.h || 'â€”' }));
     parts.push(camCaps.supported ? t('camStZoom', { z: Number(camCaps.zoom).toFixed(1) }) : t('camStNoZoom'));
     parts.push(p.deviceId ? t('camStPicked') : t('camStAuto'));
-    st.textContent = parts.join(' · ');
+    st.textContent = parts.join(' Â· ');
   }
 }
 $('btn-cam-pick') && $('btn-cam-pick').addEventListener('click', camAutoPickWidest);
 $('btn-cam-reset') && $('btn-cam-reset').addEventListener('click', () => { camPrefSet({ zoom: null, deviceId: null }); toast(t('camReset')); });
 
-/* ============ v2.29.0 新模块：康复路径（分阶段 · 条件可改 · 按你的数据推荐） ============ */
-// 原则延续：路径只是「起点」，阶段/剂量/进阶条件全部可改；系统按用户自己的数据推荐与提示升级。
+/* ============ v2.29.0 æ–°æ¨¡å—ï¼šåº·å¤è·¯å¾„ï¼ˆåˆ†é˜¶æ®µ Â· æ¡ä»¶å¯æ”¹ Â· æŒ‰ä½ çš„æ•°æ®æŽ¨èï¼‰ ============ */
+// åŽŸåˆ™å»¶ç»­ï¼šè·¯å¾„åªæ˜¯ã€Œèµ·ç‚¹ã€ï¼Œé˜¶æ®µ/å‰‚é‡/è¿›é˜¶æ¡ä»¶å…¨éƒ¨å¯æ”¹ï¼›ç³»ç»ŸæŒ‰ç”¨æˆ·è‡ªå·±çš„æ•°æ®æŽ¨èä¸Žæç¤ºå‡çº§ã€‚
 const PATHS = [
   { key: 'lowback', ico: 'hiphinge', phases: [
     { ex: [['hiphinge', 8, 2], ['sitstand', 8, 2]] },
@@ -5377,7 +5377,7 @@ const pathCfg = () => {
   return { path: c.path || null, phase: Number(c.phase) || 0, cond: Object.assign({}, PATH_CFG_DEF.cond, c.cond || {}), autoSuggest: c.autoSuggest !== false, log: c.log || [] };
 };
 const pathSave = (patch) => { sset('rehab_path', Object.assign(pathCfg(), patch)); renderPath(); renderAiPlan(); };
-// 按用户自己的数据推荐路径（疼痛部位优先，其次量表，最后功能测试弱项）
+// æŒ‰ç”¨æˆ·è‡ªå·±çš„æ•°æ®æŽ¨èè·¯å¾„ï¼ˆç–¼ç—›éƒ¨ä½ä¼˜å…ˆï¼Œå…¶æ¬¡é‡è¡¨ï¼Œæœ€åŽåŠŸèƒ½æµ‹è¯•å¼±é¡¹ï¼‰
 function pathRecommend() {
   const pain = painHistory();
   const part = pain.length ? (pain[0].part || '') : '';
@@ -5393,7 +5393,7 @@ function pathRecommend() {
   if (ft && ft.sym != null && ft.sym < 80) return { key: 'knee', why: t('pathWhySym', { v: Math.round(ft.sym) }) };
   return { key: 'knee', why: t('pathWhyDefault') };
 }
-// 进阶条件检查（条件值由用户设定）
+// è¿›é˜¶æ¡ä»¶æ£€æŸ¥ï¼ˆæ¡ä»¶å€¼ç”±ç”¨æˆ·è®¾å®šï¼‰
 function pathCheck() {
   const cfg = pathCfg();
   const c = cfg.cond;
@@ -5413,7 +5413,7 @@ function renderPath() {
   const cfg = pathCfg();
   const rec = pathRecommend();
   const eff = cfg.path || rec.key;
-  $('path-rec').innerHTML = `${t('pathRec')}：<b>${t('path' + rec.key.charAt(0).toUpperCase() + rec.key.slice(1) + 'T')}</b> · ${rec.why}` +
+  $('path-rec').innerHTML = `${t('pathRec')}ï¼š<b>${t('path' + rec.key.charAt(0).toUpperCase() + rec.key.slice(1) + 'T')}</b> Â· ${rec.why}` +
     (cfg.path ? '' : ` <button class="link-btn" id="path-use-rec">${t('pathUseRec')}</button>`);
   const useBtn = $('path-use-rec');
   if (useBtn) useBtn.addEventListener('click', () => { pathSave({ path: rec.key, phase: 0 }); toast(t('pathStarted')); });
@@ -5445,7 +5445,7 @@ function renderPath() {
       <label class="ai-tgt"><span>${t('pathCondSym')}</span><input type="number" min="0" max="100" value="${cfg.cond.sym}" data-cond="sym"></label>
       <label class="ai-tgt"><span>${t('pathAuto')}</span><input type="checkbox" id="path-auto" ${cfg.autoSuggest ? 'checked' : ''} style="width:auto"></label>
     </div>
-    <div class="hint tiny">${t('pathStatus', { pain: ck.posts, need: ck.need, max: ck.painMax, sym: ck.sym == null ? '—' : ck.sym, symNeed: ck.symNeed })}</div>
+    <div class="hint tiny">${t('pathStatus', { pain: ck.posts, need: ck.need, max: ck.painMax, sym: ck.sym == null ? 'â€”' : ck.sym, symNeed: ck.symNeed })}</div>
     <div class="controls">
       <button id="btn-path-apply" class="btn primary">${t('pathApply')}</button>
       <button id="btn-path-up" class="btn" ${pi >= pd.phases.length - 1 ? 'disabled' : ''}>${t('pathUp')}</button>
@@ -5483,12 +5483,12 @@ function renderPath() {
   $('btn-path-reset').addEventListener('click', () => { pathSave({ phase: 0 }); toast(t('pathResetDone')); });
 }
 
-/* ============ v2.28.0 新模块：自适应智能引擎（个人基线 · 可调规则 · 可学习处方） ============ */
-// 设计原则：固定临床标准只作「参考」，主判定一律用用户自己的历史基线；每条规则都可见、可改、可关。
+/* ============ v2.28.0 æ–°æ¨¡å—ï¼šè‡ªé€‚åº”æ™ºèƒ½å¼•æ“Žï¼ˆä¸ªäººåŸºçº¿ Â· å¯è°ƒè§„åˆ™ Â· å¯å­¦ä¹ å¤„æ–¹ï¼‰ ============ */
+// è®¾è®¡åŽŸåˆ™ï¼šå›ºå®šä¸´åºŠæ ‡å‡†åªä½œã€Œå‚è€ƒã€ï¼Œä¸»åˆ¤å®šä¸€å¾‹ç”¨ç”¨æˆ·è‡ªå·±çš„åŽ†å²åŸºçº¿ï¼›æ¯æ¡è§„åˆ™éƒ½å¯è§ã€å¯æ”¹ã€å¯å…³ã€‚
 const AI_PREFS_DEF = { painAlarm: 2, intensity: 'std', autoAdapt: true, romTargets: {} };
 const aiPrefs = () => Object.assign({}, AI_PREFS_DEF, sget('rehab_ai_prefs', {}) || {});
 const aiFeedback = () => LS.get('rehab_ai_feedback', { accepted: 0, ignored: 0 });
-const aiLearnAdd = (k) => { const f = aiFeedback(); f[k] = (f[k] || 0) + 1; LS.set('rehab_ai_feedback', f); renderAiPlan(); renderAiEngine(); };   // 注意：ai.js 已导出 aiFeedbackAdd（反馈日志），此处必须用不同名字
+const aiLearnAdd = (k) => { const f = aiFeedback(); f[k] = (f[k] || 0) + 1; LS.set('rehab_ai_feedback', f); renderAiPlan(); renderAiEngine(); };   // æ³¨æ„ï¼šai.js å·²å¯¼å‡º aiFeedbackAddï¼ˆåé¦ˆæ—¥å¿—ï¼‰ï¼Œæ­¤å¤„å¿…é¡»ç”¨ä¸åŒåå­—
 const aiPrefSet = (patch) => {
   sset('rehab_ai_prefs', Object.assign(aiPrefs(), patch));
   renderAiEngine(); renderAiPlan(); renderPain();
@@ -5499,7 +5499,7 @@ const median = (a) => {
   const m = Math.floor(s.length / 2);
   return s.length % 2 ? s[m] : Math.round((s[m - 1] + s[m]) / 2);
 };
-// 个人基线：取用户自己的历史中位数/最佳/最近一次（而不是人群常模）
+// ä¸ªäººåŸºçº¿ï¼šå–ç”¨æˆ·è‡ªå·±çš„åŽ†å²ä¸­ä½æ•°/æœ€ä½³/æœ€è¿‘ä¸€æ¬¡ï¼ˆè€Œä¸æ˜¯äººç¾¤å¸¸æ¨¡ï¼‰
 function romBaseline(key, side) {
   const list = romHistory().filter((r) => r.key === key && (!side || r.side === side) && r.rom != null).map((r) => r.rom);
   return list.length ? { n: list.length, med: median(list), best: Math.max(...list), last: list[0] } : null;
@@ -5511,9 +5511,9 @@ function painBaseline() {
 function romTarget(it) {
   const t = (aiPrefs().romTargets || {})[it.key];
   const v = Number(t);
-  return (t == null || t === '' || Number.isNaN(v) || v <= 0) ? it.norm : v;   // 未设 = 用临床参考值（可覆盖）
+  return (t == null || t === '' || Number.isNaN(v) || v <= 0) ? it.norm : v;   // æœªè®¾ = ç”¨ä¸´åºŠå‚è€ƒå€¼ï¼ˆå¯è¦†ç›–ï¼‰
 }
-// 处方引擎：每一步都产出「理由」，可解释、可学习
+// å¤„æ–¹å¼•æ“Žï¼šæ¯ä¸€æ­¥éƒ½äº§å‡ºã€Œç†ç”±ã€ï¼Œå¯è§£é‡Šã€å¯å­¦ä¹ 
 function aiPrescribe() {
   const p = aiPrefs();
   const f = aiFeedback();
@@ -5531,9 +5531,9 @@ function aiPrescribe() {
     .sort((a, b) => b.gap - a.gap)[0] || null;
   const reasons = [];
   const basis = [
-    t('aiBasisPain', { v: painMax == null ? '—' : painMax, a: p.painAlarm }),
-    t('aiBasisSym', { v: sym == null ? '—' : sym }),
-    t('aiBasisRom', weak ? { n: t('romShort' + weak.it.key.charAt(0).toUpperCase() + weak.it.key.slice(1)), v: weak.b.last, tg: romTarget(weak.it) } : { n: '—', v: '—', tg: '—' }),
+    t('aiBasisPain', { v: painMax == null ? 'â€”' : painMax, a: p.painAlarm }),
+    t('aiBasisSym', { v: sym == null ? 'â€”' : sym }),
+    t('aiBasisRom', weak ? { n: t('romShort' + weak.it.key.charAt(0).toUpperCase() + weak.it.key.slice(1)), v: weak.b.last, tg: romTarget(weak.it) } : { n: 'â€”', v: 'â€”', tg: 'â€”' }),
     t('aiBasisAdh', { d: d7 }),
     t('aiBasisFeed', { a: f.accepted || 0, i: f.ignored || 0 }),
   ];
@@ -5559,7 +5559,7 @@ function aiPrescribe() {
     } else {
       focus = 'strength';
       if (idx.score != null && idx.score >= 75) { sets += 1; reps += 2; reasons.push(t('aiReasonProgress', { v: idx.score })); }
-      else reasons.push(t('aiReasonKeep', { v: idx.score == null ? '—' : idx.score }));
+      else reasons.push(t('aiReasonKeep', { v: idx.score == null ? 'â€”' : idx.score }));
     }
     if (p.intensity === 'soft') { sets = Math.max(1, sets - 1); rest += 30; reasons.push(t('aiReasonSoft')); }
     if (p.intensity === 'hard') { sets += 1; rest = Math.max(30, rest - 15); reasons.push(t('aiReasonHard')); }
@@ -5573,11 +5573,11 @@ function renderAiPlan() {
   const pr = aiPrescribe();
   const e = getEx(pr.ex);
   el.innerHTML = `<div class="ai-plan-head"><span class="t-ico">${icon(e ? e.icon : 'custom')}</span>
-      <b>${e ? exName(e) : pr.ex}</b> · ${t('aiPlanDose', { s: pr.sets, r: pr.reps, rest: pr.rest })}
+      <b>${e ? exName(e) : pr.ex}</b> Â· ${t('aiPlanDose', { s: pr.sets, r: pr.reps, rest: pr.rest })}
       <span class="rom-lv ${pr.focus === 'pain' ? 'bad' : pr.focus === 'strength' ? 'good' : 'warn'}">${t('aiFocus' + pr.focus.charAt(0).toUpperCase() + pr.focus.slice(1))}</span></div>
-    <div class="ai-plan-reasons">${pr.reasons.map((r) => `<div class="ai-reason">• ${r}</div>`).join('')}</div>
+    <div class="ai-plan-reasons">${pr.reasons.map((r) => `<div class="ai-reason">â€¢ ${r}</div>`).join('')}</div>
     <details class="ai-basis"><summary class="hint tiny">${t('aiBasisTitle')}</summary>
-      ${pr.basis.map((b) => `<div class="hint tiny">· ${b}</div>`).join('')}</details>
+      ${pr.basis.map((b) => `<div class="hint tiny">Â· ${b}</div>`).join('')}</details>
     <div class="controls">
       <button id="btn-ai-apply" class="btn primary" data-i18n="${pr.focus === 'pain' ? 'aiApply' : 'aiApply'}">${t('aiApply')}</button>
       <button id="btn-ai-ignore" class="btn">${t('aiIgnore')}</button>
@@ -5645,8 +5645,8 @@ $('btn-ai-reset') && $('btn-ai-reset').addEventListener('click', () => {
   toast(t('aiEngResetDone'));
 });
 
-/* ============ v2.27.0 新模块：标准化结局量表 PROMs（ODI / NDI / KOOS-12 / EQ-5D-5L） ============ */
-// 对标 Physitrack / Hinge Health 的 PROMs 随访：用国际通用量表记录功能受限程度并跟踪变化。
+/* ============ v2.27.0 æ–°æ¨¡å—ï¼šæ ‡å‡†åŒ–ç»“å±€é‡è¡¨ PROMsï¼ˆODI / NDI / KOOS-12 / EQ-5D-5Lï¼‰ ============ */
+// å¯¹æ ‡ Physitrack / Hinge Health çš„ PROMs éšè®¿ï¼šç”¨å›½é™…é€šç”¨é‡è¡¨è®°å½•åŠŸèƒ½å—é™ç¨‹åº¦å¹¶è·Ÿè¸ªå˜åŒ–ã€‚
 const PROM_DEFS = [
   { key: 'odi', type: 'ratio', opt: 6, max: 5, items: 10 },
   { key: 'ndi', type: 'ratio', opt: 6, max: 5, items: 10 },
@@ -5716,7 +5716,7 @@ function renderPromForm() {
       <div class="prom-qt">${qi + 1}. ${t(k)}</div>
       <div class="prom-opts">${Array.from({ length: d.opt }, (_, v) => `<button class="prom-opt ${promState.answers[qi] === v ? 'on' : ''}" data-qi="${qi}" data-qv="${v}">${t('promL' + v)}</button>`).join('')}</div>
     </div>`).join('') + (d.type === 'eq' ? `
-    <div class="prom-q"><div class="prom-qt">${t('promVas')} · <b id="prom-vas-val">${promState.vas}</b></div>
+    <div class="prom-q"><div class="prom-qt">${t('promVas')} Â· <b id="prom-vas-val">${promState.vas}</b></div>
       <input type="range" id="prom-vas" min="0" max="100" value="${promState.vas}" style="width:100%"></div>` : '')
     + `<div class="controls"><button id="btn-prom-submit" class="btn primary">${t('promSubmit')}</button></div></div>`;
   box.querySelectorAll('[data-qi]').forEach((b) => b.addEventListener('click', () => {
@@ -5762,7 +5762,7 @@ function renderPromResult(rec) {
     : isKoos
       ? Object.entries(rec.subs).map(([k, v]) => `<span><i>${t(PROM_SUB_KEYS[k] || k)}</i> <b>${v}</b></span>`).join('')
       : '';
-  el.innerHTML = `<div class="prom-head">${t(promNameKey(rec.key))} · <span class="rom-lv ${rec.level}">${t('promBand' + rec.band)}</span></div>
+  el.innerHTML = `<div class="prom-head">${t(promNameKey(rec.key))} Â· <span class="rom-lv ${rec.level}">${t('promBand' + rec.band)}</span></div>
     <div class="prom-big">${rec.total}${d.type === 'eq' ? ' / 100' : '%'}</div>
     ${subTxt ? `<div class="prom-sub">${subTxt}</div>` : ''}
     ${delta == null ? '' : `<p class="hint tiny ${better ? '' : delta === 0 ? '' : 'warn'}">${t(better ? 'promBetter' : delta === 0 ? 'promSame' : 'promWorse', { d: Math.abs(delta) })}</p>`}
@@ -5777,7 +5777,7 @@ function renderPromHistory() {
       <div>
         <div class="t"><span class="t-ico">${icon('assess')}</span>${t(promNameKey(r.key))}
           <span class="rom-lv ${r.level}">${t('promBand' + r.band)}</span></div>
-        <div class="d">${new Date(r.ts).toLocaleString(locale(), { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })} · ${r.total}${promDef(r.key).type === 'eq' ? ' / 100' : '%'}</div>
+        <div class="d">${new Date(r.ts).toLocaleString(locale(), { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })} Â· ${r.total}${promDef(r.key).type === 'eq' ? ' / 100' : '%'}</div>
       </div>
       <div><button class="mini del" data-promdel="${r.id}">${icon('trash')}</button></div>
     </div>`).join('');
@@ -5799,7 +5799,7 @@ $('btn-prom-cancel').addEventListener('click', () => {
   $('prom-form').classList.add('hidden');
   renderPromUI();
 });
-// 报告：各量表最近一次结果
+// æŠ¥å‘Šï¼šå„é‡è¡¨æœ€è¿‘ä¸€æ¬¡ç»“æžœ
 function promReportRows() {
   const h = promHistory();
   const rows = [];
@@ -5807,15 +5807,15 @@ function promReportRows() {
   h.forEach((r) => { if (!latest[r.key]) latest[r.key] = r; });
   const keys = Object.keys(latest);
   if (keys.length) {
-    rows.push({ k: t('repProms'), v: keys.map((k) => `${t(promNameKey(k))} ${latest[k].total}${promDef(k).type === 'eq' ? '' : '%'}`).join(' · '), cls: keys.some((k) => latest[k].level === 'bad') ? 'warn' : keys.every((k) => latest[k].level === 'good') ? 'ok' : '' });
+    rows.push({ k: t('repProms'), v: keys.map((k) => `${t(promNameKey(k))} ${latest[k].total}${promDef(k).type === 'eq' ? '' : '%'}`).join(' Â· '), cls: keys.some((k) => latest[k].level === 'bad') ? 'warn' : keys.every((k) => latest[k].level === 'good') ? 'ok' : '' });
   }
   return rows;
 }
 function promBadCount() { return promHistory().filter((r) => r.level === 'bad').length; }
 
-/* ============ v2.26.0 新模块：ROM 关节活动度（Range of Motion） ============ */
-// 对标专业康复产品的 ROM 测量：单摄像头 → 关键点角度 → 关节最大活动范围 + 左右差异。
-const ROM_MS = 6000;                 // 每次测量时长（6 秒，做到最大幅度并保持）
+/* ============ v2.26.0 æ–°æ¨¡å—ï¼šROM å…³èŠ‚æ´»åŠ¨åº¦ï¼ˆRange of Motionï¼‰ ============ */
+// å¯¹æ ‡ä¸“ä¸šåº·å¤äº§å“çš„ ROM æµ‹é‡ï¼šå•æ‘„åƒå¤´ â†’ å…³é”®ç‚¹è§’åº¦ â†’ å…³èŠ‚æœ€å¤§æ´»åŠ¨èŒƒå›´ + å·¦å³å·®å¼‚ã€‚
+const ROM_MS = 6000;                 // æ¯æ¬¡æµ‹é‡æ—¶é•¿ï¼ˆ6 ç§’ï¼Œåšåˆ°æœ€å¤§å¹…åº¦å¹¶ä¿æŒï¼‰
 const ROM_IDX = {
   L: { shoulder: 11, elbow: 13, hip: 23, knee: 25, ankle: 27 },
   R: { shoulder: 12, elbow: 14, hip: 24, knee: 26, ankle: 28 },
@@ -5843,13 +5843,13 @@ function romRawAngle(lm, side, lms) {
     if (lm === 'knee') return romAngleAt(lms[I.knee], lms[I.hip], lms[I.ankle]);
     if (lm === 'hip') return romAngleAt(lms[I.hip], lms[I.shoulder], lms[I.knee]);
     if (lm === 'shoulder') return romAngleAt(lms[I.shoulder], lms[I.hip], lms[I.elbow]);
-  } catch { /* 关键点缺失 */ }
+  } catch { /* å…³é”®ç‚¹ç¼ºå¤± */ }
   return 0;
 }
 function romValueOf(it, min, max) {
   if (min == null || max == null) return null;
-  if (it.mode === 'deficit') return Math.round(180 - max);            // 伸展缺损（越小越好）
-  return Math.round(it.lm === 'shoulder' ? max : 180 - min);          // 屈曲/外展取最大角
+  if (it.mode === 'deficit') return Math.round(180 - max);            // ä¼¸å±•ç¼ºæŸï¼ˆè¶Šå°è¶Šå¥½ï¼‰
+  return Math.round(it.lm === 'shoulder' ? max : 180 - min);          // å±ˆæ›²/å¤–å±•å–æœ€å¤§è§’
 }
 function romLevel(it, v) {
   if (v == null) return 'none';
@@ -5857,16 +5857,16 @@ function romLevel(it, v) {
   return v >= it.norm ? 'good' : v >= it.norm - 20 ? 'warn' : 'bad';
 }
 const romState = { active: false, demo: false, key: 'kneeFlex', side: 'L', t0: 0, min: null, max: null, lastT: 0, videoOn: false };
-// 演示模式：合成「从起始角匀速到最大角」的骨架帧（测试与无摄像头时可用）
+// æ¼”ç¤ºæ¨¡å¼ï¼šåˆæˆã€Œä»Žèµ·å§‹è§’åŒ€é€Ÿåˆ°æœ€å¤§è§’ã€çš„éª¨æž¶å¸§ï¼ˆæµ‹è¯•ä¸Žæ— æ‘„åƒå¤´æ—¶å¯ç”¨ï¼‰
 function romDemoFrame(key, ts) {
   const it = romItem(key);
-  const elapsed = romState.t0 ? ts - romState.t0 : 0;          // 用本次测量的已用时间，保证 6 秒走完全程
+  const elapsed = romState.t0 ? ts - romState.t0 : 0;          // ç”¨æœ¬æ¬¡æµ‹é‡çš„å·²ç”¨æ—¶é—´ï¼Œä¿è¯ 6 ç§’èµ°å®Œå…¨ç¨‹
   const p = Math.min(1, Math.max(0, elapsed / ROM_MS));
   const ang = ((it.from + (it.to - it.from) * p) * Math.PI) / 180;
   const mk = (x, y) => ({ x, y, z: 0, visibility: 1 });
   const lms = Array.from({ length: 33 }, () => mk(0.5, 0.5));
-  const dir = [Math.sin(ang), -Math.cos(ang)];    // 与「向上」的基准成 ang（膝/髋用）
-  const dir2 = [Math.sin(ang), Math.cos(ang)];     // 与「向下」的基准成 ang（肩用）
+  const dir = [Math.sin(ang), -Math.cos(ang)];    // ä¸Žã€Œå‘ä¸Šã€çš„åŸºå‡†æˆ angï¼ˆè†/é«‹ç”¨ï¼‰
+  const dir2 = [Math.sin(ang), Math.cos(ang)];     // ä¸Žã€Œå‘ä¸‹ã€çš„åŸºå‡†æˆ angï¼ˆè‚©ç”¨ï¼‰
   if (it.lm === 'knee') {
     const hip = mk(0.5, 0.28), knee = mk(0.5, 0.56);
     lms[23] = lms[24] = hip; lms[25] = lms[26] = knee;
@@ -5904,8 +5904,8 @@ function renderRomLive(cur) {
   const it = romItem(romState.key);
   const v = romValueOf(it, romState.min, romState.max);
   const pct = romState.t0 ? Math.min(100, Math.round(((performance.now() - romState.t0) / ROM_MS) * 100)) : 0;
-  el.innerHTML = `<div class="rom-row"><b>${t('romCurrent')}</b><span class="rom-cur">${cur == null ? '—' : cur.toFixed(0)}°</span>
-    <b>${t('romBest')}</b><span class="rom-best">${v == null ? '—' : v + '°'}</span></div>
+  el.innerHTML = `<div class="rom-row"><b>${t('romCurrent')}</b><span class="rom-cur">${cur == null ? 'â€”' : cur.toFixed(0)}Â°</span>
+    <b>${t('romBest')}</b><span class="rom-best">${v == null ? 'â€”' : v + 'Â°'}</span></div>
     <div class="rom-bar"><div class="rom-fill" style="width:${pct}%"></div></div>`;
 }
 function renderRomResult(rec) {
@@ -5917,10 +5917,10 @@ function renderRomResult(rec) {
   const diff = prev && prev.rom != null && rec.rom != null ? rec.rom - prev.rom : null;
   el.classList.remove('hidden');
   el.className = 'rom-result ' + rec.level;
-  el.innerHTML = `<div class="rom-head">${t('romItem' + it.key.charAt(0).toUpperCase() + it.key.slice(1))} · ${rec.side === 'L' ? t('romSideL') : t('romSideR')}
+  el.innerHTML = `<div class="rom-head">${t('romItem' + it.key.charAt(0).toUpperCase() + it.key.slice(1))} Â· ${rec.side === 'L' ? t('romSideL') : t('romSideR')}
       <span class="rom-lv ${rec.level}">${t('romLv' + rec.level.charAt(0).toUpperCase() + rec.level.slice(1))}</span></div>
-    <div class="rom-big">${it.mode === 'deficit' ? t('romDeficit', { v: rec.rom == null ? '—' : rec.rom }) : t('romRange', { v: rec.rom == null ? '—' : rec.rom })}</div>
-    <p class="hint tiny">${t('romDetail', { min: rec.min == null ? '—' : rec.min, max: rec.max == null ? '—' : rec.max, n: it.norm })}</p>
+    <div class="rom-big">${it.mode === 'deficit' ? t('romDeficit', { v: rec.rom == null ? 'â€”' : rec.rom }) : t('romRange', { v: rec.rom == null ? 'â€”' : rec.rom })}</div>
+    <p class="hint tiny">${t('romDetail', { min: rec.min == null ? 'â€”' : rec.min, max: rec.max == null ? 'â€”' : rec.max, n: it.norm })}</p>
     ${(function () { const b = romBaseline(rec.key, rec.side); if (!b || rec.rom == null) return ''; const d = rec.rom - b.med; return `<p class="hint tiny ${d < 0 ? 'warn' : ''}">${t('romVsBaseline', { v: b.med, d: (d >= 0 ? '+' : '') + d, n: b.n })}</p>`; })()}
     ${diff == null ? '' : `<p class="hint tiny ${diff > 0 ? '' : diff < 0 ? 'warn' : ''}">${t(diff >= 0 ? 'romUp' : 'romDown', { d: Math.abs(diff) })}</p>`}
     <p class="hint tiny">${t('romAdvice' + (rec.level === 'good' ? 'Good' : rec.level === 'bad' ? 'Bad' : 'Warn'))}</p>`;
@@ -5934,9 +5934,9 @@ function renderRomHistory() {
     const it = romItem(r.key);
     return `<div class="item">
       <div>
-        <div class="t"><span class="t-ico">${icon('assess')}</span>${t('romItem' + it.key.charAt(0).toUpperCase() + it.key.slice(1))} · ${r.side === 'L' ? t('romSideL') : t('romSideR')}
+        <div class="t"><span class="t-ico">${icon('assess')}</span>${t('romItem' + it.key.charAt(0).toUpperCase() + it.key.slice(1))} Â· ${r.side === 'L' ? t('romSideL') : t('romSideR')}
           <span class="rom-lv ${r.level}">${t('romLv' + r.level.charAt(0).toUpperCase() + r.level.slice(1))}</span></div>
-        <div class="d">${new Date(r.ts).toLocaleString(locale(), { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })} · ${t('romDetailShort', { v: r.rom == null ? '—' : r.rom })}</div>
+        <div class="d">${new Date(r.ts).toLocaleString(locale(), { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })} Â· ${t('romDetailShort', { v: r.rom == null ? 'â€”' : r.rom })}</div>
       </div>
       <div><button class="mini del" data-romdel="${r.id}">${icon('trash')}</button></div>
     </div>`;
@@ -5972,7 +5972,7 @@ function renderRomUI() {
 }
 async function romStart(demo) {
   if (romState.active) { romStop(); return; }
-  if (paState.active) paStop();                       // 与体态评估互斥，防止摄像头占用
+  if (paState.active) paStop();                       // ä¸Žä½“æ€è¯„ä¼°äº’æ–¥ï¼Œé˜²æ­¢æ‘„åƒå¤´å ç”¨
   romState.active = true; romState.demo = !!demo;
   romState.t0 = 0; romState.min = null; romState.max = null;
   renderRomResult(null);
@@ -6063,7 +6063,7 @@ function romFinish() {
 }
 $('btn-rom-start').addEventListener('click', () => { romStart(false); });
 $('btn-rom-demo').addEventListener('click', () => { romStart(true); });
-// 报告里的 ROM 行 + 左右差异
+// æŠ¥å‘Šé‡Œçš„ ROM è¡Œ + å·¦å³å·®å¼‚
 function romReportRows() {
   const h = romHistory();
   const rows = [];
@@ -6071,20 +6071,20 @@ function romReportRows() {
   if (measured.length) {
     rows.push({ k: t('repRom'), v: measured.map((it) => {
       const last = h.find((r) => r.key === it.key && r.rom != null);
-      return `${t('romShort' + it.key.charAt(0).toUpperCase() + it.key.slice(1))} ${last.rom}°`;
-    }).join(' · '), cls: '' });
+      return `${t('romShort' + it.key.charAt(0).toUpperCase() + it.key.slice(1))} ${last.rom}Â°`;
+    }).join(' Â· '), cls: '' });
     const diffs = [], seen = {};
     h.forEach((r) => { if (r.rom == null) return; seen[r.key] = seen[r.key] || {}; if (!seen[r.key][r.side]) seen[r.key][r.side] = r.rom; });
     Object.entries(seen).forEach(([k, v]) => {
-      if (v.L != null && v.R != null) diffs.push(`${t('romShort' + k.charAt(0).toUpperCase() + k.slice(1))} ${Math.abs(v.L - v.R)}°`);
+      if (v.L != null && v.R != null) diffs.push(`${t('romShort' + k.charAt(0).toUpperCase() + k.slice(1))} ${Math.abs(v.L - v.R)}Â°`);
     });
-    if (diffs.length) rows.push({ k: t('repRomDiff'), v: diffs.join(' · '), cls: diffs.some((d) => parseInt(d.match(/(\d+)°/)[1], 10) > 10) ? 'warn' : 'ok' });
+    if (diffs.length) rows.push({ k: t('repRomDiff'), v: diffs.join(' Â· '), cls: diffs.some((d) => parseInt(d.match(/(\d+)Â°/)[1], 10) > 10) ? 'warn' : 'ok' });
   }
   return rows;
 }
 
-/* ============ v2.25.0 报告升级：体态截图 + 六维雷达 + 30 天趋势 ============ */
-// 体态截图：优先存「骨架图」（只含火柴人，不含真人照片，隐私友好），退化到视频帧
+/* ============ v2.25.0 æŠ¥å‘Šå‡çº§ï¼šä½“æ€æˆªå›¾ + å…­ç»´é›·è¾¾ + 30 å¤©è¶‹åŠ¿ ============ */
+// ä½“æ€æˆªå›¾ï¼šä¼˜å…ˆå­˜ã€Œéª¨æž¶å›¾ã€ï¼ˆåªå«ç«æŸ´äººï¼Œä¸å«çœŸäººç…§ç‰‡ï¼Œéšç§å‹å¥½ï¼‰ï¼Œé€€åŒ–åˆ°è§†é¢‘å¸§
 function paSnapShot() {
   try {
     const cv = document.createElement('canvas');
@@ -6102,7 +6102,7 @@ function paSnapShot() {
     return url && url.length > 400 ? url : null;
   } catch { return null; }
 }
-// 功能测试六维雷达（对称/排列/动态/稳定/活动度/一致性）
+// åŠŸèƒ½æµ‹è¯•å…­ç»´é›·è¾¾ï¼ˆå¯¹ç§°/æŽ’åˆ—/åŠ¨æ€/ç¨³å®š/æ´»åŠ¨åº¦/ä¸€è‡´æ€§ï¼‰
 const FT_DIM_ORDER = ['sym', 'align', 'dyn', 'stab', 'rom', 'cons'];
 const FT_DIM_KEYS = ['ftDimSym', 'ftDimAlign', 'ftDimDyn', 'ftDimStab', 'ftDimRom', 'ftDimCons'];
 function ftLatestDims() {
@@ -6128,7 +6128,7 @@ function radarSvg(dims, uid) {
   </svg>
   <div class="radar-vals">${FT_DIM_ORDER.map((k, i) => `<span class="rv"><i>${t(FT_DIM_KEYS[i])}</i><b>${vals[i]}</b></span>`).join('')}</div>`;
 }
-// 近 30 天每日训练次数（0 的天也保留，形成连续趋势）
+// è¿‘ 30 å¤©æ¯æ—¥è®­ç»ƒæ¬¡æ•°ï¼ˆ0 çš„å¤©ä¹Ÿä¿ç•™ï¼Œå½¢æˆè¿žç»­è¶‹åŠ¿ï¼‰
 function trend30Points() {
   const sessions = sget('rehab_sessions', []);
   const out = [];
@@ -6146,7 +6146,7 @@ const loadImg = (src) => new Promise((res) => {
   im.onerror = () => res(null);
   im.src = src;
 });
-// canvas 版雷达 + 折线（供 PNG 长图使用）
+// canvas ç‰ˆé›·è¾¾ + æŠ˜çº¿ï¼ˆä¾› PNG é•¿å›¾ä½¿ç”¨ï¼‰
 function drawRadarCanvas(c, cx, cy, R, dims) {
   const V = dims || {};
   const n = FT_DIM_ORDER.length;
@@ -6190,8 +6190,8 @@ function drawTrendCanvas(c, x, y, w, h, pts) {
   c.fillStyle = 'rgba(14,124,102,.12)'; c.fill();
 }
 
-/* ============ v2.24.0 新模块：治疗师报告（一键汇总 + HTML/PDF/图片/摘要） ============ */
-// 对标 PhysiApp 的会话级回传：把评估、训练依从性、疼痛与建议汇总成一页可分享的报告。
+/* ============ v2.24.0 æ–°æ¨¡å—ï¼šæ²»ç–—å¸ˆæŠ¥å‘Šï¼ˆä¸€é”®æ±‡æ€» + HTML/PDF/å›¾ç‰‡/æ‘˜è¦ï¼‰ ============ */
+// å¯¹æ ‡ PhysiApp çš„ä¼šè¯çº§å›žä¼ ï¼šæŠŠè¯„ä¼°ã€è®­ç»ƒä¾ä»Žæ€§ã€ç–¼ç—›ä¸Žå»ºè®®æ±‡æ€»æˆä¸€é¡µå¯åˆ†äº«çš„æŠ¥å‘Šã€‚
 function buildReportData() {
   const sessions = sget('rehab_sessions', []);
   const from = Date.now() - 30 * 86400000;
@@ -6213,23 +6213,23 @@ function buildReportData() {
     planDays: doneKeys.length,
     ai: aiLast,
     spike: painSpike(),
-    snap: (paHistory()[0] && paHistory()[0].snap) || null,   // v2.25.0：最新体态骨架快照
-    dims: ftLatestDims(),                                    // v2.25.0：功能测试六维
-    trend30: trend30Points(),                                // v2.25.0：近 30 天训练趋势
+    snap: (paHistory()[0] && paHistory()[0].snap) || null,   // v2.25.0ï¼šæœ€æ–°ä½“æ€éª¨æž¶å¿«ç…§
+    dims: ftLatestDims(),                                    // v2.25.0ï¼šåŠŸèƒ½æµ‹è¯•å…­ç»´
+    trend30: trend30Points(),                                // v2.25.0ï¼šè¿‘ 30 å¤©è®­ç»ƒè¶‹åŠ¿
   };
 }
 function reportRows(r) {
   const rows = [];
-  rows.push({ k: t('repPatient'), v: (r.prof.name || t('repAnon')) + (r.prof.goal ? ' · ' + t('goal' + r.prof.goal.charAt(0).toUpperCase() + r.prof.goal.slice(1)) : ''), cls: '' });
-  rows.push({ k: t('repIndex'), v: r.idx.score == null ? t('repNone') : r.idx.score + ' · ' + (r.idx.level ? t('gwLv' + r.idx.level) : ''), cls: r.idx.score == null ? '' : r.idx.score >= 75 ? 'ok' : r.idx.score < 60 ? 'warn' : '' });
-  rows.push({ k: t('repPa'), v: r.pa ? r.pa.score + ' · ' + t('paGrade' + (r.pa.grade || 'C')) : t('repNone'), cls: '' });
+  rows.push({ k: t('repPatient'), v: (r.prof.name || t('repAnon')) + (r.prof.goal ? ' Â· ' + t('goal' + r.prof.goal.charAt(0).toUpperCase() + r.prof.goal.slice(1)) : ''), cls: '' });
+  rows.push({ k: t('repIndex'), v: r.idx.score == null ? t('repNone') : r.idx.score + ' Â· ' + (r.idx.level ? t('gwLv' + r.idx.level) : ''), cls: r.idx.score == null ? '' : r.idx.score >= 75 ? 'ok' : r.idx.score < 60 ? 'warn' : '' });
+  rows.push({ k: t('repPa'), v: r.pa ? r.pa.score + ' Â· ' + t('paGrade' + (r.pa.grade || 'C')) : t('repNone'), cls: '' });
   rows.push({ k: t('repFt'), v: r.ft ? String(r.ft.score) : t('repNone'), cls: '' });
   rows.push({ k: t('repPain'), v: r.painMax == null ? t('repNone') : r.painMax + ' / 10', cls: r.painMax != null && r.painMax >= 7 ? 'warn' : r.painMax != null && r.painMax <= 3 ? 'ok' : '' });
   rows.push({ k: t('repAdherence'), v: t('repAdh', { d: r.days, n: r.sessions, r: r.reps }), cls: r.days >= 12 ? 'ok' : r.days === 0 ? 'warn' : '' });
   rows.push({ k: t('repStreak'), v: t('repDays', { n: r.streak }), cls: '' });
   rows.push({ k: t('repPlan'), v: t('repPlanV', { p: r.plan, d: r.planDays }), cls: '' });
-  romReportRows().forEach((x) => rows.push(x));   // v2.26.0：ROM 测量汇总进报告
-  promReportRows().forEach((x) => rows.push(x));  // v2.27.0：PROMs 量表结果进报告
+  romReportRows().forEach((x) => rows.push(x));   // v2.26.0ï¼šROM æµ‹é‡æ±‡æ€»è¿›æŠ¥å‘Š
+  promReportRows().forEach((x) => rows.push(x));  // v2.27.0ï¼šPROMs é‡è¡¨ç»“æžœè¿›æŠ¥å‘Š
   return rows;
 }
 function reportAdvice(r) {
@@ -6255,8 +6255,8 @@ function renderReport() {
     + `<div class="rep-sec"><h4>${t('repTrend30')}</h4>${lineChart(r.trend30, '#0e7c66', 'rep30')}</div>`;
 }
 function reportSummaryText(r) {
-  const L = [t('repTitle') + ' · ' + new Date().toLocaleDateString(locale())];
-  reportRows(r).forEach((x) => L.push(`${x.k}：${x.v}`));
+  const L = [t('repTitle') + ' Â· ' + new Date().toLocaleDateString(locale())];
+  reportRows(r).forEach((x) => L.push(`${x.k}ï¼š${x.v}`));
   L.push('', t('repSuggest'));
   reportAdvice(r).forEach((a, i) => L.push(`${i + 1}. ${a}`));
   L.push('', t('repDisclaimer'));
@@ -6274,7 +6274,7 @@ function reportHtmlDoc(r) {
   const adv = reportAdvice(r).map((a) => `<li>${a}</li>`).join('');
   return `<!doctype html><html lang="${locale()}"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>${t('repTitle')} · ${new Date().toLocaleDateString(locale())}</title>
+<title>${t('repTitle')} Â· ${new Date().toLocaleDateString(locale())}</title>
 <style>
 body{font-family:-apple-system,"Segoe UI",Roboto,"Helvetica Neue","Microsoft YaHei",sans-serif;max-width:760px;margin:28px auto;padding:0 18px;color:#22262e;line-height:1.65}
 h1{font-size:22px;margin:0 0 4px}.sub{color:#69707c;font-size:13px;margin-bottom:18px}
@@ -6288,7 +6288,7 @@ ul{margin:6px 0 0 18px;padding:0}li{font-size:14px;margin-bottom:6px}
 @media print{body{margin:0}}
 </style></head><body>
 <h1>${t('repTitle')}</h1>
-<div class="sub">${t('repSubtitle')} · ${new Date().toLocaleString(locale())}</div>
+<div class="sub">${t('repSubtitle')} Â· ${new Date().toLocaleString(locale())}</div>
 <table>${rows}</table>
 ${snapHtml}${radarHtml}${trendHtml}
 ${chart ? `<h2>${t('repPainTrend')}</h2>${chart}` : ''}
@@ -6323,7 +6323,7 @@ async function exportReportPng() {
   c.fillStyle = '#22262e'; c.font = 'bold 30px "Microsoft YaHei",system-ui,sans-serif';
   c.fillText(t('repTitle'), 68, 110);
   c.fillStyle = '#69707c'; c.font = '16px "Microsoft YaHei",system-ui,sans-serif';
-  c.fillText(t('repSubtitle') + ' · ' + new Date().toLocaleString(locale()), 68, 142);
+  c.fillText(t('repSubtitle') + ' Â· ' + new Date().toLocaleString(locale()), 68, 142);
   let y = 200;
   reportRows(r).forEach((x) => {
     c.fillStyle = '#69707c'; c.font = '17px "Microsoft YaHei",system-ui,sans-serif';
@@ -6331,12 +6331,12 @@ async function exportReportPng() {
     c.fillStyle = x.cls === 'warn' ? '#d14a4a' : x.cls === 'ok' ? '#0e7c66' : '#22262e';
     c.font = 'bold 18px "Microsoft YaHei",system-ui,sans-serif';
     const txt = String(x.v);
-    c.fillText(txt.length > 44 ? txt.slice(0, 43) + '…' : txt, 260, y);
+    c.fillText(txt.length > 44 ? txt.slice(0, 43) + 'â€¦' : txt, 260, y);
     c.strokeStyle = '#e7e2d7'; c.lineWidth = 1;
     c.beginPath(); c.moveTo(68, y + 14); c.lineTo(W - 68, y + 14); c.stroke();
     y += 52;
   });
-  // v2.25.0：体态骨架截图 + 六维雷达 + 30 天训练趋势
+  // v2.25.0ï¼šä½“æ€éª¨æž¶æˆªå›¾ + å…­ç»´é›·è¾¾ + 30 å¤©è®­ç»ƒè¶‹åŠ¿
   let y2 = y + 16;
   c.fillStyle = '#0e7c66'; c.font = 'bold 18px "Microsoft YaHei",system-ui,sans-serif';
   c.fillText(t('repSnap'), 68, y2);
@@ -6383,14 +6383,14 @@ $('btn-rep-copy').addEventListener('click', async () => {
   catch { toast(t('repCopyFail')); }
 });
 
-/* ============ v2.23.0 新模块：康复小课堂（患者教育）+ 疼痛上升预警 ============ */
-// 对标 PhysioTrack / ReplayRehab：把「问题→训练」补上「为什么会这样、不纠正会怎样、日常注意什么」。
+/* ============ v2.23.0 æ–°æ¨¡å—ï¼šåº·å¤å°è¯¾å ‚ï¼ˆæ‚£è€…æ•™è‚²ï¼‰+ ç–¼ç—›ä¸Šå‡é¢„è­¦ ============ */
+// å¯¹æ ‡ PhysioTrack / ReplayRehabï¼šæŠŠã€Œé—®é¢˜â†’è®­ç»ƒã€è¡¥ä¸Šã€Œä¸ºä»€ä¹ˆä¼šè¿™æ ·ã€ä¸çº æ­£ä¼šæ€Žæ ·ã€æ—¥å¸¸æ³¨æ„ä»€ä¹ˆã€ã€‚
 const EDU_CARDS = [
-  { id: 'round', ico: 'shoulderraise', go: 'guide', key: 'eduRound' },     // 圆肩 → 体态改善课
-  { id: 'valgus', ico: 'squat', go: 'train', key: 'eduValgus' },            // 膝内扣 → 训练页
-  { id: 'pelvic', ico: 'bridge', go: 'guide', key: 'eduPelvic' },           // 骨盆前倾 → 体态改善课
-  { id: 'fhead', ico: 'standing', go: 'guide', key: 'eduFHead' },           // 头前伸 → 体态改善课
-  { id: 'lowback', ico: 'hiphinge', go: 'train', key: 'eduLowBack' },       // 下背痛 → 训练页
+  { id: 'round', ico: 'shoulderraise', go: 'guide', key: 'eduRound' },     // åœ†è‚© â†’ ä½“æ€æ”¹å–„è¯¾
+  { id: 'valgus', ico: 'squat', go: 'train', key: 'eduValgus' },            // è†å†…æ‰£ â†’ è®­ç»ƒé¡µ
+  { id: 'pelvic', ico: 'bridge', go: 'guide', key: 'eduPelvic' },           // éª¨ç›†å‰å€¾ â†’ ä½“æ€æ”¹å–„è¯¾
+  { id: 'fhead', ico: 'standing', go: 'guide', key: 'eduFHead' },           // å¤´å‰ä¼¸ â†’ ä½“æ€æ”¹å–„è¯¾
+  { id: 'lowback', ico: 'hiphinge', go: 'train', key: 'eduLowBack' },       // ä¸‹èƒŒç—› â†’ è®­ç»ƒé¡µ
 ];
 const eduOpen = {};
 function renderEdu() {
@@ -6402,13 +6402,13 @@ function renderEdu() {
       <button class="edu-head" data-edu="${c.id}">
         <span class="edu-ico">${icon(c.ico)}</span>
         <span class="edu-t">${t(c.key + 'T')}</span>
-        <span class="edu-arrow">${open ? '−' : '+'}</span>
+        <span class="edu-arrow">${open ? 'âˆ’' : '+'}</span>
       </button>
       ${open ? `<div class="edu-body">
         <p><b>${t('eduWhy')}</b>${t(c.key + 'Why')}</p>
         <p><b>${t('eduRisk')}</b>${t(c.key + 'Risk')}</p>
         <p><b>${t('eduDaily')}</b>${t(c.key + 'Daily')}</p>
-        <button class="btn small" data-edugo="${c.go}">${t('eduGo')} →</button>
+        <button class="btn small" data-edugo="${c.go}">${t('eduGo')} â†’</button>
       </div>` : ''}
     </div>`;
   }).join('');
@@ -6418,7 +6418,7 @@ function renderEdu() {
   }));
   el.querySelectorAll('[data-edugo]').forEach((b) => b.addEventListener('click', () => switchTab(b.dataset.edugo)));
 }
-// 疼痛上升预警：同一天「训练后 − 训练前 ≥ 2 分」→ 建议降强度或暂停该动作
+// ç–¼ç—›ä¸Šå‡é¢„è­¦ï¼šåŒä¸€å¤©ã€Œè®­ç»ƒåŽ âˆ’ è®­ç»ƒå‰ â‰¥ 2 åˆ†ã€â†’ å»ºè®®é™å¼ºåº¦æˆ–æš‚åœè¯¥åŠ¨ä½œ
 function painTodayPair() {
   const k = dayKeyOf(Date.now());
   const rows = painHistory().filter((r) => dayKeyOf(r.ts) === k);
@@ -6428,13 +6428,13 @@ function painTodayPair() {
 }
 function painSpike() {
   const p = painTodayPair();
-  // v2.28.0：阈值不再写死，由「智能引擎」里的设置决定（默认 2 分，可改 1–4 或关闭自动调参）
+  // v2.28.0ï¼šé˜ˆå€¼ä¸å†å†™æ­»ï¼Œç”±ã€Œæ™ºèƒ½å¼•æ“Žã€é‡Œçš„è®¾ç½®å†³å®šï¼ˆé»˜è®¤ 2 åˆ†ï¼Œå¯æ”¹ 1â€“4 æˆ–å…³é—­è‡ªåŠ¨è°ƒå‚ï¼‰
   const thr = Number(aiPrefs().painAlarm) || 2;
   return (p && p.delta >= thr) ? p : null;
 }
 
-/* ============ v2.22.0 新模块：疼痛管理（VAS 0–10 · 训练前后 · 趋势） ============ */
-// 对标 PhysiApp / Kaia Health：每次训练前后各记一次疼痛，疼痛变化进入趋势与恢复建议。
+/* ============ v2.22.0 æ–°æ¨¡å—ï¼šç–¼ç—›ç®¡ç†ï¼ˆVAS 0â€“10 Â· è®­ç»ƒå‰åŽ Â· è¶‹åŠ¿ï¼‰ ============ */
+// å¯¹æ ‡ PhysiApp / Kaia Healthï¼šæ¯æ¬¡è®­ç»ƒå‰åŽå„è®°ä¸€æ¬¡ç–¼ç—›ï¼Œç–¼ç—›å˜åŒ–è¿›å…¥è¶‹åŠ¿ä¸Žæ¢å¤å»ºè®®ã€‚
 const PAIN_MAX = 10;
 const painHistory = () => sget('rehab_pain_history', []);
 const painSave = (list) => sset('rehab_pain_history', list.slice(0, 120));
@@ -6449,7 +6449,7 @@ const dayKeyOf = (ts) => {
   const d = new Date(ts);
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 };
-// 近 N 天：每天取最后一次「训练前 / 训练后」评分，供双线趋势图
+// è¿‘ N å¤©ï¼šæ¯å¤©å–æœ€åŽä¸€æ¬¡ã€Œè®­ç»ƒå‰ / è®­ç»ƒåŽã€è¯„åˆ†ï¼Œä¾›åŒçº¿è¶‹åŠ¿å›¾
 function painDailyPairs(days = 14) {
   const h = painHistory();
   const out = [];
@@ -6464,7 +6464,7 @@ function painDailyPairs(days = 14) {
   }
   return out;
 }
-// 双线趋势图（纯新增，不动旧 lineChart）
+// åŒçº¿è¶‹åŠ¿å›¾ï¼ˆçº¯æ–°å¢žï¼Œä¸åŠ¨æ—§ lineChartï¼‰
 function painChartSvg(pairs) {
   const W = 320, H = 92, P = 10;
   const n = pairs.length;
@@ -6483,7 +6483,7 @@ function painChartSvg(pairs) {
       ${line('pre', '#0e7c66')}${line('post', '#e07a5f')}
     </svg>`;
 }
-// 近 N 天最高疼痛（供今日页建议与 AI 管家）
+// è¿‘ N å¤©æœ€é«˜ç–¼ç—›ï¼ˆä¾›ä»Šæ—¥é¡µå»ºè®®ä¸Ž AI ç®¡å®¶ï¼‰
 function painRecentMax(days = 7) {
   const from = Date.now() - days * 86400000;
   const list = painHistory().filter((r) => r.ts >= from);
@@ -6499,17 +6499,17 @@ function renderPain() {
   const postT = today.filter((r) => r.when === 'post').pop();
   const last = today[0] || h[0] || null;
   el.innerHTML = `<div class="pain-now-row">
-    <span class="pain-chip ${preT ? painLevelOf(preT.v) : 'none'}">${t('painPre')} · ${preT ? preT.v : '—'}</span>
-    <span class="pain-chip ${postT ? painLevelOf(postT.v) : 'none'}">${t('painPost')} · ${postT ? postT.v : '—'}</span>
+    <span class="pain-chip ${preT ? painLevelOf(preT.v) : 'none'}">${t('painPre')} Â· ${preT ? preT.v : 'â€”'}</span>
+    <span class="pain-chip ${postT ? painLevelOf(postT.v) : 'none'}">${t('painPost')} Â· ${postT ? postT.v : 'â€”'}</span>
     ${preT && postT ? `<span class="pain-delta ${postT.v > preT.v ? 'up' : postT.v < preT.v ? 'down' : ''}">${postT.v > preT.v ? t('painUp', { d: postT.v - preT.v }) : postT.v < preT.v ? t('painDown', { d: preT.v - postT.v }) : t('painSame')}</span>` : ''}
     ${last ? `<span class="hint tiny">${t('painLast', { d: dayKeyOf(last.ts).slice(5), v: last.v })}</span>` : ''}
   </div>`;
   const sp = painSpike();
   if (sp) {
     el.innerHTML += `<div class="pain-spike">${t('painSpikeTip', { d: sp.delta, post: sp.post })}
-      <button class="link-btn" id="pain-spike-more">${t('painSpikeBtn')} →</button></div>`;
+      <button class="link-btn" id="pain-spike-more">${t('painSpikeBtn')} â†’</button></div>`;
     const mb = $('pain-spike-more');
-    if (mb) mb.addEventListener('click', () => switchTab('posture'));   // 去「康复小课堂」看日常注意与训练
+    if (mb) mb.addEventListener('click', () => switchTab('posture'));   // åŽ»ã€Œåº·å¤å°è¯¾å ‚ã€çœ‹æ—¥å¸¸æ³¨æ„ä¸Žè®­ç»ƒ
   }
   const chartEl = $('pain-chart');
   if (chartEl) chartEl.innerHTML = painChartSvg(painDailyPairs(14));
@@ -6519,9 +6519,9 @@ function renderPain() {
     list.innerHTML = h.slice(0, 6).map((r) => `
       <div class="item">
         <div>
-          <div class="t"><span class="t-ico">${icon('alert')}</span>${r.v} · ${t(r.when === 'pre' ? 'painPre' : r.when === 'post' ? 'painPost' : 'painManual')}
+          <div class="t"><span class="t-ico">${icon('alert')}</span>${r.v} Â· ${t(r.when === 'pre' ? 'painPre' : r.when === 'post' ? 'painPost' : 'painManual')}
             <span class="pain-lv ${painLevelOf(r.v)}">${t(painLvKey(r.v))}</span></div>
-          <div class="d">${new Date(r.ts).toLocaleString(locale(), { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}${r.note ? ' · ' + r.note : ''}</div>
+          <div class="d">${new Date(r.ts).toLocaleString(locale(), { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}${r.note ? ' Â· ' + r.note : ''}</div>
         </div>
         <div><button class="mini del" data-paindel="${r.id}">${icon('trash')}</button></div>
       </div>`).join('');
@@ -6532,7 +6532,7 @@ function renderPain() {
       toast(t('toastDeleted'));
     }));
   }
-  // 今日页提示行（与今日总览同源，不改动 renderHome）
+  // ä»Šæ—¥é¡µæç¤ºè¡Œï¼ˆä¸Žä»Šæ—¥æ€»è§ˆåŒæºï¼Œä¸æ”¹åŠ¨ renderHomeï¼‰
   const hp = $('home-pain');
   if (hp) {
     const mx = painRecentMax(7);
@@ -6550,8 +6550,8 @@ function renderPainStrip() {
   const h = painHistory().filter((r) => dayKeyOf(r.ts) === todayK);
   const pre = h.filter((r) => r.when === 'pre').pop();
   const post = h.filter((r) => r.when === 'post').pop();
-  el.innerHTML = `<button class="pain-mini ${pre ? painLevelOf(pre.v) : ''}" data-pain="pre">${t('painPre')} ${pre ? pre.v : '—'}</button>
-    <button class="pain-mini ${post ? painLevelOf(post.v) : ''}" data-pain="post">${t('painPost')} ${post ? post.v : '—'}</button>
+  el.innerHTML = `<button class="pain-mini ${pre ? painLevelOf(pre.v) : ''}" data-pain="pre">${t('painPre')} ${pre ? pre.v : 'â€”'}</button>
+    <button class="pain-mini ${post ? painLevelOf(post.v) : ''}" data-pain="post">${t('painPost')} ${post ? post.v : 'â€”'}</button>
     <span class="hint tiny">${t('painStripHint')}</span>`;
   el.querySelectorAll('[data-pain]').forEach((b) => b.addEventListener('click', () => openPainModal(b.dataset.pain)));
 }
@@ -6577,17 +6577,17 @@ $('pain-save').addEventListener('click', () => {
   painAdd(painState.when, painState.v, $('pain-part').value, $('pain-note').value.trim());
   $('pain-modal').classList.add('hidden');
   renderPain(); renderPainStrip(); renderCareLoop();
-  aiRun();                              // v2.22.0：疼痛数据 → AI 管家建议即时更新
+  aiRun();                              // v2.22.0ï¼šç–¼ç—›æ•°æ® â†’ AI ç®¡å®¶å»ºè®®å³æ—¶æ›´æ–°
   toast(t('toastPainSaved', { v: painState.v }));
   scheduleCloudSync();
 });
 
-/* ============ v2.21.10 全局：键盘操作、无障碍语义与弹窗焦点 ============ */
+/* ============ v2.21.10 å…¨å±€ï¼šé”®ç›˜æ“ä½œã€æ— éšœç¢è¯­ä¹‰ä¸Žå¼¹çª—ç„¦ç‚¹ ============ */
 const NAV_TABS = ['home', 'train', 'posture', 'ft', 'guide', 'record', 'assess', 'schedule', 'settings'];
-const FOCUS_MODALS = ['onboard', 'qr-modal', 'fb-modal'];      // 打开时接管焦点、关闭时归还
-const ESC_MODALS = ['qr-modal', 'fb-modal', 'onboard'];        // Esc 可关闭（登录屏不可关，避免误退）
+const FOCUS_MODALS = ['onboard', 'qr-modal', 'fb-modal'];      // æ‰“å¼€æ—¶æŽ¥ç®¡ç„¦ç‚¹ã€å…³é—­æ—¶å½’è¿˜
+const ESC_MODALS = ['qr-modal', 'fb-modal', 'onboard'];        // Esc å¯å…³é—­ï¼ˆç™»å½•å±ä¸å¯å…³ï¼Œé¿å…è¯¯é€€ï¼‰
 const focusTrap = { prev: null };
-// 底部导航按钮的 aria-label 跟随可见文字与语言（中文 →「训练」，英文 →「Train」）
+// åº•éƒ¨å¯¼èˆªæŒ‰é’®çš„ aria-label è·Ÿéšå¯è§æ–‡å­—ä¸Žè¯­è¨€ï¼ˆä¸­æ–‡ â†’ã€Œè®­ç»ƒã€ï¼Œè‹±æ–‡ â†’ã€ŒTrainã€ï¼‰
 function navLabelSync() {
   document.querySelectorAll('.bottom-nav button').forEach((b) => {
     const lab = b.querySelector('.nav-label');
@@ -6610,7 +6610,7 @@ function modalFocusOut(el) {
   if (p && document.contains(p)) { try { p.focus({ preventScroll: true }); } catch { /* ignore */ } }
 }
 function closeTopModal() {
-  if (syncState.scanning) { cancelSyncScan(); return true; }   // 扫码中：Esc 结束扫码
+  if (syncState.scanning) { cancelSyncScan(); return true; }   // æ‰«ç ä¸­ï¼šEsc ç»“æŸæ‰«ç 
   for (const id of ESC_MODALS.slice().reverse()) {
     const el = $(id);
     if (!el || el.classList.contains('hidden')) continue;
@@ -6624,13 +6624,13 @@ function closeTopModal() {
 const isTypingTarget = (el) => !!(el && el.closest && el.closest('input, textarea, select, [contenteditable="true"]'));
 document.addEventListener('keydown', (ev) => {
   if (ev.key === 'Escape' || ev.key === 'Esc') { if (closeTopModal()) ev.preventDefault(); return; }
-  if (ev.ctrlKey || ev.metaKey || ev.altKey || ev.shiftKey) return;      // 不抢系统快捷键
-  if (isTypingTarget(ev.target)) return;                                 // 输入框里输入数字不切页
+  if (ev.ctrlKey || ev.metaKey || ev.altKey || ev.shiftKey) return;      // ä¸æŠ¢ç³»ç»Ÿå¿«æ·é”®
+  if (isTypingTarget(ev.target)) return;                                 // è¾“å…¥æ¡†é‡Œè¾“å…¥æ•°å­—ä¸åˆ‡é¡µ
   for (const id of ESC_MODALS) { const el = $(id); if (el && !el.classList.contains('hidden')) return; }
   const n = Number(ev.key);
   if (Number.isInteger(n) && n >= 1 && n <= NAV_TABS.length) { switchTab(NAV_TABS[n - 1]); ev.preventDefault(); }
 });
-// 弹窗显隐 → 自动接管/归还焦点（观察器实现，纯新增，不改动旧的开合逻辑）
+// å¼¹çª—æ˜¾éš â†’ è‡ªåŠ¨æŽ¥ç®¡/å½’è¿˜ç„¦ç‚¹ï¼ˆè§‚å¯Ÿå™¨å®žçŽ°ï¼Œçº¯æ–°å¢žï¼Œä¸æ”¹åŠ¨æ—§çš„å¼€åˆé€»è¾‘ï¼‰
 const modalObserver = new MutationObserver((list) => {
   list.forEach((m) => {
     const el = m.target;
@@ -6640,48 +6640,48 @@ const modalObserver = new MutationObserver((list) => {
   });
 });
 FOCUS_MODALS.forEach((id) => { const el = $(id); if (el) modalObserver.observe(el, { attributes: true, attributeFilter: ['class'] }); });
-// 注意：navLabelSync() 必须等 initI18n() 把可见文字本地化之后再调用（见启动段）
+// æ³¨æ„ï¼šnavLabelSync() å¿…é¡»ç­‰ initI18n() æŠŠå¯è§æ–‡å­—æœ¬åœ°åŒ–ä¹‹åŽå†è°ƒç”¨ï¼ˆè§å¯åŠ¨æ®µï¼‰
 
-/* ============ 启动 ============ */
+/* ============ å¯åŠ¨ ============ */
 initI18n();
-setCustomKey(ukey('rehab_custom_ex'));   // 账号分区：自定义动作按当前账号隔离
+setCustomKey(ukey('rehab_custom_ex'));   // è´¦å·åˆ†åŒºï¼šè‡ªå®šä¹‰åŠ¨ä½œæŒ‰å½“å‰è´¦å·éš”ç¦»
 onLangChanged(() => {
   renderExChips(); renderCollectLabels(getEx(activeExId()));
   renderRecords(); renderAssessments(); renderAppts(); renderCustomList();
   renderCollectCount();
   renderProfile(); renderReminder(); renderCloud();
   renderTodayPlan(); renderPlanList(); renderPlanPick(); renderPlanDayDots();
-  renderGoal(); renderVoice(); renderAchievements();   // 成就网格也随语言切换
-  aiRun();                                              // AI 管家卡片随语言切换
-  renderSedentary();                                    // 久坐提醒设置随语言切换
-  renderPaUI();                                         // 体态评估页随语言切换
-  renderFtUI();                                         // 功能测试页随语言切换
-  renderHome();                                         // v2.21：今日总览随语言切换
-  renderGuide();                                        // v2.21：跟练页随语言切换
-  renderTrainToday();                                   // v2.21.5：训练页今日任务小条随语言切换
-  renderStorageSize();                                  // v2.21.9：数据占用随语言切换
-  renderLastBackup();                                   // v2.21.9：上次备份提示随语言切换
-  navLabelSync();                                       // v2.21.10：导航 aria-label 随语言切换
-  renderPain(); renderPainStrip();                      // v2.22.0：疼痛卡随语言切换
-  renderEdu();                                          // v2.23.0：康复小课堂随语言切换
-  renderReport();                                       // v2.24.0：治疗师报告摘要随语言切换
-  renderRomUI(); renderRomHistory(); renderRomResult(romHistory()[0] || null);   // v2.26.0：ROM 随语言切换
-  renderPromUI(); renderPromHistory();                  // v2.27.0：PROMs 随语言切换
-  renderAiPlan(); renderAiEngine();                     // v2.28.0：自适应引擎随语言切换
-  renderPath();                                         // v2.29.0：康复路径随语言切换
-  renderCamCard();                                      // v2.30.0：影像设置随语言切换
-  renderCareLoop();                                     // v2.31.0：康复闭环随语言切换
-  renderBlockSub(); renderRecheck();                    // v2.33.0：子标签与复评页随语言切换
-  $('about-version').textContent = t('versionLabel', { v: APP_VERSION });   // v2.21.9：关于页版本号随语言切换（原来只设置一次）
+  renderGoal(); renderVoice(); renderAchievements();   // æˆå°±ç½‘æ ¼ä¹Ÿéšè¯­è¨€åˆ‡æ¢
+  aiRun();                                              // AI ç®¡å®¶å¡ç‰‡éšè¯­è¨€åˆ‡æ¢
+  renderSedentary();                                    // ä¹…åæé†’è®¾ç½®éšè¯­è¨€åˆ‡æ¢
+  renderPaUI();                                         // ä½“æ€è¯„ä¼°é¡µéšè¯­è¨€åˆ‡æ¢
+  renderFtUI();                                         // åŠŸèƒ½æµ‹è¯•é¡µéšè¯­è¨€åˆ‡æ¢
+  renderHome();                                         // v2.21ï¼šä»Šæ—¥æ€»è§ˆéšè¯­è¨€åˆ‡æ¢
+  renderGuide();                                        // v2.21ï¼šè·Ÿç»ƒé¡µéšè¯­è¨€åˆ‡æ¢
+  renderTrainToday();                                   // v2.21.5ï¼šè®­ç»ƒé¡µä»Šæ—¥ä»»åŠ¡å°æ¡éšè¯­è¨€åˆ‡æ¢
+  renderStorageSize();                                  // v2.21.9ï¼šæ•°æ®å ç”¨éšè¯­è¨€åˆ‡æ¢
+  renderLastBackup();                                   // v2.21.9ï¼šä¸Šæ¬¡å¤‡ä»½æç¤ºéšè¯­è¨€åˆ‡æ¢
+  navLabelSync();                                       // v2.21.10ï¼šå¯¼èˆª aria-label éšè¯­è¨€åˆ‡æ¢
+  renderPain(); renderPainStrip();                      // v2.22.0ï¼šç–¼ç—›å¡éšè¯­è¨€åˆ‡æ¢
+  renderEdu();                                          // v2.23.0ï¼šåº·å¤å°è¯¾å ‚éšè¯­è¨€åˆ‡æ¢
+  renderReport();                                       // v2.24.0ï¼šæ²»ç–—å¸ˆæŠ¥å‘Šæ‘˜è¦éšè¯­è¨€åˆ‡æ¢
+  renderRomUI(); renderRomHistory(); renderRomResult(romHistory()[0] || null);   // v2.26.0ï¼šROM éšè¯­è¨€åˆ‡æ¢
+  renderPromUI(); renderPromHistory();                  // v2.27.0ï¼šPROMs éšè¯­è¨€åˆ‡æ¢
+  renderAiPlan(); renderAiEngine();                     // v2.28.0ï¼šè‡ªé€‚åº”å¼•æ“Žéšè¯­è¨€åˆ‡æ¢
+  renderPath();                                         // v2.29.0ï¼šåº·å¤è·¯å¾„éšè¯­è¨€åˆ‡æ¢
+  renderCamCard();                                      // v2.30.0ï¼šå½±åƒè®¾ç½®éšè¯­è¨€åˆ‡æ¢
+  renderCareLoop();                                     // v2.31.0ï¼šåº·å¤é—­çŽ¯éšè¯­è¨€åˆ‡æ¢
+  renderBlockSub(); renderRecheck();                    // v2.33.0ï¼šå­æ ‡ç­¾ä¸Žå¤è¯„é¡µéšè¯­è¨€åˆ‡æ¢
+  $('about-version').textContent = t('versionLabel', { v: APP_VERSION });   // v2.21.9ï¼šå…³äºŽé¡µç‰ˆæœ¬å·éšè¯­è¨€åˆ‡æ¢ï¼ˆåŽŸæ¥åªè®¾ç½®ä¸€æ¬¡ï¼‰
   setStartBtn(state.running ? 'btnStop' : 'btnStart', state.running ? 'stop' : 'play');
   $('btn-collect-label').textContent = state.collectMode ? t('btnCollectStop') : t('btnCollect');
   $('feedback')._last = null;
-  if (state.running) state.statsKey = null;   // 下一帧按新语言重建统计
-  else $('feedback').classList.add('hidden'); // 不训练时反馈条不残留旧语言文案
-  if (!$('onboard').classList.contains('hidden')) renderOnboard();        // 引导页随语言切换
-  if (!$('fb-modal').classList.contains('hidden')) openFeedback();         // 反馈弹窗报告随语言切换
+  if (state.running) state.statsKey = null;   // ä¸‹ä¸€å¸§æŒ‰æ–°è¯­è¨€é‡å»ºç»Ÿè®¡
+  else $('feedback').classList.add('hidden'); // ä¸è®­ç»ƒæ—¶åé¦ˆæ¡ä¸æ®‹ç•™æ—§è¯­è¨€æ–‡æ¡ˆ
+  if (!$('onboard').classList.contains('hidden')) renderOnboard();        // å¼•å¯¼é¡µéšè¯­è¨€åˆ‡æ¢
+  if (!$('fb-modal').classList.contains('hidden')) openFeedback();         // åé¦ˆå¼¹çª—æŠ¥å‘Šéšè¯­è¨€åˆ‡æ¢
   if (!$('custom-form-card').classList.contains('hidden')) $('cf-title').textContent = editingCustomId ? t('cfTitleEdit') : t('cfTitleNew');
-  renderQrFrame();                                                          // 二维码同步帧（如可见）
+  renderQrFrame();                                                          // äºŒç»´ç åŒæ­¥å¸§ï¼ˆå¦‚å¯è§ï¼‰
   if (state._lastCamErr && !$('cam-retry').classList.contains('hidden')) showCameraError(state._lastCamErr, state._lastCamIsModel);
 });
 renderExChips(); renderCollectLabels(getEx(activeExId())); resetAgg();
@@ -6691,7 +6691,7 @@ renderProfile(); renderReminder(); renderCloud(); renderAuth();
 renderTodayPlan(); renderPlanList();
 renderVoice();
 renderSedentary();
-// v2.19：体态评估页初始化（选择体态 / 开始与演示按钮）
+// v2.19ï¼šä½“æ€è¯„ä¼°é¡µåˆå§‹åŒ–ï¼ˆé€‰æ‹©ä½“æ€ / å¼€å§‹ä¸Žæ¼”ç¤ºæŒ‰é’®ï¼‰
 renderPaUI();
 document.querySelectorAll('.pa-kind').forEach((b) => b.addEventListener('click', () => {
   paState.kind = b.dataset.pa;
@@ -6701,46 +6701,46 @@ document.querySelectorAll('.pa-kind').forEach((b) => b.addEventListener('click',
 }));
 $('btn-pa-start').addEventListener('click', () => { paStart(false); });
 $('btn-pa-demo').addEventListener('click', () => { paStart(true); });
-// v2.20：功能测试页初始化
+// v2.20ï¼šåŠŸèƒ½æµ‹è¯•é¡µåˆå§‹åŒ–
 renderFtUI();
 $('btn-ft-start').addEventListener('click', () => { ftStart(ftState.key, false); });
 $('btn-ft-demo').addEventListener('click', () => { ftStart(ftState.key, true); });
 $('btn-ft-battery').addEventListener('click', () => { ftStart('battery', false); });
-window.__ftBatteryDemo = () => ftStart('battery', true);   // 测试钩子：完整测试演示模式
-// v2.21：今日总览 + 跟练初始化
+window.__ftBatteryDemo = () => ftStart('battery', true);   // æµ‹è¯•é’©å­ï¼šå®Œæ•´æµ‹è¯•æ¼”ç¤ºæ¨¡å¼
+// v2.21ï¼šä»Šæ—¥æ€»è§ˆ + è·Ÿç»ƒåˆå§‹åŒ–
 renderHome();
 renderGuide();
 renderTrainToday();
 renderStorageSize();
 renderLastBackup();
-navLabelSync();                                          // v2.21.10：本地化后再同步导航 aria-label
-renderPain(); renderPainStrip();                         // v2.22.0：疼痛卡初始化
-renderEdu();                                             // v2.23.0：康复小课堂初始化
-renderReport();                                          // v2.24.0：治疗师报告摘要初始化
-renderRomUI(); renderRomHistory(); renderRomResult(null); // v2.26.0：ROM 测量初始化
-renderPromUI(); renderPromHistory();                     // v2.27.0：PROMs 量表初始化
-renderAiPlan(); renderAiEngine();                        // v2.28.0：自适应引擎初始化
-renderPath();                                            // v2.29.0：康复路径初始化
-renderCamCard();                                         // v2.30.0：影像设置初始化
-renderCareLoop();                                        // v2.31.0：康复闭环初始化
-renderRelayState();                                      // v2.32.0：端手接力状态
-renderBlockSub(); renderRecheck();                        // v2.33.0：三块式架构与复评页初始化
-window.__gwSkip = () => gwFinish(true);                   // 测试钩子：直接完成当前跟练
+navLabelSync();                                          // v2.21.10ï¼šæœ¬åœ°åŒ–åŽå†åŒæ­¥å¯¼èˆª aria-label
+renderPain(); renderPainStrip();                         // v2.22.0ï¼šç–¼ç—›å¡åˆå§‹åŒ–
+renderEdu();                                             // v2.23.0ï¼šåº·å¤å°è¯¾å ‚åˆå§‹åŒ–
+renderReport();                                          // v2.24.0ï¼šæ²»ç–—å¸ˆæŠ¥å‘Šæ‘˜è¦åˆå§‹åŒ–
+renderRomUI(); renderRomHistory(); renderRomResult(null); // v2.26.0ï¼šROM æµ‹é‡åˆå§‹åŒ–
+renderPromUI(); renderPromHistory();                     // v2.27.0ï¼šPROMs é‡è¡¨åˆå§‹åŒ–
+renderAiPlan(); renderAiEngine();                        // v2.28.0ï¼šè‡ªé€‚åº”å¼•æ“Žåˆå§‹åŒ–
+renderPath();                                            // v2.29.0ï¼šåº·å¤è·¯å¾„åˆå§‹åŒ–
+renderCamCard();                                         // v2.30.0ï¼šå½±åƒè®¾ç½®åˆå§‹åŒ–
+renderCareLoop();                                        // v2.31.0ï¼šåº·å¤é—­çŽ¯åˆå§‹åŒ–
+renderRelayState();                                      // v2.32.0ï¼šç«¯æ‰‹æŽ¥åŠ›çŠ¶æ€
+renderBlockSub(); renderRecheck();                        // v2.33.0ï¼šä¸‰å—å¼æž¶æž„ä¸Žå¤è¯„é¡µåˆå§‹åŒ–
+window.__gwSkip = () => gwFinish(true);                   // æµ‹è¯•é’©å­ï¼šç›´æŽ¥å®Œæˆå½“å‰è·Ÿç»ƒ
 showOnboard();
-setTimeout(reminderCatchUp, 4000);            // 错过提醒时间 → 打开时补一次
-// 开发模式：?cfg=1 显示配置入口（普通用户永远看不到；密钥写死后由 CLOUD_HARDCODED 生效）
+setTimeout(reminderCatchUp, 4000);            // é”™è¿‡æé†’æ—¶é—´ â†’ æ‰“å¼€æ—¶è¡¥ä¸€æ¬¡
+// å¼€å‘æ¨¡å¼ï¼š?cfg=1 æ˜¾ç¤ºé…ç½®å…¥å£ï¼ˆæ™®é€šç”¨æˆ·æ°¸è¿œçœ‹ä¸åˆ°ï¼›å¯†é’¥å†™æ­»åŽç”± CLOUD_HARDCODED ç”Ÿæ•ˆï¼‰
 if (location.search.includes('cfg')) {
   $('btn-auth-cfg-toggle').classList.remove('hidden');
   $('btn-config-server').classList.remove('hidden');
 }
 $('btn-collect-label').textContent = t('btnCollect');
 setStartBtn('btnStart', 'play');
-// 登录用户：启动后自动同步一次；自主更新检测（每天一次，空闲时网页版全自动）
+// ç™»å½•ç”¨æˆ·ï¼šå¯åŠ¨åŽè‡ªåŠ¨åŒæ­¥ä¸€æ¬¡ï¼›è‡ªä¸»æ›´æ–°æ£€æµ‹ï¼ˆæ¯å¤©ä¸€æ¬¡ï¼Œç©ºé—²æ—¶ç½‘é¡µç‰ˆå…¨è‡ªåŠ¨ï¼‰
 if (cloudCfg() && cloudSession()) setTimeout(() => cloudSync().catch(() => {}), 2500);
 if (!location.search.includes('updatetest')) setTimeout(() => checkUpdate(false), 6000);
-// AI 系统管家：启动体检 + 主动提醒 + 全局异常收集
+// AI ç³»ç»Ÿç®¡å®¶ï¼šå¯åŠ¨ä½“æ£€ + ä¸»åŠ¨æé†’ + å…¨å±€å¼‚å¸¸æ”¶é›†
 aiProactive();
-// 标题随语言切换（中文 → 康复AI）
+// æ ‡é¢˜éšè¯­è¨€åˆ‡æ¢ï¼ˆä¸­æ–‡ â†’ åº·å¤AIï¼‰
 const syncTitle = () => { document.title = t('pageTitle'); };
 syncTitle();
 onLangChanged(syncTitle);
@@ -6754,7 +6754,7 @@ $('btn-fb-copy').addEventListener('click', copyFeedback);
 $('btn-fb-close').addEventListener('click', () => $('fb-modal').classList.add('hidden'));
 $('fb-modal').addEventListener('click', (ev) => { if (ev.target === $('fb-modal')) $('fb-modal').classList.add('hidden'); });
 $('fb-text').addEventListener('input', openFeedback);
-// 关于：版本号 + 分享
+// å…³äºŽï¼šç‰ˆæœ¬å· + åˆ†äº«
 $('about-version').textContent = t('versionLabel', { v: APP_VERSION });
 $('btn-check-update').addEventListener('click', () => checkUpdate(true));
 $('btn-share').addEventListener('click', async () => {
@@ -6771,7 +6771,7 @@ $('btn-share').addEventListener('click', async () => {
     catch { toast(t('shareFail')); }
   }
 });
-// PWA：可安装到主屏幕 + 离线可用 + 自主更新（新版就绪 → 自动切换 → 自动重启）
+// PWAï¼šå¯å®‰è£…åˆ°ä¸»å±å¹• + ç¦»çº¿å¯ç”¨ + è‡ªä¸»æ›´æ–°ï¼ˆæ–°ç‰ˆå°±ç»ª â†’ è‡ªåŠ¨åˆ‡æ¢ â†’ è‡ªåŠ¨é‡å¯ï¼‰
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('./sw.js').then((reg) => {
@@ -6783,15 +6783,15 @@ if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
         nw.addEventListener('statechange', () => {
           if (nw.state !== 'installed' || !navigator.serviceWorker.controller) return;
           if (updState.autoApply) {
-            nw.postMessage({ type: 'SKIP_WAITING' });   // 立即接管，马上生效
+            nw.postMessage({ type: 'SKIP_WAITING' });   // ç«‹å³æŽ¥ç®¡ï¼Œé©¬ä¸Šç”Ÿæ•ˆ
           } else {
-            toast(t('swUpdate'));                        // 有更新但训练中 → 只提示
+            toast(t('swUpdate'));                        // æœ‰æ›´æ–°ä½†è®­ç»ƒä¸­ â†’ åªæç¤º
           }
         });
       });
     }).catch(() => {});
     navigator.serviceWorker.addEventListener('controllerchange', () => {
-      if (!updState.autoApply) return;                   // 仅自主更新时自动重启
+      if (!updState.autoApply) return;                   // ä»…è‡ªä¸»æ›´æ–°æ—¶è‡ªåŠ¨é‡å¯
       updState.applied = true;
       toast(t('updAutoDone', { v: updState.info ? updState.info.version : '' }));
       setTimeout(() => location.reload(), 800);
@@ -6799,7 +6799,7 @@ if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
   });
 }
 if (location.hash === '#selftest') selfTest();
-// 微信内置浏览器不支持摄像头 —— 打开时就提示用系统浏览器
+// å¾®ä¿¡å†…ç½®æµè§ˆå™¨ä¸æ”¯æŒæ‘„åƒå¤´ â€”â€” æ‰“å¼€æ—¶å°±æç¤ºç”¨ç³»ç»Ÿæµè§ˆå™¨
 if (/micromessenger/i.test(navigator.userAgent)) {
   const fb = $('feedback');
   fb.classList.remove('hidden');
@@ -6807,33 +6807,33 @@ if (/micromessenger/i.test(navigator.userAgent)) {
   fb.className = 'feedback warn';
   fb._last = 'wechat';
 }
-// ?autostart=1 → 页面加载后自动开始分析（测试 / 快捷进入用）
+// ?autostart=1 â†’ é¡µé¢åŠ è½½åŽè‡ªåŠ¨å¼€å§‹åˆ†æžï¼ˆæµ‹è¯• / å¿«æ·è¿›å…¥ç”¨ï¼‰
 if (location.search.includes('autostart')) setTimeout(() => toggleStart(), 800);
-// ?updatetest=1 → 模拟发现新版本（测试更新卡片 UI + AI 管家更新感知，不真实下载）
+// ?updatetest=1 â†’ æ¨¡æ‹Ÿå‘çŽ°æ–°ç‰ˆæœ¬ï¼ˆæµ‹è¯•æ›´æ–°å¡ç‰‡ UI + AI ç®¡å®¶æ›´æ–°æ„ŸçŸ¥ï¼Œä¸çœŸå®žä¸‹è½½ï¼‰
 if (location.search.includes('updatetest')) {
   setTimeout(() => {
-    const fake = { version: '9.9.9', apk: '', releaseUrl: 'https://github.com/xushengqin666-cell/rehab-ai/releases/latest', notes: '测试更新说明 TestNotes', important: true };
+    const fake = { version: '9.9.9', apk: '', releaseUrl: 'https://github.com/xushengqin666-cell/rehab-ai/releases/latest', notes: 'æµ‹è¯•æ›´æ–°è¯´æ˜Ž TestNotes', important: true };
     updState.info = fake;
     showUpdateCard(fake);
     aiRun();
   }, 800);
 }
-// ?modeltest=1 → 自检 AI 模型能否加载（wasm/MIME/路径，供部署验证用）
+// ?modeltest=1 â†’ è‡ªæ£€ AI æ¨¡åž‹èƒ½å¦åŠ è½½ï¼ˆwasm/MIME/è·¯å¾„ï¼Œä¾›éƒ¨ç½²éªŒè¯ç”¨ï¼‰
 if (location.search.includes('modeltest')) {
   (async () => {
     const out = $('selftest-out');
     const t0 = performance.now();
     try {
       await loadModel();
-      out.innerHTML += `<div class="st-pass">✅ model load OK (${Math.round(performance.now() - t0)}ms)</div>`;
+      out.innerHTML += `<div class="st-pass">âœ… model load OK (${Math.round(performance.now() - t0)}ms)</div>`;
       console.log('MODELTEST: PASS');
     } catch (e) {
-      out.innerHTML += `<div class="st-fail">❌ model load FAIL: ${e.message}</div>`;
+      out.innerHTML += `<div class="st-fail">âŒ model load FAIL: ${e.message}</div>`;
       console.log('MODELTEST: FAIL', e);
     }
   })();
 }
-// ?alarmtest=1 → 触发一次警报 UI（声音+震动+闪烁），上市验收用
+// ?alarmtest=1 â†’ è§¦å‘ä¸€æ¬¡è­¦æŠ¥ UIï¼ˆå£°éŸ³+éœ‡åŠ¨+é—ªçƒï¼‰ï¼Œä¸Šå¸‚éªŒæ”¶ç”¨
 if (location.search.includes('alarmtest')) {
   setTimeout(() => {
     const fb = $('feedback');
@@ -6843,24 +6843,24 @@ if (location.search.includes('alarmtest')) {
     alarmBurst();
   }, 1000);
 }
-// ?synctest=1 → 二维码同步编解码/合并自检
+// ?synctest=1 â†’ äºŒç»´ç åŒæ­¥ç¼–è§£ç /åˆå¹¶è‡ªæ£€
 if (location.search.includes('synctest')) {
   (async () => {
     const out = $('selftest-out');
     const log = (n, okv, d) => {
-      out.innerHTML += `<div class="${okv ? 'st-pass' : 'st-fail'}">${okv ? '✅' : '❌'} ${n} ${d || ''}</div>`;
+      out.innerHTML += `<div class="${okv ? 'st-pass' : 'st-fail'}">${okv ? 'âœ…' : 'âŒ'} ${n} ${d || ''}</div>`;
       console.log('SYNCTEST:', n, okv ? 'PASS' : 'FAIL');
     };
     try {
       const data = { app: 'RehabAI', v: 3, ts: Date.now(), sessions: [{ id: 'a1', ts: 111, reps: 5 }], assessments: [{ id: 'b1', ts: 222, score: 2 }], appts: [], customExercises: [] };
       const b64 = await gzipB64(JSON.stringify(data));
       const back = JSON.parse(await gunzipB64(b64));
-      log('gzip 往返编解码', back.sessions?.[0]?.id === 'a1' && back.assessments?.[0]?.id === 'b1');
+      log('gzip å¾€è¿”ç¼–è§£ç ', back.sessions?.[0]?.id === 'a1' && back.assessments?.[0]?.id === 'b1');
       const qr = window.qrcode(0, 'L');
       qr.addData(SYNC_PREFIX + '|0|1|' + b64.slice(0, 200), 'Byte');
       qr.make();
-      log('二维码生成', qr.getModuleCount() > 10 && qr.isDark(0, 0));
-      // 真实往返：画到 canvas 像素 → jsQR 解码
+      log('äºŒç»´ç ç”Ÿæˆ', qr.getModuleCount() > 10 && qr.isDark(0, 0));
+      // çœŸå®žå¾€è¿”ï¼šç”»åˆ° canvas åƒç´  â†’ jsQR è§£ç 
       const cv = document.createElement('canvas');
       const n2 = qr.getModuleCount();
       const S = n2 * 10;
@@ -6871,16 +6871,16 @@ if (location.search.includes('synctest')) {
       for (let r2 = 0; r2 < n2; r2++) for (let c2 = 0; c2 < n2; c2++) if (qr.isDark(r2, c2)) cctx.fillRect(c2 * 10, r2 * 10, 10.5, 10.5);
       const img2 = cctx.getImageData(0, 0, S, S);
       const dec = window.jsQR(img2.data, S, S);
-      log('真实二维码 生成→像素→解码', !!dec && dec.data === SYNC_PREFIX + '|0|1|' + b64.slice(0, 200));
+      log('çœŸå®žäºŒç»´ç  ç”Ÿæˆâ†’åƒç´ â†’è§£ç ', !!dec && dec.data === SYNC_PREFIX + '|0|1|' + b64.slice(0, 200));
       const before = sget('rehab_sessions', []);
       sset('rehab_sessions', [{ id: 'x9', ts: 999, reps: 1 }]);
       mergeSyncData(back);
       const after = sget('rehab_sessions', []);
       sset('rehab_sessions', before);
-      log('数据合并(去重+保留双方)', after.length === 2 && after.some((s) => s.id === 'a1'));
-      log('jsQR 解码器可用', typeof window.jsQR === 'function');
+      log('æ•°æ®åˆå¹¶(åŽ»é‡+ä¿ç•™åŒæ–¹)', after.length === 2 && after.some((s) => s.id === 'a1'));
+      log('jsQR è§£ç å™¨å¯ç”¨', typeof window.jsQR === 'function');
     } catch (e) {
-      log('异常', false, e.message);
+      log('å¼‚å¸¸', false, e.message);
     }
   })();
 }

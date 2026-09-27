@@ -1,7 +1,7 @@
-// Service Worker — 离线策略：
-//   · 页面/JS/CSS 网络优先（更新及时生效），离线时回退缓存
-//   · 大文件（wasm / 模型 / vendor 库 / 图标）缓存优先（省流量、离线可用）
-const CACHE = 'rehab-v2.40.0';
+﻿// Service Worker â€” ç¦»çº¿ç­–ç•¥ï¼š
+//   Â· é¡µé¢/JS/CSS ç½‘ç»œä¼˜å…ˆï¼ˆæ›´æ–°åŠæ—¶ç”Ÿæ•ˆï¼‰ï¼Œç¦»çº¿æ—¶å›žé€€ç¼“å­˜
+//   Â· å¤§æ–‡ä»¶ï¼ˆwasm / æ¨¡åž‹ / vendor åº“ / å›¾æ ‡ï¼‰ç¼“å­˜ä¼˜å…ˆï¼ˆçœæµé‡ã€ç¦»çº¿å¯ç”¨ï¼‰
+const CACHE = 'rehab-v2.41.0';
 const PRECACHE = ['./', './index.html', './style.css', './demo.css', './app.js', './analysis.js', './demo.js', './ai.js', './i18n.js', './manifest.json', './icon-192.png', './icon-512.png'];
 const CACHE_FIRST = ['./vision_bundle.mjs', './vendor/qrcode.js', './vendor/jsqr.js', './pose_landmarker_full.task',
   './demo-media/squat.gif', './demo-media/lunge.gif', './demo-media/stepup.gif', './demo-media/shoulderraise.gif',
@@ -27,7 +27,7 @@ self.addEventListener('activate', (e) => {
 self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET') return;
   const url = new URL(e.request.url);
-  if (url.origin !== location.origin) return;   // 跨域（jsDelivr/Google 模型镜像）走网络
+  if (url.origin !== location.origin) return;   // è·¨åŸŸï¼ˆjsDelivr/Google æ¨¡åž‹é•œåƒï¼‰èµ°ç½‘ç»œ
   const rel = relPath(url);
   const cacheFirst = CACHE_FIRST.includes(rel) || rel.startsWith('/wasm/');
   if (cacheFirst) {

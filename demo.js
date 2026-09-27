@@ -281,7 +281,7 @@ export const REAL_DEMO = {
   stepup: 'demo-media/stepup.gif',
   shoulderraise: 'demo-media/shoulderraise.gif',
   // v2.39.0 追加：按动作模式就近对应（CDC 教材里没有同名动作，取模式最接近的一张，界面上会标明实际动作名）
-  bend: 'demo-media/backstretch.gif',        // 体前屈 ← 背部前屈拉伸
+  bend: 'demo-media/hamstringstretch.gif',   // v2.41.0 更正：体前屈 ← 腘绳肌拉伸（前屈类）；原来误用了 Backstretch（背部后伸类）
   hiphinge: 'demo-media/uprightrow.gif',     // 髋铰链 ← 俯身划船（髋铰链发力模式）
   pushup: 'demo-media/wallpushup.gif',       // 俯卧撑 ← 墙俯卧撑（俯卧撑退阶）
   plank: 'demo-media/plank.jpg',             // 平板支撑 ← 真人照片（公有领域）
