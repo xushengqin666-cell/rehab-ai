@@ -288,6 +288,7 @@ export const REAL_DEMO = {
   sitstand: 'demo-media/squat.gif',          // 椅子起坐 ← 同一套的扶椅下蹲（CDC 教材里坐站起立即用椅子）
   sitting: 'demo-media/kneeext.gif',         // 坐姿 ← 坐姿伸膝（同为人坐姿示范）
   standing: 'demo-media/toestand.gif',       // 站姿 ← 提踵（同为站立位示范，双脚并拢站立）
+  bridge: 'demo-media/bridge.jpg',           // 臀桥 ← 桥式（Setu Bandhasana）真人照片，CC BY 3.0
 };
 // 其余真人示范（可挂到自定义动作或“更多动作”里）
 export const REAL_EXTRA = [

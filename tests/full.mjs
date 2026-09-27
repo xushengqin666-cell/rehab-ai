@@ -67,6 +67,7 @@ let camOn = false;
 for (let i = 0; i < 30; i++) { await sleep(1000); if (await evl(`document.getElementById('btn-start-label').textContent === '停止分析'`)) { camOn = true; break; } }
 camOn ? ok('摄像头启动 → 模型加载 → 分析运行') : bad('摄像头流程失败');
 (await evl(`document.getElementById('btn-start-label').textContent === '停止分析'`)) ? ok('按钮状态=停止分析') : bad('按钮状态异常');
+await sleep(1500);   // 模型加载完成后计时器才开始走秒，等一拍再断言（原先查得太早，机器忙时会误报）
 (await evl(`!document.getElementById('train-timer').classList.contains('hidden') && document.getElementById('train-timer').textContent.includes('⏱')`)) ? ok('训练时长计时器显示（画面角标）') : bad('计时器缺失');
 await evl(`document.getElementById('btn-start').click()`);
 await sleep(900);

@@ -1,5 +1,5 @@
-﻿// åº·å¤AI Â· ç«æŸ´äººå§¿åŠ¿åˆ†æž â€” æµè§ˆå™¨ç«¯ Appï¼ˆæ‰‹æœº/ç”µè„‘é€šç”¨ï¼Œæ•°æ®å­˜æœ¬æœºï¼‰
-// æ”¯æŒï¼šæ·±è¹²/å¼“æ­¥è¹²/ä¿¯å§æ’‘/è‡ªå®šä¹‰åŠ¨ä½œã€å®žæ—¶ç«æŸ´äººã€æ•°æ®é‡‡é›†é—­çŽ¯ã€è®°å½•/è¯„ä¼°/æ—¥ç¨‹
+﻿// Ã¥ÂºÂ·Ã¥Â¤ÂAI Ã‚Â· Ã§ÂÂ«Ã¦Å¸Â´Ã¤ÂºÂºÃ¥Â§Â¿Ã¥Å Â¿Ã¥Ë†â€ Ã¦Å¾Â Ã¢â‚¬â€ Ã¦ÂµÂÃ¨Â§Ë†Ã¥â„¢Â¨Ã§Â«Â¯ AppÃ¯Â¼Ë†Ã¦â€°â€¹Ã¦Å“Âº/Ã§â€ÂµÃ¨â€žâ€˜Ã©â‚¬Å¡Ã§â€Â¨Ã¯Â¼Å’Ã¦â€¢Â°Ã¦ÂÂ®Ã¥Â­ËœÃ¦Å“Â¬Ã¦Å“ÂºÃ¯Â¼â€°
+// Ã¦â€Â¯Ã¦Å’ÂÃ¯Â¼Å¡Ã¦Â·Â±Ã¨Â¹Â²/Ã¥Â¼â€œÃ¦Â­Â¥Ã¨Â¹Â²/Ã¤Â¿Â¯Ã¥ÂÂ§Ã¦â€™â€˜/Ã¨â€¡ÂªÃ¥Â®Å¡Ã¤Â¹â€°Ã¥Å Â¨Ã¤Â½Å“Ã£â‚¬ÂÃ¥Â®Å¾Ã¦â€”Â¶Ã§ÂÂ«Ã¦Å¸Â´Ã¤ÂºÂºÃ£â‚¬ÂÃ¦â€¢Â°Ã¦ÂÂ®Ã©â€¡â€¡Ã©â€ºâ€ Ã©â€”Â­Ã§Å½Â¯Ã£â‚¬ÂÃ¨Â®Â°Ã¥Â½â€¢/Ã¨Â¯â€žÃ¤Â¼Â°/Ã¦â€”Â¥Ã§Â¨â€¹
 import { FilesetResolver, PoseLandmarker } from './vision_bundle.mjs';
 import { t, getLang, locale, initI18n, onLangChanged } from './i18n.js';
 import {
@@ -10,13 +10,13 @@ import {
 import { healthCheck, buildFeedbackReport, logAiError, aiErrors, aiStats, aiStatsGet, aiFeedbackAdd, aiSessionComment, generatePlan } from './ai.js';
 import { DEMOS, hasDemo, demoPose, demoParams, demoFigure, poseOf, demoAngles, balanceOf, realDemo, REAL_EXTRA, realExtraSvg, CDC_CREDIT, clipPut, clipAll, clipDel, clipGet, clipSetForEx, clipForEx, idbAvailable } from './demo.js';
 
-/* ============ åŸºç¡€å·¥å…· ============ */
+/* ============ Ã¥Å¸ÂºÃ§Â¡â‚¬Ã¥Â·Â¥Ã¥â€¦Â· ============ */
 const $ = (id) => document.getElementById(id);
 const LS = {
   get(k, d) { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } },
   set(k, v) { localStorage.setItem(k, JSON.stringify(v)); },
 };
-// ============ è´¦å·ç³»ç»Ÿï¼šæœ¬åœ°è´¦å·ï¼ˆPBKDF2 åŠ å¯†ï¼‰+ æŒ‰è´¦å·åˆ†åŒºå­˜å‚¨ ============
+// ============ Ã¨Â´Â¦Ã¥ÂÂ·Ã§Â³Â»Ã§Â»Å¸Ã¯Â¼Å¡Ã¦Å“Â¬Ã¥Å“Â°Ã¨Â´Â¦Ã¥ÂÂ·Ã¯Â¼Ë†PBKDF2 Ã¥Å Â Ã¥Â¯â€ Ã¯Â¼â€°+ Ã¦Å’â€°Ã¨Â´Â¦Ã¥ÂÂ·Ã¥Ë†â€ Ã¥Å’ÂºÃ¥Â­ËœÃ¥â€šÂ¨ ============
 const accountCurrent = () => LS.get('rehab_current_user', null);
 const ukey = (k) => { const u = accountCurrent(); return u ? 'u:' + u + ':' + k : k; };
 const sget = (k, d) => LS.get(ukey(k), d);
@@ -25,7 +25,7 @@ const sdel = (k) => localStorage.removeItem(ukey(k));
 const b64e = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf)));
 const b64d = (s) => new Uint8Array([...atob(s)].map((c) => c.charCodeAt(0)));
 async function pbkdf2(pass, salt) {
-  if (!crypto?.subtle) {   // éžå®‰å…¨çŽ¯å¢ƒå…œåº•ï¼ˆç®€å•æ•£åˆ—ï¼Œä»…æœ¬åœ°ä½“éªŒç”¨ï¼‰
+  if (!crypto?.subtle) {   // Ã©ÂÅ¾Ã¥Â®â€°Ã¥â€¦Â¨Ã§Å½Â¯Ã¥Â¢Æ’Ã¥â€¦Å“Ã¥Âºâ€¢Ã¯Â¼Ë†Ã§Â®â‚¬Ã¥Ââ€¢Ã¦â€¢Â£Ã¥Ë†â€”Ã¯Â¼Å’Ã¤Â»â€¦Ã¦Å“Â¬Ã¥Å“Â°Ã¤Â½â€œÃ©ÂªÅ’Ã§â€Â¨Ã¯Â¼â€°
     let h = 5381;
     const str = pass + ':' + String.fromCharCode(...new Uint8Array(salt));
     for (let i = 0; i < str.length; i++) h = ((h << 5) + h + str.charCodeAt(i)) | 0;
@@ -58,7 +58,7 @@ function accountLogout() {
   localStorage.removeItem('rehab_guest');
   setCustomKey(ukey('rehab_custom_ex'));
 }
-// åˆ é™¤è´¦å·ï¼šæ¸…é™¤è¯¥è´¦å·å…¨éƒ¨åˆ†åŒºæ•°æ® + è´¦å·æ¡ç›®ï¼ˆGoogle Play æ”¿ç­–è¦æ±‚æä¾›è´¦å·åˆ é™¤å…¥å£ï¼‰
+// Ã¥Ë†Â Ã©â„¢Â¤Ã¨Â´Â¦Ã¥ÂÂ·Ã¯Â¼Å¡Ã¦Â¸â€¦Ã©â„¢Â¤Ã¨Â¯Â¥Ã¨Â´Â¦Ã¥ÂÂ·Ã¥â€¦Â¨Ã©Æ’Â¨Ã¥Ë†â€ Ã¥Å’ÂºÃ¦â€¢Â°Ã¦ÂÂ® + Ã¨Â´Â¦Ã¥ÂÂ·Ã¦ÂÂ¡Ã§â€ºÂ®Ã¯Â¼Ë†Google Play Ã¦â€Â¿Ã§Â­â€“Ã¨Â¦ÂÃ¦Â±â€šÃ¦ÂÂÃ¤Â¾â€ºÃ¨Â´Â¦Ã¥ÂÂ·Ã¥Ë†Â Ã©â„¢Â¤Ã¥â€¦Â¥Ã¥ÂÂ£Ã¯Â¼â€°
 function accountDelete() {
   const u = accountCurrent();
   if (!u) return;
@@ -71,13 +71,13 @@ function accountDelete() {
   accountLogout();
   localStorage.removeItem('rehab_cloud_session');
   invalidateCustom();
-  reloadCollectBuf();                               // åˆ é™¤è´¦å· â†’ é‡è½½ç¼“å†²åŒºï¼ˆè®¿å®¢ç©ºé—´ï¼‰
+  reloadCollectBuf();                               // Ã¥Ë†Â Ã©â„¢Â¤Ã¨Â´Â¦Ã¥ÂÂ· Ã¢â€ â€™ Ã©â€¡ÂÃ¨Â½Â½Ã§Â¼â€œÃ¥â€ Â²Ã¥Å’ÂºÃ¯Â¼Ë†Ã¨Â®Â¿Ã¥Â®Â¢Ã§Â©ÂºÃ©â€”Â´Ã¯Â¼â€°
   renderCloud(); renderAuth();
   renderRecords(); renderAssessments(); renderAppts(); renderCustomList(); renderExChips();
   renderProfile(); renderTodayPlan(); renderPlanList(); renderAchievements(); renderCollectCount(); renderGoal();
   toast(t('acctDeleted'));
 }
-// é¦–æ¬¡æ³¨å†Œè´¦å·æ—¶ï¼ŒæŠŠæœ¬æœºåŽŸæœ‰æ•°æ®è¿ç§»è¿›è´¦å·ç©ºé—´
+// Ã©Â¦â€“Ã¦Â¬Â¡Ã¦Â³Â¨Ã¥â€ Å’Ã¨Â´Â¦Ã¥ÂÂ·Ã¦â€”Â¶Ã¯Â¼Å’Ã¦Å Å Ã¦Å“Â¬Ã¦Å“ÂºÃ¥Å½Å¸Ã¦Å“â€°Ã¦â€¢Â°Ã¦ÂÂ®Ã¨Â¿ÂÃ§Â§Â»Ã¨Â¿â€ºÃ¨Â´Â¦Ã¥ÂÂ·Ã§Â©ÂºÃ©â€”Â´
 function migrateDeviceData(email) {
   if (LS.get('rehab_migrated_to', null)) return;
   const keys = ['rehab_sessions', 'rehab_assessments', 'rehab_appts', 'rehab_custom_ex', 'rehab_collect', 'rehab_plan', 'rehab_plan_done', 'rehab_profile'];
@@ -94,12 +94,12 @@ function migrateDeviceData(email) {
 }
 const fmtDate = (ts) => new Date(ts).toLocaleString(locale(), { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-const APP_VERSION = 'v2.41.0';
+const APP_VERSION = 'v2.42.0';
 const exName = (e) => (e.custom ? e.name : t(e.nameKey));
 const exDesc = (e) => (e.custom ? e.desc : t(e.descKey));
 const depthTxt = (d) => t('depth' + (d ? d.charAt(0).toUpperCase() + d.slice(1) : 'Ok')) || d;
 
-/* ============ å®šåˆ¶å›¾æ ‡ç»„ï¼ˆçº¿ç¨¿é£Žæ ¼ï¼Œæ›¿ä»£ emojiï¼‰ ============ */
+/* ============ Ã¥Â®Å¡Ã¥Ë†Â¶Ã¥â€ºÂ¾Ã¦Â â€¡Ã§Â»â€žÃ¯Â¼Ë†Ã§ÂºÂ¿Ã§Â¨Â¿Ã©Â£Å½Ã¦Â Â¼Ã¯Â¼Å’Ã¦â€ºÂ¿Ã¤Â»Â£ emojiÃ¯Â¼â€° ============ */
 const ICONS = {
   squat: '<circle cx="12" cy="4.6" r="2.1"/><path d="M12 6.7v5.8M12 12.5 8.6 15.6 10.8 19.6M12 9.6l4.2-.8"/>',
   lunge: '<circle cx="9.8" cy="4.6" r="2.1"/><path d="M9.8 6.7v5.5M9.8 12.2l4.8 2.9 4.6 4.4M9.8 12.2l-4.2 2.3-2.2 4.6M9.8 9l4.4-1"/>',
@@ -150,14 +150,14 @@ function icon(name, cls = '') {
 const fbWrap = (ico, html) => `<span class="fb-ico">${icon(ico)}</span><div class="fb-body">${html}</div>`;
 const emptyBox = (ico, key) => `<div class="empty">${icon(ico)}<span>${t(key)}</span></div>`;
 
-/* ============ ç«æŸ´äººç»˜åˆ¶ ============ */
+/* ============ Ã§ÂÂ«Ã¦Å¸Â´Ã¤ÂºÂºÃ§Â»ËœÃ¥Ë†Â¶ ============ */
 const BODY = '#4ade80', JOINT = '#22d3ee', BAD = '#ef4444', HEAD = '#facc15';
 const CONNECTIONS = PoseLandmarker.POSE_CONNECTIONS.map((c) => [c.start, c.end]);
 let currentVG = null;
 
 function drawStick(ctx, lms, w, h, mirror) {
   const px = (lm) => { let x = lm.x * w; if (mirror) x = w - x; return [x, lm.y * h]; };
-  const vis = (lm) => (lm.visibility ?? 1) >= 0.5;   // åªç”»å¯è§å…³èŠ‚ï¼Œé¿å…å¹½çµçº¿æ¡
+  const vis = (lm) => (lm.visibility ?? 1) >= 0.5;   // Ã¥ÂÂªÃ§â€Â»Ã¥ÂÂ¯Ã¨Â§ÂÃ¥â€¦Â³Ã¨Å â€šÃ¯Â¼Å’Ã©ÂÂ¿Ã¥â€¦ÂÃ¥Â¹Â½Ã§ÂÂµÃ§ÂºÂ¿Ã¦ÂÂ¡
   ctx.lineCap = 'round'; ctx.lineJoin = 'round';
   ctx.strokeStyle = BODY; ctx.lineWidth = Math.max(3, w * 0.008);
   ctx.shadowColor = BODY; ctx.shadowBlur = 8;
@@ -183,7 +183,7 @@ function drawStick(ctx, lms, w, h, mirror) {
   ctx.shadowBlur = 0;
 }
 
-/* ============ çŠ¶æ€ ============ */
+/* ============ Ã§Å Â¶Ã¦â‚¬Â ============ */
 const state = {
   running: false, photoMode: false, collectMode: false,
   landmarker: null, videoOn: false,
@@ -200,18 +200,18 @@ const getEx = (id) => {
   if (id === 'auto') return EXERCISES[state.autoEx] || EXERCISES.squat;
   return EXERCISES[id] || customList().find((e) => e.id === id);
 };
-const activeExId = () => LS.get('rehab_active_ex', 'auto');   // é»˜è®¤æ™ºèƒ½è¯†åˆ«
+const activeExId = () => LS.get('rehab_active_ex', 'auto');   // Ã©Â»ËœÃ¨Â®Â¤Ã¦â„¢ÂºÃ¨Æ’Â½Ã¨Â¯â€ Ã¥Ë†Â«
 
-/* ============ AI æ¨¡åž‹åŠ è½½ï¼ˆå¤šé•œåƒ + è¶…æ—¶ä¿æŠ¤ï¼‰ ============ */
-// jsDelivr é•œåƒå›½å†…è®¿é—®æ›´å¿«ï¼ˆåŒä»“åº“æ–‡ä»¶ï¼‰ï¼›googleapis ä½œæœ€åŽå…œåº•
+/* ============ AI Ã¦Â¨Â¡Ã¥Å¾â€¹Ã¥Å Â Ã¨Â½Â½Ã¯Â¼Ë†Ã¥Â¤Å¡Ã©â€¢Å“Ã¥Æ’Â + Ã¨Â¶â€¦Ã¦â€”Â¶Ã¤Â¿ÂÃ¦Å Â¤Ã¯Â¼â€° ============ */
+// jsDelivr Ã©â€¢Å“Ã¥Æ’ÂÃ¥â€ºÂ½Ã¥â€ â€¦Ã¨Â®Â¿Ã©â€”Â®Ã¦â€ºÂ´Ã¥Â¿Â«Ã¯Â¼Ë†Ã¥ÂÅ’Ã¤Â»â€œÃ¥Âºâ€œÃ¦â€“â€¡Ã¤Â»Â¶Ã¯Â¼â€°Ã¯Â¼â€ºgoogleapis Ã¤Â½Å“Ã¦Å“â‚¬Ã¥ÂÅ½Ã¥â€¦Å“Ã¥Âºâ€¢
 const CDN_BASE = 'https://cdn.jsdelivr.net/gh/xushengqin666-cell/rehab-ai@main';
 const GOOGLE_MODEL_URL = 'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_full/float16/1/pose_landmarker_full.task';
 const withTimeout = (p, ms) => Promise.race([
   p,
-  new Promise((_, rej) => setTimeout(() => rej(new Error('æ¨¡åž‹åŠ è½½è¶…æ—¶(ç½‘ç»œæ…¢)')), ms)),
+  new Promise((_, rej) => setTimeout(() => rej(new Error('Ã¦Â¨Â¡Ã¥Å¾â€¹Ã¥Å Â Ã¨Â½Â½Ã¨Â¶â€¦Ã¦â€”Â¶(Ã§Â½â€˜Ã§Â»Å“Ã¦â€¦Â¢)')), ms)),
 ]);
 async function loadModel() {
-  // wasm è¿è¡Œæ—¶ï¼šæœ¬åœ°ä¼˜å…ˆï¼Œå¤±è´¥èµ° jsDelivrï¼ˆå›½å†…é€Ÿåº¦å¿«ï¼‰
+  // wasm Ã¨Â¿ÂÃ¨Â¡Å’Ã¦â€”Â¶Ã¯Â¼Å¡Ã¦Å“Â¬Ã¥Å“Â°Ã¤Â¼ËœÃ¥â€¦Ë†Ã¯Â¼Å’Ã¥Â¤Â±Ã¨Â´Â¥Ã¨ÂµÂ° jsDelivrÃ¯Â¼Ë†Ã¥â€ºÂ½Ã¥â€ â€¦Ã©â‚¬Å¸Ã¥ÂºÂ¦Ã¥Â¿Â«Ã¯Â¼â€°
   let vision;
   try { vision = await FilesetResolver.forVisionTasks('./wasm'); }
   catch { vision = await FilesetResolver.forVisionTasks(CDN_BASE + '/wasm'); }
@@ -226,12 +226,12 @@ async function loadModel() {
     try {
       try { return await withTimeout(mk(url, 'GPU'), 90000); }
       catch { return await withTimeout(mk(url, 'CPU'), 90000); }
-    } catch (e) { lastErr = e; console.warn('æ¨¡åž‹åŠ è½½å¤±è´¥:', url, e); }
+    } catch (e) { lastErr = e; console.warn('Ã¦Â¨Â¡Ã¥Å¾â€¹Ã¥Å Â Ã¨Â½Â½Ã¥Â¤Â±Ã¨Â´Â¥:', url, e); }
   }
-  throw new Error(t('modelLoadFail') + (lastErr ? ' â€” ' + lastErr.message : ''));
+  throw new Error(t('modelLoadFail') + (lastErr ? ' Ã¢â‚¬â€ ' + lastErr.message : ''));
 }
 
-/* ============ æ‘„åƒå¤´ï¼ˆå¢žå¼ºç‰ˆï¼šè¯Šæ–­ / å¤šè®¾å¤‡ / è¶…æ—¶ / é‡è¯•ï¼‰ ============ */
+/* ============ Ã¦â€˜â€žÃ¥Æ’ÂÃ¥Â¤Â´Ã¯Â¼Ë†Ã¥Â¢Å¾Ã¥Â¼ÂºÃ§â€°Ë†Ã¯Â¼Å¡Ã¨Â¯Å Ã¦â€“Â­ / Ã¥Â¤Å¡Ã¨Â®Â¾Ã¥Â¤â€¡ / Ã¨Â¶â€¦Ã¦â€”Â¶ / Ã©â€¡ÂÃ¨Â¯â€¢Ã¯Â¼â€° ============ */
 function detectCameras() {
   return navigator.mediaDevices.enumerateDevices()
     .then((ds) => ds.filter((d) => d.kind === 'videoinput'))
@@ -252,26 +252,26 @@ function cameraErrorText(e) {
 async function openCameraWithTimeout(constraints, ms = 20000) {
   return Promise.race([
     navigator.mediaDevices.getUserMedia(constraints),
-    new Promise((_, rej) => setTimeout(() => rej(new DOMException('æ‰“å¼€è¶…æ—¶', 'TimeoutError')), ms)),
+    new Promise((_, rej) => setTimeout(() => rej(new DOMException('Ã¦â€°â€œÃ¥Â¼â‚¬Ã¨Â¶â€¦Ã¦â€”Â¶', 'TimeoutError')), ms)),
   ]);
 }
 async function openCamera() {
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    throw new DOMException('æµè§ˆå™¨ä¸æ”¯æŒæˆ–éžå®‰å…¨çŽ¯å¢ƒ', 'SecurityError');
+    throw new DOMException('Ã¦ÂµÂÃ¨Â§Ë†Ã¥â„¢Â¨Ã¤Â¸ÂÃ¦â€Â¯Ã¦Å’ÂÃ¦Ë†â€“Ã©ÂÅ¾Ã¥Â®â€°Ã¥â€¦Â¨Ã§Å½Â¯Ã¥Â¢Æ’', 'SecurityError');
   }
   state.cameras = await detectCameras();
-  if (!state.cameras.length) throw new DOMException('æœªæ£€æµ‹åˆ°æ‘„åƒå¤´', 'NoCamera');
-  const isIRLabel = (s) => /ir|çº¢å¤–/i.test(s || '');
-  // çº¢å¤–æ‘„åƒå¤´æ‹å‡ºæ¥æ˜¯å…¨é»‘çš„ â€”â€” æŠŠéž IR è®¾å¤‡æŽ’åœ¨å‰é¢ï¼Œå¹¶è·³è¿‡ IR æµ
+  if (!state.cameras.length) throw new DOMException('Ã¦Å“ÂªÃ¦Â£â‚¬Ã¦Âµâ€¹Ã¥Ë†Â°Ã¦â€˜â€žÃ¥Æ’ÂÃ¥Â¤Â´', 'NoCamera');
+  const isIRLabel = (s) => /ir|Ã§ÂºÂ¢Ã¥Â¤â€“/i.test(s || '');
+  // Ã§ÂºÂ¢Ã¥Â¤â€“Ã¦â€˜â€žÃ¥Æ’ÂÃ¥Â¤Â´Ã¦â€¹ÂÃ¥â€¡ÂºÃ¦ÂÂ¥Ã¦ËœÂ¯Ã¥â€¦Â¨Ã©Â»â€˜Ã§Å¡â€ž Ã¢â‚¬â€Ã¢â‚¬â€ Ã¦Å Å Ã©ÂÅ¾ IR Ã¨Â®Â¾Ã¥Â¤â€¡Ã¦Å½â€™Ã¥Å“Â¨Ã¥â€°ÂÃ©ÂÂ¢Ã¯Â¼Å’Ã¥Â¹Â¶Ã¨Â·Â³Ã¨Â¿â€¡ IR Ã¦ÂµÂ
   const devs = state.cameras.filter((c) => c.deviceId).sort((a, b) => (isIRLabel(a.label) ? 1 : 0) - (isIRLabel(b.label) ? 1 : 0));
   const nonIR = devs.filter((d) => !isIRLabel(d.label));
-  const cMain = camConstraints({ facingMode: 'user' });      // v2.30.0ï¼šæŒ‰å½±åƒåå¥½ï¼ˆ3:4 ç«–å¹…é»˜è®¤ï¼ŒåŒæ ·è·ç¦»èƒ½çœ‹åˆ°æ›´å¤šèº«ä½“ï¼‰
+  const cMain = camConstraints({ facingMode: 'user' });      // v2.30.0Ã¯Â¼Å¡Ã¦Å’â€°Ã¥Â½Â±Ã¥Æ’ÂÃ¥ÂÂÃ¥Â¥Â½Ã¯Â¼Ë†3:4 Ã§Â«â€“Ã¥Â¹â€¦Ã©Â»ËœÃ¨Â®Â¤Ã¯Â¼Å’Ã¥ÂÅ’Ã¦Â Â·Ã¨Â·ÂÃ§Â¦Â»Ã¨Æ’Â½Ã§Å“â€¹Ã¥Ë†Â°Ã¦â€ºÂ´Ã¥Â¤Å¡Ã¨ÂºÂ«Ã¤Â½â€œÃ¯Â¼â€°
   const cAny = camConstraints();
   const candidates = [
     { video: cMain, audio: false },
     { video: cAny, audio: false },
     { video: { width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false },
-    { video: { width: { ideal: 640 }, height: { ideal: 480 } }, audio: false },   // ä½Žé…è®¾å¤‡å…œåº•
+    { video: { width: { ideal: 640 }, height: { ideal: 480 } }, audio: false },   // Ã¤Â½Å½Ã©â€¦ÂÃ¨Â®Â¾Ã¥Â¤â€¡Ã¥â€¦Å“Ã¥Âºâ€¢
     ...devs.map((c) => ({
       video: { deviceId: { exact: c.deviceId }, width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false,
     })),
@@ -281,11 +281,11 @@ async function openCamera() {
     try {
       const stream = await openCameraWithTimeout(c);
       const label = stream.getVideoTracks()[0]?.label || '';
-      if (isIRLabel(label) && nonIR.length) {   // é€‰åˆ°äº†çº¢å¤–æ‘„åƒå¤´ â†’ åœæŽ‰ï¼Œæ¢ä¸‹ä¸€ä¸ªå€™é€‰
+      if (isIRLabel(label) && nonIR.length) {   // Ã©â‚¬â€°Ã¥Ë†Â°Ã¤Âºâ€ Ã§ÂºÂ¢Ã¥Â¤â€“Ã¦â€˜â€žÃ¥Æ’ÂÃ¥Â¤Â´ Ã¢â€ â€™ Ã¥ÂÅ“Ã¦Å½â€°Ã¯Â¼Å’Ã¦ÂÂ¢Ã¤Â¸â€¹Ã¤Â¸â‚¬Ã¤Â¸ÂªÃ¥â‚¬â„¢Ã©â‚¬â€°
         stream.getTracks().forEach((t) => t.stop());
         continue;
       }
-      await camApplyZoom(stream);   // v2.30.0ï¼šè®¾å¤‡æ”¯æŒ zoom æ—¶æŒ‰åå¥½æ‹‰åˆ°æœ€å¹¿/æŒ‡å®šå€æ•°ï¼ˆiOS ä¸æ”¯æŒåˆ™è‡ªåŠ¨è·³è¿‡ï¼‰
+      await camApplyZoom(stream);   // v2.30.0Ã¯Â¼Å¡Ã¨Â®Â¾Ã¥Â¤â€¡Ã¦â€Â¯Ã¦Å’Â zoom Ã¦â€”Â¶Ã¦Å’â€°Ã¥ÂÂÃ¥Â¥Â½Ã¦â€¹â€°Ã¥Ë†Â°Ã¦Å“â‚¬Ã¥Â¹Â¿/Ã¦Å’â€¡Ã¥Â®Å¡Ã¥â‚¬ÂÃ¦â€¢Â°Ã¯Â¼Ë†iOS Ã¤Â¸ÂÃ¦â€Â¯Ã¦Å’ÂÃ¥Ë†â„¢Ã¨â€¡ÂªÃ¥Å Â¨Ã¨Â·Â³Ã¨Â¿â€¡Ã¯Â¼â€°
       camSaveCaps(stream);
       return stream;
     } catch (e) { lastErr = e; }
@@ -299,11 +299,11 @@ async function bindStream(stream) {
     if (video.readyState >= 1) return res();
     const t = setTimeout(() => {
       video.srcObject = null; stream.getTracks().forEach((x) => x.stop());
-      rej(new DOMException('è§†é¢‘åˆå§‹åŒ–è¶…æ—¶', 'TimeoutError'));
+      rej(new DOMException('Ã¨Â§â€ Ã©Â¢â€˜Ã¥Ë†ÂÃ¥Â§â€¹Ã¥Å’â€“Ã¨Â¶â€¦Ã¦â€”Â¶', 'TimeoutError'));
     }, 6000);
     video.onloadedmetadata = () => { clearTimeout(t); res(); };
   });
-  try { await video.play(); } catch { /* è‡ªåŠ¨æ’­æ”¾è¢«æ‹¦æ—¶ç­‰å¾…ç”¨æˆ·å†ç‚¹ */ }
+  try { await video.play(); } catch { /* Ã¨â€¡ÂªÃ¥Å Â¨Ã¦â€™Â­Ã¦â€Â¾Ã¨Â¢Â«Ã¦â€¹Â¦Ã¦â€”Â¶Ã§Â­â€°Ã¥Â¾â€¦Ã§â€Â¨Ã¦Ë†Â·Ã¥â€ ÂÃ§â€šÂ¹ */ }
   state.videoOn = true;
   $('placeholder').classList.add('hidden');
 }
@@ -318,7 +318,7 @@ function showCameraError(e, modelFail = false) {
   box.classList.remove('hidden');
   state._lastCamErr = e;
   state._lastCamIsModel = modelFail;
-  aiStats(modelFail ? 'modelFail' : 'cameraFail');      // AI ç®¡å®¶è®°å½•è¯Šæ–­
+  aiStats(modelFail ? 'modelFail' : 'cameraFail');      // AI Ã§Â®Â¡Ã¥Â®Â¶Ã¨Â®Â°Ã¥Â½â€¢Ã¨Â¯Å Ã¦â€“Â­
   logAiError(modelFail ? 'model' : 'camera', (e && (e.message || e.name)) || 'unknown');
   const cams = state.cameras || [];
   const camBtns = !modelFail && cams.length > 1
@@ -361,7 +361,7 @@ function stopCamera() {
   video.srcObject = null;
   state.videoOn = false;
 }
-// æ‰‹åŠ¨é€‰æ‹©æ‘„åƒå¤´ï¼ˆé»‘å±æ—¶åˆ‡æ¢ç”¨ï¼‰
+// Ã¦â€°â€¹Ã¥Å Â¨Ã©â‚¬â€°Ã¦â€¹Â©Ã¦â€˜â€žÃ¥Æ’ÂÃ¥Â¤Â´Ã¯Â¼Ë†Ã©Â»â€˜Ã¥Â±ÂÃ¦â€”Â¶Ã¥Ë†â€¡Ã¦ÂÂ¢Ã§â€Â¨Ã¯Â¼â€°
 function showCamPicker() {
   const box = $('cam-retry');
   box.classList.remove('hidden');
@@ -380,11 +380,11 @@ function showCamPicker() {
   }));
 }
 
-/* ============ æ™ºèƒ½åŠ¨ä½œè¯†åˆ«ï¼ˆè‡ªåŠ¨åˆ†ç±»ï¼Œæ— éœ€æ‰‹åŠ¨é€‰åŠ¨ä½œï¼‰ ============ */
-// ä¸¤å±‚åˆ¤æ–­ï¼š
-//   1) è¿åŠ¨å±‚ï¼šé«‹éƒ¨è¿‘ 1.5 ç§’çºµå‘ä½ç§»å¹…åº¦ â†’ åŒºåˆ†ã€Œè¿åŠ¨ã€(åŠ¨æ€åŠ¨ä½œ) ä¸Žã€Œé™æ­¢ã€(ä½“æ€)
-//   2) å‡ ä½•å±‚ï¼šåŠ¨æ€ â†’ æŒ‰å…³èŠ‚è§’åº¦åˆ¤æ·±è¹²/å¼“æ­¥/å°é˜¶/æ¬ç‰©/è‚©ä¸Šä¸¾/ä¿¯å§æ’‘ï¼›é™æ­¢ â†’ ç«™å§¿/åå§¿/ä¿¯å§æ’‘æ”¯æ’‘/æ¬ç‰©ä¿æŒ
-// hist = [{ y, t }] é«‹éƒ¨ä¸­ç‚¹é«˜åº¦åŽ†å²ï¼ˆt ç”¨ performance.now åŒä¸€æ—¶é—´è½´ï¼‰ï¼›now ä¾›æµ‹è¯•æ³¨å…¥
+/* ============ Ã¦â„¢ÂºÃ¨Æ’Â½Ã¥Å Â¨Ã¤Â½Å“Ã¨Â¯â€ Ã¥Ë†Â«Ã¯Â¼Ë†Ã¨â€¡ÂªÃ¥Å Â¨Ã¥Ë†â€ Ã§Â±Â»Ã¯Â¼Å’Ã¦â€”Â Ã©Å“â‚¬Ã¦â€°â€¹Ã¥Å Â¨Ã©â‚¬â€°Ã¥Å Â¨Ã¤Â½Å“Ã¯Â¼â€° ============ */
+// Ã¤Â¸Â¤Ã¥Â±â€šÃ¥Ë†Â¤Ã¦â€“Â­Ã¯Â¼Å¡
+//   1) Ã¨Â¿ÂÃ¥Å Â¨Ã¥Â±â€šÃ¯Â¼Å¡Ã©Â«â€¹Ã©Æ’Â¨Ã¨Â¿â€˜ 1.5 Ã§Â§â€™Ã§ÂºÂµÃ¥Ââ€˜Ã¤Â½ÂÃ§Â§Â»Ã¥Â¹â€¦Ã¥ÂºÂ¦ Ã¢â€ â€™ Ã¥Å’ÂºÃ¥Ë†â€ Ã£â‚¬Å’Ã¨Â¿ÂÃ¥Å Â¨Ã£â‚¬Â(Ã¥Å Â¨Ã¦â‚¬ÂÃ¥Å Â¨Ã¤Â½Å“) Ã¤Â¸Å½Ã£â‚¬Å’Ã©Ââ„¢Ã¦Â­Â¢Ã£â‚¬Â(Ã¤Â½â€œÃ¦â‚¬Â)
+//   2) Ã¥â€¡Â Ã¤Â½â€¢Ã¥Â±â€šÃ¯Â¼Å¡Ã¥Å Â¨Ã¦â‚¬Â Ã¢â€ â€™ Ã¦Å’â€°Ã¥â€¦Â³Ã¨Å â€šÃ¨Â§â€™Ã¥ÂºÂ¦Ã¥Ë†Â¤Ã¦Â·Â±Ã¨Â¹Â²/Ã¥Â¼â€œÃ¦Â­Â¥/Ã¥ÂÂ°Ã©ËœÂ¶/Ã¦ÂÂ¬Ã§â€°Â©/Ã¨â€šÂ©Ã¤Â¸Å Ã¤Â¸Â¾/Ã¤Â¿Â¯Ã¥ÂÂ§Ã¦â€™â€˜Ã¯Â¼â€ºÃ©Ââ„¢Ã¦Â­Â¢ Ã¢â€ â€™ Ã§Â«â„¢Ã¥Â§Â¿/Ã¥ÂÂÃ¥Â§Â¿/Ã¤Â¿Â¯Ã¥ÂÂ§Ã¦â€™â€˜Ã¦â€Â¯Ã¦â€™â€˜/Ã¦ÂÂ¬Ã§â€°Â©Ã¤Â¿ÂÃ¦Å’Â
+// hist = [{ y, t }] Ã©Â«â€¹Ã©Æ’Â¨Ã¤Â¸Â­Ã§â€šÂ¹Ã©Â«ËœÃ¥ÂºÂ¦Ã¥Å½â€ Ã¥ÂÂ²Ã¯Â¼Ë†t Ã§â€Â¨ performance.now Ã¥ÂÅ’Ã¤Â¸â‚¬Ã¦â€”Â¶Ã©â€”Â´Ã¨Â½Â´Ã¯Â¼â€°Ã¯Â¼â€ºnow Ã¤Â¾â€ºÃ¦Âµâ€¹Ã¨Â¯â€¢Ã¦Â³Â¨Ã¥â€¦Â¥
 function classifyAuto(lms, hist, now) {
   const L = { shoulder: 11, hip: 23, knee: 25, ankle: 27, elbow: 13, wrist: 15 };
   const R = { shoulder: 12, hip: 24, knee: 26, ankle: 28, elbow: 14, wrist: 16 };
@@ -394,42 +394,42 @@ function classifyAuto(lms, hist, now) {
   const s = pickSide(lms);
   const lean = verticalAngle(lms[s.shoulder], lms[s.hip]);
   const elbow = angle3(lms[s.shoulder], lms[s.elbow], lms[s.wrist]);
-  const armRaised = (lms[s.shoulder].y - lms[s.wrist].y) > 0.18;   // æ‰‹è…•æ˜Žæ˜¾é«˜äºŽè‚©è†€
+  const armRaised = (lms[s.shoulder].y - lms[s.wrist].y) > 0.18;   // Ã¦â€°â€¹Ã¨â€¦â€¢Ã¦ËœÅ½Ã¦ËœÂ¾Ã©Â«ËœÃ¤ÂºÅ½Ã¨â€šÂ©Ã¨â€ â‚¬
   const wristNearShoulder = Math.abs(lms[s.wrist].x - lms[s.shoulder].x) < 0.18;
   const bodyLow = lms[s.hip].y > 0.58;
   const hipY = (lms[23].y + lms[24].y) / 2;
   const tNow = now === undefined ? performance.now() : now;
 
-  // é™æ­¢/è¿åŠ¨åˆ¤å®šï¼šæœ€è¿‘ 1.5 ç§’é«‹éƒ¨é«˜åº¦ P90-P10 å·® <6% ç”»é¢é«˜ â†’ é™æ­¢
-  // ç”¨ç™¾åˆ†ä½å·®è€Œéž max-minï¼šæ‘„åƒå¤´å™ªå£°/èº«ä½“è‡ªç„¶æ™ƒåŠ¨çš„ä¸ªåˆ«è·³ç‚¹ä¸ä¼šæŠŠã€Œé™æ­¢ã€è¯¯åˆ¤æˆã€Œè¿åŠ¨ã€
+  // Ã©Ââ„¢Ã¦Â­Â¢/Ã¨Â¿ÂÃ¥Å Â¨Ã¥Ë†Â¤Ã¥Â®Å¡Ã¯Â¼Å¡Ã¦Å“â‚¬Ã¨Â¿â€˜ 1.5 Ã§Â§â€™Ã©Â«â€¹Ã©Æ’Â¨Ã©Â«ËœÃ¥ÂºÂ¦ P90-P10 Ã¥Â·Â® <6% Ã§â€Â»Ã©ÂÂ¢Ã©Â«Ëœ Ã¢â€ â€™ Ã©Ââ„¢Ã¦Â­Â¢
+  // Ã§â€Â¨Ã§â„¢Â¾Ã¥Ë†â€ Ã¤Â½ÂÃ¥Â·Â®Ã¨â‚¬Å’Ã©ÂÅ¾ max-minÃ¯Â¼Å¡Ã¦â€˜â€žÃ¥Æ’ÂÃ¥Â¤Â´Ã¥â„¢ÂªÃ¥Â£Â°/Ã¨ÂºÂ«Ã¤Â½â€œÃ¨â€¡ÂªÃ§â€žÂ¶Ã¦â„¢Æ’Ã¥Å Â¨Ã§Å¡â€žÃ¤Â¸ÂªÃ¥Ë†Â«Ã¨Â·Â³Ã§â€šÂ¹Ã¤Â¸ÂÃ¤Â¼Å¡Ã¦Å Å Ã£â‚¬Å’Ã©Ââ„¢Ã¦Â­Â¢Ã£â‚¬ÂÃ¨Â¯Â¯Ã¥Ë†Â¤Ã¦Ë†ÂÃ£â‚¬Å’Ã¨Â¿ÂÃ¥Å Â¨Ã£â‚¬Â
   const win = (hist || []).filter((h) => h.t > tNow - 1500);
-  let yRange = 1;                                        // æ ·æœ¬ä¸è¶³æŒ‰è¿åŠ¨å¤„ç†ï¼ˆå®‰å…¨ï¼šä¸è¯¯åˆ¤ä½“æ€ï¼‰
+  let yRange = 1;                                        // Ã¦Â Â·Ã¦Å“Â¬Ã¤Â¸ÂÃ¨Â¶Â³Ã¦Å’â€°Ã¨Â¿ÂÃ¥Å Â¨Ã¥Â¤â€žÃ§Ââ€ Ã¯Â¼Ë†Ã¥Â®â€°Ã¥â€¦Â¨Ã¯Â¼Å¡Ã¤Â¸ÂÃ¨Â¯Â¯Ã¥Ë†Â¤Ã¤Â½â€œÃ¦â‚¬ÂÃ¯Â¼â€°
   if (win.length >= 8) {
     const ys = win.map((h) => h.y).sort((a, b) => a - b);
     yRange = ys[Math.floor(ys.length * 0.9)] - ys[Math.floor(ys.length * 0.1)];
   }
 
-  // â€”â€” ä¿¯èº«ç±»ï¼šä¿¯å§æ’‘ï¼ˆæ‰‹åœ¨è‚©ä¸‹+é«‹ä½Žï¼‰ / æ¬é‡ç‰©é«‹é“°é“¾ â€”â€”
+  // Ã¢â‚¬â€Ã¢â‚¬â€ Ã¤Â¿Â¯Ã¨ÂºÂ«Ã§Â±Â»Ã¯Â¼Å¡Ã¤Â¿Â¯Ã¥ÂÂ§Ã¦â€™â€˜Ã¯Â¼Ë†Ã¦â€°â€¹Ã¥Å“Â¨Ã¨â€šÂ©Ã¤Â¸â€¹+Ã©Â«â€¹Ã¤Â½Å½Ã¯Â¼â€° / Ã¦ÂÂ¬Ã©â€¡ÂÃ§â€°Â©Ã©Â«â€¹Ã©â€œÂ°Ã©â€œÂ¾ Ã¢â‚¬â€Ã¢â‚¬â€
   if (lean > 55 && bodyLow) {
-    if (wristNearShoulder && kneeMin > 110) return 'pushup';   // å«å¹³æ¿æ”¯æ’‘ï¼ˆç›´è‡‚ï¼‰
+    if (wristNearShoulder && kneeMin > 110) return 'pushup';   // Ã¥ÂÂ«Ã¥Â¹Â³Ã¦ÂÂ¿Ã¦â€Â¯Ã¦â€™â€˜Ã¯Â¼Ë†Ã§â€ºÂ´Ã¨â€¡â€šÃ¯Â¼â€°
     return 'hiphinge';
   }
-  // â€”â€” é™æ­¢åå§¿ï¼šé«‹åœ¨åé«˜ã€è†ä¸­ç­‰å¼¯æ›²(80â€“130Â°)æˆ–åŒè…¿å‰ä¼¸ã€èº¯å¹²è¾ƒç›´ç«‹/å¾®å‰å€¾(<40Â°ï¼Œæ¡Œå‰å­¦ä¹ å¸¸è§) â€”â€”
-  const legsOut = kneeMin > 150 && Math.abs(lms[s.ankle].y - hipY) < 0.15;   // è…¿ä¼¸ç›´åï¼ˆè¸æŽ¥è¿‘é«‹é«˜ï¼‰
+  // Ã¢â‚¬â€Ã¢â‚¬â€ Ã©Ââ„¢Ã¦Â­Â¢Ã¥ÂÂÃ¥Â§Â¿Ã¯Â¼Å¡Ã©Â«â€¹Ã¥Å“Â¨Ã¥ÂÂÃ©Â«ËœÃ£â‚¬ÂÃ¨â€ ÂÃ¤Â¸Â­Ã§Â­â€°Ã¥Â¼Â¯Ã¦â€ºÂ²(80Ã¢â‚¬â€œ130Ã‚Â°)Ã¦Ë†â€“Ã¥ÂÅ’Ã¨â€¦Â¿Ã¥â€°ÂÃ¤Â¼Â¸Ã£â‚¬ÂÃ¨ÂºÂ¯Ã¥Â¹Â²Ã¨Â¾Æ’Ã§â€ºÂ´Ã§Â«â€¹/Ã¥Â¾Â®Ã¥â€°ÂÃ¥â‚¬Â¾(<40Ã‚Â°Ã¯Â¼Å’Ã¦Â¡Å’Ã¥â€°ÂÃ¥Â­Â¦Ã¤Â¹Â Ã¥Â¸Â¸Ã¨Â§Â) Ã¢â‚¬â€Ã¢â‚¬â€
+  const legsOut = kneeMin > 150 && Math.abs(lms[s.ankle].y - hipY) < 0.15;   // Ã¨â€¦Â¿Ã¤Â¼Â¸Ã§â€ºÂ´Ã¥ÂÂÃ¯Â¼Ë†Ã¨Â¸ÂÃ¦Å½Â¥Ã¨Â¿â€˜Ã©Â«â€¹Ã©Â«ËœÃ¯Â¼â€°
   if (yRange < 0.06 && hipY > 0.40 && hipY < 0.80 && lean < 40 && ((kneeMin >= 80 && kneeMin <= 130) || legsOut)) return 'sitting';
-  // â€”â€” è¿åŠ¨ï¼šåŠ¨æ€åŠ¨ä½œ â€”â€”
+  // Ã¢â‚¬â€Ã¢â‚¬â€ Ã¨Â¿ÂÃ¥Å Â¨Ã¯Â¼Å¡Ã¥Å Â¨Ã¦â‚¬ÂÃ¥Å Â¨Ã¤Â½Å“ Ã¢â‚¬â€Ã¢â‚¬â€
   if (yRange >= 0.06) {
     if (kneeDiff > 35) return kneeMax > 150 ? 'stepup' : 'lunge';
-    if (kneeMin < 115) return 'squat';          // æ·±è¹²/æ¤…å­èµ·åï¼ˆå±ˆè†ä¸‹è¹²ï¼‰
+    if (kneeMin < 115) return 'squat';          // Ã¦Â·Â±Ã¨Â¹Â²/Ã¦Â¤â€¦Ã¥Â­ÂÃ¨ÂµÂ·Ã¥ÂÂÃ¯Â¼Ë†Ã¥Â±Ë†Ã¨â€ ÂÃ¤Â¸â€¹Ã¨Â¹Â²Ã¯Â¼â€°
     if (lean > 45) return 'hiphinge';
     if (armRaised && elbow > 150) return 'shoulderraise';
   }
-  // â€”â€” é™æ­¢ä¿æŒ â€”â€”
-  if (lean > 45 && kneeMin > 130) return 'hiphinge';   // æ¬ç‰©é™æ­¢ä¿æŒ
-  if (kneeMin < 115) return 'squat';                   // æ·±è¹²åº•éƒ¨ä¿æŒ/æ¤…å­èµ·ååœé¡¿
-  return 'standing';                                   // è‡ªç„¶ç«™ç«‹/è¡Œèµ°åœé¡¿
+  // Ã¢â‚¬â€Ã¢â‚¬â€ Ã©Ââ„¢Ã¦Â­Â¢Ã¤Â¿ÂÃ¦Å’Â Ã¢â‚¬â€Ã¢â‚¬â€
+  if (lean > 45 && kneeMin > 130) return 'hiphinge';   // Ã¦ÂÂ¬Ã§â€°Â©Ã©Ââ„¢Ã¦Â­Â¢Ã¤Â¿ÂÃ¦Å’Â
+  if (kneeMin < 115) return 'squat';                   // Ã¦Â·Â±Ã¨Â¹Â²Ã¥Âºâ€¢Ã©Æ’Â¨Ã¤Â¿ÂÃ¦Å’Â/Ã¦Â¤â€¦Ã¥Â­ÂÃ¨ÂµÂ·Ã¥ÂÂÃ¥ÂÅ“Ã©Â¡Â¿
+  return 'standing';                                   // Ã¨â€¡ÂªÃ§â€žÂ¶Ã§Â«â„¢Ã§Â«â€¹/Ã¨Â¡Å’Ã¨ÂµÂ°Ã¥ÂÅ“Ã©Â¡Â¿
 }
-// æŠ•ç¥¨è£å†³ï¼šå¾—ç¥¨çŽ‡ â‰¥66% ä¸”æœ€è¿‘ 4 å¸§å…¨æ˜¯èµ¢å®¶ â†’ è¿”å›žèµ¢å®¶ idï¼Œå¦åˆ™ nullï¼ˆé˜²æŠ–ï¼‰
+// Ã¦Å â€¢Ã§Â¥Â¨Ã¨Â£ÂÃ¥â€ Â³Ã¯Â¼Å¡Ã¥Â¾â€”Ã§Â¥Â¨Ã§Å½â€¡ Ã¢â€°Â¥66% Ã¤Â¸â€Ã¦Å“â‚¬Ã¨Â¿â€˜ 4 Ã¥Â¸Â§Ã¥â€¦Â¨Ã¦ËœÂ¯Ã¨ÂµÂ¢Ã¥Â®Â¶ Ã¢â€ â€™ Ã¨Â¿â€Ã¥â€ºÅ¾Ã¨ÂµÂ¢Ã¥Â®Â¶ idÃ¯Â¼Å’Ã¥ÂÂ¦Ã¥Ë†â„¢ nullÃ¯Â¼Ë†Ã©ËœÂ²Ã¦Å â€“Ã¯Â¼â€°
 function autoSwitchOk(votes, last4) {
   if (!votes || !Object.keys(votes).length) return null;
   const winner = Object.entries(votes).sort((a, b) => b[1] - a[1])[0][0];
@@ -439,7 +439,7 @@ function autoSwitchOk(votes, last4) {
   return margin >= 0.66 && streakOk ? winner : null;
 }
 
-/* ============ ç•Œé¢ï¼šåŠ¨ä½œé€‰æ‹© + ç»Ÿè®¡ ============ */
+/* ============ Ã§â€¢Å’Ã©ÂÂ¢Ã¯Â¼Å¡Ã¥Å Â¨Ã¤Â½Å“Ã©â‚¬â€°Ã¦â€¹Â© + Ã§Â»Å¸Ã¨Â®Â¡ ============ */
 function featureNames(ex) {
   if (ex.id === 'squat') return ['knee', 'hip', 'lean', 'valgus'];
   if (ex.id === 'lunge') return ['frontKnee', 'backKnee', 'lean'];
@@ -463,17 +463,17 @@ function renderExChips() {
   $('ex-chips').querySelectorAll('.chip[data-ex]').forEach((b) =>
     b.addEventListener('click', () => { LS.set('rehab_active_ex', b.dataset.ex); switchEx(); }));
   $('chip-add').addEventListener('click', () => { openCustomForm(null); switchTab('settings'); });
-  renderTrainDemo();   // v2.34.0ï¼šåŠ¨ä½œæ¢äº†ï¼Œæ ‡å‡†ç¤ºèŒƒä¸Žå½•åƒå¡ä¸€èµ·æ¢
+  renderTrainDemo();   // v2.34.0Ã¯Â¼Å¡Ã¥Å Â¨Ã¤Â½Å“Ã¦ÂÂ¢Ã¤Âºâ€ Ã¯Â¼Å’Ã¦Â â€¡Ã¥â€¡â€ Ã§Â¤ÂºÃ¨Å’Æ’Ã¤Â¸Å½Ã¥Â½â€¢Ã¥Æ’ÂÃ¥ÂÂ¡Ã¤Â¸â‚¬Ã¨ÂµÂ·Ã¦ÂÂ¢
   const ex = getEx(activeExId());
   if (ex) {
-    const autoLabel = activeExId() === 'auto' ? `<span class="std">âœ¨ ${t('autoDetected', { name: exName(ex) })}</span><br>` : '';
+    const autoLabel = activeExId() === 'auto' ? `<span class="std">Ã¢Å“Â¨ ${t('autoDetected', { name: exName(ex) })}</span><br>` : '';
     $('ex-desc').innerHTML = autoLabel + exDesc(ex) + '<br><span class="std">' + exStd(ex) + '</span>';
   } else {
     $('ex-desc').innerHTML = '';
   }
   renderGoal();
 }
-// è®­ç»ƒé¡µã€Œä»Šæ—¥ç›®æ ‡ã€è¿›åº¦æ¡ï¼ˆä¸Žåº·å¤è®¡åˆ’è”åŠ¨ï¼‰
+// Ã¨Â®Â­Ã§Â»Æ’Ã©Â¡ÂµÃ£â‚¬Å’Ã¤Â»Å Ã¦â€”Â¥Ã§â€ºÂ®Ã¦Â â€¡Ã£â‚¬ÂÃ¨Â¿â€ºÃ¥ÂºÂ¦Ã¦ÂÂ¡Ã¯Â¼Ë†Ã¤Â¸Å½Ã¥ÂºÂ·Ã¥Â¤ÂÃ¨Â®Â¡Ã¥Ë†â€™Ã¨Ââ€Ã¥Å Â¨Ã¯Â¼â€°
 function renderGoal() {
   const el = $('goal-line');
   if (!el) return;
@@ -485,7 +485,7 @@ function renderGoal() {
   const okv = done >= item.reps;
   el.classList.remove('hidden');
   el.classList.toggle('on', okv);
-  el.innerHTML = `<span class="goal-ico">${icon(okv ? 'check' : 'target')}</span><span>${t('goalLine', { name: exName(ex), n: item.reps })} Â· ${t('goalProgress', { d: Math.min(done, item.reps), t: item.reps })}</span>`;
+  el.innerHTML = `<span class="goal-ico">${icon(okv ? 'check' : 'target')}</span><span>${t('goalLine', { name: exName(ex), n: item.reps })} Ã‚Â· ${t('goalProgress', { d: Math.min(done, item.reps), t: item.reps })}</span>`;
 }
 function renderChips(res) {
   const ex = getEx(activeExId());
@@ -495,7 +495,7 @@ function renderChips(res) {
   $('chips').innerHTML = chips + `
     <div class="stat big"><span class="s-label">${hold ? t('holdLabel') : t('repsLabel')}</span><span class="s-value" id="st-reps">0</span></div>`;
 }
-// æ¯å¸§åªæ”¹æ•°å€¼ï¼Œä¸é‡å»º DOMï¼ˆç§»åŠ¨ç«¯çœç”µï¼‰
+// Ã¦Â¯ÂÃ¥Â¸Â§Ã¥ÂÂªÃ¦â€Â¹Ã¦â€¢Â°Ã¥â‚¬Â¼Ã¯Â¼Å’Ã¤Â¸ÂÃ©â€¡ÂÃ¥Â»Âº DOMÃ¯Â¼Ë†Ã§Â§Â»Ã¥Å Â¨Ã§Â«Â¯Ã§Å“ÂÃ§â€ÂµÃ¯Â¼â€°
 function updateStats(res) {
   const els = $('chips').querySelectorAll('[data-stat]');
   res.chips.forEach((c, i) => {
@@ -507,7 +507,7 @@ function updateStats(res) {
   });
 }
 const renderCollectCount = () => { $('collect-count').textContent = t('collectCount', { n: state.collectBuf.length }); };
-// è´¦å·åˆ‡æ¢åŽé‡è½½é‡‡é›†ç¼“å†²åŒºï¼ˆå†…å­˜ä¸­çš„ collectBuf å±žäºŽä¸Šä¸€ä¸ªè´¦å·ï¼Œå¿…é¡»é‡è¯»ï¼Œå¦åˆ™ä¼šä¸²æ•°æ®ï¼‰
+// Ã¨Â´Â¦Ã¥ÂÂ·Ã¥Ë†â€¡Ã¦ÂÂ¢Ã¥ÂÅ½Ã©â€¡ÂÃ¨Â½Â½Ã©â€¡â€¡Ã©â€ºâ€ Ã§Â¼â€œÃ¥â€ Â²Ã¥Å’ÂºÃ¯Â¼Ë†Ã¥â€ â€¦Ã¥Â­ËœÃ¤Â¸Â­Ã§Å¡â€ž collectBuf Ã¥Â±Å¾Ã¤ÂºÅ½Ã¤Â¸Å Ã¤Â¸â‚¬Ã¤Â¸ÂªÃ¨Â´Â¦Ã¥ÂÂ·Ã¯Â¼Å’Ã¥Â¿â€¦Ã©Â¡Â»Ã©â€¡ÂÃ¨Â¯Â»Ã¯Â¼Å’Ã¥ÂÂ¦Ã¥Ë†â„¢Ã¤Â¼Å¡Ã¤Â¸Â²Ã¦â€¢Â°Ã¦ÂÂ®Ã¯Â¼â€°
 const reloadCollectBuf = () => { state.collectBuf = sget('rehab_collect', []); renderCollectCount(); };
 function renderCollectLabels(ex) {
   $('collect-labels').innerHTML = ex.labelSet.map((l) =>
@@ -524,13 +524,13 @@ function renderCollectLabels(ex) {
     }));
 }
 
-/* ============ ä¸»åˆ†æžå¾ªçŽ¯ ============ */
+/* ============ Ã¤Â¸Â»Ã¥Ë†â€ Ã¦Å¾ÂÃ¥Â¾ÂªÃ§Å½Â¯ ============ */
 const ctx = $('overlay').getContext('2d');
 
 function resetAgg() {
   const ex = getEx(activeExId());
   state.counter = { state: 'up', reps: 0, ex: ex.id, d: ex.rep.downBelow, u: ex.rep.upAbove, belowT: 0, lastRepTs: 0, confirmMs: 120, minGapMs: 350, holdMs: 0, lastHoldTs: 0, wasBad: false };
-  state.autoHist = [];                 // æ–°ä¼šè¯æ¸…ç©ºè¿åŠ¨åŽ†å²ï¼ˆé¿å…ä¸Šä¸€æ¬¡è®­ç»ƒçš„ä½ç§»æ±¡æŸ“é™æ­¢/è¿åŠ¨åˆ¤å®šï¼‰
+  state.autoHist = [];                 // Ã¦â€“Â°Ã¤Â¼Å¡Ã¨Â¯ÂÃ¦Â¸â€¦Ã§Â©ÂºÃ¨Â¿ÂÃ¥Å Â¨Ã¥Å½â€ Ã¥ÂÂ²Ã¯Â¼Ë†Ã©ÂÂ¿Ã¥â€¦ÂÃ¤Â¸Å Ã¤Â¸â‚¬Ã¦Â¬Â¡Ã¨Â®Â­Ã§Â»Æ’Ã§Å¡â€žÃ¤Â½ÂÃ§Â§Â»Ã¦Â±Â¡Ã¦Å¸â€œÃ©Ââ„¢Ã¦Â­Â¢/Ã¨Â¿ÂÃ¥Å Â¨Ã¥Ë†Â¤Ã¥Â®Å¡Ã¯Â¼â€°
   state.agg = { frames: 0, startTS: Date.now(), depth: {}, badFrames: 0, valgusFrames: 0, riskFrames: 0 };
   state.lastResult = null;
   state.statsKey = null;
@@ -542,7 +542,7 @@ function resetAgg() {
   document.querySelectorAll('#chips [data-stat]').forEach((el) => { el.textContent = '--'; });
   const save = $('btn-save'); if (save) save.disabled = true;
 }
-// è®¡æ•°çŠ¶æ€æœºï¼ˆé˜²æŠ–ï¼‰ï¼šä½ŽäºŽé˜ˆå€¼éœ€è¿žç»­ confirmMsï¼Œä¸¤æ¬¡è®¡æ•°é—´éš” â‰¥ minGapMs
+// Ã¨Â®Â¡Ã¦â€¢Â°Ã§Å Â¶Ã¦â‚¬ÂÃ¦Å“ÂºÃ¯Â¼Ë†Ã©ËœÂ²Ã¦Å â€“Ã¯Â¼â€°Ã¯Â¼Å¡Ã¤Â½Å½Ã¤ÂºÅ½Ã©ËœË†Ã¥â‚¬Â¼Ã©Å“â‚¬Ã¨Â¿Å¾Ã§Â»Â­ confirmMsÃ¯Â¼Å’Ã¤Â¸Â¤Ã¦Â¬Â¡Ã¨Â®Â¡Ã¦â€¢Â°Ã©â€”Â´Ã©Å¡â€ Ã¢â€°Â¥ minGapMs
 function counterUpdate(c, value, ts = performance.now()) {
   if (c.state === 'up' && value < c.d) {
     if (!c.belowT) c.belowT = ts;
@@ -556,7 +556,7 @@ function counterUpdate(c, value, ts = performance.now()) {
   }
   return c.reps;
 }
-// ä¿æŒåž‹åŠ¨ä½œï¼ˆç«™å§¿/åå§¿ï¼‰ï¼šåªæœ‰å§¿æ€åˆæ ¼çš„æ—¶é—´æ‰ç´¯è®¡ï¼Œæ»¡ 30 ç§’è®¡ 1 æ¬¡ï¼ˆå§¿åŠ¿å´©äº†è®¡æ—¶æš‚åœï¼‰
+// Ã¤Â¿ÂÃ¦Å’ÂÃ¥Å¾â€¹Ã¥Å Â¨Ã¤Â½Å“Ã¯Â¼Ë†Ã§Â«â„¢Ã¥Â§Â¿/Ã¥ÂÂÃ¥Â§Â¿Ã¯Â¼â€°Ã¯Â¼Å¡Ã¥ÂÂªÃ¦Å“â€°Ã¥Â§Â¿Ã¦â‚¬ÂÃ¥ÂË†Ã¦Â Â¼Ã§Å¡â€žÃ¦â€”Â¶Ã©â€”Â´Ã¦â€°ÂÃ§Â´Â¯Ã¨Â®Â¡Ã¯Â¼Å’Ã¦Â»Â¡ 30 Ã§Â§â€™Ã¨Â®Â¡ 1 Ã¦Â¬Â¡Ã¯Â¼Ë†Ã¥Â§Â¿Ã¥Å Â¿Ã¥Â´Â©Ã¤Âºâ€ Ã¨Â®Â¡Ã¦â€”Â¶Ã¦Å¡â€šÃ¥ÂÅ“Ã¯Â¼â€°
 function counterHold(ex, res, ts) {
   const c = state.counter;
   const bad = res.depth !== 'ok' || res.msgsIsBad;
@@ -567,7 +567,7 @@ function counterHold(ex, res, ts) {
   return c.reps;
 }
 
-// æ¯å¸§è´¨é‡ç»Ÿè®¡ï¼šæ·±åº¦ç±»åˆ« / ä¸åˆæ ¼å¸§ / å†…æ‰£å¸§ï¼ˆä¿®å¤ï¼šä¹‹å‰ä¿å­˜è®°å½•æ—¶è¿™äº›ä¸€ç›´æ˜¯ 0ï¼‰
+// Ã¦Â¯ÂÃ¥Â¸Â§Ã¨Â´Â¨Ã©â€¡ÂÃ§Â»Å¸Ã¨Â®Â¡Ã¯Â¼Å¡Ã¦Â·Â±Ã¥ÂºÂ¦Ã§Â±Â»Ã¥Ë†Â« / Ã¤Â¸ÂÃ¥ÂË†Ã¦Â Â¼Ã¥Â¸Â§ / Ã¥â€ â€¦Ã¦â€°Â£Ã¥Â¸Â§Ã¯Â¼Ë†Ã¤Â¿Â®Ã¥Â¤ÂÃ¯Â¼Å¡Ã¤Â¹â€¹Ã¥â€°ÂÃ¤Â¿ÂÃ¥Â­ËœÃ¨Â®Â°Ã¥Â½â€¢Ã¦â€”Â¶Ã¨Â¿â„¢Ã¤Âºâ€ºÃ¤Â¸â‚¬Ã§â€ºÂ´Ã¦ËœÂ¯ 0Ã¯Â¼â€°
 function recordFrame(res) {
   const a = state.agg;
   a.frames++;
@@ -577,7 +577,7 @@ function recordFrame(res) {
   if ((res.riskLevel || 0) >= 2) a.riskFrames++;
 }
 
-// å•ä¸€è°ƒåº¦å…¥å£ï¼šåªåœ¨è®­ç»ƒé¡µå¯è§ä¸”é¡µé¢åœ¨å‰å°æ—¶æŽ’å¸§ï¼ˆçœç”µï¼‰
+// Ã¥Ââ€¢Ã¤Â¸â‚¬Ã¨Â°Æ’Ã¥ÂºÂ¦Ã¥â€¦Â¥Ã¥ÂÂ£Ã¯Â¼Å¡Ã¥ÂÂªÃ¥Å“Â¨Ã¨Â®Â­Ã§Â»Æ’Ã©Â¡ÂµÃ¥ÂÂ¯Ã¨Â§ÂÃ¤Â¸â€Ã©Â¡ÂµÃ©ÂÂ¢Ã¥Å“Â¨Ã¥â€°ÂÃ¥ÂÂ°Ã¦â€”Â¶Ã¦Å½â€™Ã¥Â¸Â§Ã¯Â¼Ë†Ã§Å“ÂÃ§â€ÂµÃ¯Â¼â€°
 function kickLoop() {
   if (state.loopScheduled) return;
   if (!state.running || state.photoMode || state.tab !== 'train' || document.hidden) return;
@@ -585,8 +585,8 @@ function kickLoop() {
   requestAnimationFrame(() => { state.loopScheduled = false; loop(); });
 }
 
-// èº«ä½“å®Œæ•´æ€§ï¼šåªæ£€æŸ¥ã€Œæ­£åœ¨åˆ†æžçš„é‚£ä¸€ä¾§ã€ï¼ˆä¾§é¢æ—¶å¦ä¸€ä¾§ä¼šè¢«èº«ä½“é®æŒ¡ï¼Œä¸ç®—ç¼ºå¤±ï¼‰
-// åˆ¤å®šï¼šå¯è§åº¦ <0.4 æˆ– åæ ‡å‡ºç”»é¢è¾¹ç•Œï¼ˆè´´è¿‘è¾¹ç¼˜ 2% å†…ï¼‰â†’ è®¤ä¸ºè¯¥éƒ¨ä½æ²¡ç…§å…¨
+// Ã¨ÂºÂ«Ã¤Â½â€œÃ¥Â®Å’Ã¦â€¢Â´Ã¦â‚¬Â§Ã¯Â¼Å¡Ã¥ÂÂªÃ¦Â£â‚¬Ã¦Å¸Â¥Ã£â‚¬Å’Ã¦Â­Â£Ã¥Å“Â¨Ã¥Ë†â€ Ã¦Å¾ÂÃ§Å¡â€žÃ©â€šÂ£Ã¤Â¸â‚¬Ã¤Â¾Â§Ã£â‚¬ÂÃ¯Â¼Ë†Ã¤Â¾Â§Ã©ÂÂ¢Ã¦â€”Â¶Ã¥ÂÂ¦Ã¤Â¸â‚¬Ã¤Â¾Â§Ã¤Â¼Å¡Ã¨Â¢Â«Ã¨ÂºÂ«Ã¤Â½â€œÃ©ÂÂ®Ã¦Å’Â¡Ã¯Â¼Å’Ã¤Â¸ÂÃ§Â®â€”Ã§Â¼ÂºÃ¥Â¤Â±Ã¯Â¼â€°
+// Ã¥Ë†Â¤Ã¥Â®Å¡Ã¯Â¼Å¡Ã¥ÂÂ¯Ã¨Â§ÂÃ¥ÂºÂ¦ <0.4 Ã¦Ë†â€“ Ã¥ÂÂÃ¦Â â€¡Ã¥â€¡ÂºÃ§â€Â»Ã©ÂÂ¢Ã¨Â¾Â¹Ã§â€¢Å’Ã¯Â¼Ë†Ã¨Â´Â´Ã¨Â¿â€˜Ã¨Â¾Â¹Ã§Â¼Ëœ 2% Ã¥â€ â€¦Ã¯Â¼â€°Ã¢â€ â€™ Ã¨Â®Â¤Ã¤Â¸ÂºÃ¨Â¯Â¥Ã©Æ’Â¨Ã¤Â½ÂÃ¦Â²Â¡Ã§â€¦Â§Ã¥â€¦Â¨
 function partVisible(lms, i) {
   const lm = lms[i];
   if (!lm) return false;
@@ -596,7 +596,7 @@ function partVisible(lms, i) {
 }
 function bodyMissing(lms, ex) {
   const s = pickSide(lms);
-  // åå§¿æ£€æŸ¥ï¼šè„šå¸¸è¢«ä¹¦æ¡Œ/åŠžå…¬æ¡ŒæŒ¡ä½ï¼Œä¸æŠŠè„šè¸ç®—ä½œç¼ºå¤±
+  // Ã¥ÂÂÃ¥Â§Â¿Ã¦Â£â‚¬Ã¦Å¸Â¥Ã¯Â¼Å¡Ã¨â€žÅ¡Ã¥Â¸Â¸Ã¨Â¢Â«Ã¤Â¹Â¦Ã¦Â¡Å’/Ã¥Å Å¾Ã¥â€¦Â¬Ã¦Â¡Å’Ã¦Å’Â¡Ã¤Â½ÂÃ¯Â¼Å’Ã¤Â¸ÂÃ¦Å Å Ã¨â€žÅ¡Ã¨Â¸ÂÃ§Â®â€”Ã¤Â½Å“Ã§Â¼ÂºÃ¥Â¤Â±
   const need = [[s.shoulder, 'jShoulder'], [s.hip, 'jHip'], [s.knee, 'jKnee']];
   if (!ex || ex.id !== 'sitting') need.push([s.ankle, 'jAnkle']);
   const miss = new Set();
@@ -604,7 +604,7 @@ function bodyMissing(lms, ex) {
   return [...miss];
 }
 
-// ç”»é¢äº®åº¦æ£€æµ‹ï¼šè¿žç»­ ~3 ç§’å…¨é»‘ â†’ æç¤ºåˆ‡æ¢æ‘„åƒå¤´ï¼ˆçº¢å¤–æ‘„åƒå¤´/éšç§ç›–é—®é¢˜ï¼‰
+// Ã§â€Â»Ã©ÂÂ¢Ã¤ÂºÂ®Ã¥ÂºÂ¦Ã¦Â£â‚¬Ã¦Âµâ€¹Ã¯Â¼Å¡Ã¨Â¿Å¾Ã§Â»Â­ ~3 Ã§Â§â€™Ã¥â€¦Â¨Ã©Â»â€˜ Ã¢â€ â€™ Ã¦ÂÂÃ§Â¤ÂºÃ¥Ë†â€¡Ã¦ÂÂ¢Ã¦â€˜â€žÃ¥Æ’ÂÃ¥Â¤Â´Ã¯Â¼Ë†Ã§ÂºÂ¢Ã¥Â¤â€“Ã¦â€˜â€žÃ¥Æ’ÂÃ¥Â¤Â´/Ã©Å¡ÂÃ§Â§ÂÃ§â€ºâ€“Ã©â€”Â®Ã©Â¢ËœÃ¯Â¼â€°
 function checkBlackFrame() {
   const v = $('video');
   if (!state.videoOn || v.readyState < 2 || !v.videoWidth) return;
@@ -663,16 +663,16 @@ function loop() {
   if ($('overlay').width !== cw || $('overlay').height !== ch) { $('overlay').width = cw; $('overlay').height = ch; }
   ctx.clearRect(0, 0, cw, ch);
   drawStick(ctx, lms, cw, ch, true);
-  camGuideUpdate(lms);            // v2.30.0ï¼šå…¥é•œ/è·ç¦»å¼•å¯¼ï¼ˆå¯å…³ï¼‰
+  camGuideUpdate(lms);            // v2.30.0Ã¯Â¼Å¡Ã¥â€¦Â¥Ã©â€¢Å“/Ã¨Â·ÂÃ§Â¦Â»Ã¥Â¼â€¢Ã¥Â¯Â¼Ã¯Â¼Ë†Ã¥ÂÂ¯Ã¥â€¦Â³Ã¯Â¼â€°
 
-  // èº«ä½“å®Œæ•´æ€§æ£€æµ‹ï¼šå…³é”®éƒ¨ä½æ²¡ç…§å…¨ â†’ æŒç»­ ~5 å¸§æ‰æé†’ï¼ˆé˜²å•å¸§è¯¯åˆ¤é—ªçƒï¼‰ï¼Œå¹¶æš‚åœåˆ†æž
-  // æ™ºèƒ½è¯†åˆ«æ¨¡å¼ä¾‹å¤–ï¼šåªæœ‰è„šè¸æ²¡ç…§åˆ°æ—¶ä¸æš‚åœï¼ˆåå§¿æ—¶è„šå¸¸åœ¨æ¡Œä¸‹ï¼‰ï¼Œè®©æŠ•ç¥¨åˆ‡åˆ°åå§¿åˆ†æž
+  // Ã¨ÂºÂ«Ã¤Â½â€œÃ¥Â®Å’Ã¦â€¢Â´Ã¦â‚¬Â§Ã¦Â£â‚¬Ã¦Âµâ€¹Ã¯Â¼Å¡Ã¥â€¦Â³Ã©â€Â®Ã©Æ’Â¨Ã¤Â½ÂÃ¦Â²Â¡Ã§â€¦Â§Ã¥â€¦Â¨ Ã¢â€ â€™ Ã¦Å’ÂÃ§Â»Â­ ~5 Ã¥Â¸Â§Ã¦â€°ÂÃ¦ÂÂÃ©â€ â€™Ã¯Â¼Ë†Ã©ËœÂ²Ã¥Ââ€¢Ã¥Â¸Â§Ã¨Â¯Â¯Ã¥Ë†Â¤Ã©â€”ÂªÃ§Æ’ÂÃ¯Â¼â€°Ã¯Â¼Å’Ã¥Â¹Â¶Ã¦Å¡â€šÃ¥ÂÅ“Ã¥Ë†â€ Ã¦Å¾Â
+  // Ã¦â„¢ÂºÃ¨Æ’Â½Ã¨Â¯â€ Ã¥Ë†Â«Ã¦Â¨Â¡Ã¥Â¼ÂÃ¤Â¾â€¹Ã¥Â¤â€“Ã¯Â¼Å¡Ã¥ÂÂªÃ¦Å“â€°Ã¨â€žÅ¡Ã¨Â¸ÂÃ¦Â²Â¡Ã§â€¦Â§Ã¥Ë†Â°Ã¦â€”Â¶Ã¤Â¸ÂÃ¦Å¡â€šÃ¥ÂÅ“Ã¯Â¼Ë†Ã¥ÂÂÃ¥Â§Â¿Ã¦â€”Â¶Ã¨â€žÅ¡Ã¥Â¸Â¸Ã¥Å“Â¨Ã¦Â¡Å’Ã¤Â¸â€¹Ã¯Â¼â€°Ã¯Â¼Å’Ã¨Â®Â©Ã¦Å â€¢Ã§Â¥Â¨Ã¥Ë†â€¡Ã¥Ë†Â°Ã¥ÂÂÃ¥Â§Â¿Ã¥Ë†â€ Ã¦Å¾Â
   const missingParts = bodyMissing(lms, getEx(activeExId()));
   const autoAnkleOnly = activeExId() === 'auto' && missingParts.length === 1 && missingParts[0] === t('jAnkle');
   if (missingParts.length && !autoAnkleOnly) {
     state.missingFrames = (state.missingFrames || 0) + 1;
     if (state.missingFrames < 5) { kickLoop(); return; }
-    const msg = fbWrap('alert', t('bodyCutOff', { parts: missingParts.join('ã€') }) + '<br>' + t('bodyCutOffHint'));
+    const msg = fbWrap('alert', t('bodyCutOff', { parts: missingParts.join('Ã£â‚¬Â') }) + '<br>' + t('bodyCutOffHint'));
     if (fb._last !== msg) { fb.innerHTML = msg; fb._last = msg; }
     fb.className = 'feedback warn';
     kickLoop();
@@ -680,8 +680,8 @@ function loop() {
   }
   state.missingFrames = 0;
 
-  // æ™ºèƒ½è¯†åˆ«æ¨¡å¼ï¼šæ¯å¸§æŠ•ç¥¨ï¼Œç¨³å®šåŽè‡ªåŠ¨åˆ‡æ¢åˆ†æžå¼•æ“Žï¼ˆä¸é‡ç½®è®¡æ•°ï¼‰
-  // é˜²æŠ–ï¼šå¾—ç¥¨çŽ‡ â‰¥66% ä¸”æœ€è¿‘ 4 å¸§è¿žç»­ä¸€è‡´æ‰åˆ‡æ¢ï¼Œé¿å…åŠ¨ä½œäº¤æ›¿æ—¶æ¥å›žè·³
+  // Ã¦â„¢ÂºÃ¨Æ’Â½Ã¨Â¯â€ Ã¥Ë†Â«Ã¦Â¨Â¡Ã¥Â¼ÂÃ¯Â¼Å¡Ã¦Â¯ÂÃ¥Â¸Â§Ã¦Å â€¢Ã§Â¥Â¨Ã¯Â¼Å’Ã§Â¨Â³Ã¥Â®Å¡Ã¥ÂÅ½Ã¨â€¡ÂªÃ¥Å Â¨Ã¥Ë†â€¡Ã¦ÂÂ¢Ã¥Ë†â€ Ã¦Å¾ÂÃ¥Â¼â€¢Ã¦â€œÅ½Ã¯Â¼Ë†Ã¤Â¸ÂÃ©â€¡ÂÃ§Â½Â®Ã¨Â®Â¡Ã¦â€¢Â°Ã¯Â¼â€°
+  // Ã©ËœÂ²Ã¦Å â€“Ã¯Â¼Å¡Ã¥Â¾â€”Ã§Â¥Â¨Ã§Å½â€¡ Ã¢â€°Â¥66% Ã¤Â¸â€Ã¦Å“â‚¬Ã¨Â¿â€˜ 4 Ã¥Â¸Â§Ã¨Â¿Å¾Ã§Â»Â­Ã¤Â¸â‚¬Ã¨â€¡Â´Ã¦â€°ÂÃ¥Ë†â€¡Ã¦ÂÂ¢Ã¯Â¼Å’Ã©ÂÂ¿Ã¥â€¦ÂÃ¥Å Â¨Ã¤Â½Å“Ã¤ÂºÂ¤Ã¦â€ºÂ¿Ã¦â€”Â¶Ã¦ÂÂ¥Ã¥â€ºÅ¾Ã¨Â·Â³
   if (activeExId() === 'auto') {
     state.autoHist = state.autoHist || [];
     state.autoHist.push({ y: (lms[23].y + lms[24].y) / 2, t: ts });
@@ -701,10 +701,10 @@ function loop() {
         state.counter.ex = winner;
         if (nex.rep.downBelow != null) { state.counter.d = nex.rep.downBelow; state.counter.u = nex.rep.upAbove; }
         if (nex.rep.hold || prevHold) {
-          // è¿›å‡ºä¿æŒåž‹åŠ¨ä½œ â†’ é‡æ–°è®¡æ•°ï¼ˆ30 ç§’ 1 æ¬¡ï¼Œä¸ä¸ŽåŠ¨æ€æ¬¡æ•°æ··ç®—ï¼‰
+          // Ã¨Â¿â€ºÃ¥â€¡ÂºÃ¤Â¿ÂÃ¦Å’ÂÃ¥Å¾â€¹Ã¥Å Â¨Ã¤Â½Å“ Ã¢â€ â€™ Ã©â€¡ÂÃ¦â€“Â°Ã¨Â®Â¡Ã¦â€¢Â°Ã¯Â¼Ë†30 Ã§Â§â€™ 1 Ã¦Â¬Â¡Ã¯Â¼Å’Ã¤Â¸ÂÃ¤Â¸Å½Ã¥Å Â¨Ã¦â‚¬ÂÃ¦Â¬Â¡Ã¦â€¢Â°Ã¦Â·Â·Ã§Â®â€”Ã¯Â¼â€°
           state.counter.reps = 0; state.counter.holdMs = 0; state.counter.lastHoldTs = 0; state.voiceReps = 0;
         }
-        state.statsKey = null;                       // ç»Ÿè®¡å¡ä¸‹ä¸€å¸§æŒ‰æ–°åŠ¨ä½œé‡å»º
+        state.statsKey = null;                       // Ã§Â»Å¸Ã¨Â®Â¡Ã¥ÂÂ¡Ã¤Â¸â€¹Ã¤Â¸â‚¬Ã¥Â¸Â§Ã¦Å’â€°Ã¦â€“Â°Ã¥Å Â¨Ã¤Â½Å“Ã©â€¡ÂÃ¥Â»Âº
         renderExChips();
         renderCollectLabels(getEx('auto'));
       }
@@ -722,13 +722,13 @@ function loop() {
   if (state.statsKey !== ex.id) { renderChips(res); state.statsKey = ex.id; }
   else updateStats(res);
   $('st-reps').textContent = ex.rep.hold ? String(Math.round((state.counter.holdMs || 0) / 1000)) : String(reps);
-  // è¯­éŸ³æ’­æŠ¥ï¼šæ¯ 5 æ¬¡æŠ¥ä¸€æ¬¡æ•°
+  // Ã¨Â¯Â­Ã©Å¸Â³Ã¦â€™Â­Ã¦Å Â¥Ã¯Â¼Å¡Ã¦Â¯Â 5 Ã¦Â¬Â¡Ã¦Å Â¥Ã¤Â¸â‚¬Ã¦Â¬Â¡Ã¦â€¢Â°
   if (reps > 0 && reps % 5 === 0 && reps !== state.voiceReps) {
     state.voiceReps = reps;
     speak(t('voiceRep', { n: reps }));
   }
 
-  // å—ä¼¤é£Žé™©ï¼š1=æé†’(warn) 2=è­¦æŠ¥(alarmï¼Œå£°éŸ³+éœ‡åŠ¨+é—ªçƒ+è¯­éŸ³)
+  // Ã¥Ââ€”Ã¤Â¼Â¤Ã©Â£Å½Ã©â„¢Â©Ã¯Â¼Å¡1=Ã¦ÂÂÃ©â€ â€™(warn) 2=Ã¨Â­Â¦Ã¦Å Â¥(alarmÃ¯Â¼Å’Ã¥Â£Â°Ã©Å¸Â³+Ã©Å“â€¡Ã¥Å Â¨+Ã©â€”ÂªÃ§Æ’Â+Ã¨Â¯Â­Ã©Å¸Â³)
   const riskLevel = res.riskLevel || 0;
   if (riskLevel >= 2) {
     if (!state.alarmOn) { state.alarmOn = true; state.alarmTS = ts; alarmBurst(); }
@@ -738,7 +738,7 @@ function loop() {
   }
   const riskMsgs = (res.risk && res.risk.length) ? res.risk : [];
   if (riskMsgs.length) {
-    if (riskLevel >= 2 && ts - state.voiceTS > 8000) { state.voiceTS = ts; speak(t('alarmTitle') + 'ï¼Œ' + riskMsgs[0]); }
+    if (riskLevel >= 2 && ts - state.voiceTS > 8000) { state.voiceTS = ts; speak(t('alarmTitle') + 'Ã¯Â¼Å’' + riskMsgs[0]); }
     else if (riskLevel === 1 && ts - state.voiceTS > 8000) { state.voiceTS = ts; speak(riskMsgs[0]); }
   }
   const bodyMsgs = riskMsgs.length ? riskMsgs : (res.badMsgs.length ? res.badMsgs : res.goodMsgs);
@@ -754,7 +754,7 @@ function loop() {
 }
 function drawEmpty() { ctx.clearRect(0, 0, $('overlay').width, $('overlay').height); }
 
-/* ============ å—ä¼¤é£Žé™©è­¦æŠ¥ï¼ˆå£°éŸ³ + éœ‡åŠ¨ï¼‰ ============ */
+/* ============ Ã¥Ââ€”Ã¤Â¼Â¤Ã©Â£Å½Ã©â„¢Â©Ã¨Â­Â¦Ã¦Å Â¥Ã¯Â¼Ë†Ã¥Â£Â°Ã©Å¸Â³ + Ã©Å“â€¡Ã¥Å Â¨Ã¯Â¼â€° ============ */
 let audioCtx = null;
 function ensureAudio() {
   if (!audioCtx) { try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch { /* ignore */ } }
@@ -779,20 +779,20 @@ function alarmBurst() {
   }
 }
 
-/* ============ å¼€å§‹ / åœæ­¢ / å›¾ç‰‡ ============ */
+/* ============ Ã¥Â¼â‚¬Ã¥Â§â€¹ / Ã¥ÂÅ“Ã¦Â­Â¢ / Ã¥â€ºÂ¾Ã§â€°â€¡ ============ */
 function setStartBtn(key, ico) {
   $('btn-start-label').textContent = t(key);
   $('btn-start-ico').innerHTML = icon(ico || 'play');
 }
 async function toggleStart() {
   const btn = $('btn-start');
-  ensureAudio();   // ç”¨æˆ·ç‚¹å‡»æ‰‹åŠ¿å†…åˆ›å»ºéŸ³é¢‘ä¸Šä¸‹æ–‡ï¼ˆè­¦æŠ¥å£°ç”¨ï¼‰
+  ensureAudio();   // Ã§â€Â¨Ã¦Ë†Â·Ã§â€šÂ¹Ã¥â€¡Â»Ã¦â€°â€¹Ã¥Å Â¿Ã¥â€ â€¦Ã¥Ë†â€ºÃ¥Â»ÂºÃ©Å¸Â³Ã©Â¢â€˜Ã¤Â¸Å Ã¤Â¸â€¹Ã¦â€“â€¡Ã¯Â¼Ë†Ã¨Â­Â¦Ã¦Å Â¥Ã¥Â£Â°Ã§â€Â¨Ã¯Â¼â€°
   if (state.running) {
     state.running = false; stopCamera(); releaseWake();
-    drawEmpty();                                   // æ¸…æŽ‰ç«æŸ´äººï¼Œé¿å…é»‘å±ä¸Šæ®‹ç•™
-    $('placeholder').classList.remove('hidden');   // æ¢å¤ã€Œç‚¹å‡»å¼€å§‹åˆ†æžã€å ä½å›¾
-    $('stats-box').classList.add('hidden');        // v2.20.2ï¼šæ¸…æŽ‰æ®‹ç•™ç»Ÿè®¡ï¼Œä¸ç•™è¿‡æœŸæ•°å­—
-    $('feedback').classList.add('hidden');         // v2.20.2ï¼šæ¸…æŽ‰æ®‹ç•™æç¤ºï¼Œä¸ç•™æ—§æ–‡æ¡ˆ
+    drawEmpty();                                   // Ã¦Â¸â€¦Ã¦Å½â€°Ã§ÂÂ«Ã¦Å¸Â´Ã¤ÂºÂºÃ¯Â¼Å’Ã©ÂÂ¿Ã¥â€¦ÂÃ©Â»â€˜Ã¥Â±ÂÃ¤Â¸Å Ã¦Â®â€¹Ã§â€¢â„¢
+    $('placeholder').classList.remove('hidden');   // Ã¦ÂÂ¢Ã¥Â¤ÂÃ£â‚¬Å’Ã§â€šÂ¹Ã¥â€¡Â»Ã¥Â¼â‚¬Ã¥Â§â€¹Ã¥Ë†â€ Ã¦Å¾ÂÃ£â‚¬ÂÃ¥ÂÂ Ã¤Â½ÂÃ¥â€ºÂ¾
+    $('stats-box').classList.add('hidden');        // v2.20.2Ã¯Â¼Å¡Ã¦Â¸â€¦Ã¦Å½â€°Ã¦Â®â€¹Ã§â€¢â„¢Ã§Â»Å¸Ã¨Â®Â¡Ã¯Â¼Å’Ã¤Â¸ÂÃ§â€¢â„¢Ã¨Â¿â€¡Ã¦Å“Å¸Ã¦â€¢Â°Ã¥Â­â€”
+    $('feedback').classList.add('hidden');         // v2.20.2Ã¯Â¼Å¡Ã¦Â¸â€¦Ã¦Å½â€°Ã¦Â®â€¹Ã§â€¢â„¢Ã¦ÂÂÃ§Â¤ÂºÃ¯Â¼Å’Ã¤Â¸ÂÃ§â€¢â„¢Ã¦â€”Â§Ã¦â€“â€¡Ã¦Â¡Ë†
     btn.disabled = false; setStartBtn('btnStart', 'play');
     aiSessionEnd();
     return;
@@ -809,13 +809,13 @@ async function toggleStart() {
       setStartBtn('btnDetecting', 'loader-spin');
       stream = await openCamera();
     }
-    // æ‘„åƒå¤´ç”»é¢ç«‹åˆ»æ˜¾ç¤ºï¼ˆä¸å†è¢«é»‘è‰²åŠ è½½é®ç½©æŒ¡ä½ï¼‰
+    // Ã¦â€˜â€žÃ¥Æ’ÂÃ¥Â¤Â´Ã§â€Â»Ã©ÂÂ¢Ã§Â«â€¹Ã¥Ë†Â»Ã¦ËœÂ¾Ã§Â¤ÂºÃ¯Â¼Ë†Ã¤Â¸ÂÃ¥â€ ÂÃ¨Â¢Â«Ã©Â»â€˜Ã¨â€°Â²Ã¥Å Â Ã¨Â½Â½Ã©ÂÂ®Ã§Â½Â©Ã¦Å’Â¡Ã¤Â½ÂÃ¯Â¼â€°
     await bindStream(stream);
     state.running = true; state.photoMode = false;
-    acquireWake();                               // è®­ç»ƒä¸­å±å¹•å¸¸äº®ï¼Œä¸è‡ªåŠ¨é”å±
-    if (state.restTimer) { clearInterval(state.restTimer); state.restTimer = null; }   // å¼€å§‹è®­ç»ƒè‡ªåŠ¨ç»“æŸä¼‘æ¯è®¡æ—¶
+    acquireWake();                               // Ã¨Â®Â­Ã§Â»Æ’Ã¤Â¸Â­Ã¥Â±ÂÃ¥Â¹â€¢Ã¥Â¸Â¸Ã¤ÂºÂ®Ã¯Â¼Å’Ã¤Â¸ÂÃ¨â€¡ÂªÃ¥Å Â¨Ã©â€ÂÃ¥Â±Â
+    if (state.restTimer) { clearInterval(state.restTimer); state.restTimer = null; }   // Ã¥Â¼â‚¬Ã¥Â§â€¹Ã¨Â®Â­Ã§Â»Æ’Ã¨â€¡ÂªÃ¥Å Â¨Ã§Â»â€œÃ¦ÂÅ¸Ã¤Â¼â€˜Ã¦ÂÂ¯Ã¨Â®Â¡Ã¦â€”Â¶
     resetAgg();
-    await startCountdown();                      // æ–°å¢žï¼š3-2-1 å¼€å§‹å€’è®¡æ—¶ï¼ˆå¯¹æ ‡ NTC/Keepï¼‰
+    await startCountdown();                      // Ã¦â€“Â°Ã¥Â¢Å¾Ã¯Â¼Å¡3-2-1 Ã¥Â¼â‚¬Ã¥Â§â€¹Ã¥â‚¬â€™Ã¨Â®Â¡Ã¦â€”Â¶Ã¯Â¼Ë†Ã¥Â¯Â¹Ã¦Â â€¡ NTC/KeepÃ¯Â¼â€°
     btn.disabled = false;
     setStartBtn('btnStop', 'stop');
     $('stats-box').classList.remove('hidden');
@@ -823,7 +823,7 @@ async function toggleStart() {
     $('feedback').innerHTML = fbWrap('camera', t('detecting'));
     $('feedback').className = 'feedback';
     $('feedback')._last = null;
-    // AI æ¨¡åž‹åœ¨åŽå°åŠ è½½ï¼šç”»é¢å¯è§ï¼Œåªæœ‰ä¸€ä¸ªå°è¿›åº¦èƒ¶å›Š
+    // AI Ã¦Â¨Â¡Ã¥Å¾â€¹Ã¥Å“Â¨Ã¥ÂÅ½Ã¥ÂÂ°Ã¥Å Â Ã¨Â½Â½Ã¯Â¼Å¡Ã§â€Â»Ã©ÂÂ¢Ã¥ÂÂ¯Ã¨Â§ÂÃ¯Â¼Å’Ã¥ÂÂªÃ¦Å“â€°Ã¤Â¸â‚¬Ã¤Â¸ÂªÃ¥Â°ÂÃ¨Â¿â€ºÃ¥ÂºÂ¦Ã¨Æ’Â¶Ã¥â€ºÅ 
     if (!state.landmarker) {
       const t0 = Date.now();
       $('loading').innerHTML = icon('loader-spin') + '<span>' + t('loading') + ' 0s</span>';
@@ -834,12 +834,12 @@ async function toggleStart() {
       try {
         state.landmarker = await loadModel();
       } catch (e) {
-        console.error('æ¨¡åž‹åŠ è½½å¤±è´¥:', e);
+        console.error('Ã¦Â¨Â¡Ã¥Å¾â€¹Ã¥Å Â Ã¨Â½Â½Ã¥Â¤Â±Ã¨Â´Â¥:', e);
         stopCamera(); releaseWake(); drawEmpty();
         state.running = false;
         setStartBtn('btnStart', 'play');
         $('placeholder').classList.remove('hidden');
-        showCameraError(e, true);   // æ‘„åƒå¤´æ²¡é—®é¢˜ï¼Œæ˜¯æ¨¡åž‹/ç½‘ç»œé—®é¢˜
+        showCameraError(e, true);   // Ã¦â€˜â€žÃ¥Æ’ÂÃ¥Â¤Â´Ã¦Â²Â¡Ã©â€”Â®Ã©Â¢ËœÃ¯Â¼Å’Ã¦ËœÂ¯Ã¦Â¨Â¡Ã¥Å¾â€¹/Ã§Â½â€˜Ã§Â»Å“Ã©â€”Â®Ã©Â¢Ëœ
         return;
       } finally {
         clearInterval(tick);
@@ -856,8 +856,8 @@ async function toggleStart() {
   }
 }
 
-/* ============ æ–°å¢žåŠŸèƒ½ï¼ˆv2.18ï¼‰ï¼š3-2-1 å€’è®¡æ—¶ / ç»„é—´ä¼‘æ¯ / ä¹…åæé†’ / AI è®¡åˆ’ ============ */
-// 3-2-1 å¼€å§‹å€’è®¡æ—¶ï¼šåœ¨ç”»é¢ä¸Šæ˜¾ç¤ºå¤§æ•°å­—ï¼Œç»“æŸåŽæ¸…å±è¿›å…¥åˆ†æž
+/* ============ Ã¦â€“Â°Ã¥Â¢Å¾Ã¥Å Å¸Ã¨Æ’Â½Ã¯Â¼Ë†v2.18Ã¯Â¼â€°Ã¯Â¼Å¡3-2-1 Ã¥â‚¬â€™Ã¨Â®Â¡Ã¦â€”Â¶ / Ã§Â»â€žÃ©â€”Â´Ã¤Â¼â€˜Ã¦ÂÂ¯ / Ã¤Â¹â€¦Ã¥ÂÂÃ¦ÂÂÃ©â€ â€™ / AI Ã¨Â®Â¡Ã¥Ë†â€™ ============ */
+// 3-2-1 Ã¥Â¼â‚¬Ã¥Â§â€¹Ã¥â‚¬â€™Ã¨Â®Â¡Ã¦â€”Â¶Ã¯Â¼Å¡Ã¥Å“Â¨Ã§â€Â»Ã©ÂÂ¢Ã¤Â¸Å Ã¦ËœÂ¾Ã§Â¤ÂºÃ¥Â¤Â§Ã¦â€¢Â°Ã¥Â­â€”Ã¯Â¼Å’Ã§Â»â€œÃ¦ÂÅ¸Ã¥ÂÅ½Ã¦Â¸â€¦Ã¥Â±ÂÃ¨Â¿â€ºÃ¥â€¦Â¥Ã¥Ë†â€ Ã¦Å¾Â
 function startCountdown() {
   return new Promise((resolve) => {
     const c = $('overlay');
@@ -880,7 +880,7 @@ function startCountdown() {
     step();
   });
 }
-// ç»„é—´ä¼‘æ¯è®¡æ—¶å™¨ï¼ˆé»˜è®¤ 60 ç§’ï¼Œç»“æŸå“é“ƒ + æç¤ºï¼‰
+// Ã§Â»â€žÃ©â€”Â´Ã¤Â¼â€˜Ã¦ÂÂ¯Ã¨Â®Â¡Ã¦â€”Â¶Ã¥â„¢Â¨Ã¯Â¼Ë†Ã©Â»ËœÃ¨Â®Â¤ 60 Ã§Â§â€™Ã¯Â¼Å’Ã§Â»â€œÃ¦ÂÅ¸Ã¥â€œÂÃ©â€œÆ’ + Ã¦ÂÂÃ§Â¤ÂºÃ¯Â¼â€°
 function startRest(seconds = 60) {
   if (state.restTimer) clearInterval(state.restTimer);
   let left = seconds;
@@ -906,13 +906,13 @@ function startRest(seconds = 60) {
     }
   }, 1000);
 }
-// v2.20.2ï¼šè®­ç»ƒä¸­å…ˆåœæ­¢åˆ†æžå†è¿›å…¥ä¼‘æ¯ï¼Œé¿å…ä¼‘æ¯å€’è®¡æ—¶è¢«åˆ†æžå¾ªçŽ¯è¦†ç›–
+// v2.20.2Ã¯Â¼Å¡Ã¨Â®Â­Ã§Â»Æ’Ã¤Â¸Â­Ã¥â€¦Ë†Ã¥ÂÅ“Ã¦Â­Â¢Ã¥Ë†â€ Ã¦Å¾ÂÃ¥â€ ÂÃ¨Â¿â€ºÃ¥â€¦Â¥Ã¤Â¼â€˜Ã¦ÂÂ¯Ã¯Â¼Å’Ã©ÂÂ¿Ã¥â€¦ÂÃ¤Â¼â€˜Ã¦ÂÂ¯Ã¥â‚¬â€™Ã¨Â®Â¡Ã¦â€”Â¶Ã¨Â¢Â«Ã¥Ë†â€ Ã¦Å¾ÂÃ¥Â¾ÂªÃ§Å½Â¯Ã¨Â¦â€ Ã§â€ºâ€“
 $('btn-rest').addEventListener('click', () => { if (state.running) toggleStart(); startRest(60); });
 
-// ä¹…åæé†’ï¼šæŒ‰è®¾ç½®é—´éš”ï¼ˆ30/45/60 åˆ†é’Ÿï¼‰æé†’èµ·èº«æ´»åŠ¨
+// Ã¤Â¹â€¦Ã¥ÂÂÃ¦ÂÂÃ©â€ â€™Ã¯Â¼Å¡Ã¦Å’â€°Ã¨Â®Â¾Ã§Â½Â®Ã©â€”Â´Ã©Å¡â€Ã¯Â¼Ë†30/45/60 Ã¥Ë†â€ Ã©â€™Å¸Ã¯Â¼â€°Ã¦ÂÂÃ©â€ â€™Ã¨ÂµÂ·Ã¨ÂºÂ«Ã¦Â´Â»Ã¥Å Â¨
 const sedGet = () => LS.get('rehab_sedentary', { on: false, min: 45 });
 let sedLastActive = Date.now();
-document.addEventListener('click', () => { sedLastActive = Date.now(); }, true);   // ä»»ä½•æ“ä½œéƒ½ç®—æ´»åŠ¨
+document.addEventListener('click', () => { sedLastActive = Date.now(); }, true);   // Ã¤Â»Â»Ã¤Â½â€¢Ã¦â€œÂÃ¤Â½Å“Ã©Æ’Â½Ã§Â®â€”Ã¦Â´Â»Ã¥Å Â¨
 function renderSedentary() {
   const s = sedGet();
   $('sed-interval').value = String(s.min || 45);
@@ -940,11 +940,11 @@ setInterval(() => {
   if (Date.now() - sedLastActive >= s.min * 60000) {
     sedLastActive = Date.now();
     toast(t('sedToast'));
-    if (navigator.vibrate) { try { navigator.vibrate(200); } catch { /* å¿½ç•¥ */ } }
+    if (navigator.vibrate) { try { navigator.vibrate(200); } catch { /* Ã¥Â¿Â½Ã§â€¢Â¥ */ } }
   }
 }, 30000);
 
-// AI ä¸€é”®ç”Ÿæˆåº·å¤è®¡åˆ’ï¼ˆæŒ‰ä¸ªäººèµ„æ–™é‡Œçš„åº·å¤ç›®æ ‡ï¼‰
+// AI Ã¤Â¸â‚¬Ã©â€Â®Ã§â€Å¸Ã¦Ë†ÂÃ¥ÂºÂ·Ã¥Â¤ÂÃ¨Â®Â¡Ã¥Ë†â€™Ã¯Â¼Ë†Ã¦Å’â€°Ã¤Â¸ÂªÃ¤ÂºÂºÃ¨Âµâ€žÃ¦â€“â„¢Ã©â€¡Å’Ã§Å¡â€žÃ¥ÂºÂ·Ã¥Â¤ÂÃ§â€ºÂ®Ã¦Â â€¡Ã¯Â¼â€°
 $('btn-ai-plan').addEventListener('click', () => {
   const goal = profileGet().goal || 'other';
   const items = generatePlan(goal);
@@ -1017,15 +1017,15 @@ $('photo-input').addEventListener('change', async (ev) => {
     }
     const lms = result.landmarks[0];
     currentVG = kneeValgus(lms);
-    // èº«ä½“å®Œæ•´æ€§ï¼šå…³é”®éƒ¨ä½æ²¡ç…§å…¨ â†’ æé†’ï¼Œä¸åšåˆ†æžï¼ˆæ™ºèƒ½è¯†åˆ«æ¨¡å¼ä¸‹ä»…ç¼ºè„šè¸å¯æ”¾è¡Œï¼‰
+    // Ã¨ÂºÂ«Ã¤Â½â€œÃ¥Â®Å’Ã¦â€¢Â´Ã¦â‚¬Â§Ã¯Â¼Å¡Ã¥â€¦Â³Ã©â€Â®Ã©Æ’Â¨Ã¤Â½ÂÃ¦Â²Â¡Ã§â€¦Â§Ã¥â€¦Â¨ Ã¢â€ â€™ Ã¦ÂÂÃ©â€ â€™Ã¯Â¼Å’Ã¤Â¸ÂÃ¥ÂÅ¡Ã¥Ë†â€ Ã¦Å¾ÂÃ¯Â¼Ë†Ã¦â„¢ÂºÃ¨Æ’Â½Ã¨Â¯â€ Ã¥Ë†Â«Ã¦Â¨Â¡Ã¥Â¼ÂÃ¤Â¸â€¹Ã¤Â»â€¦Ã§Â¼ÂºÃ¨â€žÅ¡Ã¨Â¸ÂÃ¥ÂÂ¯Ã¦â€Â¾Ã¨Â¡Å’Ã¯Â¼â€°
     const missingParts = bodyMissing(lms, getEx(activeExId()));
     const autoAnkleOnly = activeExId() === 'auto' && missingParts.length === 1 && missingParts[0] === t('jAnkle');
     if (missingParts.length && !autoAnkleOnly) {
-      $('feedback').innerHTML = fbWrap('alert', t('bodyCutOff', { parts: missingParts.join('ã€') }) + '<br>' + t('bodyCutOffHint'));
+      $('feedback').innerHTML = fbWrap('alert', t('bodyCutOff', { parts: missingParts.join('Ã£â‚¬Â') }) + '<br>' + t('bodyCutOffHint'));
       $('feedback').className = 'feedback warn';
       return;
     }
-    // æ™ºèƒ½è¯†åˆ«æ¨¡å¼ï¼šç…§ç‰‡æŒ‰ã€Œé™æ­¢ä½“æ€ã€åˆ†ç±»ä¸€æ¬¡ï¼ˆç…§ç‰‡æ²¡æœ‰è¿åŠ¨åŽ†å²ï¼Œç«™å§¿/åå§¿æ£€æŸ¥æ‰æ˜¯ç…§ç‰‡çš„å…¸åž‹ç”¨é€”ï¼‰
+    // Ã¦â„¢ÂºÃ¨Æ’Â½Ã¨Â¯â€ Ã¥Ë†Â«Ã¦Â¨Â¡Ã¥Â¼ÂÃ¯Â¼Å¡Ã§â€¦Â§Ã§â€°â€¡Ã¦Å’â€°Ã£â‚¬Å’Ã©Ââ„¢Ã¦Â­Â¢Ã¤Â½â€œÃ¦â‚¬ÂÃ£â‚¬ÂÃ¥Ë†â€ Ã§Â±Â»Ã¤Â¸â‚¬Ã¦Â¬Â¡Ã¯Â¼Ë†Ã§â€¦Â§Ã§â€°â€¡Ã¦Â²Â¡Ã¦Å“â€°Ã¨Â¿ÂÃ¥Å Â¨Ã¥Å½â€ Ã¥ÂÂ²Ã¯Â¼Å’Ã§Â«â„¢Ã¥Â§Â¿/Ã¥ÂÂÃ¥Â§Â¿Ã¦Â£â‚¬Ã¦Å¸Â¥Ã¦â€°ÂÃ¦ËœÂ¯Ã§â€¦Â§Ã§â€°â€¡Ã§Å¡â€žÃ¥â€¦Â¸Ã¥Å¾â€¹Ã§â€Â¨Ã©â‚¬â€Ã¯Â¼â€°
     if (activeExId() === 'auto') {
       const tN = performance.now();
       const y = (lms[23].y + lms[24].y) / 2;
@@ -1049,7 +1049,7 @@ $('photo-input').addEventListener('change', async (ev) => {
   ev.target.value = '';
 });
 
-/* ============ ä¿å­˜è®°å½• ============ */
+/* ============ Ã¤Â¿ÂÃ¥Â­ËœÃ¨Â®Â°Ã¥Â½â€¢ ============ */
 $('btn-save').addEventListener('click', () => {
   const a = state.agg;
   if (!a.frames) return;
@@ -1068,7 +1068,7 @@ $('btn-save').addEventListener('click', () => {
   const list = sget('rehab_sessions', []);
   list.unshift(session);
   sset('rehab_sessions', list);
-  // è‡ªåŠ¨æ ¸å¯¹ä»Šæ—¥è®¡åˆ’ç›®æ ‡ï¼šè¾¾æ ‡å³è‡ªåŠ¨æ‰“å¡
+  // Ã¨â€¡ÂªÃ¥Å Â¨Ã¦Â Â¸Ã¥Â¯Â¹Ã¤Â»Å Ã¦â€”Â¥Ã¨Â®Â¡Ã¥Ë†â€™Ã§â€ºÂ®Ã¦Â â€¡Ã¯Â¼Å¡Ã¨Â¾Â¾Ã¦Â â€¡Ã¥ÂÂ³Ã¨â€¡ÂªÃ¥Å Â¨Ã¦â€°â€œÃ¥ÂÂ¡
   const t0 = new Date(); t0.setHours(0, 0, 0, 0);
   const tReps = list.reduce((a, s) => (new Date(s.ts) >= t0 && s.ex === ex.id ? a + s.reps : a), 0);
   const tPlan = planForToday().find((p) => p.ex === ex.id);
@@ -1092,7 +1092,7 @@ $('btn-save').addEventListener('click', () => {
   scheduleCloudSync();
 });
 
-/* ============ è®°å½•æ‰“å¡é¡µ ============ */
+/* ============ Ã¨Â®Â°Ã¥Â½â€¢Ã¦â€°â€œÃ¥ÂÂ¡Ã©Â¡Âµ ============ */
 function renderRecords() {
   const sessions = sget('rehab_sessions', []);
   const today = new Date(); today.setHours(0, 0, 0, 0);
@@ -1119,7 +1119,7 @@ function renderRecords() {
   $('summary-line').textContent = sessions.length
     ? t('summaryLine', { n: sessions.length, r: totalReps, s: streak })
     : t('noSessions');
-  // v2.21.6ï¼šæœ¬å‘¨å•æ—¥æœ€ä½³
+  // v2.21.6Ã¯Â¼Å¡Ã¦Å“Â¬Ã¥â€˜Â¨Ã¥Ââ€¢Ã¦â€”Â¥Ã¦Å“â‚¬Ã¤Â½Â³
   const bestDay = Math.max(0, ...days.map((d) => d.reps));
   const bestEl = $('week-best');
   if (bestEl) bestEl.textContent = bestDay > 0 ? t('weekBest', { d: bestDay }) : '';
@@ -1133,25 +1133,25 @@ function renderRecords() {
       return `
       <div class="item">
         <div>
-          <div class="t"><span class="t-ico">${icon(builtin ? builtin.icon : 'custom')}</span>${name} Â· ${fmtDate(s.ts)} Â· ${t('repsN', { n: s.reps })} Â· ${s.dur ?? '?'}s Â· ${depthTxt(s.depth)}</div>
-          <div class="d">${t('badFramesPct', { p: s.badPct })}${s.badPct >= 30 ? ' âš ï¸' : ''}${s.riskPct ? ' Â· ' + t('riskFramesPct', { p: s.riskPct }) + ' ðŸš¨' : ''}${s.valgusPct ? ' Â· ' + t('valgusFramesPct', { p: s.valgusPct }) : ''}${s.collectCount ? ' Â· ' + t('collectN', { n: s.collectCount }) : ''}</div>
+          <div class="t"><span class="t-ico">${icon(builtin ? builtin.icon : 'custom')}</span>${name} Ã‚Â· ${fmtDate(s.ts)} Ã‚Â· ${t('repsN', { n: s.reps })} Ã‚Â· ${s.dur ?? '?'}s Ã‚Â· ${depthTxt(s.depth)}</div>
+          <div class="d">${t('badFramesPct', { p: s.badPct })}${s.badPct >= 30 ? ' Ã¢Å¡Â Ã¯Â¸Â' : ''}${s.riskPct ? ' Ã‚Â· ' + t('riskFramesPct', { p: s.riskPct }) + ' Ã°Å¸Å¡Â¨' : ''}${s.valgusPct ? ' Ã‚Â· ' + t('valgusFramesPct', { p: s.valgusPct }) : ''}${s.collectCount ? ' Ã‚Â· ' + t('collectN', { n: s.collectCount }) : ''}</div>
         </div>
-        <button class="del" data-id="${s.id}">âœ•</button>
+        <button class="del" data-id="${s.id}">Ã¢Å“â€¢</button>
       </div>`;
     }).join('');
     list.querySelectorAll('.del').forEach((btn) => btn.addEventListener('click', () => {
-      if (!confirm(t('confirmDelSession'))) return;   // v2.21.6ï¼šåˆ é™¤å‰ç¡®è®¤ï¼Œé˜²è¯¯åˆ è®­ç»ƒè®°å½•
+      if (!confirm(t('confirmDelSession'))) return;   // v2.21.6Ã¯Â¼Å¡Ã¥Ë†Â Ã©â„¢Â¤Ã¥â€°ÂÃ§Â¡Â®Ã¨Â®Â¤Ã¯Â¼Å’Ã©ËœÂ²Ã¨Â¯Â¯Ã¥Ë†Â Ã¨Â®Â­Ã§Â»Æ’Ã¨Â®Â°Ã¥Â½â€¢
       sset('rehab_sessions', sessions.filter((s) => s.id !== btn.dataset.id));
       renderRecords();
     }));
   }
-  // ç»Ÿè®¡æŠ¥è¡¨ + æˆå°±
+  // Ã§Â»Å¸Ã¨Â®Â¡Ã¦Å Â¥Ã¨Â¡Â¨ + Ã¦Ë†ÂÃ¥Â°Â±
   renderTrends();
   renderDist();
   renderAchievements();
 }
 
-/* ============ è¯„ä¼°åé¦ˆé¡µ ============ */
+/* ============ Ã¨Â¯â€žÃ¤Â¼Â°Ã¥ÂÂÃ©Â¦Ë†Ã©Â¡Âµ ============ */
 $('tab-assess').querySelectorAll('.seg').forEach((seg) => {
   seg.addEventListener('click', (e) => {
     const btn = e.target.closest('button');
@@ -1178,14 +1178,14 @@ $('btn-assess').addEventListener('click', () => {
   const prev = list[0];
   list.unshift(report);
   sset('rehab_assessments', list);
-  const gradeKey = score <= 1 ? 'assessGrade0' : score <= 3 ? 'assessGrade1' : 'assessGrade2';   // v2.21.7ï¼šç»“æžœåˆ†çº§
+  const gradeKey = score <= 1 ? 'assessGrade0' : score <= 3 ? 'assessGrade1' : 'assessGrade2';   // v2.21.7Ã¯Â¼Å¡Ã§Â»â€œÃ¦Å¾Å“Ã¥Ë†â€ Ã§ÂºÂ§
   let deltaHtml = '';
   if (prev) {
     const d = score - prev.score;
     if (d !== 0) deltaHtml = '<span class="hint tiny">' + t('paHistoryDelta', { v: d < 0 ? t('assessBetter', { d: -d }) : t('assessWorse', { d }) }) + '</span><br>';
   }
   const el = $('assess-result');
-  el.innerHTML = `<b>${t('assessScore', { s: score })} Â· ${t(gradeKey)}</b><br>${deltaHtml}${adviceKeys.map((k) => t(k)).join('<br>')}`;
+  el.innerHTML = `<b>${t('assessScore', { s: score })} Ã‚Â· ${t(gradeKey)}</b><br>${deltaHtml}${adviceKeys.map((k) => t(k)).join('<br>')}`;
   el.classList.remove('hidden');
   renderAssessments();
   scheduleCloudSync();
@@ -1199,22 +1199,22 @@ function renderAssessments() {
     <div class="item">
       <div>
         <div class="t">${t('assessScoreShort', { t: fmtDate(r.ts), s: r.score })}</div>
-        <div class="d">${adviceText(r).replace(/<[^>]+>/g, '').slice(0, 60)}â€¦</div>
+        <div class="d">${adviceText(r).replace(/<[^>]+>/g, '').slice(0, 60)}Ã¢â‚¬Â¦</div>
       </div>
-      <button class="del" data-id="${r.id}">âœ•</button>
+      <button class="del" data-id="${r.id}">Ã¢Å“â€¢</button>
     </div>`).join('');
   el.querySelectorAll('.del').forEach((btn) => btn.addEventListener('click', () => {
-    if (!confirm(t('confirmDelAssess'))) return;   // v2.21.7ï¼šåˆ é™¤å‰ç¡®è®¤
+    if (!confirm(t('confirmDelAssess'))) return;   // v2.21.7Ã¯Â¼Å¡Ã¥Ë†Â Ã©â„¢Â¤Ã¥â€°ÂÃ§Â¡Â®Ã¨Â®Â¤
     sset('rehab_assessments', list.filter((r) => r.id !== btn.dataset.id));
     renderAssessments();
     scheduleCloudSync();
   }));
-  // è¯„ä¼°åˆ†æ•°è¶‹åŠ¿
+  // Ã¨Â¯â€žÃ¤Â¼Â°Ã¥Ë†â€ Ã¦â€¢Â°Ã¨Â¶â€¹Ã¥Å Â¿
   const scores = [...list].reverse().slice(-10).map((r) => r.score);
   $('assess-trend').innerHTML = scores.length ? lineChart(scores, '#0e7c66', 'a') : emptyBox('assess', 'emptyAssess');
 }
 
-/* ============ é¢„çº¦æ—¥ç¨‹é¡µ ============ */
+/* ============ Ã©Â¢â€žÃ§ÂºÂ¦Ã¦â€”Â¥Ã§Â¨â€¹Ã©Â¡Âµ ============ */
 $('appt-form').addEventListener('submit', (e) => {
   e.preventDefault();
   const appt = {
@@ -1240,31 +1240,31 @@ function renderAppts() {
   const tomorrow = new Date(now); tomorrow.setDate(now.getDate() + 1);
   const tomorrowStr = d2(tomorrow);
   el.innerHTML = list.map((a) => {
-    // ä¿®å¤ï¼šä¹‹å‰ç”¨ < 23:59 æ¯”è¾ƒï¼Œå¯¼è‡´ä»Šå¤©è¿˜æ²¡åˆ°çš„é¢„çº¦ä¹Ÿè¢«æ ‡æˆå·²è¿‡æœŸ
+    // Ã¤Â¿Â®Ã¥Â¤ÂÃ¯Â¼Å¡Ã¤Â¹â€¹Ã¥â€°ÂÃ§â€Â¨ < 23:59 Ã¦Â¯â€Ã¨Â¾Æ’Ã¯Â¼Å’Ã¥Â¯Â¼Ã¨â€¡Â´Ã¤Â»Å Ã¥Â¤Â©Ã¨Â¿ËœÃ¦Â²Â¡Ã¥Ë†Â°Ã§Å¡â€žÃ©Â¢â€žÃ§ÂºÂ¦Ã¤Â¹Å¸Ã¨Â¢Â«Ã¦Â â€¡Ã¦Ë†ÂÃ¥Â·Â²Ã¨Â¿â€¡Ã¦Å“Å¸
     const past = a.date < todayStr || (a.date === todayStr && a.time <= nowTime);
     const daysUntil = Math.round((new Date(a.date + 'T00:00:00') - new Date(todayStr + 'T00:00:00')) / 86400000);
     const tag = past ? `<b style="color:var(--red)">${t('tagPast')}</b>`
       : a.date === todayStr ? `<b style="color:var(--green)">${t('tagToday')}</b>`
       : a.date === tomorrowStr ? `<b style="color:var(--yellow)">${t('tagTomorrow')}</b>`
-      : `<b style="color:var(--teal)">${t('apptIn', { n: daysUntil })}</b>`;   // v2.21.8ï¼šæœªæ¥é¢„çº¦å€’è®¡æ—¶
+      : `<b style="color:var(--teal)">${t('apptIn', { n: daysUntil })}</b>`;   // v2.21.8Ã¯Â¼Å¡Ã¦Å“ÂªÃ¦ÂÂ¥Ã©Â¢â€žÃ§ÂºÂ¦Ã¥â‚¬â€™Ã¨Â®Â¡Ã¦â€”Â¶
     return `
     <div class="item" style="${past ? 'opacity:.55' : ''}">
       <div>
-        <div class="t"><span class="t-ico">${icon('schedule')}</span>${a.date} ${a.time} Â· ${a.place}${tag ? ' ' + tag : ''}</div>
+        <div class="t"><span class="t-ico">${icon('schedule')}</span>${a.date} ${a.time} Ã‚Â· ${a.place}${tag ? ' ' + tag : ''}</div>
         <div class="d">${a.note || t('noNote')}</div>
       </div>
-      <button class="del" data-id="${a.id}">âœ•</button>
+      <button class="del" data-id="${a.id}">Ã¢Å“â€¢</button>
     </div>`;
   }).join('');
   el.querySelectorAll('.del').forEach((btn) => btn.addEventListener('click', () => {
-    if (!confirm(t('confirmDelAppt'))) return;   // v2.21.8ï¼šåˆ é™¤ç¡®è®¤
+    if (!confirm(t('confirmDelAppt'))) return;   // v2.21.8Ã¯Â¼Å¡Ã¥Ë†Â Ã©â„¢Â¤Ã§Â¡Â®Ã¨Â®Â¤
     sset('rehab_appts', list.filter((a) => a.id !== btn.dataset.id));
     renderAppts();
     scheduleCloudSync();
   }));
 }
 
-/* ============ è®¾ç½®é¡µï¼šè‡ªå®šä¹‰åŠ¨ä½œ ============ */
+/* ============ Ã¨Â®Â¾Ã§Â½Â®Ã©Â¡ÂµÃ¯Â¼Å¡Ã¨â€¡ÂªÃ¥Â®Å¡Ã¤Â¹â€°Ã¥Å Â¨Ã¤Â½Å“ ============ */
 let editingCustomId = null;
 function renderCustomList() {
   const list = loadCustomExercises();
@@ -1274,7 +1274,7 @@ function renderCustomList() {
     <div class="item">
       <div>
         <div class="t"><span class="t-ico">${icon('custom')}</span>${e.name}</div>
-        <div class="d">${e.angles.map((a) => a.name).join(' Â· ')}</div>
+        <div class="d">${e.angles.map((a) => a.name).join(' Ã‚Â· ')}</div>
       </div>
       <div style="display:flex;gap:4px">
         <button class="mini" data-edit="${e.id}">${icon('edit')}</button>
@@ -1297,20 +1297,20 @@ function openCustomForm(id) {
   $('cf-title').textContent = id ? t('cfTitleEdit') : t('cfTitleNew');
   $('cf-name').value = ex.name;
   $('cf-desc').value = ex.desc || '';
-  // è§’åº¦1
+  // Ã¨Â§â€™Ã¥ÂºÂ¦1
   $('cf-a1-name').value = ex.angles[0].name;
   $('cf-a1-type').value = ex.angles[0].type;
   const a1 = ex.angles[0];
   $('cf-a1-a').innerHTML = jSel('cf-a1-a', a1.a);
   $('cf-a1-b').innerHTML = jSel('cf-a1-b', a1.b);
   $('cf-a1-c').innerHTML = jSel('cf-a1-c', a1.c ?? 'knee');
-  // è§’åº¦2ï¼ˆå¯æ— ï¼‰
+  // Ã¨Â§â€™Ã¥ÂºÂ¦2Ã¯Â¼Ë†Ã¥ÂÂ¯Ã¦â€”Â Ã¯Â¼â€°
   const a2 = ex.angles[1];
   $('cf-a2-name').value = a2?.name || t('fallbackLean');
   $('cf-a2-type').value = a2?.type || 'vertical';
   $('cf-a2-a').innerHTML = jSel('cf-a2-a', a2?.a ?? 'shoulder');
   $('cf-a2-b').innerHTML = jSel('cf-a2-b', a2?.b ?? 'hip');
-  // è§„åˆ™
+  // Ã¨Â§â€žÃ¥Ë†â„¢
   $('cf-r1-min').value = ex.rules[0].min ?? '';
   $('cf-r1-max').value = ex.rules[0].max ?? '';
   $('cf-r1-good').value = ex.rules[0].msgGood;
@@ -1320,7 +1320,7 @@ function openCustomForm(id) {
   $('cf-r2-max').value = r2?.max ?? '';
   $('cf-r2-good').value = r2?.msgGood || '';
   $('cf-r2-bad').value = r2?.msgBad || '';
-  // è®¡æ¬¡
+  // Ã¨Â®Â¡Ã¦Â¬Â¡
   $('cf-rep-metric').value = ex.reps.metric;
   $('cf-rep-down').value = ex.reps.downBelow;
   $('cf-rep-up').value = ex.reps.upAbove;
@@ -1357,7 +1357,7 @@ $('cf-save').addEventListener('click', () => {
   scheduleCloudSync();
 });
 
-/* ============ è®¾ç½®é¡µï¼šæ•°æ®é‡‡é›†å¯¼å‡º ============ */
+/* ============ Ã¨Â®Â¾Ã§Â½Â®Ã©Â¡ÂµÃ¯Â¼Å¡Ã¦â€¢Â°Ã¦ÂÂ®Ã©â€¡â€¡Ã©â€ºâ€ Ã¥Â¯Â¼Ã¥â€¡Âº ============ */
 $('btn-export-collect').addEventListener('click', () => {
   if (!state.collectBuf.length) { toast(t('toastNoCollect')); return; }
   const exIds = [...new Set(state.collectBuf.map((r) => r.ex))];
@@ -1382,12 +1382,12 @@ $('btn-clear-collect').addEventListener('click', () => {
   if (!confirm(t('confirmClearCollect'))) return;
   state.collectBuf = []; sset('rehab_collect', []);
   renderCollectCount();
-  renderStorageSize();   // v2.21.9ï¼šé‡‡é›†æ•°æ®æ¸…ç©ºåŽåŒæ­¥åˆ·æ–°ã€Œæœ¬æœºæ•°æ®å ç”¨ã€
+  renderStorageSize();   // v2.21.9Ã¯Â¼Å¡Ã©â€¡â€¡Ã©â€ºâ€ Ã¦â€¢Â°Ã¦ÂÂ®Ã¦Â¸â€¦Ã§Â©ÂºÃ¥ÂÅ½Ã¥ÂÅ’Ã¦Â­Â¥Ã¥Ë†Â·Ã¦â€“Â°Ã£â‚¬Å’Ã¦Å“Â¬Ã¦Å“ÂºÃ¦â€¢Â°Ã¦ÂÂ®Ã¥ÂÂ Ã§â€Â¨Ã£â‚¬Â
   toast(t('toastClearedCollect'));
 });
 
-/* ============ è®¾ç½®é¡µï¼šå¯¼å‡º / å¯¼å…¥ / æ¸…ç©º ============ */
-// v2.21.9ï¼šæœ¬æœºæ•°æ®é”®æ¸…å•ï¼ˆå¤‡ä»½ / å¯¼å…¥ / æ¸…ç©ºå…±ç”¨åŒä¸€ä»½ï¼Œæ–°å¢žæ•°æ®æ¨¡å—æ—¶åªæ”¹è¿™é‡Œï¼Œé˜²é—æ¼ï¼‰
+/* ============ Ã¨Â®Â¾Ã§Â½Â®Ã©Â¡ÂµÃ¯Â¼Å¡Ã¥Â¯Â¼Ã¥â€¡Âº / Ã¥Â¯Â¼Ã¥â€¦Â¥ / Ã¦Â¸â€¦Ã§Â©Âº ============ */
+// v2.21.9Ã¯Â¼Å¡Ã¦Å“Â¬Ã¦Å“ÂºÃ¦â€¢Â°Ã¦ÂÂ®Ã©â€Â®Ã¦Â¸â€¦Ã¥Ââ€¢Ã¯Â¼Ë†Ã¥Â¤â€¡Ã¤Â»Â½ / Ã¥Â¯Â¼Ã¥â€¦Â¥ / Ã¦Â¸â€¦Ã§Â©ÂºÃ¥â€¦Â±Ã§â€Â¨Ã¥ÂÅ’Ã¤Â¸â‚¬Ã¤Â»Â½Ã¯Â¼Å’Ã¦â€“Â°Ã¥Â¢Å¾Ã¦â€¢Â°Ã¦ÂÂ®Ã¦Â¨Â¡Ã¥Ââ€”Ã¦â€”Â¶Ã¥ÂÂªÃ¦â€Â¹Ã¨Â¿â„¢Ã©â€¡Å’Ã¯Â¼Å’Ã©ËœÂ²Ã©Ââ€”Ã¦Â¼ÂÃ¯Â¼â€°
 const DATA_KEYS = [
   'rehab_sessions', 'rehab_assessments', 'rehab_appts', 'rehab_custom_ex', 'rehab_collect',
   'rehab_plan', 'rehab_plan_done', 'rehab_profile',
@@ -1400,9 +1400,9 @@ const DATA_KEYS = [
   'rehab_cam_prefs',
 ];
 const bakCount = (a) => (Array.isArray(a) ? a.length : 0);
-// v2.21.9ï¼šå¤‡ä»½å†…å®¹è¡¥å…¨ï¼ˆåŽŸç¼º è®¡åˆ’/è®¡åˆ’æ‰“å¡/ä¸ªäººèµ„æ–™/åŠŸèƒ½æµ‹è¯•/ä½“æ€æŠ¥å‘Š/è¿åŠ¨æŒ‡æ•°åŽ†å²ï¼‰
+// v2.21.9Ã¯Â¼Å¡Ã¥Â¤â€¡Ã¤Â»Â½Ã¥â€ â€¦Ã¥Â®Â¹Ã¨Â¡Â¥Ã¥â€¦Â¨Ã¯Â¼Ë†Ã¥Å½Å¸Ã§Â¼Âº Ã¨Â®Â¡Ã¥Ë†â€™/Ã¨Â®Â¡Ã¥Ë†â€™Ã¦â€°â€œÃ¥ÂÂ¡/Ã¤Â¸ÂªÃ¤ÂºÂºÃ¨Âµâ€žÃ¦â€“â„¢/Ã¥Å Å¸Ã¨Æ’Â½Ã¦Âµâ€¹Ã¨Â¯â€¢/Ã¤Â½â€œÃ¦â‚¬ÂÃ¦Å Â¥Ã¥â€˜Å /Ã¨Â¿ÂÃ¥Å Â¨Ã¦Å’â€¡Ã¦â€¢Â°Ã¥Å½â€ Ã¥ÂÂ²Ã¯Â¼â€°
 const bakData = () => ({
-  app: 'åº·å¤AI', version: 3, exportedAt: new Date().toISOString(),
+  app: 'Ã¥ÂºÂ·Ã¥Â¤ÂAI', version: 3, exportedAt: new Date().toISOString(),
   sessions: sget('rehab_sessions', []),
   assessments: sget('rehab_assessments', []),
   appts: sget('rehab_appts', []),
@@ -1429,7 +1429,7 @@ $('btn-export').addEventListener('click', () => {
   a.download = `${t('fileBackup')}-${new Date().toISOString().slice(0, 10)}.json`;
   a.click();
   URL.revokeObjectURL(a.href);
-  sset('rehab_last_backup', Date.now());   // v2.21.9ï¼šè®°å½•ä¸Šæ¬¡å¯¼å‡ºæ—¶é—´ï¼Œå¤‡ä»½å¡æ˜¾ç¤ºã€Œä¸Šæ¬¡å¯¼å‡ºå¤‡ä»½ã€
+  sset('rehab_last_backup', Date.now());   // v2.21.9Ã¯Â¼Å¡Ã¨Â®Â°Ã¥Â½â€¢Ã¤Â¸Å Ã¦Â¬Â¡Ã¥Â¯Â¼Ã¥â€¡ÂºÃ¦â€”Â¶Ã©â€”Â´Ã¯Â¼Å’Ã¥Â¤â€¡Ã¤Â»Â½Ã¥ÂÂ¡Ã¦ËœÂ¾Ã§Â¤ÂºÃ£â‚¬Å’Ã¤Â¸Å Ã¦Â¬Â¡Ã¥Â¯Â¼Ã¥â€¡ÂºÃ¥Â¤â€¡Ã¤Â»Â½Ã£â‚¬Â
   renderLastBackup();
   toast(t('toastExportBackup'));
 });
@@ -1440,19 +1440,19 @@ $('import-input').addEventListener('change', async (ev) => {
   try {
     const data = JSON.parse(await file.text());
     if (!data || !Array.isArray(data.sessions)) throw new Error(t('importFormatErr'));
-    // v2.32.0ï¼šå¯¼å…¥ = ã€Œç«¯æ‰‹æŽ¥åŠ›ã€â€”â€”ä»Žæ‰‹æœºå¯¼å‡ºçš„æ–‡ä»¶åœ¨ç”µè„‘å¯¼å…¥æ—¶æ˜¯**åˆå¹¶**ï¼ˆåŽ»é‡ã€ä¿ç•™åŒæ–¹æ•°æ®ï¼‰ï¼Œä¸å†è¦†ç›–æœ¬æœº
+    // v2.32.0Ã¯Â¼Å¡Ã¥Â¯Â¼Ã¥â€¦Â¥ = Ã£â‚¬Å’Ã§Â«Â¯Ã¦â€°â€¹Ã¦Å½Â¥Ã¥Å â€ºÃ£â‚¬ÂÃ¢â‚¬â€Ã¢â‚¬â€Ã¤Â»Å½Ã¦â€°â€¹Ã¦Å“ÂºÃ¥Â¯Â¼Ã¥â€¡ÂºÃ§Å¡â€žÃ¦â€“â€¡Ã¤Â»Â¶Ã¥Å“Â¨Ã§â€ÂµÃ¨â€žâ€˜Ã¥Â¯Â¼Ã¥â€¦Â¥Ã¦â€”Â¶Ã¦ËœÂ¯**Ã¥ÂË†Ã¥Â¹Â¶**Ã¯Â¼Ë†Ã¥Å½Â»Ã©â€¡ÂÃ£â‚¬ÂÃ¤Â¿ÂÃ§â€¢â„¢Ã¥ÂÅ’Ã¦â€“Â¹Ã¦â€¢Â°Ã¦ÂÂ®Ã¯Â¼â€°Ã¯Â¼Å’Ã¤Â¸ÂÃ¥â€ ÂÃ¨Â¦â€ Ã§â€ºâ€“Ã¦Å“Â¬Ã¦Å“Âº
     if (!confirm(t('importConfirm', { s: bakCount(data.sessions), a: bakCount(data.assessments), p: bakCount(data.appts), f: bakCount(data.ftHistory), r: bakCount(data.paHistory) }))) {
       ev.target.value = '';
       return;
     }
     const before = { s: sget('rehab_sessions', []).length, p: painHistory().length, r: romHistory().length };
-    const m = mergeSyncData(data);   // ä¸ŽäºŒç»´ç åŒæ­¥å…±ç”¨åŒä¸€ä¸ªåˆå¹¶å¼•æ“Žï¼ˆæŒ‰ id åŽ»é‡ã€åŒæ–¹ä¿ç•™ï¼‰
+    const m = mergeSyncData(data);   // Ã¤Â¸Å½Ã¤ÂºÅ’Ã§Â»Â´Ã§Â ÂÃ¥ÂÅ’Ã¦Â­Â¥Ã¥â€¦Â±Ã§â€Â¨Ã¥ÂÅ’Ã¤Â¸â‚¬Ã¤Â¸ÂªÃ¥ÂË†Ã¥Â¹Â¶Ã¥Â¼â€¢Ã¦â€œÅ½Ã¯Â¼Ë†Ã¦Å’â€° id Ã¥Å½Â»Ã©â€¡ÂÃ£â‚¬ÂÃ¥ÂÅ’Ã¦â€“Â¹Ã¤Â¿ÂÃ§â€¢â„¢Ã¯Â¼â€°
     const added = {
       s: Math.max(0, sget('rehab_sessions', []).length - before.s),
       p: Math.max(0, painHistory().length - before.p),
       r: Math.max(0, romHistory().length - before.r),
     };
-    refreshAllData();   // å¯¼å…¥åŽæ‰€æœ‰ä¾èµ–æ¨¡å—ä¸€èµ·åˆ·æ–°
+    refreshAllData();   // Ã¥Â¯Â¼Ã¥â€¦Â¥Ã¥ÂÅ½Ã¦â€°â‚¬Ã¦Å“â€°Ã¤Â¾ÂÃ¨Âµâ€“Ã¦Â¨Â¡Ã¥Ââ€”Ã¤Â¸â‚¬Ã¨ÂµÂ·Ã¥Ë†Â·Ã¦â€“Â°
     toast(t('importMerged', { s: added.s, p: added.p, r: added.r, t: m.s + m.a + m.p + m.c }));
     scheduleCloudSync();
   } catch (e) { toast(t('toastImportFail', { msg: e.message })); }
@@ -1460,7 +1460,7 @@ $('import-input').addEventListener('change', async (ev) => {
 });
 $('btn-clear').addEventListener('click', () => {
   if (!confirm(t('confirmClearAll'))) return;
-  DATA_KEYS.forEach((k) => sdel(k));   // v2.21.9ï¼šæ¸…å•åŒ–ï¼Œè¡¥é½ åŠŸèƒ½æµ‹è¯•/ä½“æ€æŠ¥å‘Š/è¿åŠ¨æŒ‡æ•° åŽ†å²ï¼ˆåŽŸå®žçŽ°æ®‹ç•™ï¼‰
+  DATA_KEYS.forEach((k) => sdel(k));   // v2.21.9Ã¯Â¼Å¡Ã¦Â¸â€¦Ã¥Ââ€¢Ã¥Å’â€“Ã¯Â¼Å’Ã¨Â¡Â¥Ã©Â½Â Ã¥Å Å¸Ã¨Æ’Â½Ã¦Âµâ€¹Ã¨Â¯â€¢/Ã¤Â½â€œÃ¦â‚¬ÂÃ¦Å Â¥Ã¥â€˜Å /Ã¨Â¿ÂÃ¥Å Â¨Ã¦Å’â€¡Ã¦â€¢Â° Ã¥Å½â€ Ã¥ÂÂ²Ã¯Â¼Ë†Ã¥Å½Å¸Ã¥Â®Å¾Ã§Å½Â°Ã¦Â®â€¹Ã§â€¢â„¢Ã¯Â¼â€°
   state.collectBuf = [];
   invalidateCustom();
   refreshAllData();
@@ -1468,7 +1468,7 @@ $('btn-clear').addEventListener('click', () => {
   scheduleCloudSync();
 });
 
-/* ============ å¯¼èˆª ============ */
+/* ============ Ã¥Â¯Â¼Ã¨Ë†Âª ============ */
 function switchTab(name) {
   state.tab = name;
   document.querySelectorAll('.bottom-nav button').forEach((b) => b.classList.remove('active'));
@@ -1476,25 +1476,25 @@ function switchTab(name) {
   const navBtn = document.querySelector(`.bottom-nav button[data-tab="${name}"]`);
   if (navBtn) navBtn.classList.add('active');
   $('tab-' + name).classList.add('active');
-  // v2.21.10 å…¨å±€ï¼šåˆ‡é¡µæ—¶åŒæ­¥æ— éšœç¢çŠ¶æ€ï¼ˆaria-currentï¼‰ï¼Œå¹¶æŠŠé•¿é¡µé¢æ»šåŠ¨ä½ç½®å¤ä½åˆ°é¡¶éƒ¨
+  // v2.21.10 Ã¥â€¦Â¨Ã¥Â±â‚¬Ã¯Â¼Å¡Ã¥Ë†â€¡Ã©Â¡ÂµÃ¦â€”Â¶Ã¥ÂÅ’Ã¦Â­Â¥Ã¦â€”Â Ã©Å¡Å“Ã§Â¢ÂÃ§Å Â¶Ã¦â‚¬ÂÃ¯Â¼Ë†aria-currentÃ¯Â¼â€°Ã¯Â¼Å’Ã¥Â¹Â¶Ã¦Å Å Ã©â€¢Â¿Ã©Â¡ÂµÃ©ÂÂ¢Ã¦Â»Å¡Ã¥Å Â¨Ã¤Â½ÂÃ§Â½Â®Ã¥Â¤ÂÃ¤Â½ÂÃ¥Ë†Â°Ã©Â¡Â¶Ã©Æ’Â¨
   document.querySelectorAll('.bottom-nav button').forEach((b) => {
     if (b === navBtn) b.setAttribute('aria-current', 'page');
     else b.removeAttribute('aria-current');
   });
   try { window.scrollTo(0, 0); } catch { /* ignore */ }
-  renderBlockSub();                          // v2.33.0ï¼šæŒ‰æ‰€å±žåŒºå—æ˜¾ç¤ºå­æ ‡ç­¾æ 
-  if (name === 'recheck') renderRecheck();   // v2.33.0ï¼šè¿›å…¥å¤è¯„é¡µåˆ·æ–°å¯¹æ¯”ä¸Žåˆ†æž
-  if (name === 'train') { kickLoop(); renderTrainToday(); renderTrainDemo(); renderRealDemoWall(); }   // å›žåˆ°è®­ç»ƒé¡µç«‹å³æ¢å¤åˆ†æž + åˆ·æ–°ä»Šæ—¥ä»»åŠ¡å°æ¡ + æ ‡å‡†ç¤ºèŒƒå¡ + å…¨éƒ¨åŠ¨ä½œçœŸäººç¤ºèŒƒå¢™
-  if (name === 'guide') renderGuide();   // v2.34.0ï¼šè¿›å…¥è·Ÿç»ƒé¡µåˆ·æ–°ç¤ºèŒƒå¢™
-  if (name !== 'posture') paStop();          // v2.19ï¼šç¦»å¼€ä½“æ€é¡µè‡ªåŠ¨åœæ­¢ä½“æ€è¯„ä¼°ï¼ˆé˜²æ‘„åƒå¤´å ç”¨ï¼‰
-  if (name !== 'ft') ftStop();               // v2.20ï¼šç¦»å¼€åŠŸèƒ½æµ‹è¯•é¡µè‡ªåŠ¨åœæ­¢ï¼ˆé˜²æ‘„åƒå¤´å ç”¨ï¼‰
-  if (name === 'home') { renderHome(); renderCareLoop(); }   // v2.21/v2.31ï¼šè¿›å…¥ä»Šæ—¥é¡µåˆ·æ–°æ€»è§ˆä¸Žé—­çŽ¯
-  if (name !== 'guide') gwStop();            // v2.21ï¼šç¦»å¼€è·Ÿç»ƒé¡µè‡ªåŠ¨ç»“æŸè·Ÿç»ƒè®¡æ—¶
-  if (name === 'settings') renderStorageSize();   // v2.21.9ï¼šè¿›å…¥è®¾ç½®é¡µåˆ·æ–°æ•°æ®å ç”¨
-  if (name === 'record') renderReport();          // v2.24.0ï¼šè¿›å…¥è®°å½•é¡µåˆ·æ–°æ²»ç–—å¸ˆæŠ¥å‘Šæ‘˜è¦
-  if (name === 'schedule') renderPath();          // v2.29.0ï¼šè¿›å…¥æ—¥ç¨‹é¡µåˆ·æ–°åº·å¤è·¯å¾„
-  if (name !== 'posture') romStop();              // v2.26.0ï¼šç¦»å¼€ä½“æ€é¡µè‡ªåŠ¨åœæ­¢ ROM æµ‹é‡
-  // v2.33.1ï¼šè¿›å…¥è¯„ä¼°å—ï¼ˆä½“æ€/åŠŸèƒ½æµ‹è¯•/é‡è¡¨ï¼‰å³åˆ·æ–°å…¶é¢æ¿ â€”â€” å¦åˆ™å¯¼å…¥/äºŒç»´ç åŒæ­¥è¿›æ¥çš„æ–°æ•°æ®è¦é‡å¯æ‰çœ‹å¾—è§
+  renderBlockSub();                          // v2.33.0Ã¯Â¼Å¡Ã¦Å’â€°Ã¦â€°â‚¬Ã¥Â±Å¾Ã¥Å’ÂºÃ¥Ââ€”Ã¦ËœÂ¾Ã§Â¤ÂºÃ¥Â­ÂÃ¦Â â€¡Ã§Â­Â¾Ã¦Â Â
+  if (name === 'recheck') renderRecheck();   // v2.33.0Ã¯Â¼Å¡Ã¨Â¿â€ºÃ¥â€¦Â¥Ã¥Â¤ÂÃ¨Â¯â€žÃ©Â¡ÂµÃ¥Ë†Â·Ã¦â€“Â°Ã¥Â¯Â¹Ã¦Â¯â€Ã¤Â¸Å½Ã¥Ë†â€ Ã¦Å¾Â
+  if (name === 'train') { kickLoop(); renderTrainToday(); renderTrainDemo(); setTimeout(renderRealDemoWall, 800); }   // v2.42.1ï¼šç¤ºèŒƒå¢™å»¶è¿Ÿæ¸²æŸ“ï¼Œé¿å…ä¸Žæ‘„åƒå¤´è®¡æ—¶å™¨æŠ¢ä¸»çº¿ç¨‹   // Ã¥â€ºÅ¾Ã¥Ë†Â°Ã¨Â®Â­Ã§Â»Æ’Ã©Â¡ÂµÃ§Â«â€¹Ã¥ÂÂ³Ã¦ÂÂ¢Ã¥Â¤ÂÃ¥Ë†â€ Ã¦Å¾Â + Ã¥Ë†Â·Ã¦â€“Â°Ã¤Â»Å Ã¦â€”Â¥Ã¤Â»Â»Ã¥Å Â¡Ã¥Â°ÂÃ¦ÂÂ¡ + Ã¦Â â€¡Ã¥â€¡â€ Ã§Â¤ÂºÃ¨Å’Æ’Ã¥ÂÂ¡ + Ã¥â€¦Â¨Ã©Æ’Â¨Ã¥Å Â¨Ã¤Â½Å“Ã§Å“Å¸Ã¤ÂºÂºÃ§Â¤ÂºÃ¨Å’Æ’Ã¥Â¢â„¢
+  if (name === 'guide') renderGuide();   // v2.34.0Ã¯Â¼Å¡Ã¨Â¿â€ºÃ¥â€¦Â¥Ã¨Â·Å¸Ã§Â»Æ’Ã©Â¡ÂµÃ¥Ë†Â·Ã¦â€“Â°Ã§Â¤ÂºÃ¨Å’Æ’Ã¥Â¢â„¢
+  if (name !== 'posture') paStop();          // v2.19Ã¯Â¼Å¡Ã§Â¦Â»Ã¥Â¼â‚¬Ã¤Â½â€œÃ¦â‚¬ÂÃ©Â¡ÂµÃ¨â€¡ÂªÃ¥Å Â¨Ã¥ÂÅ“Ã¦Â­Â¢Ã¤Â½â€œÃ¦â‚¬ÂÃ¨Â¯â€žÃ¤Â¼Â°Ã¯Â¼Ë†Ã©ËœÂ²Ã¦â€˜â€žÃ¥Æ’ÂÃ¥Â¤Â´Ã¥ÂÂ Ã§â€Â¨Ã¯Â¼â€°
+  if (name !== 'ft') ftStop();               // v2.20Ã¯Â¼Å¡Ã§Â¦Â»Ã¥Â¼â‚¬Ã¥Å Å¸Ã¨Æ’Â½Ã¦Âµâ€¹Ã¨Â¯â€¢Ã©Â¡ÂµÃ¨â€¡ÂªÃ¥Å Â¨Ã¥ÂÅ“Ã¦Â­Â¢Ã¯Â¼Ë†Ã©ËœÂ²Ã¦â€˜â€žÃ¥Æ’ÂÃ¥Â¤Â´Ã¥ÂÂ Ã§â€Â¨Ã¯Â¼â€°
+  if (name === 'home') { renderHome(); renderCareLoop(); }   // v2.21/v2.31Ã¯Â¼Å¡Ã¨Â¿â€ºÃ¥â€¦Â¥Ã¤Â»Å Ã¦â€”Â¥Ã©Â¡ÂµÃ¥Ë†Â·Ã¦â€“Â°Ã¦â‚¬Â»Ã¨Â§Ë†Ã¤Â¸Å½Ã©â€”Â­Ã§Å½Â¯
+  if (name !== 'guide') gwStop();            // v2.21Ã¯Â¼Å¡Ã§Â¦Â»Ã¥Â¼â‚¬Ã¨Â·Å¸Ã§Â»Æ’Ã©Â¡ÂµÃ¨â€¡ÂªÃ¥Å Â¨Ã§Â»â€œÃ¦ÂÅ¸Ã¨Â·Å¸Ã§Â»Æ’Ã¨Â®Â¡Ã¦â€”Â¶
+  if (name === 'settings') renderStorageSize();   // v2.21.9Ã¯Â¼Å¡Ã¨Â¿â€ºÃ¥â€¦Â¥Ã¨Â®Â¾Ã§Â½Â®Ã©Â¡ÂµÃ¥Ë†Â·Ã¦â€“Â°Ã¦â€¢Â°Ã¦ÂÂ®Ã¥ÂÂ Ã§â€Â¨
+  if (name === 'record') renderReport();          // v2.24.0Ã¯Â¼Å¡Ã¨Â¿â€ºÃ¥â€¦Â¥Ã¨Â®Â°Ã¥Â½â€¢Ã©Â¡ÂµÃ¥Ë†Â·Ã¦â€“Â°Ã¦Â²Â»Ã§â€“â€”Ã¥Â¸Ë†Ã¦Å Â¥Ã¥â€˜Å Ã¦â€˜ËœÃ¨Â¦Â
+  if (name === 'schedule') renderPath();          // v2.29.0Ã¯Â¼Å¡Ã¨Â¿â€ºÃ¥â€¦Â¥Ã¦â€”Â¥Ã§Â¨â€¹Ã©Â¡ÂµÃ¥Ë†Â·Ã¦â€“Â°Ã¥ÂºÂ·Ã¥Â¤ÂÃ¨Â·Â¯Ã¥Â¾â€ž
+  if (name !== 'posture') romStop();              // v2.26.0Ã¯Â¼Å¡Ã§Â¦Â»Ã¥Â¼â‚¬Ã¤Â½â€œÃ¦â‚¬ÂÃ©Â¡ÂµÃ¨â€¡ÂªÃ¥Å Â¨Ã¥ÂÅ“Ã¦Â­Â¢ ROM Ã¦Âµâ€¹Ã©â€¡Â
+  // v2.33.1Ã¯Â¼Å¡Ã¨Â¿â€ºÃ¥â€¦Â¥Ã¨Â¯â€žÃ¤Â¼Â°Ã¥Ââ€”Ã¯Â¼Ë†Ã¤Â½â€œÃ¦â‚¬Â/Ã¥Å Å¸Ã¨Æ’Â½Ã¦Âµâ€¹Ã¨Â¯â€¢/Ã©â€¡ÂÃ¨Â¡Â¨Ã¯Â¼â€°Ã¥ÂÂ³Ã¥Ë†Â·Ã¦â€“Â°Ã¥â€¦Â¶Ã©ÂÂ¢Ã¦ÂÂ¿ Ã¢â‚¬â€Ã¢â‚¬â€ Ã¥ÂÂ¦Ã¥Ë†â„¢Ã¥Â¯Â¼Ã¥â€¦Â¥/Ã¤ÂºÅ’Ã§Â»Â´Ã§Â ÂÃ¥ÂÅ’Ã¦Â­Â¥Ã¨Â¿â€ºÃ¦ÂÂ¥Ã§Å¡â€žÃ¦â€“Â°Ã¦â€¢Â°Ã¦ÂÂ®Ã¨Â¦ÂÃ©â€¡ÂÃ¥ÂÂ¯Ã¦â€°ÂÃ§Å“â€¹Ã¥Â¾â€”Ã¨Â§Â
   if (name === 'posture' || name === 'ft' || name === 'assess') {
     renderPaUI(); renderFtUI(); renderRomHistory(); renderRomResult(romHistory()[0] || null);
     renderPromHistory(); renderPain(); renderReport(); renderCareLoop();
@@ -1503,10 +1503,10 @@ function switchTab(name) {
 document.querySelectorAll('.bottom-nav button').forEach((btn) => {
   btn.addEventListener('click', () => switchTab(btn.dataset.tab));
 });
-// åˆ‡åˆ°åŽå°è‡ªåŠ¨æš‚åœåˆ†æžï¼Œå›žæ¥è‡ªåŠ¨æ¢å¤ï¼ˆçœç”µï¼‰
+// Ã¥Ë†â€¡Ã¥Ë†Â°Ã¥ÂÅ½Ã¥ÂÂ°Ã¨â€¡ÂªÃ¥Å Â¨Ã¦Å¡â€šÃ¥ÂÅ“Ã¥Ë†â€ Ã¦Å¾ÂÃ¯Â¼Å’Ã¥â€ºÅ¾Ã¦ÂÂ¥Ã¨â€¡ÂªÃ¥Å Â¨Ã¦ÂÂ¢Ã¥Â¤ÂÃ¯Â¼Ë†Ã§Å“ÂÃ§â€ÂµÃ¯Â¼â€°
 document.addEventListener('visibilitychange', () => { if (!document.hidden) { kickLoop(); cloudAutoSync(); } });
 
-/* ============ ç«¯æ‰‹äº’é€šï¼šäºŒç»´ç åŒæ­¥ï¼ˆæ— æœåŠ¡å™¨ Â· æ•°æ®æœ¬åœ°åŽ‹ç¼©åŠ å¯†ä¼ è¾“ï¼‰ ============ */
+/* ============ Ã§Â«Â¯Ã¦â€°â€¹Ã¤Âºâ€™Ã©â‚¬Å¡Ã¯Â¼Å¡Ã¤ÂºÅ’Ã§Â»Â´Ã§Â ÂÃ¥ÂÅ’Ã¦Â­Â¥Ã¯Â¼Ë†Ã¦â€”Â Ã¦Å“ÂÃ¥Å Â¡Ã¥â„¢Â¨ Ã‚Â· Ã¦â€¢Â°Ã¦ÂÂ®Ã¦Å“Â¬Ã¥Å“Â°Ã¥Å½â€¹Ã§Â¼Â©Ã¥Å Â Ã¥Â¯â€ Ã¤Â¼Â Ã¨Â¾â€œÃ¯Â¼â€° ============ */
 const SYNC_PREFIX = 'RAS|';
 const syncState = { scanning: false, got: [], total: null, last: 0, off: null, showing: false, frameIdx: 0, chunks: [], frameTimer: null };
 
@@ -1535,20 +1535,20 @@ function makeSyncData(includeCollect = false) {
     plan: sget('rehab_plan', []),
     planDone: sget('rehab_plan_done', {}),
     profile: sget('rehab_profile', {}),
-    // v2.21.9ï¼šè¡¥ä¼  åŠŸèƒ½æµ‹è¯•è®°å½• / ä½“æ€æŠ¥å‘Š / è¿åŠ¨æŒ‡æ•°åŽ†å²ï¼ˆåŽŸæ¥æ¢è®¾å¤‡åŽè¿™ä¸‰é¡µæ˜¯ç©ºçš„ï¼‰
+    // v2.21.9Ã¯Â¼Å¡Ã¨Â¡Â¥Ã¤Â¼Â  Ã¥Å Å¸Ã¨Æ’Â½Ã¦Âµâ€¹Ã¨Â¯â€¢Ã¨Â®Â°Ã¥Â½â€¢ / Ã¤Â½â€œÃ¦â‚¬ÂÃ¦Å Â¥Ã¥â€˜Å  / Ã¨Â¿ÂÃ¥Å Â¨Ã¦Å’â€¡Ã¦â€¢Â°Ã¥Å½â€ Ã¥ÂÂ²Ã¯Â¼Ë†Ã¥Å½Å¸Ã¦ÂÂ¥Ã¦ÂÂ¢Ã¨Â®Â¾Ã¥Â¤â€¡Ã¥ÂÅ½Ã¨Â¿â„¢Ã¤Â¸â€°Ã©Â¡ÂµÃ¦ËœÂ¯Ã§Â©ÂºÃ§Å¡â€žÃ¯Â¼â€°
     ftHistory: sget('rehab_ft_history', []),
     paHistory: sget('rehab_pa_history', []),
     homeIdx: sget('rehab_home_idx', []),
-    painHistory: sget('rehab_pain_history', []),   // v2.22.0ï¼šç–¼ç—›è®°å½•ä¸€å¹¶ç«¯æ‰‹äº’é€š
-    romHistory: sget('rehab_rom_history', []),     // v2.26.0ï¼šROM æµ‹é‡ä¸€å¹¶ç«¯æ‰‹äº’é€š
-    promsHistory: sget('rehab_proms_history', []), // v2.27.0ï¼šPROMs é‡è¡¨ä¸€å¹¶ç«¯æ‰‹äº’é€š
-    aiPrefs: sget('rehab_ai_prefs', {}),           // v2.28.0ï¼šæ™ºèƒ½å¼•æ“Žè®¾ç½®ä¸€å¹¶ç«¯æ‰‹äº’é€š
-    path: sget('rehab_path', null),                // v2.29.0ï¼šåº·å¤è·¯å¾„çŠ¶æ€ä¸€å¹¶ç«¯æ‰‹äº’é€š
+    painHistory: sget('rehab_pain_history', []),   // v2.22.0Ã¯Â¼Å¡Ã§â€“Â¼Ã§â€”â€ºÃ¨Â®Â°Ã¥Â½â€¢Ã¤Â¸â‚¬Ã¥Â¹Â¶Ã§Â«Â¯Ã¦â€°â€¹Ã¤Âºâ€™Ã©â‚¬Å¡
+    romHistory: sget('rehab_rom_history', []),     // v2.26.0Ã¯Â¼Å¡ROM Ã¦Âµâ€¹Ã©â€¡ÂÃ¤Â¸â‚¬Ã¥Â¹Â¶Ã§Â«Â¯Ã¦â€°â€¹Ã¤Âºâ€™Ã©â‚¬Å¡
+    promsHistory: sget('rehab_proms_history', []), // v2.27.0Ã¯Â¼Å¡PROMs Ã©â€¡ÂÃ¨Â¡Â¨Ã¤Â¸â‚¬Ã¥Â¹Â¶Ã§Â«Â¯Ã¦â€°â€¹Ã¤Âºâ€™Ã©â‚¬Å¡
+    aiPrefs: sget('rehab_ai_prefs', {}),           // v2.28.0Ã¯Â¼Å¡Ã¦â„¢ÂºÃ¨Æ’Â½Ã¥Â¼â€¢Ã¦â€œÅ½Ã¨Â®Â¾Ã§Â½Â®Ã¤Â¸â‚¬Ã¥Â¹Â¶Ã§Â«Â¯Ã¦â€°â€¹Ã¤Âºâ€™Ã©â‚¬Å¡
+    path: sget('rehab_path', null),                // v2.29.0Ã¯Â¼Å¡Ã¥ÂºÂ·Ã¥Â¤ÂÃ¨Â·Â¯Ã¥Â¾â€žÃ§Å Â¶Ã¦â‚¬ÂÃ¤Â¸â‚¬Ã¥Â¹Â¶Ã§Â«Â¯Ã¦â€°â€¹Ã¤Âºâ€™Ã©â‚¬Å¡
   };
   if (includeCollect) d.collect = state.collectBuf;
   return d;
 }
-// æŒ‰ id åˆå¹¶ï¼šåŒæ–¹éƒ½ä¿ç•™ï¼ŒåŒ id ä»¥å¯¹æ–¹ä¸ºå‡†ï¼›æŒ‰æ—¶é—´å€’åº
+// Ã¦Å’â€° id Ã¥ÂË†Ã¥Â¹Â¶Ã¯Â¼Å¡Ã¥ÂÅ’Ã¦â€“Â¹Ã©Æ’Â½Ã¤Â¿ÂÃ§â€¢â„¢Ã¯Â¼Å’Ã¥ÂÅ’ id Ã¤Â»Â¥Ã¥Â¯Â¹Ã¦â€“Â¹Ã¤Â¸ÂºÃ¥â€¡â€ Ã¯Â¼â€ºÃ¦Å’â€°Ã¦â€”Â¶Ã©â€”Â´Ã¥â‚¬â€™Ã¥ÂºÂ
 function mergeSyncData(data) {
   const mergeById = (cur, inc) => {
     const m = new Map(cur.map((x) => [x.id, x]));
@@ -1573,7 +1573,7 @@ function mergeSyncData(data) {
   if (data.profile && (data.profile.name || data.profile.injury)) {
     sset('rehab_profile', { ...(sget('rehab_profile', {})), ...data.profile });
   }
-  // v2.21.9ï¼šä¸‰ç±»åŽ†å²ï¼ˆè®°å½•æœ¬èº«æ—  idï¼ŒæŒ‰ é¡¹ç›®/ç±»åž‹ + æ—¶é—´æˆ³ åŽ»é‡ï¼›æ—¥æœŸåž‹æŒ‰ d åŽ»é‡ï¼‰
+  // v2.21.9Ã¯Â¼Å¡Ã¤Â¸â€°Ã§Â±Â»Ã¥Å½â€ Ã¥ÂÂ²Ã¯Â¼Ë†Ã¨Â®Â°Ã¥Â½â€¢Ã¦Å“Â¬Ã¨ÂºÂ«Ã¦â€”Â  idÃ¯Â¼Å’Ã¦Å’â€° Ã©Â¡Â¹Ã§â€ºÂ®/Ã§Â±Â»Ã¥Å¾â€¹ + Ã¦â€”Â¶Ã©â€”Â´Ã¦Ë†Â³ Ã¥Å½Â»Ã©â€¡ÂÃ¯Â¼â€ºÃ¦â€”Â¥Ã¦Å“Å¸Ã¥Å¾â€¹Ã¦Å’â€° d Ã¥Å½Â»Ã©â€¡ÂÃ¯Â¼â€°
   if (Array.isArray(data.ftHistory) && data.ftHistory.length) {
     const m = new Map(ftHistory().map((r) => [r.key + '|' + r.ts, r]));
     data.ftHistory.forEach((r) => { if (r && r.ts) m.set(r.key + '|' + r.ts, r); });
@@ -1590,19 +1590,19 @@ function mergeSyncData(data) {
     sset('rehab_home_idx', [...m.values()].sort((a, b) => (a.d < b.d ? 1 : -1)).slice(0, 30));
   }
   if (Array.isArray(data.painHistory) && data.painHistory.length) {
-    painSave(mergeById(painHistory(), data.painHistory));   // ç–¼ç—›è®°å½•æœ‰ idï¼ŒæŒ‰ id åˆå¹¶
+    painSave(mergeById(painHistory(), data.painHistory));   // Ã§â€“Â¼Ã§â€”â€ºÃ¨Â®Â°Ã¥Â½â€¢Ã¦Å“â€° idÃ¯Â¼Å’Ã¦Å’â€° id Ã¥ÂË†Ã¥Â¹Â¶
   }
   if (Array.isArray(data.romHistory) && data.romHistory.length) {
-    romSave(mergeById(romHistory(), data.romHistory));      // v2.26.0ï¼šROM è®°å½•æŒ‰ id åˆå¹¶
+    romSave(mergeById(romHistory(), data.romHistory));      // v2.26.0Ã¯Â¼Å¡ROM Ã¨Â®Â°Ã¥Â½â€¢Ã¦Å’â€° id Ã¥ÂË†Ã¥Â¹Â¶
   }
   if (Array.isArray(data.promsHistory) && data.promsHistory.length) {
-    promSave(mergeById(promHistory(), data.promsHistory));  // v2.27.0ï¼šPROMs è®°å½•æŒ‰ id åˆå¹¶
+    promSave(mergeById(promHistory(), data.promsHistory));  // v2.27.0Ã¯Â¼Å¡PROMs Ã¨Â®Â°Ã¥Â½â€¢Ã¦Å’â€° id Ã¥ÂË†Ã¥Â¹Â¶
   }
   if (data.aiPrefs && typeof data.aiPrefs === 'object') {
-    sset('rehab_ai_prefs', Object.assign({}, aiPrefs(), data.aiPrefs));   // v2.28.0ï¼šæ™ºèƒ½å¼•æ“Žè®¾ç½®åˆå¹¶
+    sset('rehab_ai_prefs', Object.assign({}, aiPrefs(), data.aiPrefs));   // v2.28.0Ã¯Â¼Å¡Ã¦â„¢ÂºÃ¨Æ’Â½Ã¥Â¼â€¢Ã¦â€œÅ½Ã¨Â®Â¾Ã§Â½Â®Ã¥ÂË†Ã¥Â¹Â¶
   }
   if (data.path && typeof data.path === 'object') {
-    sset('rehab_path', Object.assign({}, pathCfg(), data.path));          // v2.29.0ï¼šåº·å¤è·¯å¾„åˆå¹¶
+    sset('rehab_path', Object.assign({}, pathCfg(), data.path));          // v2.29.0Ã¯Â¼Å¡Ã¥ÂºÂ·Ã¥Â¤ÂÃ¨Â·Â¯Ã¥Â¾â€žÃ¥ÂË†Ã¥Â¹Â¶
   }
   if (Array.isArray(data.collect) && data.collect.length) {
     const seen = new Set(state.collectBuf.map((r) => r.ex + '|' + r.label + '|' + (r.feats || []).join(',')));
@@ -1615,7 +1615,7 @@ function mergeSyncData(data) {
   return { s: (data.sessions || []).length, a: (data.assessments || []).length, p: (data.appts || []).length, c: (data.customExercises || []).length };
 }
 
-/* ---------- æ˜¾ç¤ºäºŒç»´ç ï¼ˆå‘é€ç«¯ï¼‰ ---------- */
+/* ---------- Ã¦ËœÂ¾Ã§Â¤ÂºÃ¤ÂºÅ’Ã§Â»Â´Ã§Â ÂÃ¯Â¼Ë†Ã¥Ââ€˜Ã©â‚¬ÂÃ§Â«Â¯Ã¯Â¼â€° ---------- */
 async function startSyncShow() {
   const data = makeSyncData();
   if (!data.sessions.length && !data.assessments.length && !data.appts.length && !data.customExercises.length
@@ -1662,7 +1662,7 @@ function stopSyncShow() {
   $('qr-modal').classList.add('hidden');
 }
 
-/* ---------- æ‰«æäºŒç»´ç ï¼ˆæŽ¥æ”¶ç«¯ï¼‰ ---------- */
+/* ---------- Ã¦â€°Â«Ã¦ÂÂÃ¤ÂºÅ’Ã§Â»Â´Ã§Â ÂÃ¯Â¼Ë†Ã¦Å½Â¥Ã¦â€Â¶Ã§Â«Â¯Ã¯Â¼â€° ---------- */
 async function startSyncScan() {
   if (syncState.scanning) return;
   try {
@@ -1718,7 +1718,7 @@ async function finishSyncScan() {
     const data = JSON.parse(json);
     if (!Array.isArray(data.sessions)) throw new Error('bad payload');
     const r = mergeSyncData(data);
-    refreshAllData();   // v2.21.9ï¼šåŒæ­¥åŽå…¨æ¨¡å—åˆ·æ–°ï¼ˆåŽŸåªåˆ·è®°å½•/è¯„ä¼°/é¢„çº¦/è‡ªå®šä¹‰ï¼Œä»Šæ—¥ä¸Žè®¡åˆ’ä¸åˆ·æ–°ï¼‰
+    refreshAllData();   // v2.21.9Ã¯Â¼Å¡Ã¥ÂÅ’Ã¦Â­Â¥Ã¥ÂÅ½Ã¥â€¦Â¨Ã¦Â¨Â¡Ã¥Ââ€”Ã¥Ë†Â·Ã¦â€“Â°Ã¯Â¼Ë†Ã¥Å½Å¸Ã¥ÂÂªÃ¥Ë†Â·Ã¨Â®Â°Ã¥Â½â€¢/Ã¨Â¯â€žÃ¤Â¼Â°/Ã©Â¢â€žÃ§ÂºÂ¦/Ã¨â€¡ÂªÃ¥Â®Å¡Ã¤Â¹â€°Ã¯Â¼Å’Ã¤Â»Å Ã¦â€”Â¥Ã¤Â¸Å½Ã¨Â®Â¡Ã¥Ë†â€™Ã¤Â¸ÂÃ¥Ë†Â·Ã¦â€“Â°Ã¯Â¼â€°
     toast(t('scanDone', { s: r.s, a: r.a, p: r.p, c: r.c }));
   } catch (e) {
     toast(t('scanError', { msg: e.message }));
@@ -1736,7 +1736,7 @@ $('btn-sync-scan').addEventListener('click', startSyncScan);
 $('btn-sync-cancel').addEventListener('click', cancelSyncScan);
 $('qr-close').addEventListener('click', stopSyncShow);
 
-/* ============ ä¸ªäººèµ„æ–™ ============ */
+/* ============ Ã¤Â¸ÂªÃ¤ÂºÂºÃ¨Âµâ€žÃ¦â€“â„¢ ============ */
 const profileGet = () => sget('rehab_profile', { name: '', goal: 'knee', injury: '' });
 function renderProfile() {
   const p = profileGet();
@@ -1750,7 +1750,7 @@ $('btn-save-profile').addEventListener('click', () => {
   scheduleCloudSync();
 });
 
-/* ============ ç»Ÿè®¡æŠ¥è¡¨ï¼ˆ30 å¤©è¶‹åŠ¿ / åŠ¨ä½œåˆ†å¸ƒï¼‰ ============ */
+/* ============ Ã§Â»Å¸Ã¨Â®Â¡Ã¦Å Â¥Ã¨Â¡Â¨Ã¯Â¼Ë†30 Ã¥Â¤Â©Ã¨Â¶â€¹Ã¥Å Â¿ / Ã¥Å Â¨Ã¤Â½Å“Ã¥Ë†â€ Ã¥Â¸Æ’Ã¯Â¼â€° ============ */
 function lineChart(points, color, uid) {
   const W = 320, H = 72, P = 8;
   const n = points.length;
@@ -1793,7 +1793,7 @@ function renderDist() {
   const entries = Object.entries(totals).sort((a, b) => b[1] - a[1]);
   if (!entries.length) { $('dist-chart').innerHTML = emptyBox('record', 'emptyList'); return; }
   const max = entries[0][1];
-  const total = entries.reduce((a, [, n]) => a + n, 0);   // v2.21.6ï¼šå æ¯”
+  const total = entries.reduce((a, [, n]) => a + n, 0);   // v2.21.6Ã¯Â¼Å¡Ã¥ÂÂ Ã¦Â¯â€
   $('dist-chart').innerHTML = entries.map(([id, n]) => {
     const e = EXERCISES[id];
     return `<div class="dist-row">
@@ -1804,7 +1804,7 @@ function renderDist() {
   }).join('');
 }
 
-/* ============ æˆå°±ç³»ç»Ÿ ============ */
+/* ============ Ã¦Ë†ÂÃ¥Â°Â±Ã§Â³Â»Ã§Â»Å¸ ============ */
 function calcStreak(sessions) {
   const today = new Date(); today.setHours(0, 0, 0, 0);
   let streak = 0;
@@ -1844,12 +1844,12 @@ function renderAchievements() {
       <div class="ach-desc">${t(a.descKey)}</div>
     </div>`;
   }).join('');
-  const unlocked = ACHIEVEMENTS.filter((a) => a.test(stats)).length;   // v2.21.6ï¼šè§£é”è¿›åº¦
+  const unlocked = ACHIEVEMENTS.filter((a) => a.test(stats)).length;   // v2.21.6Ã¯Â¼Å¡Ã¨Â§Â£Ã©â€ÂÃ¨Â¿â€ºÃ¥ÂºÂ¦
   const acEl = $('ach-count');
   if (acEl) acEl.textContent = t('achCount', { n: unlocked, t: ACHIEVEMENTS.length });
 }
 
-/* ============ åº·å¤è®¡åˆ’ ============ */
+/* ============ Ã¥ÂºÂ·Ã¥Â¤ÂÃ¨Â®Â¡Ã¥Ë†â€™ ============ */
 const planGet = () => sget('rehab_plan', []);
 const planDoneGet = () => sget('rehab_plan_done', {});
 const todayKeyStr = () => {
@@ -1872,7 +1872,7 @@ function renderTodayPlan() {
     return `<div class="item">
       <button class="todo-check ${isDone ? 'on' : ''}" data-ex="${p.ex}">${isDone ? icon('check') : ''}</button>
       <div style="flex:1">
-        <div class="t"><span class="t-ico">${icon(e ? e.icon : 'custom')}</span>${e ? exName(e) : p.ex} Â· ${t('repsN', { n: p.reps })}</div>
+        <div class="t"><span class="t-ico">${icon(e ? e.icon : 'custom')}</span>${e ? exName(e) : p.ex} Ã‚Â· ${t('repsN', { n: p.reps })}</div>
       </div>
     </div>`;
   }).join('') + `<div class="plan-progress">
@@ -1902,13 +1902,13 @@ function renderPlanList() {
   const weekS = sget('rehab_sessions', []).filter((s) => new Date(s.ts) >= wk);
   el.innerHTML = list.map((p) => {
     const e = getEx(p.ex);
-    const g = p.reps * (p.days || []).length;                       // v2.21.8ï¼šå‘¨ç›®æ ‡
+    const g = p.reps * (p.days || []).length;                       // v2.21.8Ã¯Â¼Å¡Ã¥â€˜Â¨Ã§â€ºÂ®Ã¦Â â€¡
     const done = weekS.filter((s) => s.ex === p.ex).reduce((a, s) => a + s.reps, 0);
     const pct = Math.min(100, Math.round(100 * done / Math.max(1, g)));
     return `<div class="item">
       <div style="flex:1">
-        <div class="t"><span class="t-ico">${icon(e ? e.icon : 'custom')}</span>${e ? exName(e) : p.ex} Â· ${t('repsN', { n: p.reps })}</div>
-        <div class="d">${(p.days || []).map((d) => new Date(2024, 0, 7 + d).toLocaleDateString(locale(), { weekday: 'short' })).join(' Â· ')}</div>
+        <div class="t"><span class="t-ico">${icon(e ? e.icon : 'custom')}</span>${e ? exName(e) : p.ex} Ã‚Â· ${t('repsN', { n: p.reps })}</div>
+        <div class="d">${(p.days || []).map((d) => new Date(2024, 0, 7 + d).toLocaleDateString(locale(), { weekday: 'short' })).join(' Ã‚Â· ')}</div>
         <div class="plan-bar" style="margin-top:6px"><div class="plan-fill" style="width:${pct}%"></div></div>
         <div class="hint tiny" style="margin-top:3px">${t('planWeekProg', { d: Math.min(done, g), g })}</div>
       </div>
@@ -1916,7 +1916,7 @@ function renderPlanList() {
     </div>`;
   }).join('');
   el.querySelectorAll('[data-plan-del]').forEach((b) => b.addEventListener('click', () => {
-    if (!confirm(t('confirmDelPlan'))) return;   // v2.21.8ï¼šåˆ é™¤ç¡®è®¤
+    if (!confirm(t('confirmDelPlan'))) return;   // v2.21.8Ã¯Â¼Å¡Ã¥Ë†Â Ã©â„¢Â¤Ã§Â¡Â®Ã¨Â®Â¤
     sset('rehab_plan', planGet().filter((p) => p.ex !== b.dataset.planDel));
     renderPlanList(); renderTodayPlan();
     scheduleCloudSync();
@@ -1969,7 +1969,7 @@ $('btn-plan-save').addEventListener('click', () => {
   scheduleCloudSync();
 });
 
-/* ============ è®­ç»ƒæé†’ ============ */
+/* ============ Ã¨Â®Â­Ã§Â»Æ’Ã¦ÂÂÃ©â€ â€™ ============ */
 const remGet = () => LS.get('rehab_reminder', { on: false, time: '18:00' });
 function renderReminder() {
   const r = remGet();
@@ -2015,7 +2015,7 @@ function fireReminder() {
   if ('Notification' in window && Notification.permission === 'granted') { try { new Notification(t('appTitle'), { body: msg }); } catch { /* ignore */ } }
   toast(msg);
 }
-// è¡¥å‘ï¼šä»Šå¤©é”™è¿‡äº†æé†’æ—¶é—´ï¼Œæ‰“å¼€ App æ—¶è¡¥ä¸€æ¬¡ï¼ˆä¸å†ç­‰åˆ°æ˜Žå¤©ï¼‰
+// Ã¨Â¡Â¥Ã¥Ââ€˜Ã¯Â¼Å¡Ã¤Â»Å Ã¥Â¤Â©Ã©â€â„¢Ã¨Â¿â€¡Ã¤Âºâ€ Ã¦ÂÂÃ©â€ â€™Ã¦â€”Â¶Ã©â€”Â´Ã¯Â¼Å’Ã¦â€°â€œÃ¥Â¼â‚¬ App Ã¦â€”Â¶Ã¨Â¡Â¥Ã¤Â¸â‚¬Ã¦Â¬Â¡Ã¯Â¼Ë†Ã¤Â¸ÂÃ¥â€ ÂÃ§Â­â€°Ã¥Ë†Â°Ã¦ËœÅ½Ã¥Â¤Â©Ã¯Â¼â€°
 function reminderCatchUp() {
   const r = remGet();
   if (!r.on || !r.time) return;
@@ -2028,9 +2028,9 @@ function reminderCatchUp() {
   }
 }
 
-/* ============ äº‘åŒæ­¥ï¼ˆSupabase è´¦å·ç³»ç»Ÿï¼‰ ============ */
-// â˜… å†™æ­»é…ç½®ä½ï¼šæŠŠ Supabase é¡¹ç›®ä¿¡æ¯å¡«è¿›è¿™é‡Œï¼ˆå¦‚ { url: 'https://xxx.supabase.co', anonKey: 'eyJ...' }ï¼‰ï¼Œ
-//   äº‘ç«¯åŒæ­¥å³åˆ»å¯¹æ‰€æœ‰ç”¨æˆ·ç”Ÿæ•ˆï¼Œç”¨æˆ·ç•Œé¢ä¸ä¼šå‡ºçŽ°ä»»ä½•é…ç½®é¡¹ã€‚å¡« null æ—¶äº‘ç«¯åŠŸèƒ½å¾…å¯ç”¨ã€‚
+/* ============ Ã¤Âºâ€˜Ã¥ÂÅ’Ã¦Â­Â¥Ã¯Â¼Ë†Supabase Ã¨Â´Â¦Ã¥ÂÂ·Ã§Â³Â»Ã§Â»Å¸Ã¯Â¼â€° ============ */
+// Ã¢Ëœâ€¦ Ã¥â€ â„¢Ã¦Â­Â»Ã©â€¦ÂÃ§Â½Â®Ã¤Â½ÂÃ¯Â¼Å¡Ã¦Å Å  Supabase Ã©Â¡Â¹Ã§â€ºÂ®Ã¤Â¿Â¡Ã¦ÂÂ¯Ã¥Â¡Â«Ã¨Â¿â€ºÃ¨Â¿â„¢Ã©â€¡Å’Ã¯Â¼Ë†Ã¥Â¦â€š { url: 'https://xxx.supabase.co', anonKey: 'eyJ...' }Ã¯Â¼â€°Ã¯Â¼Å’
+//   Ã¤Âºâ€˜Ã§Â«Â¯Ã¥ÂÅ’Ã¦Â­Â¥Ã¥ÂÂ³Ã¥Ë†Â»Ã¥Â¯Â¹Ã¦â€°â‚¬Ã¦Å“â€°Ã§â€Â¨Ã¦Ë†Â·Ã§â€Å¸Ã¦â€¢Ë†Ã¯Â¼Å’Ã§â€Â¨Ã¦Ë†Â·Ã§â€¢Å’Ã©ÂÂ¢Ã¤Â¸ÂÃ¤Â¼Å¡Ã¥â€¡ÂºÃ§Å½Â°Ã¤Â»Â»Ã¤Â½â€¢Ã©â€¦ÂÃ§Â½Â®Ã©Â¡Â¹Ã£â‚¬â€šÃ¥Â¡Â« null Ã¦â€”Â¶Ã¤Âºâ€˜Ã§Â«Â¯Ã¥Å Å¸Ã¨Æ’Â½Ã¥Â¾â€¦Ã¥ÂÂ¯Ã§â€Â¨Ã£â‚¬â€š
 const CLOUD_HARDCODED = null;
 const cloudCfg = () => CLOUD_HARDCODED || LS.get('rehab_cloud', null);
 const cloudSession = () => LS.get('rehab_cloud_session', null);
@@ -2067,7 +2067,7 @@ async function cloudSync() {
   const s = cloudSession();
   if (!cfg || !s) throw new Error(t('cloudNotLoggedIn'));
   $('cloud-status').textContent = t('cloudSyncing');
-  // æ‹‰å–äº‘ç«¯å…¨éƒ¨å¿«ç…§ â†’ æŒ‰æ—¶é—´å‡åºåˆå¹¶ â†’ åˆå¹¶æœ¬åœ° â†’ å†™å›žä¸€æ¡å¿«ç…§
+  // Ã¦â€¹â€°Ã¥Ââ€“Ã¤Âºâ€˜Ã§Â«Â¯Ã¥â€¦Â¨Ã©Æ’Â¨Ã¥Â¿Â«Ã§â€¦Â§ Ã¢â€ â€™ Ã¦Å’â€°Ã¦â€”Â¶Ã©â€”Â´Ã¥Ââ€¡Ã¥ÂºÂÃ¥ÂË†Ã¥Â¹Â¶ Ã¢â€ â€™ Ã¥ÂË†Ã¥Â¹Â¶Ã¦Å“Â¬Ã¥Å“Â° Ã¢â€ â€™ Ã¥â€ â„¢Ã¥â€ºÅ¾Ã¤Â¸â‚¬Ã¦ÂÂ¡Ã¥Â¿Â«Ã§â€¦Â§
   const rows = await cloudReq(`/rest/v1/userdata?user_id=eq.${s.uid}&select=payload,updated_at&order=updated_at.asc`, {}, cfg);
   for (const row of rows || []) mergeSyncData(row.payload || {});
   const merged = makeSyncData(true);
@@ -2076,13 +2076,13 @@ async function cloudSync() {
     body: JSON.stringify({ id: s.uid, user_id: s.uid, payload: merged, updated_at: new Date().toISOString() }),
     headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
   }, cfg);
-  LS.set('rehab_cloud_last', Date.now());   // v2.36.0ï¼šè®°å½•ä¸Šæ¬¡åŒæ­¥æ—¶é—´ï¼Œç”¨æˆ·çœ‹å¾—è§
+  LS.set('rehab_cloud_last', Date.now());   // v2.36.0Ã¯Â¼Å¡Ã¨Â®Â°Ã¥Â½â€¢Ã¤Â¸Å Ã¦Â¬Â¡Ã¥ÂÅ’Ã¦Â­Â¥Ã¦â€”Â¶Ã©â€”Â´Ã¯Â¼Å’Ã§â€Â¨Ã¦Ë†Â·Ã§Å“â€¹Ã¥Â¾â€”Ã¨Â§Â
   $('cloud-status').textContent = t('cloudOk');
   renderCloud();
   renderRecords(); renderAssessments(); renderAppts(); renderCustomList(); renderExChips(); renderProfile();
   renderTodayPlan(); renderPlanList(); renderAchievements(); renderCollectCount(); renderGoal();
 }
-// æ³¨é”€è´¦å·ï¼šè¿žäº‘ç«¯ä¸€èµ·åˆ å¹²å‡€ï¼ˆåº”ç”¨å•†åº—ä¸Šæž¶ç¡¬è¦æ±‚ï¼‰ï¼Œåˆ ä¸æŽ‰å°±ä¸ç®—æ³¨é”€æˆåŠŸ
+// Ã¦Â³Â¨Ã©â€â‚¬Ã¨Â´Â¦Ã¥ÂÂ·Ã¯Â¼Å¡Ã¨Â¿Å¾Ã¤Âºâ€˜Ã§Â«Â¯Ã¤Â¸â‚¬Ã¨ÂµÂ·Ã¥Ë†Â Ã¥Â¹Â²Ã¥â€¡â‚¬Ã¯Â¼Ë†Ã¥Âºâ€Ã§â€Â¨Ã¥â€¢â€ Ã¥Âºâ€”Ã¤Â¸Å Ã¦Å¾Â¶Ã§Â¡Â¬Ã¨Â¦ÂÃ¦Â±â€šÃ¯Â¼â€°Ã¯Â¼Å’Ã¥Ë†Â Ã¤Â¸ÂÃ¦Å½â€°Ã¥Â°Â±Ã¤Â¸ÂÃ§Â®â€”Ã¦Â³Â¨Ã©â€â‚¬Ã¦Ë†ÂÃ¥Å Å¸
 async function cloudDeleteAccount() {
   const cfg = cloudCfg();
   const s = cloudSession();
@@ -2090,7 +2090,7 @@ async function cloudDeleteAccount() {
   await cloudReq('/rest/v1/rpc/delete_my_account', { method: 'POST', body: JSON.stringify({}) }, cfg);
   LS.set('rehab_cloud_session', null);
 }
-/* ============ é¦–æ¬¡å¯åŠ¨å¼•å¯¼ + ç‰ˆæœ¬æ›´æ–°æ£€æµ‹ ============ */
+/* ============ Ã©Â¦â€“Ã¦Â¬Â¡Ã¥ÂÂ¯Ã¥Å Â¨Ã¥Â¼â€¢Ã¥Â¯Â¼ + Ã§â€°Ë†Ã¦Å“Â¬Ã¦â€ºÂ´Ã¦â€“Â°Ã¦Â£â‚¬Ã¦Âµâ€¹ ============ */
 const OB_STEPS = [
   { ico: 'squat', titleKey: 'obTitle1', textKey: 'obText1' },
   { ico: 'schedule', titleKey: 'obTitle2', textKey: 'obText2' },
@@ -2122,7 +2122,7 @@ $('btn-ob-next').addEventListener('click', () => {
   else closeOnboard();
 });
 $('btn-ob-skip').addEventListener('click', closeOnboard);
-/* ============ è‡ªä¸»æ›´æ–°ï¼ˆè‡ªåŠ¨æ£€æŸ¥ â†’ ç½‘é¡µç‰ˆè‡ªåŠ¨é‡å¯ / å®‰å“ç‰ˆä¸‹è½½å®‰è£…ï¼‰ ============ */
+/* ============ Ã¨â€¡ÂªÃ¤Â¸Â»Ã¦â€ºÂ´Ã¦â€“Â°Ã¯Â¼Ë†Ã¨â€¡ÂªÃ¥Å Â¨Ã¦Â£â‚¬Ã¦Å¸Â¥ Ã¢â€ â€™ Ã§Â½â€˜Ã©Â¡ÂµÃ§â€°Ë†Ã¨â€¡ÂªÃ¥Å Â¨Ã©â€¡ÂÃ¥ÂÂ¯ / Ã¥Â®â€°Ã¥Ââ€œÃ§â€°Ë†Ã¤Â¸â€¹Ã¨Â½Â½Ã¥Â®â€°Ã¨Â£â€¦Ã¯Â¼â€° ============ */
 function verCmp(a, b) {
   const pa = String(a).replace(/^v/, '').split('.').map((n) => parseInt(n, 10) || 0);
   const pb = String(b).replace(/^v/, '').split('.').map((n) => parseInt(n, 10) || 0);
@@ -2138,7 +2138,7 @@ const UPDATE_JSON = 'https://cdn.jsdelivr.net/gh/xushengqin666-cell/rehab-ai@mai
 const UPDATE_GH = 'https://api.github.com/repos/xushengqin666-cell/rehab-ai/releases/latest';
 const UPD_DAY = 86400000;
 const updState = { info: null, swReg: null, waiting: false, autoApply: false, applied: false };
-// åŒæºè£å†³ï¼šç‰ˆæœ¬æ›´é«˜è€…èƒœï¼›ç‰ˆæœ¬ç›¸åŒæ—¶ä¼˜å…ˆ jsDelivr çš„ APK é“¾æŽ¥ï¼ˆå›½å†…å¯ä¸‹è½½ï¼‰
+// Ã¥ÂÅ’Ã¦ÂºÂÃ¨Â£ÂÃ¥â€ Â³Ã¯Â¼Å¡Ã§â€°Ë†Ã¦Å“Â¬Ã¦â€ºÂ´Ã©Â«ËœÃ¨â‚¬â€¦Ã¨Æ’Å“Ã¯Â¼â€ºÃ§â€°Ë†Ã¦Å“Â¬Ã§â€ºÂ¸Ã¥ÂÅ’Ã¦â€”Â¶Ã¤Â¼ËœÃ¥â€¦Ë† jsDelivr Ã§Å¡â€ž APK Ã©â€œÂ¾Ã¦Å½Â¥Ã¯Â¼Ë†Ã¥â€ºÂ½Ã¥â€ â€¦Ã¥ÂÂ¯Ã¤Â¸â€¹Ã¨Â½Â½Ã¯Â¼â€°
 function pickLatest(best, info) {
   if (!info) return best;
   if (!best) return info;
@@ -2149,8 +2149,8 @@ function pickLatest(best, info) {
 }
 
 async function fetchLatest() {
-  // åŒæºå¹¶è¡Œå–æœ€æ–°ï¼šjsDelivrï¼ˆå›½å†…å¯è®¿é—®ï¼Œä½†è¾¹ç¼˜ç¼“å­˜å¶å°”é™ˆæ—§ï¼‰+ GitHub APIï¼ˆå‡†ç¡®ï¼Œå›½å†…å¯èƒ½è¿žä¸ä¸Šï¼‰
-  // ä¸¤è€…éƒ½æˆåŠŸæ—¶å–ç‰ˆæœ¬å·è¾ƒå¤§è€…â€”â€”CDN ç¼“å­˜å›žé€€ä¸ä¼šæ¼æ›´æ–°
+  // Ã¥ÂÅ’Ã¦ÂºÂÃ¥Â¹Â¶Ã¨Â¡Å’Ã¥Ââ€“Ã¦Å“â‚¬Ã¦â€“Â°Ã¯Â¼Å¡jsDelivrÃ¯Â¼Ë†Ã¥â€ºÂ½Ã¥â€ â€¦Ã¥ÂÂ¯Ã¨Â®Â¿Ã©â€”Â®Ã¯Â¼Å’Ã¤Â½â€ Ã¨Â¾Â¹Ã§Â¼ËœÃ§Â¼â€œÃ¥Â­ËœÃ¥ÂÂ¶Ã¥Â°â€Ã©â„¢Ë†Ã¦â€”Â§Ã¯Â¼â€°+ GitHub APIÃ¯Â¼Ë†Ã¥â€¡â€ Ã§Â¡Â®Ã¯Â¼Å’Ã¥â€ºÂ½Ã¥â€ â€¦Ã¥ÂÂ¯Ã¨Æ’Â½Ã¨Â¿Å¾Ã¤Â¸ÂÃ¤Â¸Å Ã¯Â¼â€°
+  // Ã¤Â¸Â¤Ã¨â‚¬â€¦Ã©Æ’Â½Ã¦Ë†ÂÃ¥Å Å¸Ã¦â€”Â¶Ã¥Ââ€“Ã§â€°Ë†Ã¦Å“Â¬Ã¥ÂÂ·Ã¨Â¾Æ’Ã¥Â¤Â§Ã¨â‚¬â€¦Ã¢â‚¬â€Ã¢â‚¬â€CDN Ã§Â¼â€œÃ¥Â­ËœÃ¥â€ºÅ¾Ã©â‚¬â‚¬Ã¤Â¸ÂÃ¤Â¼Å¡Ã¦Â¼ÂÃ¦â€ºÂ´Ã¦â€“Â°
   let best = null;
   const take = (info) => { best = pickLatest(best, info); };
   const jobs = [
@@ -2167,7 +2167,7 @@ async function fetchLatest() {
             important: !!j.important,
           });
         }
-      } catch { /* å¿½ç•¥ */ }
+      } catch { /* Ã¥Â¿Â½Ã§â€¢Â¥ */ }
     })(),
     (async () => {
       try {
@@ -2180,7 +2180,7 @@ async function fetchLatest() {
             take({ version: tag, apk: apkAsset ? apkAsset.browser_download_url : '', releaseUrl: j.html_url || '', notes: String(j.body || '').split('\n')[0].slice(0, 120), important: false });
           }
         }
-      } catch { /* å¿½ç•¥ */ }
+      } catch { /* Ã¥Â¿Â½Ã§â€¢Â¥ */ }
     })(),
   ];
   await Promise.all(jobs);
@@ -2206,19 +2206,19 @@ function showUpdateCard(info) {
 
 async function applyUpdate(info, manual) {
   const btn = $('btn-upd-now');
-  if (btn) { btn.disabled = true; btn.querySelector('span').textContent = 'â€¦'; }
-  if (isAndroidNative()) {                      // å®‰å“ Appï¼šä¸‹è½½ APK å¹¶å”¤èµ·ç³»ç»Ÿå®‰è£…
+  if (btn) { btn.disabled = true; btn.querySelector('span').textContent = 'Ã¢â‚¬Â¦'; }
+  if (isAndroidNative()) {                      // Ã¥Â®â€°Ã¥Ââ€œ AppÃ¯Â¼Å¡Ã¤Â¸â€¹Ã¨Â½Â½ APK Ã¥Â¹Â¶Ã¥â€Â¤Ã¨ÂµÂ·Ã§Â³Â»Ã§Â»Å¸Ã¥Â®â€°Ã¨Â£â€¦
     try {
       if (!info.apk) throw new Error('no apk url');
       const upd = window.Capacitor.Plugins.AutoUpdater;
-      try { upd.addListener('progress', (p) => toast(t('updDownloading', { p: p.percent }))); } catch { /* æ— è¿›åº¦å›žè°ƒä¹Ÿå…¼å®¹ */ }
+      try { upd.addListener('progress', (p) => toast(t('updDownloading', { p: p.percent }))); } catch { /* Ã¦â€”Â Ã¨Â¿â€ºÃ¥ÂºÂ¦Ã¥â€ºÅ¾Ã¨Â°Æ’Ã¤Â¹Å¸Ã¥â€¦Â¼Ã¥Â®Â¹ */ }
       if (!manual) {
-        // å…¨è‡ªåŠ¨ï¼šé™é»˜ä¸‹è½½ â†’ ç©ºé—²æ—¶è‡ªåŠ¨å”¤èµ·å®‰è£…
+        // Ã¥â€¦Â¨Ã¨â€¡ÂªÃ¥Å Â¨Ã¯Â¼Å¡Ã©Ââ„¢Ã©Â»ËœÃ¤Â¸â€¹Ã¨Â½Â½ Ã¢â€ â€™ Ã§Â©ÂºÃ©â€”Â²Ã¦â€”Â¶Ã¨â€¡ÂªÃ¥Å Â¨Ã¥â€Â¤Ã¨ÂµÂ·Ã¥Â®â€°Ã¨Â£â€¦
         toast(t('updDownloading', { p: 0 }));
         const r = await upd.download({ url: info.apk });
         if (r && r.ready) {
           if (!state.running) { await upd.install({}); return; }
-          updState.pendingInstall = true;        // è®­ç»ƒä¸­ â†’ ç­‰ç©ºé—²å†è£…
+          updState.pendingInstall = true;        // Ã¨Â®Â­Ã§Â»Æ’Ã¤Â¸Â­ Ã¢â€ â€™ Ã§Â­â€°Ã§Â©ÂºÃ©â€”Â²Ã¥â€ ÂÃ¨Â£â€¦
           updState.installWatch = setInterval(async () => {
             if (state.running) return;
             clearInterval(updState.installWatch);
@@ -2244,12 +2244,12 @@ async function applyUpdate(info, manual) {
     }
     return;
   }
-  // ç½‘é¡µç‰ˆï¼šService Worker ä¸‹è½½æ–°ç‰ˆæœ¬ â†’ è‡ªåŠ¨åˆ‡æ¢ â†’ è‡ªåŠ¨é‡å¯
+  // Ã§Â½â€˜Ã©Â¡ÂµÃ§â€°Ë†Ã¯Â¼Å¡Service Worker Ã¤Â¸â€¹Ã¨Â½Â½Ã¦â€“Â°Ã§â€°Ë†Ã¦Å“Â¬ Ã¢â€ â€™ Ã¨â€¡ÂªÃ¥Å Â¨Ã¥Ë†â€¡Ã¦ÂÂ¢ Ã¢â€ â€™ Ã¨â€¡ÂªÃ¥Å Â¨Ã©â€¡ÂÃ¥ÂÂ¯
   if (updState.swReg) {
     toast(t('updRestarting'));
     updState.autoApply = true;
-    try { await updState.swReg.update(); } catch { /* å¿½ç•¥ */ }
-    setTimeout(() => {                          // 15 ç§’åŽä»æœªåˆ‡æ¢ â†’ æ‰“å¼€ä¸‹è½½é¡µå…œåº•
+    try { await updState.swReg.update(); } catch { /* Ã¥Â¿Â½Ã§â€¢Â¥ */ }
+    setTimeout(() => {                          // 15 Ã§Â§â€™Ã¥ÂÅ½Ã¤Â»ÂÃ¦Å“ÂªÃ¥Ë†â€¡Ã¦ÂÂ¢ Ã¢â€ â€™ Ã¦â€°â€œÃ¥Â¼â‚¬Ã¤Â¸â€¹Ã¨Â½Â½Ã©Â¡ÂµÃ¥â€¦Å“Ã¥Âºâ€¢
       if (!updState.applied && info.releaseUrl) window.open(info.releaseUrl, '_blank');
     }, 15000);
   } else if (info.releaseUrl) {
@@ -2261,9 +2261,9 @@ const updModeGet = () => LS.get('rehab_upd_mode', 'auto');
 
 async function checkUpdate(manual) {
   if (!manual) {
-    if (updModeGet() === 'off') return;          // ç”¨æˆ·å…³é—­è‡ªåŠ¨æ›´æ–°ï¼ˆæ‰‹åŠ¨æ£€æŸ¥ä»å¯ç”¨ï¼‰
+    if (updModeGet() === 'off') return;          // Ã§â€Â¨Ã¦Ë†Â·Ã¥â€¦Â³Ã©â€”Â­Ã¨â€¡ÂªÃ¥Å Â¨Ã¦â€ºÂ´Ã¦â€“Â°Ã¯Â¼Ë†Ã¦â€°â€¹Ã¥Å Â¨Ã¦Â£â‚¬Ã¦Å¸Â¥Ã¤Â»ÂÃ¥ÂÂ¯Ã§â€Â¨Ã¯Â¼â€°
     const last = LS.get('rehab_update_check', 0);
-    if (Date.now() - last < UPD_DAY) return;    // è‡ªåŠ¨æ£€æŸ¥ï¼šæ¯å¤©æœ€å¤šä¸€æ¬¡
+    if (Date.now() - last < UPD_DAY) return;    // Ã¨â€¡ÂªÃ¥Å Â¨Ã¦Â£â‚¬Ã¦Å¸Â¥Ã¯Â¼Å¡Ã¦Â¯ÂÃ¥Â¤Â©Ã¦Å“â‚¬Ã¥Â¤Å¡Ã¤Â¸â‚¬Ã¦Â¬Â¡
     LS.set('rehab_update_check', Date.now());
   }
   if (manual) toast(t('updChecking'));
@@ -2272,26 +2272,26 @@ async function checkUpdate(manual) {
   if (verCmp(info.version, APP_VERSION) <= 0) {
     if (manual) toast(t('updLatest', { v: APP_VERSION.replace(/^v/, '') }));
     updState.info = null;
-    aiRun();                                     // AI ç®¡å®¶åˆ·æ–°ï¼ˆæ— æ›´æ–°é¡¹ï¼‰
+    aiRun();                                     // AI Ã§Â®Â¡Ã¥Â®Â¶Ã¥Ë†Â·Ã¦â€“Â°Ã¯Â¼Ë†Ã¦â€”Â Ã¦â€ºÂ´Ã¦â€“Â°Ã©Â¡Â¹Ã¯Â¼â€°
     return;
   }
   updState.info = info;
-  aiRun();                                       // AI ç®¡å®¶æ„ŸçŸ¥æ–°ç‰ˆæœ¬
+  aiRun();                                       // AI Ã§Â®Â¡Ã¥Â®Â¶Ã¦â€žÅ¸Ã§Å¸Â¥Ã¦â€“Â°Ã§â€°Ë†Ã¦Å“Â¬
   const auto = updModeGet() === 'auto';
   if (!manual && auto && !isAndroidNative() && !state.running) {
-    // ç½‘é¡µç‰ˆç©ºé—²æ—¶å…¨è‡ªåŠ¨ï¼šé™é»˜ä¸‹è½½ + è‡ªåŠ¨é‡å¯
-    try { await applyUpdate(info, false); } catch { /* ä¸‹æ¬¡å†è¯• */ }
+    // Ã§Â½â€˜Ã©Â¡ÂµÃ§â€°Ë†Ã§Â©ÂºÃ©â€”Â²Ã¦â€”Â¶Ã¥â€¦Â¨Ã¨â€¡ÂªÃ¥Å Â¨Ã¯Â¼Å¡Ã©Ââ„¢Ã©Â»ËœÃ¤Â¸â€¹Ã¨Â½Â½ + Ã¨â€¡ÂªÃ¥Å Â¨Ã©â€¡ÂÃ¥ÂÂ¯
+    try { await applyUpdate(info, false); } catch { /* Ã¤Â¸â€¹Ã¦Â¬Â¡Ã¥â€ ÂÃ¨Â¯â€¢ */ }
     return;
   }
   if (!manual && auto && isAndroidNative()) {
-    // å®‰å“å…¨è‡ªåŠ¨ï¼šåŽå°é™é»˜ä¸‹è½½ â†’ ç©ºé—²æ—¶å”¤èµ·å®‰è£…ï¼ˆä¸å¼¹å¡ç‰‡ï¼‰
-    try { await applyUpdate(info, false); } catch { /* ä¸‹è½½å¤±è´¥ â†’ å¼¹å¡ç‰‡å…œåº• */ showUpdateCard(info); }
+    // Ã¥Â®â€°Ã¥Ââ€œÃ¥â€¦Â¨Ã¨â€¡ÂªÃ¥Å Â¨Ã¯Â¼Å¡Ã¥ÂÅ½Ã¥ÂÂ°Ã©Ââ„¢Ã©Â»ËœÃ¤Â¸â€¹Ã¨Â½Â½ Ã¢â€ â€™ Ã§Â©ÂºÃ©â€”Â²Ã¦â€”Â¶Ã¥â€Â¤Ã¨ÂµÂ·Ã¥Â®â€°Ã¨Â£â€¦Ã¯Â¼Ë†Ã¤Â¸ÂÃ¥Â¼Â¹Ã¥ÂÂ¡Ã§â€°â€¡Ã¯Â¼â€°
+    try { await applyUpdate(info, false); } catch { /* Ã¤Â¸â€¹Ã¨Â½Â½Ã¥Â¤Â±Ã¨Â´Â¥ Ã¢â€ â€™ Ã¥Â¼Â¹Ã¥ÂÂ¡Ã§â€°â€¡Ã¥â€¦Å“Ã¥Âºâ€¢ */ showUpdateCard(info); }
     return;
   }
   showUpdateCard(info);
 }
 
-/* ============ AI ç³»ç»Ÿç®¡å®¶ï¼šä½“æ£€ + å»ºè®® + åé¦ˆæ”¶é›† ============ */
+/* ============ AI Ã§Â³Â»Ã§Â»Å¸Ã§Â®Â¡Ã¥Â®Â¶Ã¯Â¼Å¡Ã¤Â½â€œÃ¦Â£â‚¬ + Ã¥Â»ÂºÃ¨Â®Â® + Ã¥ÂÂÃ©Â¦Ë†Ã¦â€Â¶Ã©â€ºâ€  ============ */
 const aiEnv = () => {
   const sessions = sget('rehab_sessions', []);
   const stats = aiStatsGet();
@@ -2326,10 +2326,10 @@ const aiEnv = () => {
     cameraFails: stats.cameraFail || 0,
     modelFails: stats.modelFail || 0,
     daysSinceTrain: lastTs ? (Date.now() - lastTs) / 86400000 : null,
-    painMax: painRecentMax(7),          // v2.22.0ï¼šè¿‘ 7 å¤©æœ€é«˜ç–¼ç—›ï¼ˆä¾› AI ç®¡å®¶æç¤ºï¼‰
+    painMax: painRecentMax(7),          // v2.22.0Ã¯Â¼Å¡Ã¨Â¿â€˜ 7 Ã¥Â¤Â©Ã¦Å“â‚¬Ã©Â«ËœÃ§â€“Â¼Ã§â€”â€ºÃ¯Â¼Ë†Ã¤Â¾â€º AI Ã§Â®Â¡Ã¥Â®Â¶Ã¦ÂÂÃ§Â¤ÂºÃ¯Â¼â€°
     painCount: painHistory().filter((r) => r.ts >= Date.now() - 7 * 86400000).length,
-    painSpike: painSpike() ? painSpike().delta : 0,   // v2.23.0ï¼šå½“å¤©è®­ç»ƒåŽç–¼ç—›ä¸Šå‡ â‰¥2 åˆ†
-    promBad: promBadCount(),                          // v2.27.0ï¼šé‡åº¦å—é™çš„é‡è¡¨ä»½æ•°
+    painSpike: painSpike() ? painSpike().delta : 0,   // v2.23.0Ã¯Â¼Å¡Ã¥Â½â€œÃ¥Â¤Â©Ã¨Â®Â­Ã§Â»Æ’Ã¥ÂÅ½Ã§â€“Â¼Ã§â€”â€ºÃ¤Â¸Å Ã¥Ââ€¡ Ã¢â€°Â¥2 Ã¥Ë†â€ 
+    promBad: promBadCount(),                          // v2.27.0Ã¯Â¼Å¡Ã©â€¡ÂÃ¥ÂºÂ¦Ã¥Ââ€”Ã©â„¢ÂÃ§Å¡â€žÃ©â€¡ÂÃ¨Â¡Â¨Ã¤Â»Â½Ã¦â€¢Â°
   };
 };
 let aiLast = null;
@@ -2372,13 +2372,13 @@ function openFeedback() {
 }
 let fbRating = () => {
   let v = 5;
-  try { v = JSON.parse(localStorage.getItem('rehab_fb_rating') || '5'); } catch { /* å¿½ç•¥ */ }
+  try { v = JSON.parse(localStorage.getItem('rehab_fb_rating') || '5'); } catch { /* Ã¥Â¿Â½Ã§â€¢Â¥ */ }
   return v;
 };
 function renderFbStars() {
   const r = fbRating();
   const box = $('fb-stars');
-  box.innerHTML = [1, 2, 3, 4, 5].map((i) => `<button class="fb-star${i <= r ? ' on' : ''}" data-r="${i}">â˜…</button>`).join('');
+  box.innerHTML = [1, 2, 3, 4, 5].map((i) => `<button class="fb-star${i <= r ? ' on' : ''}" data-r="${i}">Ã¢Ëœâ€¦</button>`).join('');
   box.querySelectorAll('.fb-star').forEach((b) => b.addEventListener('click', () => {
     localStorage.setItem('rehab_fb_rating', b.dataset.r);
     renderFbStars();
@@ -2401,7 +2401,7 @@ function copyFeedback() {
   const report = buildFeedbackReport(env, fbRating(), $('fb-text').value);
   navigator.clipboard.writeText(report.title + '\n\n' + report.body).then(() => toast(t('aiFbCopied'))).catch(() => toast(t('shareFail')));
 }
-// å¯åŠ¨åŽ AI ç®¡å®¶ä¸»åŠ¨æé†’ä¸€æ¬¡ï¼ˆä»…å½“æœ‰è­¦å‘Šçº§é—®é¢˜ï¼‰
+// Ã¥ÂÂ¯Ã¥Å Â¨Ã¥ÂÅ½ AI Ã§Â®Â¡Ã¥Â®Â¶Ã¤Â¸Â»Ã¥Å Â¨Ã¦ÂÂÃ©â€ â€™Ã¤Â¸â‚¬Ã¦Â¬Â¡Ã¯Â¼Ë†Ã¤Â»â€¦Ã¥Â½â€œÃ¦Å“â€°Ã¨Â­Â¦Ã¥â€˜Å Ã§ÂºÂ§Ã©â€”Â®Ã©Â¢ËœÃ¯Â¼â€°
 function aiProactive() {
   const hc = aiRun();
   const warn = hc.items.find((i) => i.level === 'warn');
@@ -2413,28 +2413,28 @@ function renderUpdMode() {
   sel.value = updModeGet();
 }
 
-/* ============ è®­ç»ƒä¸­å±å¹•å¸¸äº®ï¼ˆScreen Wake Lockï¼‰ ============ */
+/* ============ Ã¨Â®Â­Ã§Â»Æ’Ã¤Â¸Â­Ã¥Â±ÂÃ¥Â¹â€¢Ã¥Â¸Â¸Ã¤ÂºÂ®Ã¯Â¼Ë†Screen Wake LockÃ¯Â¼â€° ============ */
 let wakeLock = null;
 async function acquireWake() {
   try {
     if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen');
-  } catch { /* éƒ¨åˆ†æµè§ˆå™¨ä¸æ”¯æŒï¼Œå¿½ç•¥ */ }
+  } catch { /* Ã©Æ’Â¨Ã¥Ë†â€ Ã¦ÂµÂÃ¨Â§Ë†Ã¥â„¢Â¨Ã¤Â¸ÂÃ¦â€Â¯Ã¦Å’ÂÃ¯Â¼Å’Ã¥Â¿Â½Ã§â€¢Â¥ */ }
 }
 async function releaseWake() {
-  try { if (wakeLock) await wakeLock.release(); } catch { /* å¿½ç•¥ */ }
+  try { if (wakeLock) await wakeLock.release(); } catch { /* Ã¥Â¿Â½Ã§â€¢Â¥ */ }
   wakeLock = null;
 }
 document.addEventListener('visibilitychange', () => {
-  if (!document.hidden && state.running) acquireWake();   // åˆ‡å›žå‰å°æ—¶é‡æ–°å¸¸äº®
+  if (!document.hidden && state.running) acquireWake();   // Ã¥Ë†â€¡Ã¥â€ºÅ¾Ã¥â€°ÂÃ¥ÂÂ°Ã¦â€”Â¶Ã©â€¡ÂÃ¦â€“Â°Ã¥Â¸Â¸Ã¤ÂºÂ®
 });
 
-/* ============ è®­ç»ƒç»“æŸï¼šAI å°ç»“ ============ */
+/* ============ Ã¨Â®Â­Ã§Â»Æ’Ã§Â»â€œÃ¦ÂÅ¸Ã¯Â¼Å¡AI Ã¥Â°ÂÃ§Â»â€œ ============ */
 function aiSessionEnd() {
   const agg = state.agg || {};
   const frames = agg.frames || 0;
   const secs = Math.max(0, Math.round((Date.now() - (agg.startTS || Date.now())) / 1000));
   const reps = (state.counter && state.counter.reps) || 0;
-  if (!(reps > 0 || secs >= 30)) return;              // å¤ªçŸ­/æ²¡è®¡æ•° â†’ ä¸æ‰“æ‰°
+  if (!(reps > 0 || secs >= 30)) return;              // Ã¥Â¤ÂªÃ§Å¸Â­/Ã¦Â²Â¡Ã¨Â®Â¡Ã¦â€¢Â° Ã¢â€ â€™ Ã¤Â¸ÂÃ¦â€°â€œÃ¦â€°Â°
   const quality = frames > 30 ? Math.round((1 - (agg.badFrames || 0) / frames) * 100) : null;
   const comment = aiSessionComment({ reps, quality, riskEvents: agg.riskFrames || 0, seconds: secs }, !!(ex.rep && ex.rep.hold));
   const ex = state.counter && state.counter.ex ? getEx(state.counter.ex) : getEx(activeExId());
@@ -2443,20 +2443,20 @@ function aiSessionEnd() {
   fb.innerHTML = fbWrap('check', `
     <b>${t('aiSessTitle')}</b>
     <div class="hint">${t('aiSessLine', { ex: exName(ex), n: reps, q: quality == null ? '--' : quality })}</div>
-    <div class="hint">ðŸ¤– ${t(comment.key, comment.args)}</div>`);
+    <div class="hint">Ã°Å¸Â¤â€“ ${t(comment.key, comment.args)}</div>`);
   fb.className = 'feedback';
   fb._last = null;
-  aiRun();                                            // è®­ç»ƒæ•°æ®å˜äº† â†’ é‡æ–°ä½“æ£€
+  aiRun();                                            // Ã¨Â®Â­Ã§Â»Æ’Ã¦â€¢Â°Ã¦ÂÂ®Ã¥ÂËœÃ¤Âºâ€  Ã¢â€ â€™ Ã©â€¡ÂÃ¦â€“Â°Ã¤Â½â€œÃ¦Â£â‚¬
 }
 
-/* ============ PWAï¼šå®‰è£…åˆ°æ¡Œé¢æç¤º ============ */
+/* ============ PWAÃ¯Â¼Å¡Ã¥Â®â€°Ã¨Â£â€¦Ã¥Ë†Â°Ã¦Â¡Å’Ã©ÂÂ¢Ã¦ÂÂÃ§Â¤Âº ============ */
 let deferredPrompt = null;
 window.addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault();
   deferredPrompt = e;
   if (isAndroidNative() || LS.get('rehab_pwa_prompt_closed', 0)) return;
   const fb = $('feedback');
-  if (fb && !fb.classList.contains('hidden')) return; // æœ‰æ›´é‡è¦çš„æç¤ºæ—¶ä¸æŠ¢
+  if (fb && !fb.classList.contains('hidden')) return; // Ã¦Å“â€°Ã¦â€ºÂ´Ã©â€¡ÂÃ¨Â¦ÂÃ§Å¡â€žÃ¦ÂÂÃ§Â¤ÂºÃ¦â€”Â¶Ã¤Â¸ÂÃ¦Å Â¢
   fb.classList.remove('hidden');
   fb.innerHTML = fbWrap('download', `
     <b>${t('pwaTitle')}</b>
@@ -2478,19 +2478,19 @@ function renderCloud() {
   const s = cloudSession();
   const localUser = accountCurrent();
   const av = $('account-avatar');
-  if (av) av.textContent = ((s && s.email) || localUser || (cfg ? '?' : 'â˜'))[0].toUpperCase();
+  if (av) av.textContent = ((s && s.email) || localUser || (cfg ? '?' : 'Ã¢ËœÂ'))[0].toUpperCase();
   $('cloud-status').textContent = s ? t('cloudLoggedIn', { e: s.email }) : localUser ? t('cloudLoggedIn', { e: localUser }) : (cfg ? t('cloudNotLoggedIn') : t('cloudUnconfigured'));
   $('btn-cloud-sync').classList.toggle('hidden', !s);
   $('btn-cloud-logout').classList.toggle('hidden', !(s || localUser));
   $('btn-open-login').classList.toggle('hidden', !!(s || localUser));
-  $('btn-delete-account').classList.toggle('hidden', !(s || localUser));   // v2.36.0ï¼šäº‘ç«¯è´¦å·ä¹Ÿèƒ½æ³¨é”€
+  $('btn-delete-account').classList.toggle('hidden', !(s || localUser));   // v2.36.0Ã¯Â¼Å¡Ã¤Âºâ€˜Ã§Â«Â¯Ã¨Â´Â¦Ã¥ÂÂ·Ã¤Â¹Å¸Ã¨Æ’Â½Ã¦Â³Â¨Ã©â€â‚¬
   const last = LS.get('rehab_cloud_last', 0);
   const lastEl = $('cloud-last');
   if (lastEl) lastEl.textContent = last ? t('cloudLast', { t: new Date(last).toLocaleString(locale(), { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) }) : '';
-  // é…ç½®å…¥å£é»˜è®¤å¯¹ç”¨æˆ·éšè—ï¼šå¯†é’¥å†™æ­»åŽç”¨æˆ·æ°¸è¿œçœ‹ä¸åˆ°ï¼›
-  // å¼€å‘æ¨¡å¼ï¼ˆ?cfg=1ï¼‰æˆ–äº‘ç«¯æœªé…ç½®æ—¶ç”±ä¸‹æ–¹é€»è¾‘æŽ§åˆ¶ï¼Œæ™®é€šç”¨æˆ·ç•Œé¢ä¿æŒçº¯å‡€
+  // Ã©â€¦ÂÃ§Â½Â®Ã¥â€¦Â¥Ã¥ÂÂ£Ã©Â»ËœÃ¨Â®Â¤Ã¥Â¯Â¹Ã§â€Â¨Ã¦Ë†Â·Ã©Å¡ÂÃ¨â€”ÂÃ¯Â¼Å¡Ã¥Â¯â€ Ã©â€™Â¥Ã¥â€ â„¢Ã¦Â­Â»Ã¥ÂÅ½Ã§â€Â¨Ã¦Ë†Â·Ã¦Â°Â¸Ã¨Â¿Å“Ã§Å“â€¹Ã¤Â¸ÂÃ¥Ë†Â°Ã¯Â¼â€º
+  // Ã¥Â¼â‚¬Ã¥Ââ€˜Ã¦Â¨Â¡Ã¥Â¼ÂÃ¯Â¼Ë†?cfg=1Ã¯Â¼â€°Ã¦Ë†â€“Ã¤Âºâ€˜Ã§Â«Â¯Ã¦Å“ÂªÃ©â€¦ÂÃ§Â½Â®Ã¦â€”Â¶Ã§â€Â±Ã¤Â¸â€¹Ã¦â€“Â¹Ã©â‚¬Â»Ã¨Â¾â€˜Ã¦Å½Â§Ã¥Ë†Â¶Ã¯Â¼Å’Ã¦â„¢Â®Ã©â‚¬Å¡Ã§â€Â¨Ã¦Ë†Â·Ã§â€¢Å’Ã©ÂÂ¢Ã¤Â¿ÂÃ¦Å’ÂÃ§ÂºÂ¯Ã¥â€¡â‚¬
 }
-// ç™»å½•å±ï¼šæœªç™»å½•è´¦å· â†’ å¯åŠ¨å³æ˜¾ç¤ºï¼ˆçœŸå®ž App ä½“éªŒï¼‰ï¼›è®¿å®¢æ¨¡å¼è·³è¿‡åŽä¸å†æ‰“æ‰°
+// Ã§â„¢Â»Ã¥Â½â€¢Ã¥Â±ÂÃ¯Â¼Å¡Ã¦Å“ÂªÃ§â„¢Â»Ã¥Â½â€¢Ã¨Â´Â¦Ã¥ÂÂ· Ã¢â€ â€™ Ã¥ÂÂ¯Ã¥Å Â¨Ã¥ÂÂ³Ã¦ËœÂ¾Ã§Â¤ÂºÃ¯Â¼Ë†Ã§Å“Å¸Ã¥Â®Å¾ App Ã¤Â½â€œÃ©ÂªÅ’Ã¯Â¼â€°Ã¯Â¼â€ºÃ¨Â®Â¿Ã¥Â®Â¢Ã¦Â¨Â¡Ã¥Â¼ÂÃ¨Â·Â³Ã¨Â¿â€¡Ã¥ÂÅ½Ã¤Â¸ÂÃ¥â€ ÂÃ¦â€°â€œÃ¦â€°Â°
 function renderAuth() {
   const show = !accountCurrent() && !cloudSession() && !LS.get('rehab_guest', false);
   $('auth-screen').classList.toggle('hidden', !show);
@@ -2504,7 +2504,7 @@ function showAuth(openConfig = false) {
 async function linkCloudAfterLogin(email, pass) {
   if (!cloudCfg()) return;
   try { await cloudAuth(email, pass, false); }
-  catch { try { await cloudAuth(email, pass, true); } catch { /* äº‘ç«¯ä¸å¯ç”¨åˆ™é™é»˜ï¼Œæœ¬åœ°è´¦å·ç…§å¸¸ */ } }
+  catch { try { await cloudAuth(email, pass, true); } catch { /* Ã¤Âºâ€˜Ã§Â«Â¯Ã¤Â¸ÂÃ¥ÂÂ¯Ã§â€Â¨Ã¥Ë†â„¢Ã©Ââ„¢Ã©Â»ËœÃ¯Â¼Å’Ã¦Å“Â¬Ã¥Å“Â°Ã¨Â´Â¦Ã¥ÂÂ·Ã§â€¦Â§Ã¥Â¸Â¸ */ } }
 }
 async function authLogin(register) {
   const email = $('auth-email').value.trim();
@@ -2519,7 +2519,7 @@ async function authLogin(register) {
     }
     await accountLogin(email, pass);
     $('auth-screen').classList.add('hidden');
-    reloadCollectBuf();                              // åˆ‡åˆ°æ–°è´¦å· â†’ é‡è½½é‡‡é›†ç¼“å†²åŒº
+    reloadCollectBuf();                              // Ã¥Ë†â€¡Ã¥Ë†Â°Ã¦â€“Â°Ã¨Â´Â¦Ã¥ÂÂ· Ã¢â€ â€™ Ã©â€¡ÂÃ¨Â½Â½Ã©â€¡â€¡Ã©â€ºâ€ Ã§Â¼â€œÃ¥â€ Â²Ã¥Å’Âº
     renderCloud();
     renderRecords(); renderAssessments(); renderAppts(); renderCustomList(); renderExChips();
     renderProfile(); renderTodayPlan(); renderPlanList(); renderAchievements(); renderCollectCount(); renderGoal();
@@ -2529,18 +2529,18 @@ async function authLogin(register) {
     $('auth-status').textContent = t('cloudErr', { msg: e.message });
   }
 }
-// ç™»å½•åŽæ•°æ®å˜æ›´ â†’ 4 ç§’é˜²æŠ–è‡ªåŠ¨åŒæ­¥ï¼ˆåƒçœŸ App ä¸€æ ·æ— æ„Ÿï¼‰
+// Ã§â„¢Â»Ã¥Â½â€¢Ã¥ÂÅ½Ã¦â€¢Â°Ã¦ÂÂ®Ã¥ÂËœÃ¦â€ºÂ´ Ã¢â€ â€™ 4 Ã§Â§â€™Ã©ËœÂ²Ã¦Å â€“Ã¨â€¡ÂªÃ¥Å Â¨Ã¥ÂÅ’Ã¦Â­Â¥Ã¯Â¼Ë†Ã¥Æ’ÂÃ§Å“Å¸ App Ã¤Â¸â‚¬Ã¦Â Â·Ã¦â€”Â Ã¦â€žÅ¸Ã¯Â¼â€°
 let cloudSyncTimer = null;
 function scheduleCloudSync() {
   if (!cloudCfg() || !cloudSession()) return;
   clearTimeout(cloudSyncTimer);
   cloudSyncTimer = setTimeout(() => { cloudSync().catch(() => {}); }, 4000);
 }
-// v2.36.0ï¼šå¯åŠ¨ä¸Žå›žåˆ°å‰å°å„æ‹‰ä¸€æ¬¡ï¼Œè·¨è®¾å¤‡æ‰ä¼šã€Œæ‰“å¼€å°±æ˜¯æœ€æ–°çš„ã€ï¼Œä¸ç”¨ç”¨æˆ·æ‰‹åŠ¨ç‚¹
+// v2.36.0Ã¯Â¼Å¡Ã¥ÂÂ¯Ã¥Å Â¨Ã¤Â¸Å½Ã¥â€ºÅ¾Ã¥Ë†Â°Ã¥â€°ÂÃ¥ÂÂ°Ã¥Ââ€žÃ¦â€¹â€°Ã¤Â¸â‚¬Ã¦Â¬Â¡Ã¯Â¼Å’Ã¨Â·Â¨Ã¨Â®Â¾Ã¥Â¤â€¡Ã¦â€°ÂÃ¤Â¼Å¡Ã£â‚¬Å’Ã¦â€°â€œÃ¥Â¼â‚¬Ã¥Â°Â±Ã¦ËœÂ¯Ã¦Å“â‚¬Ã¦â€“Â°Ã§Å¡â€žÃ£â‚¬ÂÃ¯Â¼Å’Ã¤Â¸ÂÃ§â€Â¨Ã§â€Â¨Ã¦Ë†Â·Ã¦â€°â€¹Ã¥Å Â¨Ã§â€šÂ¹
 let cloudAutoAt = 0;
 function cloudAutoSync() {
   if (!cloudCfg() || !cloudSession()) return;
-  if (Date.now() - cloudAutoAt < 60000) return;   // ä¸€åˆ†é’Ÿå†…ä¸é‡å¤æ‹‰ï¼Œçœæµé‡
+  if (Date.now() - cloudAutoAt < 60000) return;   // Ã¤Â¸â‚¬Ã¥Ë†â€ Ã©â€™Å¸Ã¥â€ â€¦Ã¤Â¸ÂÃ©â€¡ÂÃ¥Â¤ÂÃ¦â€¹â€°Ã¯Â¼Å’Ã§Å“ÂÃ¦ÂµÂÃ©â€¡Â
   cloudAutoAt = Date.now();
   cloudSync().catch(() => {});
 }
@@ -2575,7 +2575,7 @@ $('btn-cloud-logout').addEventListener('click', () => {
   accountLogout();
   localStorage.removeItem('rehab_cloud_session');
   invalidateCustom();
-  reloadCollectBuf();                               // é€€å‡ºè´¦å· â†’ é‡è½½ç¼“å†²åŒºï¼ˆè®¿å®¢ç©ºé—´ï¼‰
+  reloadCollectBuf();                               // Ã©â‚¬â‚¬Ã¥â€¡ÂºÃ¨Â´Â¦Ã¥ÂÂ· Ã¢â€ â€™ Ã©â€¡ÂÃ¨Â½Â½Ã§Â¼â€œÃ¥â€ Â²Ã¥Å’ÂºÃ¯Â¼Ë†Ã¨Â®Â¿Ã¥Â®Â¢Ã§Â©ÂºÃ©â€”Â´Ã¯Â¼â€°
   renderCloud();
   renderRecords(); renderAssessments(); renderAppts(); renderCustomList(); renderExChips();
   renderProfile(); renderTodayPlan(); renderPlanList(); renderAchievements(); renderCollectCount(); renderGoal();
@@ -2595,7 +2595,7 @@ $('btn-delete-account').addEventListener('click', async () => {
       toast(t('acctDeleted'));
     } catch (e) {
       toast(t('cloudDeleteFailed', { msg: e.message }));
-      return;   // äº‘ç«¯æ²¡åˆ æŽ‰å°±ä¸æŠ¥é”€å·ï¼Œé¿å…ç”¨æˆ·ä»¥ä¸ºåˆ äº†å…¶å®žè¿˜åœ¨
+      return;   // Ã¤Âºâ€˜Ã§Â«Â¯Ã¦Â²Â¡Ã¥Ë†Â Ã¦Å½â€°Ã¥Â°Â±Ã¤Â¸ÂÃ¦Å Â¥Ã©â€â‚¬Ã¥ÂÂ·Ã¯Â¼Å’Ã©ÂÂ¿Ã¥â€¦ÂÃ§â€Â¨Ã¦Ë†Â·Ã¤Â»Â¥Ã¤Â¸ÂºÃ¥Ë†Â Ã¤Âºâ€ Ã¥â€¦Â¶Ã¥Â®Å¾Ã¨Â¿ËœÃ¥Å“Â¨
     }
   }
   if (u) accountDelete();
@@ -2606,7 +2606,7 @@ $('btn-delete-account').addEventListener('click', async () => {
   renderProfile(); renderTodayPlan(); renderPlanList(); renderAchievements(); renderCollectCount(); renderGoal();
 });
 
-/* ============ è¯­éŸ³æ’­æŠ¥ï¼ˆç³»ç»Ÿ TTSï¼Œç¦»çº¿å¯ç”¨ï¼‰ ============ */
+/* ============ Ã¨Â¯Â­Ã©Å¸Â³Ã¦â€™Â­Ã¦Å Â¥Ã¯Â¼Ë†Ã§Â³Â»Ã§Â»Å¸ TTSÃ¯Â¼Å’Ã§Â¦Â»Ã§ÂºÂ¿Ã¥ÂÂ¯Ã§â€Â¨Ã¯Â¼â€° ============ */
 const voiceEnabled = () => LS.get('rehab_voice', false);
 function speak(text) {
   if (!voiceEnabled() || !('speechSynthesis' in window)) return;
@@ -2629,13 +2629,13 @@ $('btn-voice-toggle').addEventListener('click', () => {
   speak(t('voiceOn'));
 });
 
-/* ============ è½»æç¤º ============ */
+/* ============ Ã¨Â½Â»Ã¦ÂÂÃ§Â¤Âº ============ */
 function toast(msg) {
   let t = $('toast');
   if (!t) {
     t = document.createElement('div');
     t.id = 'toast';
-    t.setAttribute('role', 'status');          // v2.21.10ï¼šæç¤ºæ¡å¯è¢«è¯»å±æ’­æŠ¥
+    t.setAttribute('role', 'status');          // v2.21.10Ã¯Â¼Å¡Ã¦ÂÂÃ§Â¤ÂºÃ¦ÂÂ¡Ã¥ÂÂ¯Ã¨Â¢Â«Ã¨Â¯Â»Ã¥Â±ÂÃ¦â€™Â­Ã¦Å Â¥
     t.setAttribute('aria-live', 'polite');
     document.body.appendChild(t);
   }
@@ -2645,64 +2645,64 @@ function toast(msg) {
   t._tm = setTimeout(() => { t.style.opacity = 0; t.style.transform = 'translate(-50%, 12px)'; }, 2200);
 }
 
-/* ============ å†…ç½®è‡ªæµ‹ï¼ˆ#selftestï¼Œä¾›å¼€å‘/è¯æ®ç”¨ï¼‰ ============ */
+/* ============ Ã¥â€ â€¦Ã§Â½Â®Ã¨â€¡ÂªÃ¦Âµâ€¹Ã¯Â¼Ë†#selftestÃ¯Â¼Å’Ã¤Â¾â€ºÃ¥Â¼â‚¬Ã¥Ââ€˜/Ã¨Â¯ÂÃ¦ÂÂ®Ã§â€Â¨Ã¯Â¼â€° ============ */
 async function selfTest() {
   const out = $('selftest-out');
   const log = (name, ok, detail) => {
-    out.innerHTML += `<div class="${ok ? 'st-pass' : 'st-fail'}">${ok ? 'âœ…' : 'âŒ'} ${name} ${detail || ''}</div>`;
+    out.innerHTML += `<div class="${ok ? 'st-pass' : 'st-fail'}">${ok ? 'Ã¢Å“â€¦' : 'Ã¢ÂÅ’'} ${name} ${detail || ''}</div>`;
     console.log('SELFTEST:', name, ok ? 'PASS' : 'FAIL', detail || '');
   };
   try {
-    // æž„é€ æ­£é¢ç«™å§¿éª¨æž¶ï¼ˆè‚©-é«‹-è†-è¸ï¼‰
+    // Ã¦Å¾â€žÃ©â‚¬Â Ã¦Â­Â£Ã©ÂÂ¢Ã§Â«â„¢Ã¥Â§Â¿Ã©ÂªÂ¨Ã¦Å¾Â¶Ã¯Â¼Ë†Ã¨â€šÂ©-Ã©Â«â€¹-Ã¨â€ Â-Ã¨Â¸ÂÃ¯Â¼â€°
     const mk = (x, y, vis = 1) => ({ x, y, z: 0, visibility: vis });
     const base = () => {
       const lms = new Array(33).fill(null);
       const set = (i, x, y) => { lms[i] = mk(x, y); };
-      set(0, 0.5, 0.10);               // é¼»
-      set(11, 0.42, 0.22); set(12, 0.58, 0.22);  // è‚©
-      set(23, 0.44, 0.45); set(24, 0.56, 0.45);  // é«‹
-      set(25, 0.46, 0.65); set(26, 0.54, 0.65);  // è†
-      set(27, 0.48, 0.85); set(28, 0.52, 0.85);  // è¸
-      set(13, 0.40, 0.30); set(14, 0.60, 0.30);  // è‚˜
-      set(15, 0.38, 0.38); set(16, 0.62, 0.38);  // è…•
+      set(0, 0.5, 0.10);               // Ã©Â¼Â»
+      set(11, 0.42, 0.22); set(12, 0.58, 0.22);  // Ã¨â€šÂ©
+      set(23, 0.44, 0.45); set(24, 0.56, 0.45);  // Ã©Â«â€¹
+      set(25, 0.46, 0.65); set(26, 0.54, 0.65);  // Ã¨â€ Â
+      set(27, 0.48, 0.85); set(28, 0.52, 0.85);  // Ã¨Â¸Â
+      set(13, 0.40, 0.30); set(14, 0.60, 0.30);  // Ã¨â€šËœ
+      set(15, 0.38, 0.38); set(16, 0.62, 0.38);  // Ã¨â€¦â€¢
       for (let i = 0; i < 33; i++) if (!lms[i]) lms[i] = mk(0.5, 0.5, 0);
       return lms;
     };
-    // 1. è§’åº¦æ•°å­¦
+    // 1. Ã¨Â§â€™Ã¥ÂºÂ¦Ã¦â€¢Â°Ã¥Â­Â¦
     const p = mk(0, 0), q = mk(0, 1), r = mk(1, 1);
     const ang = angle3(p, q, r);
     log(t('stAngle'), Math.abs(ang - 90) < 0.5, `got ${ang.toFixed(1)}`);
-    // 2. æ·±è¹²åˆ¤å®šï¼šæ ‡å‡†ï¼ˆè†è§’ ~100ï¼‰
+    // 2. Ã¦Â·Â±Ã¨Â¹Â²Ã¥Ë†Â¤Ã¥Â®Å¡Ã¯Â¼Å¡Ã¦Â â€¡Ã¥â€¡â€ Ã¯Â¼Ë†Ã¨â€ ÂÃ¨Â§â€™ ~100Ã¯Â¼â€°
     let lms = base();
     const res = analyzeAny(lms, EXERCISES.squat);
     log(t('stSquat'), Array.isArray(res.features) && res.features.length === 4, JSON.stringify(res.features));
-    // 3. å†…æ‰£æ£€æµ‹ï¼šå³è†å‘å†…åç§» â†’ valgus
-    const vgLms = base(); vgLms[26].x = 0.50;  // å³è†ç§»åˆ°é«‹-è¸ä¸­ç‚¹å†…ä¾§
+    // 3. Ã¥â€ â€¦Ã¦â€°Â£Ã¦Â£â‚¬Ã¦Âµâ€¹Ã¯Â¼Å¡Ã¥ÂÂ³Ã¨â€ ÂÃ¥Ââ€˜Ã¥â€ â€¦Ã¥ÂÂÃ§Â§Â» Ã¢â€ â€™ valgus
+    const vgLms = base(); vgLms[26].x = 0.50;  // Ã¥ÂÂ³Ã¨â€ ÂÃ§Â§Â»Ã¥Ë†Â°Ã©Â«â€¹-Ã¨Â¸ÂÃ¤Â¸Â­Ã§â€šÂ¹Ã¥â€ â€¦Ã¤Â¾Â§
     const vg = kneeValgus(vgLms);
     log(t('stValgus'), vg.valgus === true, `L${vg.left} R${vg.right}`);
-    // 4. è®¡æ•°çŠ¶æ€æœºï¼ˆå«é˜²æŠ–ï¼šéœ€æŒç»­ä½ŽäºŽé˜ˆå€¼ + ä¸¤æ¬¡è®¡æ•°æœ€å°é—´éš”ï¼‰
+    // 4. Ã¨Â®Â¡Ã¦â€¢Â°Ã§Å Â¶Ã¦â‚¬ÂÃ¦Å“ÂºÃ¯Â¼Ë†Ã¥ÂÂ«Ã©ËœÂ²Ã¦Å â€“Ã¯Â¼Å¡Ã©Å“â‚¬Ã¦Å’ÂÃ§Â»Â­Ã¤Â½Å½Ã¤ÂºÅ½Ã©ËœË†Ã¥â‚¬Â¼ + Ã¤Â¸Â¤Ã¦Â¬Â¡Ã¨Â®Â¡Ã¦â€¢Â°Ã¦Å“â‚¬Ã¥Â°ÂÃ©â€”Â´Ã©Å¡â€Ã¯Â¼â€°
     let c = { state: 'up', reps: 0, d: 100, u: 150, belowT: 0, lastRepTs: 0, confirmMs: 120, minGapMs: 350 };
-    counterUpdate(c, 80, 1000); counterUpdate(c, 80, 1150); const mid = c.state; const reps1 = c.reps; // æŒç»­120ms â†’ down
-    counterUpdate(c, 160, 1300); const reps2 = c.reps;                                                // â†’ up, reps=1
-    counterUpdate(c, 80, 1400); counterUpdate(c, 80, 1530); const mid2 = c.state; const reps3 = c.reps; // é—´éš”<350ms ä¸é‡è®¡
+    counterUpdate(c, 80, 1000); counterUpdate(c, 80, 1150); const mid = c.state; const reps1 = c.reps; // Ã¦Å’ÂÃ§Â»Â­120ms Ã¢â€ â€™ down
+    counterUpdate(c, 160, 1300); const reps2 = c.reps;                                                // Ã¢â€ â€™ up, reps=1
+    counterUpdate(c, 80, 1400); counterUpdate(c, 80, 1530); const mid2 = c.state; const reps3 = c.reps; // Ã©â€”Â´Ã©Å¡â€<350ms Ã¤Â¸ÂÃ©â€¡ÂÃ¨Â®Â¡
     counterUpdate(c, 160, 1700); counterUpdate(c, 80, 1900); counterUpdate(c, 80, 2040);
     counterUpdate(c, 160, 2200); const repsFinal = c.reps;
     log(t('stCounter'), mid === 'down' && reps1 === 0 && reps2 === 1, `reps=${reps2}`);
     log(t('stDebounce'), mid2 === 'up' && reps3 === 1 && repsFinal === 2, `final reps=${repsFinal}`);
-    // 5. å¼“æ­¥è¹²/ä¿¯å§æ’‘ èƒ½è·‘é€š
+    // 5. Ã¥Â¼â€œÃ¦Â­Â¥Ã¨Â¹Â²/Ã¤Â¿Â¯Ã¥ÂÂ§Ã¦â€™â€˜ Ã¨Æ’Â½Ã¨Â·â€˜Ã©â‚¬Å¡
     const lunge = analyzeAny(base(), EXERCISES.lunge);
     log(t('stLunge'), lunge.features.length === 3, JSON.stringify(lunge.features));
     const pushup = analyzeAny(base(), EXERCISES.pushup);
     log(t('stPushup'), pushup.features.length === 2, JSON.stringify(pushup.features));
-    // 6. è‡ªå®šä¹‰åŠ¨ä½œå¼•æ“Ž
+    // 6. Ã¨â€¡ÂªÃ¥Â®Å¡Ã¤Â¹â€°Ã¥Å Â¨Ã¤Â½Å“Ã¥Â¼â€¢Ã¦â€œÅ½
     const custom = customDefault();
     const cres = analyzeAny(base(), custom);
     log(t('stCustom'), cres.features.length === 2 && typeof cres.repValue === 'number', JSON.stringify(cres.features));
-    // 7. è‡ªå®šä¹‰è§„åˆ™è§¦å‘
-    const c2 = customDefault(); c2.rules[0].max = 50;   // a1(â‰ˆ128Â°) è¶…å‡º max=50 â†’ bad
+    // 7. Ã¨â€¡ÂªÃ¥Â®Å¡Ã¤Â¹â€°Ã¨Â§â€žÃ¥Ë†â„¢Ã¨Â§Â¦Ã¥Ââ€˜
+    const c2 = customDefault(); c2.rules[0].max = 50;   // a1(Ã¢â€°Ë†128Ã‚Â°) Ã¨Â¶â€¦Ã¥â€¡Âº max=50 Ã¢â€ â€™ bad
     const c2res = analyzeAny(base(), c2);
     log(t('stCustomRule'), c2res.depth === 'bad' && c2res.badMsgs.length > 0, c2res.badMsgs.join('|'));
-    // 8. æ—¥å¸¸é«˜é¢‘åŠ¨ä½œå¼•æ“Ž
+    // 8. Ã¦â€”Â¥Ã¥Â¸Â¸Ã©Â«ËœÃ©Â¢â€˜Ã¥Å Â¨Ã¤Â½Å“Ã¥Â¼â€¢Ã¦â€œÅ½
     const ss = analyzeAny(base(), EXERCISES.sitstand);
     log(t('stSitStand'), ss.features.length === 3 && typeof ss.repValue === 'number', JSON.stringify(ss.features));
     const hh = analyzeAny(base(), EXERCISES.hiphinge);
@@ -2711,19 +2711,19 @@ async function selfTest() {
     log(t('stStepUp'), su.features.length === 3, JSON.stringify(su.features));
     const sr = analyzeAny(base(), EXERCISES.shoulderraise);
     log(t('stShoulderRaise'), sr.features.length === 3, JSON.stringify(sr.features));
-    // 9. å—ä¼¤é£Žé™©è­¦æŠ¥ï¼šå¼¯è…°+ç›´è…¿æ¬ç‰© â†’ å¼“èƒŒé£Žé™© 2 çº§
+    // 9. Ã¥Ââ€”Ã¤Â¼Â¤Ã©Â£Å½Ã©â„¢Â©Ã¨Â­Â¦Ã¦Å Â¥Ã¯Â¼Å¡Ã¥Â¼Â¯Ã¨â€¦Â°+Ã§â€ºÂ´Ã¨â€¦Â¿Ã¦ÂÂ¬Ã§â€°Â© Ã¢â€ â€™ Ã¥Â¼â€œÃ¨Æ’Å’Ã©Â£Å½Ã©â„¢Â© 2 Ã§ÂºÂ§
     const hh2 = base();
     hh2[11] = mk(0.18, 0.46); hh2[12] = mk(0.20, 0.46);
     const hhRisk = analyzeAny(hh2, EXERCISES.hiphinge);
     log(t('stRiskAlarm'), hhRisk.riskLevel === 2 && hhRisk.risk.length > 0, `level=${hhRisk.riskLevel} ${hhRisk.risk.join('|')}`);
-    // 10. èº«ä½“å®Œæ•´æ€§æ£€æµ‹ï¼šå³è¸ä¸å¯è§ â†’ æé†’ç¼ºã€Œè¸ã€ï¼›å¦ä¸€ä¾§è¢«é®æŒ¡ä¸ç®—ç¼ºå¤±ï¼ˆä¾§é¢è§†è§’ä¸è¯¯æŠ¥ï¼‰
+    // 10. Ã¨ÂºÂ«Ã¤Â½â€œÃ¥Â®Å’Ã¦â€¢Â´Ã¦â‚¬Â§Ã¦Â£â‚¬Ã¦Âµâ€¹Ã¯Â¼Å¡Ã¥ÂÂ³Ã¨Â¸ÂÃ¤Â¸ÂÃ¥ÂÂ¯Ã¨Â§Â Ã¢â€ â€™ Ã¦ÂÂÃ©â€ â€™Ã§Â¼ÂºÃ£â‚¬Å’Ã¨Â¸ÂÃ£â‚¬ÂÃ¯Â¼â€ºÃ¥ÂÂ¦Ã¤Â¸â‚¬Ã¤Â¾Â§Ã¨Â¢Â«Ã©ÂÂ®Ã¦Å’Â¡Ã¤Â¸ÂÃ§Â®â€”Ã§Â¼ÂºÃ¥Â¤Â±Ã¯Â¼Ë†Ã¤Â¾Â§Ã©ÂÂ¢Ã¨Â§â€ Ã¨Â§â€™Ã¤Â¸ÂÃ¨Â¯Â¯Ã¦Å Â¥Ã¯Â¼â€°
     const inc = base(); inc[28].visibility = 0;
     const miss = bodyMissing(inc);
     log(t('stBodyCheck'), miss.length === 1 && miss[0] === t('jAnkle'), miss.join(','));
     const side = base(); side[23].visibility = 0; side[25].visibility = 0; side[27].visibility = 0;
     const miss2 = bodyMissing(side);
     log(t('stBodySide'), miss2.length === 0, miss2.join(',') || 'OK');
-    // 11. æ™ºèƒ½è¯†åˆ«åˆ†ç±»ï¼ˆ5 ç§åˆæˆå§¿åŠ¿ï¼‰
+    // 11. Ã¦â„¢ÂºÃ¨Æ’Â½Ã¨Â¯â€ Ã¥Ë†Â«Ã¥Ë†â€ Ã§Â±Â»Ã¯Â¼Ë†5 Ã§Â§ÂÃ¥ÂË†Ã¦Ë†ÂÃ¥Â§Â¿Ã¥Å Â¿Ã¯Â¼â€°
     const mkPose = (mutate) => { const b = base(); mutate(b); return b; };
     const squatP = mkPose((b) => { [23, 24].forEach((i) => { b[i].x = 0.5; b[i].y = 0.55; }); [25, 26].forEach((i) => { b[i].x = 0.62; b[i].y = 0.70; }); });
     const hingeP = mkPose((b) => { [11, 12].forEach((i) => { b[i].x = 0.25; b[i].y = 0.5; }); });
@@ -2739,7 +2739,7 @@ async function selfTest() {
     const raiseP = mkPose((b) => { b[14].x = 0.58; b[14].y = 0.12; b[16].x = 0.58; b[16].y = 0.03; });
     const autoRes = [classifyAuto(squatP), classifyAuto(hingeP), classifyAuto(pushP), classifyAuto(stepP), classifyAuto(raiseP)];
     log(t('stAutoClass'), autoRes.join(',') === 'squat,hiphinge,pushup,stepup,shoulderraise', autoRes.join(','));
-    // 11b. æ™ºèƒ½è¯†åˆ«Â·é™æ­¢å§¿æ€ï¼šç«™å§¿/åå§¿ï¼ˆç¨³å®šåŽ†å² â†’ é™æ€åˆ¤å®šï¼‰
+    // 11b. Ã¦â„¢ÂºÃ¨Æ’Â½Ã¨Â¯â€ Ã¥Ë†Â«Ã‚Â·Ã©Ââ„¢Ã¦Â­Â¢Ã¥Â§Â¿Ã¦â‚¬ÂÃ¯Â¼Å¡Ã§Â«â„¢Ã¥Â§Â¿/Ã¥ÂÂÃ¥Â§Â¿Ã¯Â¼Ë†Ã§Â¨Â³Ã¥Â®Å¡Ã¥Å½â€ Ã¥ÂÂ² Ã¢â€ â€™ Ã©Ââ„¢Ã¦â‚¬ÂÃ¥Ë†Â¤Ã¥Â®Å¡Ã¯Â¼â€°
     const tN = performance.now();
     const still = (y) => [0, 1, 2, 3, 4, 5, 6, 7].map((i) => ({ y, t: tN - 1000 + i * 100 }));
     const sitP = mkPose((b) => {
@@ -2751,12 +2751,12 @@ async function selfTest() {
     const standCls = classifyAuto(base(), still(0.45), tN);
     const sitCls = classifyAuto(sitP, still(0.52), tN);
     log(t('stAutoPosture'), standCls === 'standing' && sitCls === 'sitting', `${standCls},${sitCls}`);
-    // 11b2. å™ªå£°æ™ƒåŠ¨ä¸‹ä»åˆ¤é™æ­¢ï¼ˆä¿®å¤ã€Œä¸€ç›´æ˜¾ç¤ºæ·±è¹²ã€ï¼šæ‘„åƒå¤´å™ªå£°+èº«ä½“å¾®æ™ƒä¸å†è¯¯åˆ¤ä¸ºè¿åŠ¨ï¼‰
+    // 11b2. Ã¥â„¢ÂªÃ¥Â£Â°Ã¦â„¢Æ’Ã¥Å Â¨Ã¤Â¸â€¹Ã¤Â»ÂÃ¥Ë†Â¤Ã©Ââ„¢Ã¦Â­Â¢Ã¯Â¼Ë†Ã¤Â¿Â®Ã¥Â¤ÂÃ£â‚¬Å’Ã¤Â¸â‚¬Ã§â€ºÂ´Ã¦ËœÂ¾Ã§Â¤ÂºÃ¦Â·Â±Ã¨Â¹Â²Ã£â‚¬ÂÃ¯Â¼Å¡Ã¦â€˜â€žÃ¥Æ’ÂÃ¥Â¤Â´Ã¥â„¢ÂªÃ¥Â£Â°+Ã¨ÂºÂ«Ã¤Â½â€œÃ¥Â¾Â®Ã¦â„¢Æ’Ã¤Â¸ÂÃ¥â€ ÂÃ¨Â¯Â¯Ã¥Ë†Â¤Ã¤Â¸ÂºÃ¨Â¿ÂÃ¥Å Â¨Ã¯Â¼â€°
     const noisy = (y, amp) => [0, 1, 2, 3, 4, 5, 6, 7].map((i) => ({ y: y + amp * (i % 3 - 1), t: tN - 1000 + i * 100 }));
     const standNoisyCls = classifyAuto(base(), noisy(0.45, 0.02), tN);
     const sitNoisyCls = classifyAuto(sitP, noisy(0.52, 0.02), tN);
     log(t('stAutoNoise'), standNoisyCls === 'standing' && sitNoisyCls === 'sitting', `${standNoisyCls},${sitNoisyCls}`);
-    // 11b3. æ¡Œå‰åå§¿ï¼ˆèº¯å¹²å‰å€¾ 25â€“40Â°ï¼‰ä¹Ÿè¯†åˆ«ä¸ºåå§¿ï¼ˆä¿®å¤ã€Œåç€è¢«è®¤æˆç«™ç€ã€ï¼‰
+    // 11b3. Ã¦Â¡Å’Ã¥â€°ÂÃ¥ÂÂÃ¥Â§Â¿Ã¯Â¼Ë†Ã¨ÂºÂ¯Ã¥Â¹Â²Ã¥â€°ÂÃ¥â‚¬Â¾ 25Ã¢â‚¬â€œ40Ã‚Â°Ã¯Â¼â€°Ã¤Â¹Å¸Ã¨Â¯â€ Ã¥Ë†Â«Ã¤Â¸ÂºÃ¥ÂÂÃ¥Â§Â¿Ã¯Â¼Ë†Ã¤Â¿Â®Ã¥Â¤ÂÃ£â‚¬Å’Ã¥ÂÂÃ§Ââ‚¬Ã¨Â¢Â«Ã¨Â®Â¤Ã¦Ë†ÂÃ§Â«â„¢Ã§Ââ‚¬Ã£â‚¬ÂÃ¯Â¼â€°
     const sitLeanP = mkPose((b) => {
       [23, 24].forEach((i) => { b[i].x = 0.40; b[i].y = 0.52; });
       [25, 26].forEach((i) => { b[i].x = 0.56; b[i].y = 0.64; });
@@ -2765,7 +2765,7 @@ async function selfTest() {
     });
     const sitLeanCls = classifyAuto(sitLeanP, still(0.52), tN);
     log(t('stSitLean'), sitLeanCls === 'sitting', `${sitLeanCls} lean=${EXERCISES.sitting.analyze(sitLeanP).metrics.lean.toFixed(0)}`);
-    // 11c. ç«™å§¿/åå§¿åˆ†æž
+    // 11c. Ã§Â«â„¢Ã¥Â§Â¿/Ã¥ÂÂÃ¥Â§Â¿Ã¥Ë†â€ Ã¦Å¾Â
     const stRes = EXERCISES.standing.analyze(base());
     const stBad = EXERCISES.standing.analyze(mkPose((b) => { [11, 12].forEach((i) => { b[i].x = 0.40; b[i].y = 0.35; }); b[0].x = 0.35; b[0].y = 0.28; }));
     log(t('stStanding'), stRes.depth === 'ok' && stBad.depth === 'bad', `lean=${stRes.metrics.lean.toFixed(1)}/${stBad.metrics.lean.toFixed(1)}`);
@@ -2778,18 +2778,18 @@ async function selfTest() {
     });
     const siBad = EXERCISES.sitting.analyze(siBadP);
     log(t('stSitting'), siRes.depth === 'ok' && siBad.depth === 'bad', `lean=${siRes.metrics.lean.toFixed(1)}/${siBad.metrics.lean.toFixed(1)}`);
-    // 12. è‡ªä¸»æ›´æ–°ï¼šç‰ˆæœ¬æ¯”è¾ƒ
+    // 12. Ã¨â€¡ÂªÃ¤Â¸Â»Ã¦â€ºÂ´Ã¦â€“Â°Ã¯Â¼Å¡Ã§â€°Ë†Ã¦Å“Â¬Ã¦Â¯â€Ã¨Â¾Æ’
     const vc = verCmp('2.14.0', '2.13.9') === 1 && verCmp('v2.9.1', '2.10.0') === -1
       && verCmp('2.15.0', 'v2.15.0') === 0 && verCmp('2.3.10', '2.3.9') === 1 && verCmp('1.0', '1.0.1') === -1;
     log(t('stVerCmp'), vc, '5/5');
-    // 13. AI ç³»ç»Ÿç®¡å®¶ï¼šä½“æ£€ + åé¦ˆæŠ¥å‘Š
+    // 13. AI Ã§Â³Â»Ã§Â»Å¸Ã§Â®Â¡Ã¥Â®Â¶Ã¯Â¼Å¡Ã¤Â½â€œÃ¦Â£â‚¬ + Ã¥ÂÂÃ©Â¦Ë†Ã¦Å Â¥Ã¥â€˜Å 
     const aiGood = healthCheck({ version: 'v2.16.0', latest: null, sessions: [{ ts: Date.now(), reps: 20 }], streak: 1, dist: [{ ex: 'squat', reps: 20 }], profile: { name: 'x', goal: 'knee' }, planCount: 1, errors: [], cameraFails: 0, modelFails: 0, daysSinceTrain: 0 });
     log(t('stAiHealth'), aiGood.score === 100 && aiGood.items.length >= 1, `score=${aiGood.score}`);
     const aiBad = healthCheck({ version: 'v2.16.0', latest: null, sessions: [], streak: 0, dist: [], profile: {}, planCount: 0, errors: [{ t: Date.now(), tag: 'js', msg: 'x' }, { t: Date.now(), tag: 'camera', msg: 'y' }], cameraFails: 3, modelFails: 0, daysSinceTrain: 10 });
     log(t('stAiHealth'), aiBad.score <= 60 && aiBad.items.some((i) => i.level === 'warn'), `score=${aiBad.score} items=${aiBad.items.length}`);
-    const rep = buildFeedbackReport({ version: 'v2.16.0', platform: 'Web', lang: 'zh', sessions: [], streak: 0, dist: [], cameraFails: 0, modelFails: 0, errors: [] }, 5, 'å¾ˆå¥½ç”¨');
-    log(t('stAiReport'), rep.body.includes('v2.16.0') && rep.body.includes('ç³»ç»Ÿä½“æ£€') && rep.body.includes('å¾ˆå¥½ç”¨'), rep.title);
-    // 14. ä¿æŒè®¡æ—¶å™¨ï¼šåˆæ ¼æ—¶é—´æ‰ç´¯è®¡ + è¿žç»­ä¸åˆæ ¼æš‚åœ
+    const rep = buildFeedbackReport({ version: 'v2.16.0', platform: 'Web', lang: 'zh', sessions: [], streak: 0, dist: [], cameraFails: 0, modelFails: 0, errors: [] }, 5, 'Ã¥Â¾Ë†Ã¥Â¥Â½Ã§â€Â¨');
+    log(t('stAiReport'), rep.body.includes('v2.16.0') && rep.body.includes('Ã§Â³Â»Ã§Â»Å¸Ã¤Â½â€œÃ¦Â£â‚¬') && rep.body.includes('Ã¥Â¾Ë†Ã¥Â¥Â½Ã§â€Â¨'), rep.title);
+    // 14. Ã¤Â¿ÂÃ¦Å’ÂÃ¨Â®Â¡Ã¦â€”Â¶Ã¥â„¢Â¨Ã¯Â¼Å¡Ã¥ÂË†Ã¦Â Â¼Ã¦â€”Â¶Ã©â€”Â´Ã¦â€°ÂÃ§Â´Â¯Ã¨Â®Â¡ + Ã¨Â¿Å¾Ã§Â»Â­Ã¤Â¸ÂÃ¥ÂË†Ã¦Â Â¼Ã¦Å¡â€šÃ¥ÂÅ“
     const holdC = { reps: 0, holdMs: 29000, lastHoldTs: tN, wasBad: false };
     const savedCounter = state.counter;
     state.counter = holdC;
@@ -2801,21 +2801,21 @@ async function selfTest() {
     const pauseHold = holdC.holdMs === h1;
     state.counter = savedCounter;
     log(t('stHoldTimer'), okHold && pauseHold, `reps=${holdC.reps} hold=${holdC.holdMs}`);
-    // 15. AI é”™è¯¯ 7 å¤©çª—å£ï¼šè€é”™è¯¯ä¸å†æ‰£åˆ†
+    // 15. AI Ã©â€â„¢Ã¨Â¯Â¯ 7 Ã¥Â¤Â©Ã§Âªâ€”Ã¥ÂÂ£Ã¯Â¼Å¡Ã¨â‚¬ÂÃ©â€â„¢Ã¨Â¯Â¯Ã¤Â¸ÂÃ¥â€ ÂÃ¦â€°Â£Ã¥Ë†â€ 
     const oldErr = healthCheck({ version: APP_VERSION, latest: null, sessions: [{ ts: Date.now(), reps: 5 }], streak: 1, dist: [{ ex: 'squat', reps: 5 }], profile: { name: 'x', goal: 'knee' }, planCount: 1, errors: [{ t: Date.now() - 8 * 86400000, tag: 'js', msg: 'old' }], cameraFails: 0, modelFails: 0, daysSinceTrain: 0 });
     log(t('stErrWindow'), oldErr.score === 100, `score=${oldErr.score}`);
-    // 16. æ™ºèƒ½è¯†åˆ«æŠ•ç¥¨é˜²æŠ–ï¼š66% ç¥¨æ•° + è¿žç»­ 4 å¸§
+    // 16. Ã¦â„¢ÂºÃ¨Æ’Â½Ã¨Â¯â€ Ã¥Ë†Â«Ã¦Å â€¢Ã§Â¥Â¨Ã©ËœÂ²Ã¦Å â€“Ã¯Â¼Å¡66% Ã§Â¥Â¨Ã¦â€¢Â° + Ã¨Â¿Å¾Ã§Â»Â­ 4 Ã¥Â¸Â§
     const v1 = autoSwitchOk({ squat: 10, lunge: 2 }, ['squat', 'squat', 'squat', 'squat']) === 'squat';
     const v2 = autoSwitchOk({ squat: 7, lunge: 5 }, ['lunge', 'squat', 'lunge', 'squat']) === null;
     const v3 = autoSwitchOk({ squat: 10, lunge: 2 }, ['lunge', 'lunge', 'lunge', 'lunge']) === null;
-    log(t('stAutoVote'), v1 && v2 && v3, '3 ç»„è£å†³');
-    // 16b. åŒæºæ›´æ–°è£å†³ï¼šç‰ˆæœ¬é«˜è€…èƒœï¼›ç­‰ç‰ˆæœ¬æ—¶ä¿ç•™ jsDelivr é“¾æŽ¥
+    log(t('stAutoVote'), v1 && v2 && v3, '3 Ã§Â»â€žÃ¨Â£ÂÃ¥â€ Â³');
+    // 16b. Ã¥ÂÅ’Ã¦ÂºÂÃ¦â€ºÂ´Ã¦â€“Â°Ã¨Â£ÂÃ¥â€ Â³Ã¯Â¼Å¡Ã§â€°Ë†Ã¦Å“Â¬Ã©Â«ËœÃ¨â‚¬â€¦Ã¨Æ’Å“Ã¯Â¼â€ºÃ§Â­â€°Ã§â€°Ë†Ã¦Å“Â¬Ã¦â€”Â¶Ã¤Â¿ÂÃ§â€¢â„¢ jsDelivr Ã©â€œÂ¾Ã¦Å½Â¥
     const p1 = pickLatest(null, { version: '2.17.3', apk: 'https://github.com/x.apk' });
     const p2 = pickLatest(p1, { version: '2.17.3', apk: 'https://cdn.jsdelivr.net/x.apk' });
     const p3 = pickLatest(p2, { version: '2.17.1', apk: 'https://y.apk' });
     const p4 = pickLatest(p2, { version: '2.17.4', apk: 'https://github.com/z.apk' });
     log(t('stPickLatest'), p1.version === '2.17.3' && p2.apk.includes('jsdelivr') && p3.version === '2.17.3' && p4.version === '2.17.4', `${p2.version}/${p4.version}`);
-    // 16c. AI ä¸€é”®ç”Ÿæˆè®¡åˆ’ï¼ˆæŒ‰åº·å¤ç›®æ ‡ï¼‰
+    // 16c. AI Ã¤Â¸â‚¬Ã©â€Â®Ã§â€Å¸Ã¦Ë†ÂÃ¨Â®Â¡Ã¥Ë†â€™Ã¯Â¼Ë†Ã¦Å’â€°Ã¥ÂºÂ·Ã¥Â¤ÂÃ§â€ºÂ®Ã¦Â â€¡Ã¯Â¼â€°
     const pk = generatePlan('knee');
     const pp = generatePlan('posture');
     const pf2 = generatePlan('fitness');
@@ -2825,7 +2825,7 @@ async function selfTest() {
       && pf2.length >= 5 && po.length >= 3
       && [pk, pp, pf2, po].every((pl) => pl.every((x) => x.reps > 0 && Array.isArray(x.days) && x.days.length >= 3 && x.days.every((d) => d >= 0 && d <= 6)));
     log(t('stPlanGen'), planOk, `knee=${pk.length} posture=${pp.length} fitness=${pf2.length} other=${po.length}`);
-    // 17. è…¿ä¼¸ç›´åå§¿è¯†åˆ« + ä½“æ€å°ç»“ä¸“å±žæ–‡æ¡ˆ
+    // 17. Ã¨â€¦Â¿Ã¤Â¼Â¸Ã§â€ºÂ´Ã¥ÂÂÃ¥Â§Â¿Ã¨Â¯â€ Ã¥Ë†Â« + Ã¤Â½â€œÃ¦â‚¬ÂÃ¥Â°ÂÃ§Â»â€œÃ¤Â¸â€œÃ¥Â±Å¾Ã¦â€“â€¡Ã¦Â¡Ë†
     const sitLegs = mkPose((b) => {
       [23, 24].forEach((i) => { b[i].x = 0.42; b[i].y = 0.52; });
       [25, 26].forEach((i) => { b[i].x = 0.55; b[i].y = 0.52; });
@@ -2835,28 +2835,28 @@ async function selfTest() {
     const sitLegsCls = classifyAuto(sitLegs, still(0.52), tN);
     const holdComment = aiSessionComment({ reps: 0, quality: null, riskEvents: 0 }, true);
     log(t('stAutoPosture'), sitLegsCls === 'sitting' && holdComment.key === 'aiSessHoldNone', `${sitLegsCls},${holdComment.key}`);
-    // 18. å…¨èº«ä½“æ€è¯„ä¼°å¼•æ“Žï¼ˆv2.19ï¼‰ï¼šå¥½/åéª¨æž¶è¯„åˆ† + æŒ‡å¯¼æ€§å»ºè®®
+    // 18. Ã¥â€¦Â¨Ã¨ÂºÂ«Ã¤Â½â€œÃ¦â‚¬ÂÃ¨Â¯â€žÃ¤Â¼Â°Ã¥Â¼â€¢Ã¦â€œÅ½Ã¯Â¼Ë†v2.19Ã¯Â¼â€°Ã¯Â¼Å¡Ã¥Â¥Â½/Ã¥ÂÂÃ©ÂªÂ¨Ã¦Å¾Â¶Ã¨Â¯â€žÃ¥Ë†â€  + Ã¦Å’â€¡Ã¥Â¯Â¼Ã¦â‚¬Â§Ã¥Â»ÂºÃ¨Â®Â®
     const paGood = paBuildReport('standing', paEvalStanding(Array(30).fill(base())));
     const paBadLms = (() => { const b = base(); b[0].x = 0.44; b[0].y = 0.14; [11, 12].forEach((i) => { b[i].x = 0.56; b[i].y = 0.31; }); b[11].y = 0.30; return b; })();
     const paBad = paBuildReport('standing', paEvalStanding(Array(30).fill(paBadLms)));
     const paAdviceOk = paBad.priorities.length >= 1 && paBad.priorities.every((i) => i.advice && i.advice.length > 2);
     log(t('stPaStand'), paGood.score >= 80 && paBad.score < 80 && paAdviceOk, `good=${paGood.score} bad=${paBad.score} advice=${paAdviceOk}`);
-    // 18b. å•è…¿ç«™ç«‹è¯„ä»·ï¼ˆå«ä¿æŒæ—¶é—´é¡¹ï¼‰
+    // 18b. Ã¥Ââ€¢Ã¨â€¦Â¿Ã§Â«â„¢Ã§Â«â€¹Ã¨Â¯â€žÃ¤Â»Â·Ã¯Â¼Ë†Ã¥ÂÂ«Ã¤Â¿ÂÃ¦Å’ÂÃ¦â€”Â¶Ã©â€”Â´Ã©Â¡Â¹Ã¯Â¼â€°
     const paSingleLms = (() => { const b = base(); b[28].y = 0.78; b[26].y = 0.70; return b; })();
     const paSi = paBuildReport('single', paEvalSingle(Array(30).fill(paSingleLms)));
     log(t('stPaSingle'), paSi.items.length >= 4 && paSi.items.some((i) => i.key === 'mSingleHold'), `items=${paSi.items.length}`);
-    // 18c. æ·±è¹²è¯„ä»·ï¼šå³è†å†…æ‰£ â†’ valgus é¡¹ bad
+    // 18c. Ã¦Â·Â±Ã¨Â¹Â²Ã¨Â¯â€žÃ¤Â»Â·Ã¯Â¼Å¡Ã¥ÂÂ³Ã¨â€ ÂÃ¥â€ â€¦Ã¦â€°Â£ Ã¢â€ â€™ valgus Ã©Â¡Â¹ bad
     const paSqLms = (() => { const b = base(); [23, 24].forEach((i) => { b[i].y = 0.50; }); [25, 26].forEach((i) => { b[i].x = 0.50; b[i].y = 0.68; }); return b; })();
     const paSq = paBuildReport('squat', paEvalSquat(Array(30).fill(paSqLms)));
     const paValgus = paSq.items.find((i) => i.key === 'mSquatValgus');
     log(t('stPaSquat'), paValgus && paValgus.level !== 'good', `valgus=${paValgus ? paValgus.level : '?'}`);
-    // 18d. æ­¥é¢‘æ£€æµ‹ï¼šåˆæˆ 1.83Hz æ­£å¼¦é«‹éƒ¨è½¨è¿¹ â†’ â‰ˆ110 æ­¥/åˆ†
+    // 18d. Ã¦Â­Â¥Ã©Â¢â€˜Ã¦Â£â‚¬Ã¦Âµâ€¹Ã¯Â¼Å¡Ã¥ÂË†Ã¦Ë†Â 1.83Hz Ã¦Â­Â£Ã¥Â¼Â¦Ã©Â«â€¹Ã©Æ’Â¨Ã¨Â½Â¨Ã¨Â¿Â¹ Ã¢â€ â€™ Ã¢â€°Ë†110 Ã¦Â­Â¥/Ã¥Ë†â€ 
     paState.steps = []; paState.hipHist = [];
     for (let i = 0; i < 300; i++) { const tt = tN - 10000 + i * 33; paState.hipHist.push({ y: 0.5 + 0.02 * Math.sin(2 * Math.PI * 1.833 * (tt - tN) / 1000), t: tt }); }
     paDetectSteps(tN);
     const paCad = paCadence();
     log(t('stPaWalk'), paCad.cad > 100 && paCad.cad < 120, `cad=${paCad.cad.toFixed(0)} steps=${paState.steps.length}`);
-    // 18e. å®Œæ•´æ€§é—¨æŽ§ï¼šç¼ºå³è¸ â†’ ä¸è¯„ä»·ï¼›è„šå‡ºç”» â†’ ä¸è¯„ä»·
+    // 18e. Ã¥Â®Å’Ã¦â€¢Â´Ã¦â‚¬Â§Ã©â€”Â¨Ã¦Å½Â§Ã¯Â¼Å¡Ã§Â¼ÂºÃ¥ÂÂ³Ã¨Â¸Â Ã¢â€ â€™ Ã¤Â¸ÂÃ¨Â¯â€žÃ¤Â»Â·Ã¯Â¼â€ºÃ¨â€žÅ¡Ã¥â€¡ÂºÃ§â€Â» Ã¢â€ â€™ Ã¤Â¸ÂÃ¨Â¯â€žÃ¤Â»Â·
     paState.hipHist = [];
     const paInc = base(); paInc[28].visibility = 0;
     const paGate1 = paCompleteness(paInc, 'standing', tN);
@@ -2865,11 +2865,11 @@ async function selfTest() {
     const paGateOk = paGate1.ok === false && paGate1.items.some((i) => i.key === 'body' && !i.ok)
       && paGate2.ok === false && paGate2.items.some((i) => i.key === 'frame' && !i.ok);
     log(t('stPaGate'), paGateOk, `missing=${!paGate1.ok} outframe=${!paGate2.ok}`);
-    // 18f. å•è…¿ç«™ç«‹æŠ¬èµ·ä¾§è¯†åˆ«ï¼ˆv2.21.4ï¼šè¸æ›´é«˜ä¸€ä¾§ = æŠ¬èµ·ä¾§ï¼‰
+    // 18f. Ã¥Ââ€¢Ã¨â€¦Â¿Ã§Â«â„¢Ã§Â«â€¹Ã¦Å Â¬Ã¨ÂµÂ·Ã¤Â¾Â§Ã¨Â¯â€ Ã¥Ë†Â«Ã¯Â¼Ë†v2.21.4Ã¯Â¼Å¡Ã¨Â¸ÂÃ¦â€ºÂ´Ã©Â«ËœÃ¤Â¸â‚¬Ã¤Â¾Â§ = Ã¦Å Â¬Ã¨ÂµÂ·Ã¤Â¾Â§Ã¯Â¼â€°
     const paLiftLms = (() => { const b = base(); b[28].y = 0.78; b[26].y = 0.70; return b; })();
     const paLiftHold = paEvalSingle(Array(30).fill(paLiftLms)).find((i) => i.key === 'mSingleHold');
     log(t('stPaLift'), paLiftHold && paLiftHold.text.includes(t('paLiftR')), paLiftHold ? paLiftHold.text : '?');
-    // 19. è¿åŠ¨åŠŸèƒ½æµ‹è¯•å¼•æ“Žï¼ˆv2.20ï¼‰ï¼šåŠ¨æ€æ·±è¹²åˆæˆ 3 æ¬¡ â†’ åˆ†å‰²+å…¨æŒ‡æ ‡+è¯„åˆ†
+    // 19. Ã¨Â¿ÂÃ¥Å Â¨Ã¥Å Å¸Ã¨Æ’Â½Ã¦Âµâ€¹Ã¨Â¯â€¢Ã¥Â¼â€¢Ã¦â€œÅ½Ã¯Â¼Ë†v2.20Ã¯Â¼â€°Ã¯Â¼Å¡Ã¥Å Â¨Ã¦â‚¬ÂÃ¦Â·Â±Ã¨Â¹Â²Ã¥ÂË†Ã¦Ë†Â 3 Ã¦Â¬Â¡ Ã¢â€ â€™ Ã¥Ë†â€ Ã¥â€°Â²+Ã¥â€¦Â¨Ã¦Å’â€¡Ã¦Â â€¡+Ã¨Â¯â€žÃ¥Ë†â€ 
     const ftFrames = [];
     const ftSkel = (kneeL, kneeR, vgShift = 0) => {
       const b = base();
@@ -2908,24 +2908,24 @@ async function selfTest() {
     const ftPrev = { depth: 135, asym: 14, valgus: 0.28 };
     const ftNow = { depth: 118, asym: 9, valgus: 0.18 };
     const ftD1 = ftDelta(ftPrev, ftNow, 'depth'), ftD2 = ftDelta(ftPrev, ftNow, 'valgus');
-    log(t('stFtVsLast'), ftD1 && ftD1.better === true && ftD2 && ftD2.better === true, `depthâ†“${ftD1.pct}% valgusâ†“${ftD2.pct}%`);
-    // 19b. é›¶æ¬¡æ•°ä¿æŠ¤ï¼šè¶…æ—¶/ç©ºæ•°æ® â†’ åˆ†æžã€è¯„åˆ†ã€æŠ¥å‘Šé¡¹å…¨éƒ¨å®‰å…¨
+    log(t('stFtVsLast'), ftD1 && ftD1.better === true && ftD2 && ftD2.better === true, `depthÃ¢â€ â€œ${ftD1.pct}% valgusÃ¢â€ â€œ${ftD2.pct}%`);
+    // 19b. Ã©â€ºÂ¶Ã¦Â¬Â¡Ã¦â€¢Â°Ã¤Â¿ÂÃ¦Å Â¤Ã¯Â¼Å¡Ã¨Â¶â€¦Ã¦â€”Â¶/Ã§Â©ÂºÃ¦â€¢Â°Ã¦ÂÂ® Ã¢â€ â€™ Ã¥Ë†â€ Ã¦Å¾ÂÃ£â‚¬ÂÃ¨Â¯â€žÃ¥Ë†â€ Ã£â‚¬ÂÃ¦Å Â¥Ã¥â€˜Å Ã©Â¡Â¹Ã¥â€¦Â¨Ã©Æ’Â¨Ã¥Â®â€°Ã¥â€¦Â¨
     const ftZero = ftAnalyze('squat', []);
     const ftZeroS = ftScoreMovement('squat', ftZero);
     const ftZeroIss = ftIssues('squat', ftZero);
     const ftZeroOk = ftZero.reps === 0 && typeof ftZeroS.total === 'number' && ftZeroIss.length > 0
       && ftZeroIss.every((i) => typeof i.val === 'string' && typeof i.text === 'string');
     log(t('stFtZeroRep'), ftZeroOk, `reps=0 score=${ftZeroS.total} items=${ftZeroIss.length}`);
-    // 20. ä»Šæ—¥æ€»è§ˆä¸Žè·Ÿç»ƒï¼ˆv2.21ï¼‰ï¼šæŒ‡æ•°åŠ æƒ + è¯¾ç¨‹å®Œæ•´æ€§ + è®°å½•ç”Ÿæˆ
+    // 20. Ã¤Â»Å Ã¦â€”Â¥Ã¦â‚¬Â»Ã¨Â§Ë†Ã¤Â¸Å½Ã¨Â·Å¸Ã§Â»Æ’Ã¯Â¼Ë†v2.21Ã¯Â¼â€°Ã¯Â¼Å¡Ã¦Å’â€¡Ã¦â€¢Â°Ã¥Å Â Ã¦ÂÆ’ + Ã¨Â¯Â¾Ã§Â¨â€¹Ã¥Â®Å’Ã¦â€¢Â´Ã¦â‚¬Â§ + Ã¨Â®Â°Ã¥Â½â€¢Ã§â€Å¸Ã¦Ë†Â
     const hIdx1 = gwCalcIndex(90, null, 50), hIdx2 = gwCalcIndex(80, 70, 100), hIdx3 = gwCalcIndex(null, null, 50);
     const gwProgOk = Object.values(GW_PROGRAMS).every((p) => p.steps.length >= 2 && p.steps.every((s) => s.sets > 0 && ((s.reps > 0) || (s.hold > 0)) && s.cue && s.name && s.icon));
     const gwRec = gwMakeSession(GW_PROGRAMS.knee, 30, 600);
-    log(t('stHomeIndex'), hIdx1 === 67 && hIdx2 === 85 && hIdx3 === 50, `${hIdx1}/${hIdx2}/${hIdx3}ï¼ˆæœŸæœ› 67/85/50ï¼‰`);
-    log(t('stGwProg'), gwProgOk && gwRec.id && gwRec.ex === 'guided' && gwRec.reps === 30 && gwRec.dur === 600, `steps ok rec=${gwRec.ex}/${gwRec.reps}Ã—${gwRec.dur}s`);
-    // 20b. è·Ÿç»ƒéš¾åº¦è‡ªé€‚åº”ï¼šè¿›é˜¶ï¼ˆ2 çº§ï¼‰æ¯èŠ‚ +2 æ¬¡ï¼Œä¿æŒç±»ä¸å˜
+    log(t('stHomeIndex'), hIdx1 === 67 && hIdx2 === 85 && hIdx3 === 50, `${hIdx1}/${hIdx2}/${hIdx3}Ã¯Â¼Ë†Ã¦Å“Å¸Ã¦Å“â€º 67/85/50Ã¯Â¼â€°`);
+    log(t('stGwProg'), gwProgOk && gwRec.id && gwRec.ex === 'guided' && gwRec.reps === 30 && gwRec.dur === 600, `steps ok rec=${gwRec.ex}/${gwRec.reps}Ãƒâ€”${gwRec.dur}s`);
+    // 20b. Ã¨Â·Å¸Ã§Â»Æ’Ã©Å¡Â¾Ã¥ÂºÂ¦Ã¨â€¡ÂªÃ©â‚¬â€šÃ¥Âºâ€Ã¯Â¼Å¡Ã¨Â¿â€ºÃ©ËœÂ¶Ã¯Â¼Ë†2 Ã§ÂºÂ§Ã¯Â¼â€°Ã¦Â¯ÂÃ¨Å â€š +2 Ã¦Â¬Â¡Ã¯Â¼Å’Ã¤Â¿ÂÃ¦Å’ÂÃ§Â±Â»Ã¤Â¸ÂÃ¥ÂËœ
     const gwLvOk = gwStepReps({ reps: 10 }, 1) === 10 && gwStepReps({ reps: 10 }, 2) === 12 && gwStepReps({ hold: 30 }, 2) === 30;
     log(t('stGwLevel'), gwLvOk, `10/12/30 got ${gwStepReps({ reps: 10 }, 1)}/${gwStepReps({ reps: 10 }, 2)}/${gwStepReps({ hold: 30 }, 2)}`);
-    // 20c. åŠŸèƒ½æµ‹è¯•é˜¶æ®µåˆ¤å®šï¼šç«™ç›´/è¿‡æ¸¡/åº•éƒ¨ï¼Œå³°å€¼åž‹ï¼ˆä¸Šä¸¾ï¼‰åŒæ ·æˆç«‹
+    // 20c. Ã¥Å Å¸Ã¨Æ’Â½Ã¦Âµâ€¹Ã¨Â¯â€¢Ã©ËœÂ¶Ã¦Â®ÂµÃ¥Ë†Â¤Ã¥Â®Å¡Ã¯Â¼Å¡Ã§Â«â„¢Ã§â€ºÂ´/Ã¨Â¿â€¡Ã¦Â¸Â¡/Ã¥Âºâ€¢Ã©Æ’Â¨Ã¯Â¼Å’Ã¥Â³Â°Ã¥â‚¬Â¼Ã¥Å¾â€¹Ã¯Â¼Ë†Ã¤Â¸Å Ã¤Â¸Â¾Ã¯Â¼â€°Ã¥ÂÅ’Ã¦Â Â·Ã¦Ë†ÂÃ§Â«â€¹
     const ftPh1 = ftPhaseOf('squat', 170) === 0 && ftPhaseOf('squat', 130) === 1 && ftPhaseOf('squat', 100) === 2;
     const ftPh2 = ftPhaseOf('arm', 0.02) === 0 && ftPhaseOf('arm', 0.05) === 1 && ftPhaseOf('arm', 0.2) === 2;
     log(t('stFtPhase'), ftPh1 && ftPh2, `squat 170/130/100=${ftPhaseOf('squat', 170)}/${ftPhaseOf('squat', 130)}/${ftPhaseOf('squat', 100)} arm 0.02/0.05/0.2=${ftPhaseOf('arm', 0.02)}/${ftPhaseOf('arm', 0.05)}/${ftPhaseOf('arm', 0.2)}`);
@@ -2937,10 +2937,10 @@ async function selfTest() {
   }
 }
 
-/* ============ æ–°å¢žåŠŸèƒ½ï¼ˆv2.19ï¼‰ï¼šå…¨èº«ä½“æ€è¯„ä¼° ============ */
-// æµç¨‹ï¼šé€‰ä½“æ€ â†’ é‡‡é›†ï¼ˆæ‘„åƒå¤´æˆ–æ¼”ç¤ºæ¨¡å¼ï¼‰â†’ è¯†åˆ«å®Œæ•´æ€§é—¨æŽ§ï¼ˆäººä½“/å…¨èº«å¯è§/ç”»å¹…/å§¿åŠ¿åˆ°ä½/ç¨³å®šæˆ–èŠ‚å¾‹ï¼‰
-//      â†’ é—¨æŽ§å…¨éƒ¨é€šè¿‡ä¸”ä¿æŒè¾¾æ ‡æ—¶é•¿ â†’ æ‰å¼€å§‹è¯„ä»· â†’ é€é¡¹æŒ‡å‡ºä¸è¶³ + æ”¹è¿›å»ºè®® + ç»¼åˆè¯„åˆ† â†’ å­˜åŽ†å²
-// çº¯æ–°å¢žï¼šä¸ä¿®æ”¹ä»»ä½•æ—§åŠŸèƒ½é€»è¾‘ï¼›å¤ç”¨æ—§å‡½æ•°åªè°ƒç”¨ä¸ä¿®æ”¹ï¼ˆloadModel/openCamera/drawStick/icon/toastï¼‰
+/* ============ Ã¦â€“Â°Ã¥Â¢Å¾Ã¥Å Å¸Ã¨Æ’Â½Ã¯Â¼Ë†v2.19Ã¯Â¼â€°Ã¯Â¼Å¡Ã¥â€¦Â¨Ã¨ÂºÂ«Ã¤Â½â€œÃ¦â‚¬ÂÃ¨Â¯â€žÃ¤Â¼Â° ============ */
+// Ã¦ÂµÂÃ§Â¨â€¹Ã¯Â¼Å¡Ã©â‚¬â€°Ã¤Â½â€œÃ¦â‚¬Â Ã¢â€ â€™ Ã©â€¡â€¡Ã©â€ºâ€ Ã¯Â¼Ë†Ã¦â€˜â€žÃ¥Æ’ÂÃ¥Â¤Â´Ã¦Ë†â€“Ã¦Â¼â€Ã§Â¤ÂºÃ¦Â¨Â¡Ã¥Â¼ÂÃ¯Â¼â€°Ã¢â€ â€™ Ã¨Â¯â€ Ã¥Ë†Â«Ã¥Â®Å’Ã¦â€¢Â´Ã¦â‚¬Â§Ã©â€”Â¨Ã¦Å½Â§Ã¯Â¼Ë†Ã¤ÂºÂºÃ¤Â½â€œ/Ã¥â€¦Â¨Ã¨ÂºÂ«Ã¥ÂÂ¯Ã¨Â§Â/Ã§â€Â»Ã¥Â¹â€¦/Ã¥Â§Â¿Ã¥Å Â¿Ã¥Ë†Â°Ã¤Â½Â/Ã§Â¨Â³Ã¥Â®Å¡Ã¦Ë†â€“Ã¨Å â€šÃ¥Â¾â€¹Ã¯Â¼â€°
+//      Ã¢â€ â€™ Ã©â€”Â¨Ã¦Å½Â§Ã¥â€¦Â¨Ã©Æ’Â¨Ã©â‚¬Å¡Ã¨Â¿â€¡Ã¤Â¸â€Ã¤Â¿ÂÃ¦Å’ÂÃ¨Â¾Â¾Ã¦Â â€¡Ã¦â€”Â¶Ã©â€¢Â¿ Ã¢â€ â€™ Ã¦â€°ÂÃ¥Â¼â‚¬Ã¥Â§â€¹Ã¨Â¯â€žÃ¤Â»Â· Ã¢â€ â€™ Ã©â‚¬ÂÃ©Â¡Â¹Ã¦Å’â€¡Ã¥â€¡ÂºÃ¤Â¸ÂÃ¨Â¶Â³ + Ã¦â€Â¹Ã¨Â¿â€ºÃ¥Â»ÂºÃ¨Â®Â® + Ã§Â»Â¼Ã¥ÂË†Ã¨Â¯â€žÃ¥Ë†â€  Ã¢â€ â€™ Ã¥Â­ËœÃ¥Å½â€ Ã¥ÂÂ²
+// Ã§ÂºÂ¯Ã¦â€“Â°Ã¥Â¢Å¾Ã¯Â¼Å¡Ã¤Â¸ÂÃ¤Â¿Â®Ã¦â€Â¹Ã¤Â»Â»Ã¤Â½â€¢Ã¦â€”Â§Ã¥Å Å¸Ã¨Æ’Â½Ã©â‚¬Â»Ã¨Â¾â€˜Ã¯Â¼â€ºÃ¥Â¤ÂÃ§â€Â¨Ã¦â€”Â§Ã¥â€¡Â½Ã¦â€¢Â°Ã¥ÂÂªÃ¨Â°Æ’Ã§â€Â¨Ã¤Â¸ÂÃ¤Â¿Â®Ã¦â€Â¹Ã¯Â¼Ë†loadModel/openCamera/drawStick/icon/toastÃ¯Â¼â€°
 const PA_META = {
   standing: { nameKey: 'paKindStand', guideKey: 'paGuideStand', hold: 6 },
   single: { nameKey: 'paKindSingle', guideKey: 'paGuideSingle', hold: 8 },
@@ -2967,7 +2967,7 @@ const paMed = (arr) => { const s = [...arr].sort((a, b) => a - b); return s[Math
 const paMean = (arr) => (arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0);
 const paStd = (arr) => { if (arr.length < 2) return 0; const m = paMean(arr); return Math.sqrt(paMean(arr.map((x) => (x - m) * (x - m)))); };
 
-// è¯†åˆ«å®Œæ•´æ€§é—¨æŽ§ï¼šäººä½“ â†’ å…³é”®ç‚¹å¯è§ â†’ ç”»å¹… â†’ å§¿åŠ¿åˆ°ä½ â†’ ç¨³å®š/èŠ‚å¾‹
+// Ã¨Â¯â€ Ã¥Ë†Â«Ã¥Â®Å’Ã¦â€¢Â´Ã¦â‚¬Â§Ã©â€”Â¨Ã¦Å½Â§Ã¯Â¼Å¡Ã¤ÂºÂºÃ¤Â½â€œ Ã¢â€ â€™ Ã¥â€¦Â³Ã©â€Â®Ã§â€šÂ¹Ã¥ÂÂ¯Ã¨Â§Â Ã¢â€ â€™ Ã§â€Â»Ã¥Â¹â€¦ Ã¢â€ â€™ Ã¥Â§Â¿Ã¥Å Â¿Ã¥Ë†Â°Ã¤Â½Â Ã¢â€ â€™ Ã§Â¨Â³Ã¥Â®Å¡/Ã¨Å â€šÃ¥Â¾â€¹
 function paCompleteness(lms, kind, ts) {
   const items = [{ key: 'person', ok: !!lms, label: t('paCheckPerson') }];
   if (!lms) return { ok: false, items };
@@ -2976,7 +2976,7 @@ function paCompleteness(lms, kind, ts) {
   if ((kind === 'walk' || kind === 'run') && !paVis(lms, 27) && !paVis(lms, 28)) missing.push(27, 28);
   items.push({
     key: 'body', ok: !missing.length, label: t('paCheckBody'),
-    note: missing.length ? t('paMissing', { parts: missing.map((i) => t('paPart' + i)).join('ã€') }) : '',
+    note: missing.length ? t('paMissing', { parts: missing.map((i) => t('paPart' + i)).join('Ã£â‚¬Â') }) : '',
   });
   const xs = [], ys = [];
   for (let i = 0; i < 33; i++) if (paVis(lms, i)) { xs.push(lms[i].x); ys.push(lms[i].y); }
@@ -3008,7 +3008,7 @@ function paCompleteness(lms, kind, ts) {
 }
 function paResetStable() { paState.stableMs = 0; paState._lastOkT = 0; }
 
-// æ­¥æ€èŠ‚å¾‹ï¼šé«‹éƒ¨é«˜åº¦æŒ¯è¡ â†’ æ­¥å³°æ£€æµ‹ â†’ æ­¥é¢‘ + å·¦å³å¯¹ç§°
+// Ã¦Â­Â¥Ã¦â‚¬ÂÃ¨Å â€šÃ¥Â¾â€¹Ã¯Â¼Å¡Ã©Â«â€¹Ã©Æ’Â¨Ã©Â«ËœÃ¥ÂºÂ¦Ã¦Å’Â¯Ã¨ÂÂ¡ Ã¢â€ â€™ Ã¦Â­Â¥Ã¥Â³Â°Ã¦Â£â‚¬Ã¦Âµâ€¹ Ã¢â€ â€™ Ã¦Â­Â¥Ã©Â¢â€˜ + Ã¥Â·Â¦Ã¥ÂÂ³Ã¥Â¯Â¹Ã§Â§Â°
 function paDetectSteps(ts) {
   const hist = paState.hipHist.filter((h) => h.t > ts - 10000);
   if (hist.length < 20) return;
@@ -3016,7 +3016,7 @@ function paDetectSteps(ts) {
   const amp = Math.max(...ys) - Math.min(...ys);
   if (amp < 0.01) { paState.steps = []; return; }
   const mid = paMed(ys);
-  const threshold = mid + amp * 0.22;   // å³°é¡»æ˜Žæ˜¾é«˜äºŽä¸­ä½ï¼ˆæŠ—å™ªå£°ï¼‰
+  const threshold = mid + amp * 0.22;   // Ã¥Â³Â°Ã©Â¡Â»Ã¦ËœÅ½Ã¦ËœÂ¾Ã©Â«ËœÃ¤ÂºÅ½Ã¤Â¸Â­Ã¤Â½ÂÃ¯Â¼Ë†Ã¦Å â€”Ã¥â„¢ÂªÃ¥Â£Â°Ã¯Â¼â€°
   const raw = [];
   for (let i = 2; i < hist.length - 2; i++) {
     if (hist[i].y <= threshold) continue;
@@ -3043,7 +3043,7 @@ function paCadence() {
   return { cad, sym };
 }
 
-// å•é¡¹è¯„åˆ†ï¼šgood(100) / warn(65) / bad(30)ï¼Œéžè‰¯å¥½é¡¹å¿…å¸¦æ”¹è¿›å»ºè®®
+// Ã¥Ââ€¢Ã©Â¡Â¹Ã¨Â¯â€žÃ¥Ë†â€ Ã¯Â¼Å¡good(100) / warn(65) / bad(30)Ã¯Â¼Å’Ã©ÂÅ¾Ã¨â€°Â¯Ã¥Â¥Â½Ã©Â¡Â¹Ã¥Â¿â€¦Ã¥Â¸Â¦Ã¦â€Â¹Ã¨Â¿â€ºÃ¥Â»ÂºÃ¨Â®Â®
 function paItem(key, v, level, fmt, advice, textKey) {
   const texts = { good: key + 'G', warn: key + 'W', bad: key + 'B' };
   return {
@@ -3054,35 +3054,35 @@ function paItem(key, v, level, fmt, advice, textKey) {
 }
 const paLevelOf = (v, a, b) => (v < a ? 'good' : v < b ? 'warn' : 'bad');
 
-// äº”å¥—ä½“æ€è¯„ä»·ï¼ˆæ­£é¢/ä¾§é¢å•æ‘„åƒå¤´ 2D è§†è§’ä¸‹çš„å¯é æŒ‡æ ‡ï¼‰
+// Ã¤Âºâ€Ã¥Â¥â€”Ã¤Â½â€œÃ¦â‚¬ÂÃ¨Â¯â€žÃ¤Â»Â·Ã¯Â¼Ë†Ã¦Â­Â£Ã©ÂÂ¢/Ã¤Â¾Â§Ã©ÂÂ¢Ã¥Ââ€¢Ã¦â€˜â€žÃ¥Æ’ÂÃ¥Â¤Â´ 2D Ã¨Â§â€ Ã¨Â§â€™Ã¤Â¸â€¹Ã§Å¡â€žÃ¥ÂÂ¯Ã©ÂÂ Ã¦Å’â€¡Ã¦Â â€¡Ã¯Â¼â€°
 function paEvalStanding(smps) {
   const med = (f) => paMed(smps.map(f));
   const items = [];
-  items.push(paItem('mStandHead', med((l) => verticalAngle(l[0], paMid(l, 11, 12))), paLevelOf(med((l) => verticalAngle(l[0], paMid(l, 11, 12))), 12, 20), (v) => v.toFixed(0) + 'Â°', t('mStandHeadA')));
+  items.push(paItem('mStandHead', med((l) => verticalAngle(l[0], paMid(l, 11, 12))), paLevelOf(med((l) => verticalAngle(l[0], paMid(l, 11, 12))), 12, 20), (v) => v.toFixed(0) + 'Ã‚Â°', t('mStandHeadA')));
   items.push(paItem('mStandShoulder', med((l) => Math.abs(l[11].y - l[12].y) / paTorso(l)), paLevelOf(med((l) => Math.abs(l[11].y - l[12].y) / paTorso(l)), 0.03, 0.06), (v) => (v * 100).toFixed(0) + '%', t('mStandShoulderA')));
-  items.push(paItem('mStandTrunk', med((l) => verticalAngle(paMid(l, 11, 12), paMid(l, 23, 24))), paLevelOf(med((l) => verticalAngle(paMid(l, 11, 12), paMid(l, 23, 24))), 8, 15), (v) => v.toFixed(0) + 'Â°', t('mStandTrunkA')));
+  items.push(paItem('mStandTrunk', med((l) => verticalAngle(paMid(l, 11, 12), paMid(l, 23, 24))), paLevelOf(med((l) => verticalAngle(paMid(l, 11, 12), paMid(l, 23, 24))), 8, 15), (v) => v.toFixed(0) + 'Ã‚Â°', t('mStandTrunkA')));
   items.push(paItem('mStandPelvis', med((l) => Math.abs(l[23].y - l[24].y) / paTorso(l)), paLevelOf(med((l) => Math.abs(l[23].y - l[24].y) / paTorso(l)), 0.03, 0.06), (v) => (v * 100).toFixed(0) + '%', t('mStandPelvisA')));
-  items.push(paItem('mStandKnee', med((l) => Math.max(Math.abs(180 - angle3(l[23], l[25], l[27])), Math.abs(180 - angle3(l[24], l[26], l[28])))), paLevelOf(med((l) => Math.max(Math.abs(180 - angle3(l[23], l[25], l[27])), Math.abs(180 - angle3(l[24], l[26], l[28])))), 8, 15), (v) => v.toFixed(0) + 'Â°', t('mStandKneeA')));
+  items.push(paItem('mStandKnee', med((l) => Math.max(Math.abs(180 - angle3(l[23], l[25], l[27])), Math.abs(180 - angle3(l[24], l[26], l[28])))), paLevelOf(med((l) => Math.max(Math.abs(180 - angle3(l[23], l[25], l[27])), Math.abs(180 - angle3(l[24], l[26], l[28])))), 8, 15), (v) => v.toFixed(0) + 'Ã‚Â°', t('mStandKneeA')));
   items.push(paItem('mStandWeight', med((l) => Math.abs(paMid(l, 23, 24).x - paMid(l, 27, 28).x) / Math.max(0.05, Math.abs(l[24].x - l[23].x))), paLevelOf(med((l) => Math.abs(paMid(l, 23, 24).x - paMid(l, 27, 28).x) / Math.max(0.05, Math.abs(l[24].x - l[23].x))), 0.3, 0.6), (v) => (v * 100).toFixed(0) + '%', t('mStandWeightA')));
   return items;
 }
 function paEvalSingle(smps) {
   const items = [];
   const supKnee = smps.map((l) => {
-    const isL = l[27].y >= l[28].y;   // æ”¯æ’‘è…¿ = è¸æ›´ä½Žçš„ä¸€ä¾§
+    const isL = l[27].y >= l[28].y;   // Ã¦â€Â¯Ã¦â€™â€˜Ã¨â€¦Â¿ = Ã¨Â¸ÂÃ¦â€ºÂ´Ã¤Â½Å½Ã§Å¡â€žÃ¤Â¸â‚¬Ã¤Â¾Â§
     return angle3(l[isL ? 23 : 24], l[isL ? 25 : 26], l[isL ? 27 : 28]);
   });
   const sway = smps.map((l) => paMid(l, 23, 24).x / Math.max(0.05, paTorso(l)));
   const lean = paMed(smps.map((l) => verticalAngle(paMid(l, 11, 12), paMid(l, 23, 24))));
   const pel = paMed(smps.map((l) => Math.abs(l[23].y - l[24].y) / paTorso(l)));
   const kStd = paStd(supKnee);
-  items.push(paItem('mSingleKnee', kStd, paLevelOf(kStd, 4, 8), (v) => v.toFixed(0) + 'Â°', t('mSingleKneeA')));
+  items.push(paItem('mSingleKnee', kStd, paLevelOf(kStd, 4, 8), (v) => v.toFixed(0) + 'Ã‚Â°', t('mSingleKneeA')));
   items.push(paItem('mSinglePelvis', pel, paLevelOf(pel, 0.10, 0.16), (v) => (v * 100).toFixed(0) + '%', t('mSinglePelvisA')));
-  items.push(paItem('mSingleTrunk', lean, paLevelOf(lean, 10, 16), (v) => v.toFixed(0) + 'Â°', t('mSingleTrunkA')));
+  items.push(paItem('mSingleTrunk', lean, paLevelOf(lean, 10, 16), (v) => v.toFixed(0) + 'Ã‚Â°', t('mSingleTrunkA')));
   items.push(paItem('mSingleSway', paStd(sway), paLevelOf(paStd(sway), 0.03, 0.06), (v) => (v * 100).toFixed(0) + '%', t('mSingleSwayA')));
-  // v2.21.4ï¼šè¯†åˆ«æŠ¬èµ·çš„æ˜¯å“ªæ¡è…¿ï¼ˆè¸æ›´é«˜çš„ä¸€ä¾§ = æŠ¬èµ·ä¾§ï¼‰
+  // v2.21.4Ã¯Â¼Å¡Ã¨Â¯â€ Ã¥Ë†Â«Ã¦Å Â¬Ã¨ÂµÂ·Ã§Å¡â€žÃ¦ËœÂ¯Ã¥â€œÂªÃ¦ÂÂ¡Ã¨â€¦Â¿Ã¯Â¼Ë†Ã¨Â¸ÂÃ¦â€ºÂ´Ã©Â«ËœÃ§Å¡â€žÃ¤Â¸â‚¬Ã¤Â¾Â§ = Ã¦Å Â¬Ã¨ÂµÂ·Ã¤Â¾Â§Ã¯Â¼â€°
   const liftRight = smps.reduce((a, l) => a + (l[28].y < l[27].y ? 1 : -1), 0) > 0;
-  items.push({ key: 'mSingleHold', level: 'good', val: t('mSingleHoldI', { s: PA_META.single.hold }) + ' Â· ' + t(liftRight ? 'paLiftR' : 'paLiftL'), score: 100, label: t('mSingleHold'), text: t('mSingleHoldI', { s: PA_META.single.hold }) + ' Â· ' + t(liftRight ? 'paLiftR' : 'paLiftL'), advice: t('mSingleHoldA') });
+  items.push({ key: 'mSingleHold', level: 'good', val: t('mSingleHoldI', { s: PA_META.single.hold }) + ' Ã‚Â· ' + t(liftRight ? 'paLiftR' : 'paLiftL'), score: 100, label: t('mSingleHold'), text: t('mSingleHoldI', { s: PA_META.single.hold }) + ' Ã‚Â· ' + t(liftRight ? 'paLiftR' : 'paLiftL'), advice: t('mSingleHoldA') });
   return items;
 }
 function paEvalSquat(smps) {
@@ -3090,16 +3090,16 @@ function paEvalSquat(smps) {
   const kL = smps.map((l) => angle3(l[23], l[25], l[27])), kR = smps.map((l) => angle3(l[24], l[26], l[28]));
   const depth = paMed(smps.map((l) => Math.min(angle3(l[23], l[25], l[27]), angle3(l[24], l[26], l[28]))));
   const depthLv = depth <= 120 ? 'good' : depth <= 140 ? 'warn' : 'bad';
-  items.push(paItem('mSquatDepth', depth, depthLv, (v) => v.toFixed(0) + 'Â°', t('mSquatDepthA')));
+  items.push(paItem('mSquatDepth', depth, depthLv, (v) => v.toFixed(0) + 'Ã‚Â°', t('mSquatDepthA')));
   const sym = paMed(smps.map((_, i) => Math.abs(kL[i] - kR[i])));
-  items.push(paItem('mSquatSym', sym, paLevelOf(sym, 10, 20), (v) => v.toFixed(0) + 'Â°', t('mSquatSymA')));
+  items.push(paItem('mSquatSym', sym, paLevelOf(sym, 10, 20), (v) => v.toFixed(0) + 'Ã‚Â°', t('mSquatSymA')));
   const valgus = paMed(smps.map((l) => { const vg = kneeValgus(l); return Math.max(vg.left, vg.right); }));
   items.push(paItem('mSquatValgus', valgus, paLevelOf(valgus, 0.15, 0.30), (v) => (v * 100).toFixed(0) + '%', t('mSquatValgusA')));
   const lean = paMed(smps.map((l) => verticalAngle(paMid(l, 11, 12), paMid(l, 23, 24))));
   const leanLv = lean >= 10 && lean <= 35 ? 'good' : lean <= 50 ? 'warn' : 'bad';
-  items.push(paItem('mSquatTrunk', lean, leanLv, (v) => v.toFixed(0) + 'Â°', t('mSquatTrunkA')));
+  items.push(paItem('mSquatTrunk', lean, leanLv, (v) => v.toFixed(0) + 'Ã‚Â°', t('mSquatTrunkA')));
   const wob = paStd(kL);
-  items.push(paItem('mSquatHold', wob, paLevelOf(wob, 5, 9), (v) => v.toFixed(0) + 'Â°', t('mSquatHoldA')));
+  items.push(paItem('mSquatHold', wob, paLevelOf(wob, 5, 9), (v) => v.toFixed(0) + 'Ã‚Â°', t('mSquatHoldA')));
   return items;
 }
 function paEvalWalk(smps) {
@@ -3115,7 +3115,7 @@ function paEvalWalk(smps) {
   });
   items.push(paItem('mWalkSym', sym, paLevelOf(sym, 10, 20), (v) => v.toFixed(0) + '%', t('mWalkSymA')));
   const lean = paMed(smps.map((l) => verticalAngle(paMid(l, 11, 12), paMid(l, 23, 24))));
-  items.push(paItem('mWalkTrunk', lean, paLevelOf(lean, 8, 15), (v) => v.toFixed(0) + 'Â°', t('mWalkTrunkA')));
+  items.push(paItem('mWalkTrunk', lean, paLevelOf(lean, 8, 15), (v) => v.toFixed(0) + 'Ã‚Â°', t('mWalkTrunkA')));
   const xs = smps.map((l) => paMid(l, 23, 24).x / Math.max(0.05, paTorso(l))).sort((a, b) => a - b);
   const sway = xs[Math.floor(xs.length * 0.9)] - xs[Math.floor(xs.length * 0.1)];
   items.push(paItem('mWalkSway', sway, paLevelOf(sway, 0.05, 0.09), (v) => (v * 100).toFixed(0) + '%', t('mWalkSwayA')));
@@ -3141,7 +3141,7 @@ function paEvalRun(smps) {
   items.push(paItem('mRunBounce', bounce, paLevelOf(bounce, 0.12, 0.20), (v) => (v * 100).toFixed(0) + '%', t('mRunBounceA')));
   const lean = paMed(smps.map((l) => verticalAngle(paMid(l, 11, 12), paMid(l, 23, 24))));
   const leanLv = lean >= 5 && lean <= 15 ? 'good' : lean <= 25 ? 'warn' : 'bad';
-  items.push(paItem('mRunLean', lean, leanLv, (v) => v.toFixed(0) + 'Â°', t('mRunLeanA')));
+  items.push(paItem('mRunLean', lean, leanLv, (v) => v.toFixed(0) + 'Ã‚Â°', t('mRunLeanA')));
   items.push(paItem('mRunSym', sym, paLevelOf(sym, 10, 20), (v) => v.toFixed(0) + '%', t('mRunSymA')));
   const armS = smps.map((l) => ((l[15].y + l[16].y) / 2 - (l[23].y + l[24].y) / 2) / paTorso(l)).sort((a, b) => a - b);
   const arm = armS[Math.floor(armS.length * 0.9)] - armS[Math.floor(armS.length * 0.1)];
@@ -3161,14 +3161,14 @@ function paBuildReport(kind, items) {
   const score = Math.round(items.reduce((a, i) => a + i.score, 0) / Math.max(1, items.length));
   const grade = score >= 85 ? 'A' : score >= 70 ? 'B' : score >= 55 ? 'C' : 'D';
   const priorities = items.filter((i) => i.level !== 'good').sort((a, b) => a.score - b.score);
-  // v2.25.0ï¼šæŠ¥å‘Šé™„ä¸€å¼ éª¨æž¶å¿«ç…§ï¼ˆåªå«ç«æŸ´äººï¼Œä¸å«çœŸäººç…§ç‰‡ï¼‰ï¼Œä¾›æ²»ç–—å¸ˆæŠ¥å‘Šå¯¹æ¯”
+  // v2.25.0Ã¯Â¼Å¡Ã¦Å Â¥Ã¥â€˜Å Ã©â„¢â€žÃ¤Â¸â‚¬Ã¥Â¼Â Ã©ÂªÂ¨Ã¦Å¾Â¶Ã¥Â¿Â«Ã§â€¦Â§Ã¯Â¼Ë†Ã¥ÂÂªÃ¥ÂÂ«Ã§ÂÂ«Ã¦Å¸Â´Ã¤ÂºÂºÃ¯Â¼Å’Ã¤Â¸ÂÃ¥ÂÂ«Ã§Å“Å¸Ã¤ÂºÂºÃ§â€¦Â§Ã§â€°â€¡Ã¯Â¼â€°Ã¯Â¼Å’Ã¤Â¾â€ºÃ¦Â²Â»Ã§â€“â€”Ã¥Â¸Ë†Ã¦Å Â¥Ã¥â€˜Å Ã¥Â¯Â¹Ã¦Â¯â€
   return { kind, ts: Date.now(), score, grade, items, priorities, demo: paState.demo, snap: paSnapShot() };
 }
 function paHistory() { return sget('rehab_pa_history', []); }
 function paSaveReport(r) {
   const h = paHistory(); h.unshift(r);
   if (h.length > 30) h.length = 30;
-  h.forEach((x, i) => { if (i >= 8 && x.snap) delete x.snap; });   // v2.25.0ï¼šå¿«ç…§åªç•™æœ€è¿‘ 8 ä»½
+  h.forEach((x, i) => { if (i >= 8 && x.snap) delete x.snap; });   // v2.25.0Ã¯Â¼Å¡Ã¥Â¿Â«Ã§â€¦Â§Ã¥ÂÂªÃ§â€¢â„¢Ã¦Å“â‚¬Ã¨Â¿â€˜ 8 Ã¤Â»Â½
   sset('rehab_pa_history', h);
 }
 
@@ -3180,7 +3180,7 @@ const paItemHtml = (i) => `
       <span class="pa-item-val">${i.val}</span>
     </div>
     <div class="pa-item-text">${i.text}</div>
-    ${i.advice ? `<div class="pa-item-advice"><b>${t('paAdvice')}</b>ï¼š${i.advice}</div>` : ''}
+    ${i.advice ? `<div class="pa-item-advice"><b>${t('paAdvice')}</b>Ã¯Â¼Å¡${i.advice}</div>` : ''}
   </div>`;
 function renderPaReport(r, scroll = true) {
   const el = $('pa-report');
@@ -3189,18 +3189,18 @@ function renderPaReport(r, scroll = true) {
   const demoBadge = r.demo ? `<span class="pa-demo-badge">${t('paDemoNote')}</span>` : '';
   el.innerHTML = `
     ${demoBadge}
-    <h3>${t('paReportTitle')} Â· ${t((PA_META[r.kind] || PA_META.standing).nameKey)}</h3>
+    <h3>${t('paReportTitle')} Ã‚Â· ${t((PA_META[r.kind] || PA_META.standing).nameKey)}</h3>
     <div class="pa-score">
-      <div class="pa-score-num">${r.score != null ? r.score : 'â€”'}</div>
+      <div class="pa-score-num">${r.score != null ? r.score : 'Ã¢â‚¬â€'}</div>
       <div>
-        <div class="pa-score-grade">${t('paScore')}${r.grade ? ' Â· ' + t('paGrade' + r.grade) : ''}</div>
+        <div class="pa-score-grade">${t('paScore')}${r.grade ? ' Ã‚Â· ' + t('paGrade' + r.grade) : ''}</div>
         <div class="pa-score-sub">${t('paSafety')}</div>
       </div>
     </div>
     <div class="pa-items">${r.items.map(paItemHtml).join('')}</div>
     <div class="pa-priority">
       <h4 style="margin-bottom:8px">${t('paPriority')}</h4>
-      ${r.priorities.length ? '<ul>' + r.priorities.map((i) => `<li><b>${i.label}</b> â€” ${i.advice}</li>`).join('') + '</ul>' : `<p class="hint">${t('paNoIssue')}</p>`}
+      ${r.priorities.length ? '<ul>' + r.priorities.map((i) => `<li><b>${i.label}</b> Ã¢â‚¬â€ ${i.advice}</li>`).join('') + '</ul>' : `<p class="hint">${t('paNoIssue')}</p>`}
     </div>
     <div class="controls"><button class="btn" id="btn-pa-redo"><span>${t('paRedo')}</span></button></div>`;
   $('btn-pa-redo').addEventListener('click', () => { paStop(); el.classList.add('hidden'); paState.report = null; });
@@ -3218,20 +3218,20 @@ function renderPaHistory() {
     const when = new Date(r.ts);
     const date = when.toLocaleDateString(locale(), { month: 'numeric', day: 'numeric' }) + ' ' + when.toLocaleTimeString(locale(), { hour: '2-digit', minute: '2-digit' });
     const kindIcon = { standing: 'standing', single: 'standing', squat: 'squat', walk: 'stepup', run: 'stepup' }[r.kind] || 'standing';
-    const meta = PA_META[r.kind] || PA_META.standing;   // v2.33.1ï¼šå¯¼å…¥/åŒæ­¥æ¥çš„æ—§è®°å½•å¯èƒ½ç¼º kindï¼Œå…œåº•é˜²æ•´æ¡åŽ†å²åˆ—è¡¨å´©æŽ‰
-    const prev = h.find((x) => x.kind === r.kind && x.ts < r.ts);   // v2.21.4ï¼šä¸Žä¸Šæ¬¡åŒä½“æ€å¯¹æ¯”
+    const meta = PA_META[r.kind] || PA_META.standing;   // v2.33.1Ã¯Â¼Å¡Ã¥Â¯Â¼Ã¥â€¦Â¥/Ã¥ÂÅ’Ã¦Â­Â¥Ã¦ÂÂ¥Ã§Å¡â€žÃ¦â€”Â§Ã¨Â®Â°Ã¥Â½â€¢Ã¥ÂÂ¯Ã¨Æ’Â½Ã§Â¼Âº kindÃ¯Â¼Å’Ã¥â€¦Å“Ã¥Âºâ€¢Ã©ËœÂ²Ã¦â€¢Â´Ã¦ÂÂ¡Ã¥Å½â€ Ã¥ÂÂ²Ã¥Ë†â€”Ã¨Â¡Â¨Ã¥Â´Â©Ã¦Å½â€°
+    const prev = h.find((x) => x.kind === r.kind && x.ts < r.ts);   // v2.21.4Ã¯Â¼Å¡Ã¤Â¸Å½Ã¤Â¸Å Ã¦Â¬Â¡Ã¥ÂÅ’Ã¤Â½â€œÃ¦â‚¬ÂÃ¥Â¯Â¹Ã¦Â¯â€
     const canDelta = prev && Number.isFinite(Number(r.score)) && Number.isFinite(Number(prev.score));
-    const delta = canDelta ? `<span class="ft-delta ${Number(r.score) >= Number(prev.score) ? 'up' : 'down'}">${t('paHistoryDelta', { v: (Number(r.score) >= Number(prev.score) ? 'â†‘' : 'â†“') + Math.abs(Number(r.score) - Number(prev.score)) })}</span>` : '';
+    const delta = canDelta ? `<span class="ft-delta ${Number(r.score) >= Number(prev.score) ? 'up' : 'down'}">${t('paHistoryDelta', { v: (Number(r.score) >= Number(prev.score) ? 'Ã¢â€ â€˜' : 'Ã¢â€ â€œ') + Math.abs(Number(r.score) - Number(prev.score)) })}</span>` : '';
     return `
     <div class="item">
-      <div class="t">${icon(kindIcon)}${t(meta.nameKey)}${r.demo ? ' Â· ' + t('paBtnDemo') : ''} â€” ${date} ${delta}</div>
-      <div class="d">${t('paScore')} ${r.score != null ? r.score : 'â€”'}${r.grade ? ' Â· ' + t('paGrade' + r.grade) : ''}${Array.isArray(r.priorities) && r.priorities.length ? ' Â· ' + r.priorities.length + ' ' + t('paPriority') : ''}</div>
+      <div class="t">${icon(kindIcon)}${t(meta.nameKey)}${r.demo ? ' Ã‚Â· ' + t('paBtnDemo') : ''} Ã¢â‚¬â€ ${date} ${delta}</div>
+      <div class="d">${t('paScore')} ${r.score != null ? r.score : 'Ã¢â‚¬â€'}${r.grade ? ' Ã‚Â· ' + t('paGrade' + r.grade) : ''}${Array.isArray(r.priorities) && r.priorities.length ? ' Ã‚Â· ' + r.priorities.length + ' ' + t('paPriority') : ''}</div>
       <div class="controls" style="margin-top:6px"><button class="btn small" data-pa-view="${r.ts}"><span>${t('paView')}</span></button></div>
     </div>`;
   }).join('');
   el.querySelectorAll('[data-pa-view]').forEach((b) => b.addEventListener('click', () => {
     const r = paHistory().find((x) => String(x.ts) === b.dataset.paView);
-    if (r) { paState.report = r; renderPaReport(r); }   // è®°å½•å½“å‰æŸ¥çœ‹çš„æŠ¥å‘Šï¼Œè¯­è¨€åˆ‡æ¢æ—¶å¯é‡æ¸²æŸ“
+    if (r) { paState.report = r; renderPaReport(r); }   // Ã¨Â®Â°Ã¥Â½â€¢Ã¥Â½â€œÃ¥â€°ÂÃ¦Å¸Â¥Ã§Å“â€¹Ã§Å¡â€žÃ¦Å Â¥Ã¥â€˜Å Ã¯Â¼Å’Ã¨Â¯Â­Ã¨Â¨â‚¬Ã¥Ë†â€¡Ã¦ÂÂ¢Ã¦â€”Â¶Ã¥ÂÂ¯Ã©â€¡ÂÃ¦Â¸Â²Ã¦Å¸â€œ
   }));
 }
 function renderPaChecks(g) {
@@ -3240,7 +3240,7 @@ function renderPaChecks(g) {
   if (!g.items.length) { el.innerHTML = ''; return; }
   el.innerHTML = g.items.map((i) => `
     <div class="pa-check ${i.ok ? 'ok' : 'bad'}">
-      <span class="pa-check-dot">${i.ok ? 'âœ“' : 'âœ•'}</span>
+      <span class="pa-check-dot">${i.ok ? 'Ã¢Å“â€œ' : 'Ã¢Å“â€¢'}</span>
       <span>${i.label}</span>
       ${i.note ? `<span class="pa-check-note">${i.note}</span>` : ''}
     </div>`).join('');
@@ -3259,7 +3259,7 @@ function renderPaUI() {
 async function paStart(demo = false) {
   if (!$('pa-video')) return;
   if (paState.active) { paStop(); return; }
-  // æ—§è®­ç»ƒä¼šè¯å†²çª â†’ å…ˆåœæ­¢æ—§ä¼šè¯ï¼ˆåªè°ƒç”¨æ—§å‡½æ•°ï¼Œä¸æ”¹åŠ¨ï¼‰
+  // Ã¦â€”Â§Ã¨Â®Â­Ã§Â»Æ’Ã¤Â¼Å¡Ã¨Â¯ÂÃ¥â€ Â²Ã§ÂªÂ Ã¢â€ â€™ Ã¥â€¦Ë†Ã¥ÂÅ“Ã¦Â­Â¢Ã¦â€”Â§Ã¤Â¼Å¡Ã¨Â¯ÂÃ¯Â¼Ë†Ã¥ÂÂªÃ¨Â°Æ’Ã§â€Â¨Ã¦â€”Â§Ã¥â€¡Â½Ã¦â€¢Â°Ã¯Â¼Å’Ã¤Â¸ÂÃ¦â€Â¹Ã¥Å Â¨Ã¯Â¼â€°
   if (state.running) { await toggleStart(); }
   paState.active = true; paState.demo = demo;
   paState.samples = []; paState.hipHist = []; paState.steps = [];
@@ -3282,10 +3282,10 @@ async function paStart(demo = false) {
       v.srcObject = stream;
       await new Promise((res, rej) => {
         if (v.readyState >= 1) return res();
-        const t0 = setTimeout(() => { v.srcObject = null; stream.getTracks().forEach((x) => x.stop()); rej(new DOMException('è§†é¢‘åˆå§‹åŒ–è¶…æ—¶', 'TimeoutError')); }, 6000);
+        const t0 = setTimeout(() => { v.srcObject = null; stream.getTracks().forEach((x) => x.stop()); rej(new DOMException('Ã¨Â§â€ Ã©Â¢â€˜Ã¥Ë†ÂÃ¥Â§â€¹Ã¥Å’â€“Ã¨Â¶â€¦Ã¦â€”Â¶', 'TimeoutError')); }, 6000);
         v.onloadedmetadata = () => { clearTimeout(t0); res(); };
       });
-      try { await v.play(); } catch { /* è‡ªåŠ¨æ’­æ”¾è¢«æ‹¦ */ }
+      try { await v.play(); } catch { /* Ã¨â€¡ÂªÃ¥Å Â¨Ã¦â€™Â­Ã¦â€Â¾Ã¨Â¢Â«Ã¦â€¹Â¦ */ }
       paState.stream = stream; paState.videoOn = true;
       $('pa-placeholder').classList.add('hidden');
     } catch (e) {
@@ -3319,7 +3319,7 @@ function paStop() {
   const ph = $('pa-placeholder');
   if (ph) { ph.classList.remove('hidden'); $('pa-placeholder-text').textContent = t('paPlaceholderShort'); }
   const gate = $('pa-gate');
-  if (gate) gate.classList.add('hidden');          // v2.20.2ï¼šæ‰‹åŠ¨åœæ­¢åŽæ”¶èµ·å®Œæ•´æ€§æ£€æŸ¥é¢æ¿ï¼Œä¸ç•™è¿‡æœŸå‹¾é€‰
+  if (gate) gate.classList.add('hidden');          // v2.20.2Ã¯Â¼Å¡Ã¦â€°â€¹Ã¥Å Â¨Ã¥ÂÅ“Ã¦Â­Â¢Ã¥ÂÅ½Ã¦â€Â¶Ã¨ÂµÂ·Ã¥Â®Å’Ã¦â€¢Â´Ã¦â‚¬Â§Ã¦Â£â‚¬Ã¦Å¸Â¥Ã©ÂÂ¢Ã¦ÂÂ¿Ã¯Â¼Å’Ã¤Â¸ÂÃ§â€¢â„¢Ã¨Â¿â€¡Ã¦Å“Å¸Ã¥â€¹Â¾Ã©â‚¬â€°
   paResetStable();
   setPaStartBtn();
 }
@@ -3355,7 +3355,7 @@ function paLoop() {
   if (c.width !== cw || c.height !== ch) { c.width = cw; c.height = ch; }
   const ctx2 = c.getContext('2d');
   ctx2.clearRect(0, 0, cw, ch);
-  if (lms) drawStick(ctx2, lms, cw, ch, !paState.demo);   // çœŸå®žæ‘„åƒå¤´é•œåƒï¼Œæ¼”ç¤ºä¸é•œåƒ
+  if (lms) drawStick(ctx2, lms, cw, ch, !paState.demo);   // Ã§Å“Å¸Ã¥Â®Å¾Ã¦â€˜â€žÃ¥Æ’ÂÃ¥Â¤Â´Ã©â€¢Å“Ã¥Æ’ÂÃ¯Â¼Å’Ã¦Â¼â€Ã§Â¤ÂºÃ¤Â¸ÂÃ©â€¢Å“Ã¥Æ’Â
   const g = paCompleteness(lms, paState.kind, ts);
   paState.lastGate = g;
   renderPaChecks(g);
@@ -3378,13 +3378,13 @@ function paLoop() {
     paDetectSteps(ts);
     $('pa-progress-fill').style.width = Math.min(100, (paState.steps.length / meta.need) * 100) + '%';
     $('pa-hint').textContent = t('paProgressSteps', { n: Math.min(paState.steps.length, meta.need), m: meta.need })
-      + (paState.steps.length >= 4 ? ' Â· ' + t('paCadenceLive', { c: Math.round(paCadence().cad) }) : '');   // v2.21.4ï¼šå®žæ—¶æ­¥é¢‘
+      + (paState.steps.length >= 4 ? ' Ã‚Â· ' + t('paCadenceLive', { c: Math.round(paCadence().cad) }) : '');   // v2.21.4Ã¯Â¼Å¡Ã¥Â®Å¾Ã¦â€”Â¶Ã¦Â­Â¥Ã©Â¢â€˜
     if (g.ok && paState.steps.length >= meta.need) { paFinish(); return; }
   }
   requestAnimationFrame(paLoop);
 }
 
-// æ¼”ç¤ºæ¨¡å¼ï¼šæ¨¡æ‹Ÿå§¿æ€éª¨æž¶ï¼ˆæ— æ‘„åƒå¤´è·‘å®Œæ•´æµç¨‹ï¼›ç«™ç«‹å¸¦è½»å¾®å¤´å‰å€¾/èº¯å¹²å‰å€¾ï¼Œæ·±è¹²å¸¦è½»å¾®å†…æ‰£ï¼Œèµ°è·‘å¸¦è½»å¾®ä¸å¯¹ç§°ï¼‰
+// Ã¦Â¼â€Ã§Â¤ÂºÃ¦Â¨Â¡Ã¥Â¼ÂÃ¯Â¼Å¡Ã¦Â¨Â¡Ã¦â€¹Å¸Ã¥Â§Â¿Ã¦â‚¬ÂÃ©ÂªÂ¨Ã¦Å¾Â¶Ã¯Â¼Ë†Ã¦â€”Â Ã¦â€˜â€žÃ¥Æ’ÂÃ¥Â¤Â´Ã¨Â·â€˜Ã¥Â®Å’Ã¦â€¢Â´Ã¦ÂµÂÃ§Â¨â€¹Ã¯Â¼â€ºÃ§Â«â„¢Ã§Â«â€¹Ã¥Â¸Â¦Ã¨Â½Â»Ã¥Â¾Â®Ã¥Â¤Â´Ã¥â€°ÂÃ¥â‚¬Â¾/Ã¨ÂºÂ¯Ã¥Â¹Â²Ã¥â€°ÂÃ¥â‚¬Â¾Ã¯Â¼Å’Ã¦Â·Â±Ã¨Â¹Â²Ã¥Â¸Â¦Ã¨Â½Â»Ã¥Â¾Â®Ã¥â€ â€¦Ã¦â€°Â£Ã¯Â¼Å’Ã¨ÂµÂ°Ã¨Â·â€˜Ã¥Â¸Â¦Ã¨Â½Â»Ã¥Â¾Â®Ã¤Â¸ÂÃ¥Â¯Â¹Ã§Â§Â°Ã¯Â¼â€°
 function paDemoFrame(kind, ts) {
   const tSec = ts / 1000;
   const mk = (x, y, vis = 1) => ({ x, y, z: 0, visibility: vis });
@@ -3403,27 +3403,27 @@ function paDemoFrame(kind, ts) {
   };
   if (kind === 'standing') {
     body(0.47 + nz(1), 0.12 + nz(1), 0.225 + nz(1), 0.45 + nz(1), 0.66 + nz(1), 0.87 + nz(1), 0.41, 0.59, 0.44, 0.56, 0.455, 0.545, 0.46, 0.54, 0.30, 0.38);
-    set(11, mk(0.41, 0.235));       // è½»å¾®é«˜ä½Žè‚©
+    set(11, mk(0.41, 0.235));       // Ã¨Â½Â»Ã¥Â¾Â®Ã©Â«ËœÃ¤Â½Å½Ã¨â€šÂ©
     set(12, mk(0.59, 0.225));
   } else if (kind === 'single') {
     body(0.5, 0.10, 0.22, 0.45, 0.66, 0.87, 0.41, 0.59, 0.44, 0.56, 0.46, 0.54, 0.47, 0.53, 0.30, 0.37);
-    set(28, 0.545, 0.80);      // v2.21.4ï¼šæŠ¬å³è…¿ï¼ˆä¿®å¤ mk åµŒå¥—åæ ‡ bugï¼Œæ­¤å‰è¸ y ä¸º undefined å¯¼è‡´é—¨æŽ§æ°¸ä¸é€šè¿‡ï¼‰
+    set(28, 0.545, 0.80);      // v2.21.4Ã¯Â¼Å¡Ã¦Å Â¬Ã¥ÂÂ³Ã¨â€¦Â¿Ã¯Â¼Ë†Ã¤Â¿Â®Ã¥Â¤Â mk Ã¥ÂµÅ’Ã¥Â¥â€”Ã¥ÂÂÃ¦Â â€¡ bugÃ¯Â¼Å’Ã¦Â­Â¤Ã¥â€°ÂÃ¨Â¸Â y Ã¤Â¸Âº undefined Ã¥Â¯Â¼Ã¨â€¡Â´Ã©â€”Â¨Ã¦Å½Â§Ã¦Â°Â¸Ã¤Â¸ÂÃ©â‚¬Å¡Ã¨Â¿â€¡Ã¯Â¼â€°
     set(26, 0.55, 0.70);
   } else if (kind === 'squat') {
     body(0.475, 0.16, 0.30, 0.52, 0.68, 0.87, 0.40, 0.60, 0.44, 0.56, 0.475, 0.585, 0.46, 0.555, 0.40, 0.48);
   } else if (kind === 'walk' || kind === 'run') {
-    const f = kind === 'walk' ? 1.83 : 2.83;   // 110 / 170 æ­¥/åˆ†
+    const f = kind === 'walk' ? 1.83 : 2.83;   // 110 / 170 Ã¦Â­Â¥/Ã¥Ë†â€ 
     const ph = 2 * Math.PI * f * tSec;
     const bounce = kind === 'walk' ? 0.02 : 0.018;
     const hipY = 0.48 + Math.sin(ph) * bounce;
     const step = Math.sin(ph);
     const swingL = Math.sin(ph) * 0.045, swingR = -swingL;
     const armL = -swingL * 0.8, armR = -swingR * 0.8;
-    const shX = kind === 'run' ? 0.035 : 0;    // è·‘æ­¥å‰å€¾ 8Â° å·¦å³
+    const shX = kind === 'run' ? 0.035 : 0;    // Ã¨Â·â€˜Ã¦Â­Â¥Ã¥â€°ÂÃ¥â‚¬Â¾ 8Ã‚Â° Ã¥Â·Â¦Ã¥ÂÂ³
     body(0.5 + nz(1), 0.12 + Math.sin(ph) * bounce * 1.15, 0.245 + nz(1), hipY, 0.66 + nz(1), 0.87 + nz(1),
       0.41 - shX, 0.59 - shX, 0.44, 0.56, 0.452 + step * 0.01, 0.548 - step * 0.01,
       0.445 + swingL, 0.555 + swingR, 0.30 + armL, 0.385 + armL);
-    // æ­¥è¡Œäº¤æ›¿æ­¥å¹…ï¼ˆå·¦å³è„šå‰åŽé”™ä½ç”±è¸/è†ä½“çŽ°ï¼‰
+    // Ã¦Â­Â¥Ã¨Â¡Å’Ã¤ÂºÂ¤Ã¦â€ºÂ¿Ã¦Â­Â¥Ã¥Â¹â€¦Ã¯Â¼Ë†Ã¥Â·Â¦Ã¥ÂÂ³Ã¨â€žÅ¡Ã¥â€°ÂÃ¥ÂÅ½Ã©â€â„¢Ã¤Â½ÂÃ§â€Â±Ã¨Â¸Â/Ã¨â€ ÂÃ¤Â½â€œÃ§Å½Â°Ã¯Â¼â€°
     set(27, mk(0.44 + swingL, 0.87));
     set(28, mk(0.56 + swingR, 0.87));
   }
@@ -3431,10 +3431,10 @@ function paDemoFrame(kind, ts) {
   return lms;
 }
 
-/* ============ æ–°å¢žåŠŸèƒ½ï¼ˆv2.20ï¼‰ï¼šè¿åŠ¨åŠŸèƒ½æµ‹è¯•ï¼ˆåŠ¨æ€åŠ¨ä½œåˆ†æž Â· è¿åŠ¨å­¦å¼•æ“Ž Â· çŸ¥è¯†åº“ Â· é•¿æœŸè¿½è¸ªï¼‰ ============ */
-// æµç¨‹ï¼šé€‰åŠ¨ä½œï¼ˆæˆ– 5 é¡¹è¿žæµ‹ï¼‰â†’ é‡‡é›†æ•´ä¸ªåŠ¨ä½œè¿‡ç¨‹ â†’ è¿åŠ¨å­¦å¼•æ“Žï¼ˆå¹³æ»‘â†’æžå€¼åˆ†å‰²â†’ROM/å¯¹ç§°/é€Ÿåº¦/ç¨³å®š/ä¸€è‡´ï¼‰
-//      â†’ å…­ç»´åŠ æƒè¯„åˆ†ï¼ˆé™æ€å¯¹ç§°20Â·æŽ’åˆ—20Â·åŠ¨æ€25Â·ç¨³å®š15Â·æ´»åŠ¨åº¦10Â·ä¸€è‡´10ï¼‰â†’ æ ‡å‡†æ¨¡æ¿ç›¸ä¼¼åº¦
-//      â†’ ã€Œé—®é¢˜â†’è®­ç»ƒã€çŸ¥è¯†åº“å¤„æ–¹ â†’ å¤æµ‹è‡ªåŠ¨å¯¹æ¯”ä¸Šæ¬¡è¿›æ­¥ â†’ æ•°å­—äººä½“æ¡£æ¡ˆã€‚çº¯æ–°å¢žï¼Œæ—§åŠŸèƒ½é›¶æ”¹åŠ¨ã€‚
+/* ============ Ã¦â€“Â°Ã¥Â¢Å¾Ã¥Å Å¸Ã¨Æ’Â½Ã¯Â¼Ë†v2.20Ã¯Â¼â€°Ã¯Â¼Å¡Ã¨Â¿ÂÃ¥Å Â¨Ã¥Å Å¸Ã¨Æ’Â½Ã¦Âµâ€¹Ã¨Â¯â€¢Ã¯Â¼Ë†Ã¥Å Â¨Ã¦â‚¬ÂÃ¥Å Â¨Ã¤Â½Å“Ã¥Ë†â€ Ã¦Å¾Â Ã‚Â· Ã¨Â¿ÂÃ¥Å Â¨Ã¥Â­Â¦Ã¥Â¼â€¢Ã¦â€œÅ½ Ã‚Â· Ã§Å¸Â¥Ã¨Â¯â€ Ã¥Âºâ€œ Ã‚Â· Ã©â€¢Â¿Ã¦Å“Å¸Ã¨Â¿Â½Ã¨Â¸ÂªÃ¯Â¼â€° ============ */
+// Ã¦ÂµÂÃ§Â¨â€¹Ã¯Â¼Å¡Ã©â‚¬â€°Ã¥Å Â¨Ã¤Â½Å“Ã¯Â¼Ë†Ã¦Ë†â€“ 5 Ã©Â¡Â¹Ã¨Â¿Å¾Ã¦Âµâ€¹Ã¯Â¼â€°Ã¢â€ â€™ Ã©â€¡â€¡Ã©â€ºâ€ Ã¦â€¢Â´Ã¤Â¸ÂªÃ¥Å Â¨Ã¤Â½Å“Ã¨Â¿â€¡Ã§Â¨â€¹ Ã¢â€ â€™ Ã¨Â¿ÂÃ¥Å Â¨Ã¥Â­Â¦Ã¥Â¼â€¢Ã¦â€œÅ½Ã¯Â¼Ë†Ã¥Â¹Â³Ã¦Â»â€˜Ã¢â€ â€™Ã¦Å¾ÂÃ¥â‚¬Â¼Ã¥Ë†â€ Ã¥â€°Â²Ã¢â€ â€™ROM/Ã¥Â¯Â¹Ã§Â§Â°/Ã©â‚¬Å¸Ã¥ÂºÂ¦/Ã§Â¨Â³Ã¥Â®Å¡/Ã¤Â¸â‚¬Ã¨â€¡Â´Ã¯Â¼â€°
+//      Ã¢â€ â€™ Ã¥â€¦Â­Ã§Â»Â´Ã¥Å Â Ã¦ÂÆ’Ã¨Â¯â€žÃ¥Ë†â€ Ã¯Â¼Ë†Ã©Ââ„¢Ã¦â‚¬ÂÃ¥Â¯Â¹Ã§Â§Â°20Ã‚Â·Ã¦Å½â€™Ã¥Ë†â€”20Ã‚Â·Ã¥Å Â¨Ã¦â‚¬Â25Ã‚Â·Ã§Â¨Â³Ã¥Â®Å¡15Ã‚Â·Ã¦Â´Â»Ã¥Å Â¨Ã¥ÂºÂ¦10Ã‚Â·Ã¤Â¸â‚¬Ã¨â€¡Â´10Ã¯Â¼â€°Ã¢â€ â€™ Ã¦Â â€¡Ã¥â€¡â€ Ã¦Â¨Â¡Ã¦ÂÂ¿Ã§â€ºÂ¸Ã¤Â¼Â¼Ã¥ÂºÂ¦
+//      Ã¢â€ â€™ Ã£â‚¬Å’Ã©â€”Â®Ã©Â¢ËœÃ¢â€ â€™Ã¨Â®Â­Ã§Â»Æ’Ã£â‚¬ÂÃ§Å¸Â¥Ã¨Â¯â€ Ã¥Âºâ€œÃ¥Â¤â€žÃ¦â€“Â¹ Ã¢â€ â€™ Ã¥Â¤ÂÃ¦Âµâ€¹Ã¨â€¡ÂªÃ¥Å Â¨Ã¥Â¯Â¹Ã¦Â¯â€Ã¤Â¸Å Ã¦Â¬Â¡Ã¨Â¿â€ºÃ¦Â­Â¥ Ã¢â€ â€™ Ã¦â€¢Â°Ã¥Â­â€”Ã¤ÂºÂºÃ¤Â½â€œÃ¦Â¡Â£Ã¦Â¡Ë†Ã£â‚¬â€šÃ§ÂºÂ¯Ã¦â€“Â°Ã¥Â¢Å¾Ã¯Â¼Å’Ã¦â€”Â§Ã¥Å Å¸Ã¨Æ’Â½Ã©â€ºÂ¶Ã¦â€Â¹Ã¥Å Â¨Ã£â‚¬â€š
 const FT_MOVES = {
   squat: { name: 'ftMvSquat', guide: 'ftGuideSquat', metric: 'knee', target: 'valley', thr: 25, need: 3, thrLow: 115, thrHigh: 150 },
   lunge: { name: 'ftMvLunge', guide: 'ftGuideLunge', metric: 'knee', target: 'valley', thr: 25, need: 4, thrLow: 115, thrHigh: 150 },
@@ -3475,7 +3475,7 @@ function ftGate(lms) {
   const missing = req.filter((i) => !paVis(lms, i));
   items.push({
     key: 'body', ok: !missing.length, label: t('ftCheckBody'),
-    note: missing.length ? t('ftMissing', { parts: missing.map((i) => t('paPart' + i)).join('ã€') }) : '',
+    note: missing.length ? t('ftMissing', { parts: missing.map((i) => t('paPart' + i)).join('Ã£â‚¬Â') }) : '',
   });
   const xs = [], ys = [];
   for (let i = 0; i < 33; i++) if (paVis(lms, i)) { xs.push(lms[i].x); ys.push(lms[i].y); }
@@ -3498,7 +3498,7 @@ function ftExtrema(series, target, thr) {
     if (up && !down) rawPeaks.push(i);
     if (down && !up) rawValleys.push(i);
   }
-  const merge = (list, keepLow) => {   // ç›¸é‚»å¹³å°æœŸæžå€¼åŽ»é‡ï¼ˆè°·ç•™æœ€ä½Žã€å³°ç•™æœ€é«˜ï¼‰
+  const merge = (list, keepLow) => {   // Ã§â€ºÂ¸Ã©â€šÂ»Ã¥Â¹Â³Ã¥ÂÂ°Ã¦Å“Å¸Ã¦Å¾ÂÃ¥â‚¬Â¼Ã¥Å½Â»Ã©â€¡ÂÃ¯Â¼Ë†Ã¨Â°Â·Ã§â€¢â„¢Ã¦Å“â‚¬Ã¤Â½Å½Ã£â‚¬ÂÃ¥Â³Â°Ã§â€¢â„¢Ã¦Å“â‚¬Ã©Â«ËœÃ¯Â¼â€°
     const out = [];
     for (const i of list) {
       const last = out[out.length - 1];
@@ -3569,7 +3569,7 @@ function ftAnalyze(key, frames) {
     m.stab = paMed(bottomStd);
   }
   m.cons = Math.min(m.cons, 100);
-  // v2.21ï¼šåŠ¨ä½œè½¨è¿¹ï¼ˆTempo å¼å›žæ”¾ï¼‰ï¼šå–ç¬¬ä¸€æ¬¡åŠ¨ä½œçš„å…³é”®ç‚¹è·¯å¾„ï¼Œ13 ç‚¹é‡‡æ ·
+  // v2.21Ã¯Â¼Å¡Ã¥Å Â¨Ã¤Â½Å“Ã¨Â½Â¨Ã¨Â¿Â¹Ã¯Â¼Ë†Tempo Ã¥Â¼ÂÃ¥â€ºÅ¾Ã¦â€Â¾Ã¯Â¼â€°Ã¯Â¼Å¡Ã¥Ââ€“Ã§Â¬Â¬Ã¤Â¸â‚¬Ã¦Â¬Â¡Ã¥Å Â¨Ã¤Â½Å“Ã§Å¡â€žÃ¥â€¦Â³Ã©â€Â®Ã§â€šÂ¹Ã¨Â·Â¯Ã¥Â¾â€žÃ¯Â¼Å’13 Ã§â€šÂ¹Ã©â€¡â€¡Ã¦Â Â·
   m.traj = null;
   if (reps.length) {
     const r = reps[0];
@@ -3584,7 +3584,7 @@ function ftAnalyze(key, frames) {
     }
     if (pts.length >= 5) m.traj = pts;
   }
-  // é›¶æ¬¡æ•°/è¶…æ—¶ä¿æŠ¤ï¼šæ‰€æœ‰æŒ‡æ ‡å½’ä¸€åŒ–ä¸ºå®‰å…¨æ•°å€¼ï¼Œé˜²æ­¢æŠ¥å‘Šæ¸²æŸ“æ—¶ toFixed å´©æºƒ
+  // Ã©â€ºÂ¶Ã¦Â¬Â¡Ã¦â€¢Â°/Ã¨Â¶â€¦Ã¦â€”Â¶Ã¤Â¿ÂÃ¦Å Â¤Ã¯Â¼Å¡Ã¦â€°â‚¬Ã¦Å“â€°Ã¦Å’â€¡Ã¦Â â€¡Ã¥Â½â€™Ã¤Â¸â‚¬Ã¥Å’â€“Ã¤Â¸ÂºÃ¥Â®â€°Ã¥â€¦Â¨Ã¦â€¢Â°Ã¥â‚¬Â¼Ã¯Â¼Å’Ã©ËœÂ²Ã¦Â­Â¢Ã¦Å Â¥Ã¥â€˜Å Ã¦Â¸Â²Ã¦Å¸â€œÃ¦â€”Â¶ toFixed Ã¥Â´Â©Ã¦ÂºÆ’
   const norm = (v, d = 0) => (v == null || Number.isNaN(v)) ? d : v;
   m.rom = norm(m.rom); m.downSec = norm(m.downSec); m.upSec = norm(m.upSec); m.stab = norm(m.stab);
   m.cons = norm(m.cons); m.valgus = norm(m.valgus); m.trunkLean = norm(m.trunkLean);
@@ -3636,10 +3636,10 @@ function ftIssues(key, m) {
   if (key === 'bend') {
     if (m.center > 0.05) push('center', m.center > 0.10 ? 'bad' : 'warn', t('ftMetricCenter'), m.center.toFixed(2), t('ftIssueCenter', { v: m.center.toFixed(2) }), t('ftAdvCenter'));
     else ok('center', t('ftMetricCenter'), m.center.toFixed(2), t('ftIssueCenterOk'));
-    if (180 - m.kneeExt > 25) push('kneeBend', (180 - m.kneeExt) > 45 ? 'bad' : 'warn', t('ftMetricKneeExt'), (180 - m.kneeExt).toFixed(0) + 'Â°', t('ftIssueKneeExt', { v: (180 - m.kneeExt).toFixed(0) }), t('ftAdvKneeExt'));
-    else ok('kneeBend', t('ftMetricKneeExt'), (180 - m.kneeExt).toFixed(0) + 'Â°', t('ftIssueKneeExtOk'));
-    if (m.flexion < 50) push('rom', m.flexion < 35 ? 'bad' : 'warn', t('ftMetricRom'), m.flexion.toFixed(0) + 'Â°', t('ftIssueRom', { v: m.flexion.toFixed(0) }), t('ftAdvRom'));
-    else ok('rom', t('ftMetricRom'), m.flexion.toFixed(0) + 'Â°', t('ftIssueRomOk', { v: m.flexion.toFixed(0) }));
+    if (180 - m.kneeExt > 25) push('kneeBend', (180 - m.kneeExt) > 45 ? 'bad' : 'warn', t('ftMetricKneeExt'), (180 - m.kneeExt).toFixed(0) + 'Ã‚Â°', t('ftIssueKneeExt', { v: (180 - m.kneeExt).toFixed(0) }), t('ftAdvKneeExt'));
+    else ok('kneeBend', t('ftMetricKneeExt'), (180 - m.kneeExt).toFixed(0) + 'Ã‚Â°', t('ftIssueKneeExtOk'));
+    if (m.flexion < 50) push('rom', m.flexion < 35 ? 'bad' : 'warn', t('ftMetricRom'), m.flexion.toFixed(0) + 'Ã‚Â°', t('ftIssueRom', { v: m.flexion.toFixed(0) }), t('ftAdvRom'));
+    else ok('rom', t('ftMetricRom'), m.flexion.toFixed(0) + 'Ã‚Â°', t('ftIssueRomOk', { v: m.flexion.toFixed(0) }));
     if (m.downSec < 1.2) push('speed', m.downSec < 0.8 ? 'bad' : 'warn', t('ftMetricSpeed'), m.downSec.toFixed(1) + 's', t('ftIssueSpeed', { v: m.downSec.toFixed(1) }), t('ftAdvSpeed'));
     else ok('speed', t('ftMetricSpeed'), m.downSec.toFixed(1) + 's', t('ftIssueSpeedOk', { v: m.downSec.toFixed(1) }));
     if (m.cons > 15) push('cons', m.cons > 25 ? 'bad' : 'warn', t('ftMetricCons'), m.cons.toFixed(0) + '%', t('ftIssueCons', { v: m.cons.toFixed(0) }), t('ftAdvCons'));
@@ -3651,33 +3651,33 @@ function ftIssues(key, m) {
     else ok('arm', t('ftMetricRaise'), m.raise.toFixed(2), t('ftIssueRaiseOk', { v: m.raise.toFixed(2) }));
     if (m.asym > 0.04) push('arm', m.asym > 0.09 ? 'bad' : 'warn', t('ftMetricSym'), m.asym.toFixed(2), t('ftIssueArmSym', { v: m.asym.toFixed(2) }), t('ftAdvSym'));
     else ok('arm', t('ftMetricSym'), m.asym.toFixed(2), t('ftIssueArmSymOk', { v: m.asym.toFixed(2) }));
-    if (m.trunkLean > 10) push('trunk', m.trunkLean > 16 ? 'bad' : 'warn', t('ftMetricTrunk'), m.trunkLean.toFixed(0) + 'Â°', t('ftIssueTrunk', { v: m.trunkLean.toFixed(0) }), t('ftAdvTrunk'));
-    else ok('trunk', t('ftMetricTrunk'), m.trunkLean.toFixed(0) + 'Â°', t('ftIssueTrunkOk', { v: m.trunkLean.toFixed(0) }));
+    if (m.trunkLean > 10) push('trunk', m.trunkLean > 16 ? 'bad' : 'warn', t('ftMetricTrunk'), m.trunkLean.toFixed(0) + 'Ã‚Â°', t('ftIssueTrunk', { v: m.trunkLean.toFixed(0) }), t('ftAdvTrunk'));
+    else ok('trunk', t('ftMetricTrunk'), m.trunkLean.toFixed(0) + 'Ã‚Â°', t('ftIssueTrunkOk', { v: m.trunkLean.toFixed(0) }));
     if (m.upSec < 0.45 || m.upSec > 1.8) push('speed', m.upSec < 0.3 || m.upSec > 2.4 ? 'bad' : 'warn', t('ftMetricSpeed'), m.upSec.toFixed(1) + 's', t('ftIssueSpeed', { v: m.upSec.toFixed(1) }), t('ftAdvSpeed'));
     else ok('speed', t('ftMetricSpeed'), m.upSec.toFixed(1) + 's', t('ftIssueSpeedOk', { v: m.upSec.toFixed(1) }));
     if (m.cons > 15) push('cons', m.cons > 25 ? 'bad' : 'warn', t('ftMetricCons'), m.cons.toFixed(0) + '%', t('ftIssueCons', { v: m.cons.toFixed(0) }), t('ftAdvCons'));
     else ok('cons', t('ftMetricCons'), m.cons.toFixed(0) + '%', t('ftIssueConsOk'));
     return out;
   }
-  if (m.depth > 120) push('depth', m.depth > 140 ? 'bad' : 'warn', t('ftMetricDepth'), m.depth.toFixed(0) + 'Â°', t('ftIssueDepth', { v: m.depth.toFixed(0) }), t('ftAdvDepth'));
-  else ok('depth', t('ftMetricDepth'), m.depth.toFixed(0) + 'Â°', t('ftIssueDepthOk', { v: m.depth.toFixed(0) }));
+  if (m.depth > 120) push('depth', m.depth > 140 ? 'bad' : 'warn', t('ftMetricDepth'), m.depth.toFixed(0) + 'Ã‚Â°', t('ftIssueDepth', { v: m.depth.toFixed(0) }), t('ftAdvDepth'));
+  else ok('depth', t('ftMetricDepth'), m.depth.toFixed(0) + 'Ã‚Â°', t('ftIssueDepthOk', { v: m.depth.toFixed(0) }));
   if (m.asym > 8) push('asym', m.asym > 15 ? 'bad' : 'warn', t('ftMetricSym'), m.asym.toFixed(0) + '%', t('ftIssueSym', { v: m.asym.toFixed(0), l: m.asymL.toFixed(0), r: m.asymR.toFixed(0) }), t('ftAdvSym'));
   else ok('asym', t('ftMetricSym'), m.asym.toFixed(0) + '%', t('ftIssueSymOk', { v: m.asym.toFixed(0) }));
   if (m.valgus > 0.15) push('valgus', m.valgus > 0.30 ? 'bad' : 'warn', t('ftMetricValgus'), m.valgus.toFixed(2), t('ftIssueValgus', { v: m.valgus.toFixed(2) }), t('ftAdvValgus'));
   else ok('valgus', t('ftMetricValgus'), m.valgus.toFixed(2), t('ftIssueValgusOk'));
-  if (m.trunkLean > 40) push('trunk', m.trunkLean > 55 ? 'bad' : 'warn', t('ftMetricTrunk'), m.trunkLean.toFixed(0) + 'Â°', t('ftIssueTrunk', { v: m.trunkLean.toFixed(0) }), t('ftAdvTrunk'));
-  else ok('trunk', t('ftMetricTrunk'), m.trunkLean.toFixed(0) + 'Â°', t('ftIssueTrunkOk', { v: m.trunkLean.toFixed(0) }));
+  if (m.trunkLean > 40) push('trunk', m.trunkLean > 55 ? 'bad' : 'warn', t('ftMetricTrunk'), m.trunkLean.toFixed(0) + 'Ã‚Â°', t('ftIssueTrunk', { v: m.trunkLean.toFixed(0) }), t('ftAdvTrunk'));
+  else ok('trunk', t('ftMetricTrunk'), m.trunkLean.toFixed(0) + 'Ã‚Â°', t('ftIssueTrunkOk', { v: m.trunkLean.toFixed(0) }));
   if (m.downSec < 0.5 || m.downSec > 1.6) push('speed', m.downSec < 0.35 || m.downSec > 2.2 ? 'bad' : 'warn', t('ftMetricSpeed'), m.downSec.toFixed(1) + 's', t('ftIssueSpeed', { v: m.downSec.toFixed(1) }), t('ftAdvSpeed'));
   else ok('speed', t('ftMetricSpeed'), m.downSec.toFixed(1) + 's', t('ftIssueSpeedOk', { v: m.downSec.toFixed(1) }));
-  if (m.stab > 5) push('stab', m.stab > 9 ? 'bad' : 'warn', t('ftMetricStab'), m.stab.toFixed(0) + 'Â°', t('ftIssueStab', { v: m.stab.toFixed(0) }), t('ftAdvStab'));
-  else ok('stab', t('ftMetricStab'), m.stab.toFixed(0) + 'Â°', t('ftIssueStabOk'));
-  if (m.rom < 30) push('rom', m.rom < 22 ? 'bad' : 'warn', t('ftMetricRom'), m.rom.toFixed(0) + 'Â°', t('ftIssueRom', { v: m.rom.toFixed(0) }), t('ftAdvRom'));
-  else ok('rom', t('ftMetricRom'), m.rom.toFixed(0) + 'Â°', t('ftIssueRomOk', { v: m.rom.toFixed(0) }));
+  if (m.stab > 5) push('stab', m.stab > 9 ? 'bad' : 'warn', t('ftMetricStab'), m.stab.toFixed(0) + 'Ã‚Â°', t('ftIssueStab', { v: m.stab.toFixed(0) }), t('ftAdvStab'));
+  else ok('stab', t('ftMetricStab'), m.stab.toFixed(0) + 'Ã‚Â°', t('ftIssueStabOk'));
+  if (m.rom < 30) push('rom', m.rom < 22 ? 'bad' : 'warn', t('ftMetricRom'), m.rom.toFixed(0) + 'Ã‚Â°', t('ftIssueRom', { v: m.rom.toFixed(0) }), t('ftAdvRom'));
+  else ok('rom', t('ftMetricRom'), m.rom.toFixed(0) + 'Ã‚Â°', t('ftIssueRomOk', { v: m.rom.toFixed(0) }));
   if (m.cons > 15) push('cons', m.cons > 25 ? 'bad' : 'warn', t('ftMetricCons'), m.cons.toFixed(0) + '%', t('ftIssueCons', { v: m.cons.toFixed(0) }), t('ftAdvCons'));
   else ok('cons', t('ftMetricCons'), m.cons.toFixed(0) + '%', t('ftIssueConsOk'));
   return out;
 }
-// ä¸“ä¸šçŸ¥è¯†åº“ï¼šé—®é¢˜ â†’ å¯èƒ½å› ç´  â†’ æŽ¨èè®­ç»ƒ â†’ æ³¨æ„äº‹é¡¹ â†’ å¤æµ‹
+// Ã¤Â¸â€œÃ¤Â¸Å¡Ã§Å¸Â¥Ã¨Â¯â€ Ã¥Âºâ€œÃ¯Â¼Å¡Ã©â€”Â®Ã©Â¢Ëœ Ã¢â€ â€™ Ã¥ÂÂ¯Ã¨Æ’Â½Ã¥â€ºÂ Ã§Â´Â  Ã¢â€ â€™ Ã¦Å½Â¨Ã¨ÂÂÃ¨Â®Â­Ã§Â»Æ’ Ã¢â€ â€™ Ã¦Â³Â¨Ã¦â€žÂÃ¤Âºâ€¹Ã©Â¡Â¹ Ã¢â€ â€™ Ã¥Â¤ÂÃ¦Âµâ€¹
 const FT_KB = {
   valgus: { problem: 'ftMetricValgus', factor: 'ftFactorValgus', ex: ['ftExClam', 'ftExBandWalk', 'ftExBridge', 'ftExStepDown', 'ftExAssist'], caution: 'ftCautionValgus' },
   depth: { problem: 'ftMetricDepth', factor: 'ftFactorDepth', ex: ['ftExWallSquat', 'ftExWallSit'], caution: 'ftCautionDepth' },
@@ -3693,7 +3693,7 @@ const FT_KB = {
   kneeBend: { problem: 'ftMetricKneeExt', factor: 'ftFactorKneeBend', ex: ['ftExHam'], caution: 'ftCautionKneeBend' },
   center: { problem: 'ftMetricCenter', factor: 'ftFactorCenter', ex: ['ftExPlank', 'ftExBridge'], caution: 'ftCautionCenter' },
 };
-// æ ‡å‡†åŠ¨ä½œæ¨¡æ¿ï¼ˆæ—¶é—´å½’ä¸€åŒ–å‚è€ƒæ›²çº¿ï¼‰
+// Ã¦Â â€¡Ã¥â€¡â€ Ã¥Å Â¨Ã¤Â½Å“Ã¦Â¨Â¡Ã¦ÂÂ¿Ã¯Â¼Ë†Ã¦â€”Â¶Ã©â€”Â´Ã¥Â½â€™Ã¤Â¸â‚¬Ã¥Å’â€“Ã¥Ââ€šÃ¨â‚¬Æ’Ã¦â€ºÂ²Ã§ÂºÂ¿Ã¯Â¼â€°
 function ftRefSeries(key, n = 100) {
   const s = [];
   const rampUp = (x, x0, x1, a, b) => Math.max(a, Math.min(b, a + (b - a) * Math.sin(((x - x0) / (x1 - x0)) * Math.PI / 2)));
@@ -3744,7 +3744,7 @@ function ftDelta(prevM, m, metric) {
 function ftHistory() { return sget('rehab_ft_history', []); }
 function ftSaveRecord(rec) { const h = ftHistory(); h.unshift(rec); if (h.length > 60) h.length = 60; sset('rehab_ft_history', h); }
 
-// å®žæ—¶æ•™ç»ƒï¼šæ¯å¸§åªæŒ‘ä¸€ä¸ªæœ€é‡è¦çš„é”™è¯¯ï¼ˆä¼˜å…ˆçº§ï¼šå†…æ‰£ > èº¯å¹² > æ·±åº¦ > é€Ÿåº¦ > å¯¹ç§°ï¼‰
+// Ã¥Â®Å¾Ã¦â€”Â¶Ã¦â€¢â„¢Ã§Â»Æ’Ã¯Â¼Å¡Ã¦Â¯ÂÃ¥Â¸Â§Ã¥ÂÂªÃ¦Å’â€˜Ã¤Â¸â‚¬Ã¤Â¸ÂªÃ¦Å“â‚¬Ã©â€¡ÂÃ¨Â¦ÂÃ§Å¡â€žÃ©â€â„¢Ã¨Â¯Â¯Ã¯Â¼Ë†Ã¤Â¼ËœÃ¥â€¦Ë†Ã§ÂºÂ§Ã¯Â¼Å¡Ã¥â€ â€¦Ã¦â€°Â£ > Ã¨ÂºÂ¯Ã¥Â¹Â² > Ã¦Â·Â±Ã¥ÂºÂ¦ > Ã©â‚¬Å¸Ã¥ÂºÂ¦ > Ã¥Â¯Â¹Ã§Â§Â°Ã¯Â¼â€°
 function ftCueFor(key, m) {
   if (key === 'bend') {
     if (m.trunk < 150 && 180 - m.kneeExt > 25) return t('ftIssueKneeExt', { v: (180 - m.kneeExt).toFixed(0) });
@@ -3776,10 +3776,10 @@ function ftLiveReps(m, ts) {
   }
   return st.count;
 }
-// v2.21.3ï¼šé˜¶æ®µåˆ¤å®šï¼ˆ0 ç«™ç›´/æ”¾ä¸‹ Â· 1 ä¸‹é™æˆ–ä¸Šå‡ Â· 2 åº•éƒ¨æˆ–é¡¶éƒ¨ï¼‰ï¼Œçº¯å‡½æ•°ä¾›è‡ªæµ‹
+// v2.21.3Ã¯Â¼Å¡Ã©ËœÂ¶Ã¦Â®ÂµÃ¥Ë†Â¤Ã¥Â®Å¡Ã¯Â¼Ë†0 Ã§Â«â„¢Ã§â€ºÂ´/Ã¦â€Â¾Ã¤Â¸â€¹ Ã‚Â· 1 Ã¤Â¸â€¹Ã©â„¢ÂÃ¦Ë†â€“Ã¤Â¸Å Ã¥Ââ€¡ Ã‚Â· 2 Ã¥Âºâ€¢Ã©Æ’Â¨Ã¦Ë†â€“Ã©Â¡Â¶Ã©Æ’Â¨Ã¯Â¼â€°Ã¯Â¼Å’Ã§ÂºÂ¯Ã¥â€¡Â½Ã¦â€¢Â°Ã¤Â¾â€ºÃ¨â€¡ÂªÃ¦Âµâ€¹
 function ftPhaseOf(key, v) {
   const mv = FT_MOVES[key];
-  if (mv.target === 'peak') return v >= mv.thrHigh ? 2 : v <= mv.thrLow ? 0 : 1;   // å³°å€¼åž‹ï¼šé«˜é˜ˆ=ä¸¾èµ·ï¼Œä½Žé˜ˆ=æ”¾ä¸‹
+  if (mv.target === 'peak') return v >= mv.thrHigh ? 2 : v <= mv.thrLow ? 0 : 1;   // Ã¥Â³Â°Ã¥â‚¬Â¼Ã¥Å¾â€¹Ã¯Â¼Å¡Ã©Â«ËœÃ©ËœË†=Ã¤Â¸Â¾Ã¨ÂµÂ·Ã¯Â¼Å’Ã¤Â½Å½Ã©ËœË†=Ã¦â€Â¾Ã¤Â¸â€¹
   return v > mv.thrHigh ? 0 : v < mv.thrLow ? 2 : 1;
 }
 function renderFtChecks(g) {
@@ -3788,7 +3788,7 @@ function renderFtChecks(g) {
   if (!g.items.length) { el.innerHTML = ''; return; }
   el.innerHTML = g.items.map((i) => `
     <div class="pa-check ${i.ok ? 'ok' : 'bad'}">
-      <span class="pa-check-dot">${i.ok ? 'âœ“' : 'âœ•'}</span><span>${i.label}</span>
+      <span class="pa-check-dot">${i.ok ? 'Ã¢Å“â€œ' : 'Ã¢Å“â€¢'}</span><span>${i.label}</span>
       ${i.note ? `<span class="pa-check-note">${i.note}</span>` : ''}
     </div>`).join('');
 }
@@ -3796,10 +3796,10 @@ function renderFtLive(m, reps, need, ts) {
   const el = $('ft-live-metrics');
   if (!el) return;
   const mv = FT_MOVES[ftState.key];
-  const main = mv.metric === 'knee' ? [t('ftLiveKnee'), m.knee.toFixed(0) + 'Â°'] : mv.metric === 'raise' ? [t('ftLiveRaise'), m.raise.toFixed(2)] : [t('ftLiveBend'), m.trunk.toFixed(0) + 'Â°'];
+  const main = mv.metric === 'knee' ? [t('ftLiveKnee'), m.knee.toFixed(0) + 'Ã‚Â°'] : mv.metric === 'raise' ? [t('ftLiveRaise'), m.raise.toFixed(2)] : [t('ftLiveBend'), m.trunk.toFixed(0) + 'Ã‚Â°'];
   el.innerHTML = `
     <div class="stat big"><span class="s-label">${main[0]}</span><span class="s-value">${main[1]}</span></div>
-    <div class="stat"><span class="s-label">${t('ftLiveTrunk')}</span><span class="s-value">${m.trunkLean.toFixed(0)}Â°</span></div>
+    <div class="stat"><span class="s-label">${t('ftLiveTrunk')}</span><span class="s-value">${m.trunkLean.toFixed(0)}Ã‚Â°</span></div>
     <div class="stat"><span class="s-label">${t('ftLiveValgus')}</span><span class="s-value">${m.valgus.toFixed(2)}</span></div>
     <div class="stat"><span class="s-label">${t('ftCapturing')}</span><span class="s-value">${Math.min(reps, need)}/${need}</span></div>`;
   const cue = ftCueFor(ftState.key, m);
@@ -3807,19 +3807,19 @@ function renderFtLive(m, reps, need, ts) {
   const now = ts || performance.now();
   if (cue && cue !== ftState.cueLast) {
     ftState.cueLast = cue;
-    cueEl.innerHTML = icon('alert') + '<span>' + t('ftCueTitle') + 'ï¼š' + cue + '</span>';
+    cueEl.innerHTML = icon('alert') + '<span>' + t('ftCueTitle') + 'Ã¯Â¼Å¡' + cue + '</span>';
     cueEl.className = 'ft-cue';
-    if (!ftState.cueSpokeAt || now - ftState.cueSpokeAt > 3500) { speak(cue); ftState.cueSpokeAt = now; }   // è¯­éŸ³é˜²åˆ·å±
+    if (!ftState.cueSpokeAt || now - ftState.cueSpokeAt > 3500) { speak(cue); ftState.cueSpokeAt = now; }   // Ã¨Â¯Â­Ã©Å¸Â³Ã©ËœÂ²Ã¥Ë†Â·Ã¥Â±Â
   } else if (!cue && ftState.cueLast !== t('ftCueNone')) {
     ftState.cueLast = t('ftCueNone');
     cueEl.innerHTML = icon('check') + '<span>' + t('ftCueNone') + '</span>';
     cueEl.className = 'ft-cue ok';
   }
-  const battPrefix = ftState.mode === 'battery' ? t('ftBatteryProgress', { i: ftState.queueIdx + 1, n: ftState.queue.length }) + ' Â· ' : '';
+  const battPrefix = ftState.mode === 'battery' ? t('ftBatteryProgress', { i: ftState.queueIdx + 1, n: ftState.queue.length }) + ' Ã‚Â· ' : '';
   $('ft-hint').textContent = reps >= need ? t('ftAutoDone')
     : reps > 0 ? t('ftRepDone', { n: reps, m: need })
       : battPrefix + t(FT_MOVES[ftState.key].guide);
-  // v2.21.3ï¼šé˜¶æ®µæŒ‡ç¤º + æ¬¡æ•°è¿›åº¦æ¡
+  // v2.21.3Ã¯Â¼Å¡Ã©ËœÂ¶Ã¦Â®ÂµÃ¦Å’â€¡Ã§Â¤Âº + Ã¦Â¬Â¡Ã¦â€¢Â°Ã¨Â¿â€ºÃ¥ÂºÂ¦Ã¦ÂÂ¡
   const subEl = $('ft-live-sub');
   if (subEl) {
     const ph = ftPhaseOf(ftState.key, m[mv.metric]);
@@ -3827,7 +3827,7 @@ function renderFtLive(m, reps, need, ts) {
     subEl.classList.remove('hidden');
     subEl.innerHTML = `
       <div style="display:flex;align-items:center;gap:8px;margin-top:10px">
-        <span style="flex:none">${t('ftPhase')}ï¼š<b>${t(phaseKey)}</b></span>
+        <span style="flex:none">${t('ftPhase')}Ã¯Â¼Å¡<b>${t(phaseKey)}</b></span>
         <div class="gw-bar" style="flex:1"><div class="gw-bar-fill" style="width:${Math.min(100, (reps / Math.max(1, need)) * 100).toFixed(0)}%"></div></div>
         <span style="flex:none">${Math.min(reps, need)}/${need}</span>
       </div>`;
@@ -3838,7 +3838,7 @@ function setFtStartBtn() { $('btn-ft-start-label').textContent = ftState.active 
 async function ftStart(kind, demo = false) {
   if (!$('ft-video')) return;
   if (ftState.active) { ftStop(); return; }
-  if (state.running) { await toggleStart(); }          // åªè°ƒç”¨æ—§å‡½æ•°ï¼Œä¸æ”¹åŠ¨
+  if (state.running) { await toggleStart(); }          // Ã¥ÂÂªÃ¨Â°Æ’Ã§â€Â¨Ã¦â€”Â§Ã¥â€¡Â½Ã¦â€¢Â°Ã¯Â¼Å’Ã¤Â¸ÂÃ¦â€Â¹Ã¥Å Â¨
   ftState.active = true; ftState.demo = demo;
   ftState.mode = kind === 'battery' ? 'battery' : 'single';
   ftState.queue = ftState.mode === 'battery' ? FT_ORDER.slice() : [kind];
@@ -3864,7 +3864,7 @@ async function ftStart(kind, demo = false) {
       v.srcObject = stream;
       await new Promise((res, rej) => {
         if (v.readyState >= 1) return res();
-        const t0 = setTimeout(() => { v.srcObject = null; stream.getTracks().forEach((x) => x.stop()); rej(new DOMException('è§†é¢‘åˆå§‹åŒ–è¶…æ—¶', 'TimeoutError')); }, 6000);
+        const t0 = setTimeout(() => { v.srcObject = null; stream.getTracks().forEach((x) => x.stop()); rej(new DOMException('Ã¨Â§â€ Ã©Â¢â€˜Ã¥Ë†ÂÃ¥Â§â€¹Ã¥Å’â€“Ã¨Â¶â€¦Ã¦â€”Â¶', 'TimeoutError')); }, 6000);
         v.onloadedmetadata = () => { clearTimeout(t0); res(); };
       });
       try { await v.play(); } catch { /* ignore */ }
@@ -3899,7 +3899,7 @@ function ftStop() {
   const ph = $('ft-placeholder');
   if (ph) { ph.classList.remove('hidden'); $('ft-placeholder-text').textContent = t('ftPlaceholderShort'); }
   const gate = $('ft-gate'), live = $('ft-live');
-  if (gate) gate.classList.add('hidden');          // v2.20.2ï¼šæ‰‹åŠ¨åœæ­¢åŽæ”¶èµ·é—¨æŽ§ä¸Žå®žæ—¶é¢æ¿ï¼Œä¸ç•™è¿‡æœŸæ•°æ®
+  if (gate) gate.classList.add('hidden');          // v2.20.2Ã¯Â¼Å¡Ã¦â€°â€¹Ã¥Å Â¨Ã¥ÂÅ“Ã¦Â­Â¢Ã¥ÂÅ½Ã¦â€Â¶Ã¨ÂµÂ·Ã©â€”Â¨Ã¦Å½Â§Ã¤Â¸Å½Ã¥Â®Å¾Ã¦â€”Â¶Ã©ÂÂ¢Ã¦ÂÂ¿Ã¯Â¼Å’Ã¤Â¸ÂÃ§â€¢â„¢Ã¨Â¿â€¡Ã¦Å“Å¸Ã¦â€¢Â°Ã¦ÂÂ®
   if (live) live.classList.add('hidden');
   setFtStartBtn();
 }
@@ -3930,8 +3930,8 @@ function ftLoop() {
   if (!lms) { requestAnimationFrame(ftLoop); return; }
   if (!g.ok) { requestAnimationFrame(ftLoop); return; }
   const m = ftFrameMetrics(lms);
-  if (ftState.gapUntil && ts < ftState.gapUntil) {   // v2.20.2ï¼šè¿žæµ‹æ¢å§¿åŠ¿ç¼“å†²æœŸå†…ä¸é‡‡é›†
-    $('ft-hint').textContent = t('ftNext', { name: t(FT_MOVES[ftState.key].name) }) + ' Â· ' + Math.max(1, Math.ceil((ftState.gapUntil - ts) / 1000));
+  if (ftState.gapUntil && ts < ftState.gapUntil) {   // v2.20.2Ã¯Â¼Å¡Ã¨Â¿Å¾Ã¦Âµâ€¹Ã¦ÂÂ¢Ã¥Â§Â¿Ã¥Å Â¿Ã§Â¼â€œÃ¥â€ Â²Ã¦Å“Å¸Ã¥â€ â€¦Ã¤Â¸ÂÃ©â€¡â€¡Ã©â€ºâ€ 
+    $('ft-hint').textContent = t('ftNext', { name: t(FT_MOVES[ftState.key].name) }) + ' Ã‚Â· ' + Math.max(1, Math.ceil((ftState.gapUntil - ts) / 1000));
     requestAnimationFrame(ftLoop);
     return;
   }
@@ -3943,7 +3943,7 @@ function ftLoop() {
   const timeout = ts - ftState.t0 > 30000;
   if (reps >= FT_MOVES[ftState.key].need || timeout) {
     if (reps >= FT_MOVES[ftState.key].need) {
-      setTimeout(() => { if (ftState.active) ftFinish(ftState.key); }, 700);   // ç¨³å®šåŽå†åˆ†æž
+      setTimeout(() => { if (ftState.active) ftFinish(ftState.key); }, 700);   // Ã§Â¨Â³Ã¥Â®Å¡Ã¥ÂÅ½Ã¥â€ ÂÃ¥Ë†â€ Ã¦Å¾Â
       return;
     }
     ftFinish(ftState.key);
@@ -3972,14 +3972,14 @@ function ftFinish(key) {
     ftState.frames = []; ftState.repState = { phase: 'up', count: 0, lastRepT: 0 };
     ftState.cueLast = null; ftState.cueSpokeAt = 0; ftState.t0 = performance.now(); ftState.startFrame = null;
     ftState.lastT = 0;
-    ftState.gapUntil = ftState.demo ? 0 : performance.now() + 3000;   // v2.20.2ï¼šçœŸäººè¿žæµ‹æ¢å§¿åŠ¿ç¼“å†² 3 ç§’
+    ftState.gapUntil = ftState.demo ? 0 : performance.now() + 3000;   // v2.20.2Ã¯Â¼Å¡Ã§Å“Å¸Ã¤ÂºÂºÃ¨Â¿Å¾Ã¦Âµâ€¹Ã¦ÂÂ¢Ã¥Â§Â¿Ã¥Å Â¿Ã§Â¼â€œÃ¥â€ Â² 3 Ã§Â§â€™
     renderFtMoves();
     $('ft-hint').textContent = ftState.demo ? t('ftNext', { name: t(FT_MOVES[next].name) }) : t('ftCapturing');
     requestAnimationFrame(ftLoop);
     return;
   }
   if (isBattery) {
-    // èšåˆ 5 é¡¹ä¸ºä¸€æ¡ç»¼åˆè®°å½•ï¼ˆå…­ç»´åŠ æƒ + èµ·å§‹ç«™å§¿é™æ€å¯¹ç§°æ€§è®¡å…¥ 20%ï¼‰
+    // Ã¨ÂÅ¡Ã¥ÂË† 5 Ã©Â¡Â¹Ã¤Â¸ÂºÃ¤Â¸â‚¬Ã¦ÂÂ¡Ã§Â»Â¼Ã¥ÂË†Ã¨Â®Â°Ã¥Â½â€¢Ã¯Â¼Ë†Ã¥â€¦Â­Ã§Â»Â´Ã¥Å Â Ã¦ÂÆ’ + Ã¨ÂµÂ·Ã¥Â§â€¹Ã§Â«â„¢Ã¥Â§Â¿Ã©Ââ„¢Ã¦â‚¬ÂÃ¥Â¯Â¹Ã§Â§Â°Ã¦â‚¬Â§Ã¨Â®Â¡Ã¥â€¦Â¥ 20%Ã¯Â¼â€°
     const h2 = ftHistory();
     const parts = FT_ORDER.map((k) => h2.find((r) => r.key === k)).filter(Boolean);
     const n = Math.max(1, parts.length);
@@ -4021,7 +4021,7 @@ function renderFtReport(mode, scroll = true) {
   const el = $('ft-report');
   if (!el) return;
   el.classList.remove('hidden');
-  ftState.lastView = { mode };                       // è¯­è¨€åˆ‡æ¢æ—¶å¯æŒ‰æ­¤é‡æ¸²æŸ“
+  ftState.lastView = { mode };                       // Ã¨Â¯Â­Ã¨Â¨â‚¬Ã¥Ë†â€¡Ã¦ÂÂ¢Ã¦â€”Â¶Ã¥ÂÂ¯Ã¦Å’â€°Ã¦Â­Â¤Ã©â€¡ÂÃ¦Â¸Â²Ã¦Å¸â€œ
   const h = ftHistory();
   const battery = mode === 'battery';
   const keys = battery ? FT_ORDER : [ftState.key];
@@ -4045,7 +4045,7 @@ function renderFtReport(mode, scroll = true) {
       <div class="pa-items">${keys.map((k) => {
         const r = h.find((x) => x.key === k);
         return r ? `<div class="pa-item"><div class="ft-mv-head"><span class="pa-item-name">${t(FT_MOVES[k].name)}</span><span class="ft-mv-sim">${t('ftSimilarity')} ${r.sim}%</span><span class="ft-mv-score">${r.score}</span></div><div class="pa-item-text">${r.issues.filter((i) => i.level !== 'good').slice(0, 2).map((i) => i.text).join('<br>') || t('ftNoIssue')}</div></div>`
-          : `<div class="pa-item"><div class="pa-item-text">${t(FT_MOVES[k].name)} â€” ${t('ftMore', { n: 1 })}</div></div>`;
+          : `<div class="pa-item"><div class="pa-item-text">${t(FT_MOVES[k].name)} Ã¢â‚¬â€ ${t('ftMore', { n: 1 })}</div></div>`;
       }).join('')}</div>`;
   } else {
     const rec = recs[0];
@@ -4057,7 +4057,7 @@ function renderFtReport(mode, scroll = true) {
         ? `<span class="ft-delta ${rec.score >= prev.score ? 'up' : 'down'}">${rec.score >= prev.score ? t('ftImproved', { p: Math.round((rec.score - prev.score) / Math.max(1, prev.score) * 100) }) : t('ftWorse', { p: Math.round((prev.score - rec.score) / Math.max(1, prev.score) * 100) })}</span>`
         : `<span class="hint tiny">${t('ftFirstTest')}</span>`;
       body += `
-        <h3>${t('ftReportTitle')} Â· ${t(FT_MOVES[rec.key].name)}</h3>
+        <h3>${t('ftReportTitle')} Ã‚Â· ${t(FT_MOVES[rec.key].name)}</h3>
         <div class="pa-score"><div class="pa-score-num">${rec.score}</div><div><div class="pa-score-grade">${t('ftScore')} ${vs}</div><div class="pa-score-sub">${t('ftSafety')}</div></div></div>
         ${rec.m && rec.m.reps === 0 ? `<p class="hint" style="margin-top:10px;color:#b45309">${t('ftNoReps')}</p>` : ''}
         <div class="pa-items"><h4 style="margin-bottom:8px">${t('ftMetrics')}</h4>
@@ -4065,22 +4065,22 @@ function renderFtReport(mode, scroll = true) {
             <div class="pa-item">
               <div class="pa-item-head"><span class="pa-lv ${i.level}">${t(i.level === 'good' ? 'paGood' : i.level === 'warn' ? 'paWarn' : 'paBad')}</span><span class="pa-item-name">${i.label}</span><span class="pa-item-val">${i.val}</span></div>
               <div class="pa-item-text">${i.text}</div>
-              ${i.advice ? `<div class="pa-item-advice"><b>${t('paAdvice')}</b>ï¼š${i.advice}</div>` : ''}
+              ${i.advice ? `<div class="pa-item-advice"><b>${t('paAdvice')}</b>Ã¯Â¼Å¡${i.advice}</div>` : ''}
               ${prev && i.level !== 'good' ? ftDeltaHtml(prev.m, rec.m, i) : ''}
             </div>`).join('')}
         </div>`;
       if (rec.sim) {
         const simGrade = rec.sim >= 85 ? 'A' : rec.sim >= 70 ? 'B' : rec.sim >= 55 ? 'C' : 'D';
-        body += `<div class="ft-sim"><div class="ft-sim-head"><span>${t('ftSimilarity')}</span><b>${rec.sim}% Â· ${t('paGrade' + simGrade)}</b></div><canvas class="ft-curve" id="ft-curve"></canvas>
-          <div class="hint tiny" style="margin-top:4px">${t('ftLegendYou')} <span style="color:#0e7c66;font-weight:800">â€”â€”</span> Â· ${t('ftLegendStd')} <span style="color:#c9cdd4;font-weight:800">- -</span></div></div>`;
+        body += `<div class="ft-sim"><div class="ft-sim-head"><span>${t('ftSimilarity')}</span><b>${rec.sim}% Ã‚Â· ${t('paGrade' + simGrade)}</b></div><canvas class="ft-curve" id="ft-curve"></canvas>
+          <div class="hint tiny" style="margin-top:4px">${t('ftLegendYou')} <span style="color:#0e7c66;font-weight:800">Ã¢â‚¬â€Ã¢â‚¬â€</span> Ã‚Â· ${t('ftLegendStd')} <span style="color:#c9cdd4;font-weight:800">- -</span></div></div>`;
       }
       if (rec.traj && rec.traj.length) {
         body += `<div class="ft-sim"><div class="ft-sim-head"><span>${t('ftTrajTitle')}</span></div><canvas class="ft-traj" id="ft-traj"></canvas>
-          <div class="hint tiny" style="margin-top:4px">${t('ftLegendYou')} <span style="color:#0e7c66;font-weight:800">â€”â€”</span> Â· ${t('ftLegendStd')} <span style="color:#c9cdd4;font-weight:800">- -</span></div></div>`;
+          <div class="hint tiny" style="margin-top:4px">${t('ftLegendYou')} <span style="color:#0e7c66;font-weight:800">Ã¢â‚¬â€Ã¢â‚¬â€</span> Ã‚Â· ${t('ftLegendStd')} <span style="color:#c9cdd4;font-weight:800">- -</span></div></div>`;
       }
     }
   }
-  // çŸ¥è¯†åº“å¤„æ–¹ï¼ˆèšåˆæ‰€æœ‰éžè‰¯å¥½é—®é¢˜çš„ kbï¼ŒåŽ»é‡ï¼‰
+  // Ã§Å¸Â¥Ã¨Â¯â€ Ã¥Âºâ€œÃ¥Â¤â€žÃ¦â€“Â¹Ã¯Â¼Ë†Ã¨ÂÅ¡Ã¥ÂË†Ã¦â€°â‚¬Ã¦Å“â€°Ã©ÂÅ¾Ã¨â€°Â¯Ã¥Â¥Â½Ã©â€”Â®Ã©Â¢ËœÃ§Å¡â€ž kbÃ¯Â¼Å’Ã¥Å½Â»Ã©â€¡ÂÃ¯Â¼â€°
   const allIssues = recs.flatMap((r) => (r ? r.issues : [])).filter((i) => i.level !== 'good');
   const kbIds = [...new Set(allIssues.map((i) => i.kb))].filter((id) => FT_KB[id]);
   if (kbIds.length) {
@@ -4088,11 +4088,11 @@ function renderFtReport(mode, scroll = true) {
       const kb = FT_KB[id];
       return `<div class="ft-presc-item">
         <div class="ft-presc-prob">${t(kb.problem)}</div>
-        <div class="ft-presc-row"><b>${t('ftPrescFactors')}</b>ï¼š${t(kb.factor)}</div>
+        <div class="ft-presc-row"><b>${t('ftPrescFactors')}</b>Ã¯Â¼Å¡${t(kb.factor)}</div>
         <div class="ft-presc-row"><b>${t('ftPrescEx')}</b></div>
         <div class="ft-ex-list">${kb.ex.map((e) => `<div class="ft-ex"><b>${t(e)}</b><span>${t(e + 'N')}</span></div>`).join('')}</div>
-        <div class="ft-presc-row"><b>${t('ftPrescCaution')}</b>ï¼š${t(kb.caution)}</div>
-        <div class="ft-presc-row"><b>${t('ftPrescRetest')}</b>ï¼š${t('ftRetestCommon')}</div>
+        <div class="ft-presc-row"><b>${t('ftPrescCaution')}</b>Ã¯Â¼Å¡${t(kb.caution)}</div>
+        <div class="ft-presc-row"><b>${t('ftPrescRetest')}</b>Ã¯Â¼Å¡${t('ftRetestCommon')}</div>
       </div>`;
     }).join('') + `</div>`;
   } else {
@@ -4119,7 +4119,7 @@ function ftDeltaHtml(prevM, m, issue) {
   if (!metric) return '';
   const d = ftDelta(prevM, m, metric);
   if (!d) return '';
-  return `<div class="pa-item-advice" style="color:#b45309"><b>${t('ftVsLast')}</b>ï¼š${d.better ? t('ftImproved', { p: d.pct }) : t('ftWorse', { p: d.pct })}</div>`;
+  return `<div class="pa-item-advice" style="color:#b45309"><b>${t('ftVsLast')}</b>Ã¯Â¼Å¡${d.better ? t('ftImproved', { p: d.pct }) : t('ftWorse', { p: d.pct })}</div>`;
 }
 function renderFtMoves() {
   const el = $('ft-moves');
@@ -4134,7 +4134,7 @@ function renderFtMoves() {
     $('ft-report').classList.add('hidden');
     renderFtMoves();
   }));
-  $('ft-guide').textContent = t(FT_MOVES[ftState.key].guide) + 'ï¼ˆ' + t('ftTargetN', { n: FT_MOVES[ftState.key].need }) + 'ï¼‰';
+  $('ft-guide').textContent = t(FT_MOVES[ftState.key].guide) + 'Ã¯Â¼Ë†' + t('ftTargetN', { n: FT_MOVES[ftState.key].need }) + 'Ã¯Â¼â€°';
   const batBtn = $('btn-ft-battery');
   if (batBtn) batBtn.classList.toggle('on', ftState.mode === 'battery' && ftState.active);
 }
@@ -4147,8 +4147,8 @@ function renderFtHistory() {
     const when = new Date(r.ts);
     const date = when.toLocaleDateString(locale(), { month: 'numeric', day: 'numeric' }) + ' ' + when.toLocaleTimeString(locale(), { hour: '2-digit', minute: '2-digit' });
     return `<div class="item">
-      <div class="t">${icon('record')}${r.battery ? t('ftBatteryReport') : t(FT_MOVES[r.key].name)}${r.demo ? ' Â· ' + t('ftBtnDemo') : ''} â€” ${date}</div>
-      <div class="d">${t('ftScore')} ${r.score} Â· ${t('ftSimilarity')} ${r.sim}%${r.m ? ' Â· ' + t('ftRepsDone', { n: r.m.reps, m: r.m.need }) : ''}</div>
+      <div class="t">${icon('record')}${r.battery ? t('ftBatteryReport') : t(FT_MOVES[r.key].name)}${r.demo ? ' Ã‚Â· ' + t('ftBtnDemo') : ''} Ã¢â‚¬â€ ${date}</div>
+      <div class="d">${t('ftScore')} ${r.score} Ã‚Â· ${t('ftSimilarity')} ${r.sim}%${r.m ? ' Ã‚Â· ' + t('ftRepsDone', { n: r.m.reps, m: r.m.need }) : ''}</div>
       <div class="controls" style="margin-top:6px"><button class="btn small" data-ft-view="${r.ts}"><span>${t('ftView')}</span></button></div>
     </div>`;
   }).join('');
@@ -4171,16 +4171,16 @@ function renderFtProfile() {
     const r = h.find((x) => x.key === k);
     if (!r) return null;
     const m = r.m;
-    const val = k === 'arm' ? (m.raise ? 'â†‘' + m.raise.toFixed(2) : 'â€”') : k === 'bend' ? (m.flexion ? m.flexion.toFixed(0) + 'Â°' : 'â€”') : (m.depth ? m.depth.toFixed(0) + 'Â°' : 'â€”');
-    const asym = k === 'arm' ? m.asym.toFixed(2) : k === 'bend' ? m.center.toFixed(2) : m.asym ? m.asym.toFixed(0) + '%' : 'â€”';
+    const val = k === 'arm' ? (m.raise ? 'Ã¢â€ â€˜' + m.raise.toFixed(2) : 'Ã¢â‚¬â€') : k === 'bend' ? (m.flexion ? m.flexion.toFixed(0) + 'Ã‚Â°' : 'Ã¢â‚¬â€') : (m.depth ? m.depth.toFixed(0) + 'Ã‚Â°' : 'Ã¢â‚¬â€');
+    const asym = k === 'arm' ? m.asym.toFixed(2) : k === 'bend' ? m.center.toFixed(2) : m.asym ? m.asym.toFixed(0) + '%' : 'Ã¢â‚¬â€';
     return `<tr><td>${t(FT_MOVES[k].name)}</td><td class="num">${r.score}</td><td class="num">${val}</td><td class="num">${asym}</td><td class="num">${r.sim}%</td></tr>`;
   }).filter(Boolean).join('');
   el.innerHTML = `
     <div class="ft-profile-last">
       <div class="ft-profile-score">${last.score}</div>
       <div class="ft-profile-meta">
-        <b>${t('ftProfileLast')}</b>ï¼š${date}ï¼ˆ${last.battery ? t('ftBatteryReport') : t(FT_MOVES[last.key].name)}ï¼‰<br>
-        ${t('navRecord')}ï¼š${sessions} Â· ${t('ftSafety')}
+        <b>${t('ftProfileLast')}</b>Ã¯Â¼Å¡${date}Ã¯Â¼Ë†${last.battery ? t('ftBatteryReport') : t(FT_MOVES[last.key].name)}Ã¯Â¼â€°<br>
+        ${t('navRecord')}Ã¯Â¼Å¡${sessions} Ã‚Â· ${t('ftSafety')}
       </div>
     </div>
     <table class="ft-table">
@@ -4191,12 +4191,12 @@ function renderFtProfile() {
 function renderFtUI() {
   renderFtMoves();
   if (ftState.active && ftState.lastGate) renderFtChecks(ftState.lastGate);
-  if (ftState.lastView && !$('ft-report').classList.contains('hidden')) renderFtReport(ftState.lastView.mode, false);   // è¯­è¨€åˆ‡æ¢æ—¶åˆ·æ–°å¯è§æŠ¥å‘Š
+  if (ftState.lastView && !$('ft-report').classList.contains('hidden')) renderFtReport(ftState.lastView.mode, false);   // Ã¨Â¯Â­Ã¨Â¨â‚¬Ã¥Ë†â€¡Ã¦ÂÂ¢Ã¦â€”Â¶Ã¥Ë†Â·Ã¦â€“Â°Ã¥ÂÂ¯Ã¨Â§ÂÃ¦Å Â¥Ã¥â€˜Å 
   renderFtHistory();
   renderFtProfile();
   setFtStartBtn();
 }
-// æ¼”ç¤ºæ¨¡å¼ï¼šæŒ‰åŠ¨ä½œåˆæˆæ•´æ®µè¿åŠ¨ï¼ˆå«è½»åº¦ç¼ºé™·ï¼šå³è…¿æµ… 12Â° + è½»å¾®å†…æ‰£ï¼‰ï¼Œèµ°ä¸ŽçœŸå®žä¸€è‡´çš„ç®¡çº¿
+// Ã¦Â¼â€Ã§Â¤ÂºÃ¦Â¨Â¡Ã¥Â¼ÂÃ¯Â¼Å¡Ã¦Å’â€°Ã¥Å Â¨Ã¤Â½Å“Ã¥ÂË†Ã¦Ë†ÂÃ¦â€¢Â´Ã¦Â®ÂµÃ¨Â¿ÂÃ¥Å Â¨Ã¯Â¼Ë†Ã¥ÂÂ«Ã¨Â½Â»Ã¥ÂºÂ¦Ã§Â¼ÂºÃ©â„¢Â·Ã¯Â¼Å¡Ã¥ÂÂ³Ã¨â€¦Â¿Ã¦Âµâ€¦ 12Ã‚Â° + Ã¨Â½Â»Ã¥Â¾Â®Ã¥â€ â€¦Ã¦â€°Â£Ã¯Â¼â€°Ã¯Â¼Å’Ã¨ÂµÂ°Ã¤Â¸Å½Ã§Å“Å¸Ã¥Â®Å¾Ã¤Â¸â‚¬Ã¨â€¡Â´Ã§Å¡â€žÃ§Â®Â¡Ã§ÂºÂ¿
 function ftDemoFrame(key, ts) {
   const tSec = ts / 1000;
   const mk = (x, y, vis = 1) => ({ x, y, z: 0, visibility: vis });
@@ -4209,21 +4209,21 @@ function ftDemoFrame(key, ts) {
   let kneeL = 172, kneeR = 172, raise = 0.02, bendAng = 172;
   if (key === 'squat' || key === 'lunge' || key === 'single') {
     kneeL = curve(0.12, 0.55, 0.14, 172, key === 'single' ? 108 : 96);
-    kneeR = curve(0.12, 0.55, 0.14, 172, key === 'single' ? 172 : 108);   // å³è…¿æµ… â†’ ä¸å¯¹ç§° ~12%
+    kneeR = curve(0.12, 0.55, 0.14, 172, key === 'single' ? 172 : 108);   // Ã¥ÂÂ³Ã¨â€¦Â¿Ã¦Âµâ€¦ Ã¢â€ â€™ Ã¤Â¸ÂÃ¥Â¯Â¹Ã§Â§Â° ~12%
   } else if (key === 'arm') {
     raise = curve(0.12, 0.55, 0.14, 0.02, 0.26);
   } else {
     bendAng = curve(0.12, 0.55, 0.16, 172, 88);
   }
-  const bendRad = ((180 - bendAng) * Math.PI) / 180;                       // å‰å±ˆè§’ï¼ˆ0=ç›´ç«‹ï¼‰
-  const kneeOf = (hipX, ankleX, angDeg) => {                               // ç”±è†è§’åæŽ¨è†ä½ç½®ï¼ˆç­‰è…°ä¸‰è§’å½¢åž‚è·ï¼‰
+  const bendRad = ((180 - bendAng) * Math.PI) / 180;                       // Ã¥â€°ÂÃ¥Â±Ë†Ã¨Â§â€™Ã¯Â¼Ë†0=Ã§â€ºÂ´Ã§Â«â€¹Ã¯Â¼â€°
+  const kneeOf = (hipX, ankleX, angDeg) => {                               // Ã§â€Â±Ã¨â€ ÂÃ¨Â§â€™Ã¥ÂÂÃ¦Å½Â¨Ã¨â€ ÂÃ¤Â½ÂÃ§Â½Â®Ã¯Â¼Ë†Ã§Â­â€°Ã¨â€¦Â°Ã¤Â¸â€°Ã¨Â§â€™Ã¥Â½Â¢Ã¥Å¾â€šÃ¨Â·ÂÃ¯Â¼â€°
     const H = { x: hipX, y: 0.52 }, A = { x: ankleX, y: 0.87 };
     const mx = (H.x + A.x) / 2, my = (H.y + A.y) / 2, l = Math.hypot(H.x - A.x, H.y - A.y);
     const d = Math.max(0, Math.min(0.20, (l / 2) / Math.tan((angDeg * Math.PI) / 360)));
     return { x: mx + d, y: my };
   };
   const kL = kneeOf(0.44, 0.46, kneeL), kR = kneeOf(0.56, 0.54, kneeR);
-  const valgusShift = kneeL < 130 ? 0.02 : 0;                              // åº•éƒ¨è½»å¾®å†…æ‰£
+  const valgusShift = kneeL < 130 ? 0.02 : 0;                              // Ã¥Âºâ€¢Ã©Æ’Â¨Ã¨Â½Â»Ã¥Â¾Â®Ã¥â€ â€¦Ã¦â€°Â£
   const shX = 0.5 + 0.23 * Math.sin(bendRad);
   const shY = 0.52 - 0.23 * Math.cos(bendRad);
   set(0, shX + 0.09 * Math.sin(bendRad), shY - 0.09 * Math.cos(bendRad));
@@ -4234,7 +4234,7 @@ function ftDemoFrame(key, ts) {
   set(23, 0.44, 0.52); set(24, 0.56, 0.52);
   set(25, kL.x + valgusShift, kL.y); set(26, kR.x - valgusShift, kR.y);
   set(27, 0.46, 0.87); set(28, 0.54, 0.87);
-  if (key === 'single') {          // v2.20.2ï¼šå•è…¿è¹²æ¼”ç¤ºé¡»æŠ¬èµ·å³è…¿ï¼Œå¦åˆ™è¿‡ä¸äº†ã€Œå§¿åŠ¿åˆ°ä½ã€é—¨æŽ§
+  if (key === 'single') {          // v2.20.2Ã¯Â¼Å¡Ã¥Ââ€¢Ã¨â€¦Â¿Ã¨Â¹Â²Ã¦Â¼â€Ã§Â¤ÂºÃ©Â¡Â»Ã¦Å Â¬Ã¨ÂµÂ·Ã¥ÂÂ³Ã¨â€¦Â¿Ã¯Â¼Å’Ã¥ÂÂ¦Ã¥Ë†â„¢Ã¨Â¿â€¡Ã¤Â¸ÂÃ¤Âºâ€ Ã£â‚¬Å’Ã¥Â§Â¿Ã¥Å Â¿Ã¥Ë†Â°Ã¤Â½ÂÃ£â‚¬ÂÃ©â€”Â¨Ã¦Å½Â§
     set(28, 0.545, 0.80);
     set(26, 0.55, 0.70);
   }
@@ -4242,8 +4242,8 @@ function ftDemoFrame(key, ts) {
   return lms;
 }
 
-/* ============ æ–°å¢žåŠŸèƒ½ï¼ˆv2.21ï¼‰ï¼šä»Šæ—¥æ€»è§ˆ + AI è·Ÿç»ƒ + åŠ¨ä½œè½¨è¿¹ï¼ˆå¯¹æ ‡ Tonal åˆ†æ•°ä½“ç³»/è¯¾ç¨‹ã€Tempo è½¨è¿¹å›žæ”¾ï¼‰ ============ */
-// å…¨éƒ¨çº¯æ–°å¢žï¼šä¸ä¿®æ”¹æ—§åŠŸèƒ½ï¼›è·Ÿç»ƒå®ŒæˆåŽå†™å…¥æ ‡å‡† rehab_sessions è®°å½•ï¼Œè‡ªåŠ¨æµå…¥æ—§æœ‰çš„è®°å½•/è¶‹åŠ¿/æˆå°±ï¼ˆæ•°æ®çº§ä¸²è”ï¼Œæ—§ä»£ç é›¶æ”¹åŠ¨ï¼‰
+/* ============ Ã¦â€“Â°Ã¥Â¢Å¾Ã¥Å Å¸Ã¨Æ’Â½Ã¯Â¼Ë†v2.21Ã¯Â¼â€°Ã¯Â¼Å¡Ã¤Â»Å Ã¦â€”Â¥Ã¦â‚¬Â»Ã¨Â§Ë† + AI Ã¨Â·Å¸Ã§Â»Æ’ + Ã¥Å Â¨Ã¤Â½Å“Ã¨Â½Â¨Ã¨Â¿Â¹Ã¯Â¼Ë†Ã¥Â¯Â¹Ã¦Â â€¡ Tonal Ã¥Ë†â€ Ã¦â€¢Â°Ã¤Â½â€œÃ§Â³Â»/Ã¨Â¯Â¾Ã§Â¨â€¹Ã£â‚¬ÂTempo Ã¨Â½Â¨Ã¨Â¿Â¹Ã¥â€ºÅ¾Ã¦â€Â¾Ã¯Â¼â€° ============ */
+// Ã¥â€¦Â¨Ã©Æ’Â¨Ã§ÂºÂ¯Ã¦â€“Â°Ã¥Â¢Å¾Ã¯Â¼Å¡Ã¤Â¸ÂÃ¤Â¿Â®Ã¦â€Â¹Ã¦â€”Â§Ã¥Å Å¸Ã¨Æ’Â½Ã¯Â¼â€ºÃ¨Â·Å¸Ã§Â»Æ’Ã¥Â®Å’Ã¦Ë†ÂÃ¥ÂÅ½Ã¥â€ â„¢Ã¥â€¦Â¥Ã¦Â â€¡Ã¥â€¡â€  rehab_sessions Ã¨Â®Â°Ã¥Â½â€¢Ã¯Â¼Å’Ã¨â€¡ÂªÃ¥Å Â¨Ã¦ÂµÂÃ¥â€¦Â¥Ã¦â€”Â§Ã¦Å“â€°Ã§Å¡â€žÃ¨Â®Â°Ã¥Â½â€¢/Ã¨Â¶â€¹Ã¥Å Â¿/Ã¦Ë†ÂÃ¥Â°Â±Ã¯Â¼Ë†Ã¦â€¢Â°Ã¦ÂÂ®Ã§ÂºÂ§Ã¤Â¸Â²Ã¨Ââ€Ã¯Â¼Å’Ã¦â€”Â§Ã¤Â»Â£Ã§Â ÂÃ©â€ºÂ¶Ã¦â€Â¹Ã¥Å Â¨Ã¯Â¼â€°
 const GW_PROGRAMS = {
   knee: {
     name: 'gwKnee', desc: 'gwKneeD', mins: 10, tag: 'knee',
@@ -4278,7 +4278,7 @@ const gwState = {
   stepReps: 0, lastDone: null,
 };
 const gwLevel = () => { const ftB = ftHistory().find((r) => r.battery); const s = ftB ? ftB.score : null; return s == null ? 1 : s >= 75 ? 2 : 1; };
-// v2.21.2ï¼šéš¾åº¦çœŸæ­£ç”Ÿæ•ˆâ€”â€”è¿›é˜¶ï¼ˆç™½é“¶+ï¼‰æ¯èŠ‚æ¬¡æ•° +2ï¼Œä¿æŒç±»åŠ¨ä½œæ—¶é•¿ä¸å˜
+// v2.21.2Ã¯Â¼Å¡Ã©Å¡Â¾Ã¥ÂºÂ¦Ã§Å“Å¸Ã¦Â­Â£Ã§â€Å¸Ã¦â€¢Ë†Ã¢â‚¬â€Ã¢â‚¬â€Ã¨Â¿â€ºÃ©ËœÂ¶Ã¯Â¼Ë†Ã§â„¢Â½Ã©â€œÂ¶+Ã¯Â¼â€°Ã¦Â¯ÂÃ¨Å â€šÃ¦Â¬Â¡Ã¦â€¢Â° +2Ã¯Â¼Å’Ã¤Â¿ÂÃ¦Å’ÂÃ§Â±Â»Ã¥Å Â¨Ã¤Â½Å“Ã¦â€”Â¶Ã©â€¢Â¿Ã¤Â¸ÂÃ¥ÂËœ
 const gwStepReps = (step, level) => (step.reps ? step.reps + (level - 1) * 2 : step.hold);
 const gwCalcIndex = (paS, ftS, consist) => {
   const parts = [];
@@ -4320,7 +4320,7 @@ function gwStart(progId) {
   gwState.lastDone = null;
   gwState.stepReps = gwStepReps(prog.steps[0], gwState.level);
   gwBeepInit();
-  speak(t('gwStepOf', { s: 1, S: prog.steps.length }) + ' Â· ' + t(prog.steps[0].name));
+  speak(t('gwStepOf', { s: 1, S: prog.steps.length }) + ' Ã‚Â· ' + t(prog.steps[0].name));
   renderGuide();
   gwState.tick = setInterval(gwTick, 1000);
 }
@@ -4359,13 +4359,13 @@ function gwTick() {
   } else if (st.phase === 'rest') {
     st.restLeft--;
     if (st.restLeft <= 0) {
-      gwBeep(1320);   // ä¼‘æ¯ç»“æŸæç¤ºéŸ³
+      gwBeep(1320);   // Ã¤Â¼â€˜Ã¦ÂÂ¯Ã§Â»â€œÃ¦ÂÅ¸Ã¦ÂÂÃ§Â¤ÂºÃ©Å¸Â³
       if (st.setIdx >= step.sets) {
         st.setIdx = 0; st.stepIdx++;
         if (st.stepIdx >= prog.steps.length) { gwFinish(true); return; }
         st.phase = 'prep'; st.prepLeft = 3;
         st.stepReps = gwStepReps(prog.steps[st.stepIdx], st.level);
-        speak(t('gwStepOf', { s: st.stepIdx + 1, S: prog.steps.length }) + ' Â· ' + t(prog.steps[st.stepIdx].name));
+        speak(t('gwStepOf', { s: st.stepIdx + 1, S: prog.steps.length }) + ' Ã‚Â· ' + t(prog.steps[st.stepIdx].name));
       } else {
         st.phase = 'prep'; st.prepLeft = 3;
         speak(t('gwGo'));
@@ -4374,7 +4374,7 @@ function gwTick() {
   }
   renderGuide();
 }
-function gwTap() {   // æ‰‹åŠ¨ +1ï¼ˆè‡ªåŠ¨è®¡æ•°ä¸å‡†æ—¶ç”¨æ‰‹ç‚¹ï¼‰
+function gwTap() {   // Ã¦â€°â€¹Ã¥Å Â¨ +1Ã¯Â¼Ë†Ã¨â€¡ÂªÃ¥Å Â¨Ã¨Â®Â¡Ã¦â€¢Â°Ã¤Â¸ÂÃ¥â€¡â€ Ã¦â€”Â¶Ã§â€Â¨Ã¦â€°â€¹Ã§â€šÂ¹Ã¯Â¼â€°
   if (!gwState.active || gwState.phase !== 'rep') return;
   gwState.repN++; gwState.repsTotal++;
   if (gwState.repN >= gwState.stepReps) {
@@ -4397,7 +4397,7 @@ function gwFinish(completed) {
   gwState.active = false; gwState.phase = 'idle';
   if (reps > 0) {
     const rec = gwMakeSession(prog, reps, durSec);
-    sset('rehab_sessions', [rec, ...sget('rehab_sessions', [])]);   // å†™å…¥æ ‡å‡†è®­ç»ƒè®°å½•ï¼šè‡ªåŠ¨æµå…¥è®°å½•/è¶‹åŠ¿/æˆå°±/çƒ­åŠ›å›¾
+    sset('rehab_sessions', [rec, ...sget('rehab_sessions', [])]);   // Ã¥â€ â„¢Ã¥â€¦Â¥Ã¦Â â€¡Ã¥â€¡â€ Ã¨Â®Â­Ã§Â»Æ’Ã¨Â®Â°Ã¥Â½â€¢Ã¯Â¼Å¡Ã¨â€¡ÂªÃ¥Å Â¨Ã¦ÂµÂÃ¥â€¦Â¥Ã¨Â®Â°Ã¥Â½â€¢/Ã¨Â¶â€¹Ã¥Å Â¿/Ã¦Ë†ÂÃ¥Â°Â±/Ã§Æ’Â­Ã¥Å â€ºÃ¥â€ºÂ¾
   }
   gwState.lastDone = { completed, progId: gwState.progId, reps, durSec };
   renderGuide();
@@ -4409,7 +4409,7 @@ function renderGuide() {
   const activeEl = $('gw-active');
   const stageEl = $('gw-stage');
   if (!listEl) return;
-  renderDemos();   // v2.34.0ï¼šç¤ºèŒƒå¢™éšè¯­è¨€ä¸ŽçŠ¶æ€åˆ·æ–°
+  renderDemos();   // v2.34.0Ã¯Â¼Å¡Ã§Â¤ÂºÃ¨Å’Æ’Ã¥Â¢â„¢Ã©Å¡ÂÃ¨Â¯Â­Ã¨Â¨â‚¬Ã¤Â¸Å½Ã§Å Â¶Ã¦â‚¬ÂÃ¥Ë†Â·Ã¦â€“Â°
   if (!gwState.active) {
     const wk = new Date(); wk.setHours(0, 0, 0, 0); wk.setDate(wk.getDate() - 6);
     const gwWeek = sget('rehab_sessions', []).filter((s) => s.ex === 'guided' && new Date(s.ts) >= wk).length;
@@ -4421,7 +4421,7 @@ function renderGuide() {
         <div class="gw-done-ico">${icon(d.completed ? 'check' : 'stop')}</div>
         <div style="flex:1;min-width:0">
           <div class="gw-card-name">${d.completed ? t('gwDone') : t('gwFinishEarly')}</div>
-          <div class="gw-card-desc">${t('gwComplete', { n: d.reps, m: Math.max(1, Math.round(d.durSec / 60)) })}${d.reps > 0 ? ' Â· ' + t('gwSavedCard') : ''}</div>
+          <div class="gw-card-desc">${t('gwComplete', { n: d.reps, m: Math.max(1, Math.round(d.durSec / 60)) })}${d.reps > 0 ? ' Ã‚Â· ' + t('gwSavedCard') : ''}</div>
         </div>
       </div>
       <div class="controls" style="margin-top:8px">
@@ -4436,7 +4436,7 @@ function renderGuide() {
           <span class="gw-card-ico">${icon(p.steps[0].icon)}</span>
           <div style="flex:1;min-width:0">
             <div class="gw-card-name">${t(p.name)}</div>
-            <div class="gw-card-desc">${t(p.desc)}<br>${p.steps.length} ${t('gwSections')} Â· ${sets} ${t('gwSets')}</div>
+            <div class="gw-card-desc">${t(p.desc)}<br>${p.steps.length} ${t('gwSections')} Ã‚Â· ${sets} ${t('gwSets')}</div>
           </div>
           <span class="hm-lv">${t('gwLv' + gwLevel())}</span>
         </div>
@@ -4457,13 +4457,13 @@ function renderGuide() {
   const prog = GW_PROGRAMS[gwState.progId];
   const step = prog.steps[gwState.stepIdx];
   let big, sub, barPct;
-  if (gwState.phase === 'prep') { big = gwState.prepLeft > 0 ? gwState.prepLeft : t('gwGo'); sub = `${t('gwPrep')} Â· ${t(step.name)}`; barPct = 0; }
-  else if (gwState.phase === 'rep') { big = gwState.repN + '/' + gwState.stepReps; sub = `${t('gwSet', { s: gwState.setIdx + 1, S: step.sets })} Â· ${gwState.metroDown ? t('gwDown') : t('gwUp')}`; barPct = (100 * gwState.repN / Math.max(1, gwState.stepReps)).toFixed(0); }
-  else if (gwState.phase === 'hold') { big = gwState.holdLeft; sub = `${t('gwSet', { s: gwState.setIdx + 1, S: step.sets })} Â· ${t('gwHold', { n: step.hold })}`; barPct = (100 * (1 - gwState.holdLeft / Math.max(1, step.hold))).toFixed(0); }
+  if (gwState.phase === 'prep') { big = gwState.prepLeft > 0 ? gwState.prepLeft : t('gwGo'); sub = `${t('gwPrep')} Ã‚Â· ${t(step.name)}`; barPct = 0; }
+  else if (gwState.phase === 'rep') { big = gwState.repN + '/' + gwState.stepReps; sub = `${t('gwSet', { s: gwState.setIdx + 1, S: step.sets })} Ã‚Â· ${gwState.metroDown ? t('gwDown') : t('gwUp')}`; barPct = (100 * gwState.repN / Math.max(1, gwState.stepReps)).toFixed(0); }
+  else if (gwState.phase === 'hold') { big = gwState.holdLeft; sub = `${t('gwSet', { s: gwState.setIdx + 1, S: step.sets })} Ã‚Â· ${t('gwHold', { n: step.hold })}`; barPct = (100 * (1 - gwState.holdLeft / Math.max(1, step.hold))).toFixed(0); }
   else { big = gwState.restLeft; sub = t('gwRest', { n: step.rest }); barPct = (100 * (1 - gwState.restLeft / Math.max(1, step.rest))).toFixed(0); }
   const dots = prog.steps.map((s, i) => `<span class="gw-dot ${i === gwState.stepIdx ? 'on' : ''} ${i < gwState.stepIdx ? 'done' : ''}"></span>`).join('');
   stageEl.innerHTML = `
-    <div class="gw-set-line">${t(prog.name)} Â· ${t('gwLevel')}ï¼š${t('gwLv' + gwState.level)}</div>
+    <div class="gw-set-line">${t(prog.name)} Ã‚Â· ${t('gwLevel')}Ã¯Â¼Å¡${t('gwLv' + gwState.level)}</div>
     <div class="gw-dots">${dots}</div>
     <div class="gw-step-name">${icon(step.icon)} ${t(step.name)}<span class="gw-set-line" style="display:block">${t('gwStepOf', { s: gwState.stepIdx + 1, S: prog.steps.length })}</span></div>
     ${realDemo(step.icon) ? '<div class="gw-stepdemo" id="gw-step-demo"><img class="dmb-thumb" src="' + realDemo(step.icon) + '" alt=""><button class="btn small" id="gw-step-look">' + t('dmbLook') + '</button></div>' : ''}
@@ -4476,14 +4476,14 @@ function renderGuide() {
       <button class="btn" id="btn-gw-stop"><span>${t('gwStop')}</span></button>
       <button class="gw-btn-big" id="btn-gw-tap"><span>+1</span></button>
     </div>
-    <p class="hint tiny" data-i18n="gwTap">ç‚¹ä¸€ä¸‹ +1ï¼ˆè‡ªåŠ¨è®¡æ•°ä¸å‡†æ—¶ç”¨æ‰‹ç‚¹ï¼‰</p>`;
+    <p class="hint tiny" data-i18n="gwTap">Ã§â€šÂ¹Ã¤Â¸â‚¬Ã¤Â¸â€¹ +1Ã¯Â¼Ë†Ã¨â€¡ÂªÃ¥Å Â¨Ã¨Â®Â¡Ã¦â€¢Â°Ã¤Â¸ÂÃ¥â€¡â€ Ã¦â€”Â¶Ã§â€Â¨Ã¦â€°â€¹Ã§â€šÂ¹Ã¯Â¼â€°</p>`;
   $('btn-gw-stop').addEventListener('click', () => gwFinish(false));
   $('btn-gw-tap').addEventListener('click', gwTap);
   const gsl = $('gw-step-look');
-  if (gsl) gsl.addEventListener('click', () => openDemo(step.icon));   // v2.34.0ï¼šè¾¹ç»ƒè¾¹çœ‹æ ‡å‡†ç¤ºèŒƒ
+  if (gsl) gsl.addEventListener('click', () => openDemo(step.icon));   // v2.34.0Ã¯Â¼Å¡Ã¨Â¾Â¹Ã§Â»Æ’Ã¨Â¾Â¹Ã§Å“â€¹Ã¦Â â€¡Ã¥â€¡â€ Ã§Â¤ÂºÃ¨Å’Æ’
 }
 
-/* ---- ä»Šæ—¥æ€»è§ˆï¼šç»¼åˆè¿åŠ¨æŒ‡æ•°ï¼ˆä½“æ€ 30% + åŠŸèƒ½ 30% + åšæŒ 40%ï¼‰+ æ¢å¤å»ºè®® + çƒ­åŠ›å›¾ + å‘¨å°ç»“ ---- */
+/* ---- Ã¤Â»Å Ã¦â€”Â¥Ã¦â‚¬Â»Ã¨Â§Ë†Ã¯Â¼Å¡Ã§Â»Â¼Ã¥ÂË†Ã¨Â¿ÂÃ¥Å Â¨Ã¦Å’â€¡Ã¦â€¢Â°Ã¯Â¼Ë†Ã¤Â½â€œÃ¦â‚¬Â 30% + Ã¥Å Å¸Ã¨Æ’Â½ 30% + Ã¥ÂÅ¡Ã¦Å’Â 40%Ã¯Â¼â€°+ Ã¦ÂÂ¢Ã¥Â¤ÂÃ¥Â»ÂºÃ¨Â®Â® + Ã§Æ’Â­Ã¥Å â€ºÃ¥â€ºÂ¾ + Ã¥â€˜Â¨Ã¥Â°ÂÃ§Â»â€œ ---- */
 function homeIndex() {
   const pa = paHistory()[0];
   const ftB = ftHistory().find((r) => r.battery) || ftHistory()[0];
@@ -4520,8 +4520,8 @@ function renderHome() {
   const el = $('home-index');
   if (!el) return;
   const raw = homeIndex();
-  // v2.21.9ï¼šå®Œå…¨æ²¡æœ‰æ•°æ®æ—¶ï¼ˆæ–°è£… App / åˆšã€Œæ¸…é™¤å…¨éƒ¨æ•°æ®ã€ï¼‰æŒ‰æ— æ•°æ®æ€æ¸²æŸ“ï¼Œ
-  // æ—¢ä¸æ˜¾ç¤º 0 åˆ†å¡ï¼Œä¹Ÿä¸å†™å…¥ä¸€æ¡ç©ºçš„æŒ‡æ•°åŽ†å²ï¼ˆåŽŸæ¥æ¸…ç©ºåŽä¼šè¢«ç«‹åˆ»å†™å›žï¼‰
+  // v2.21.9Ã¯Â¼Å¡Ã¥Â®Å’Ã¥â€¦Â¨Ã¦Â²Â¡Ã¦Å“â€°Ã¦â€¢Â°Ã¦ÂÂ®Ã¦â€”Â¶Ã¯Â¼Ë†Ã¦â€“Â°Ã¨Â£â€¦ App / Ã¥Ë†Å¡Ã£â‚¬Å’Ã¦Â¸â€¦Ã©â„¢Â¤Ã¥â€¦Â¨Ã©Æ’Â¨Ã¦â€¢Â°Ã¦ÂÂ®Ã£â‚¬ÂÃ¯Â¼â€°Ã¦Å’â€°Ã¦â€”Â Ã¦â€¢Â°Ã¦ÂÂ®Ã¦â‚¬ÂÃ¦Â¸Â²Ã¦Å¸â€œÃ¯Â¼Å’
+  // Ã¦â€”Â¢Ã¤Â¸ÂÃ¦ËœÂ¾Ã§Â¤Âº 0 Ã¥Ë†â€ Ã¥ÂÂ¡Ã¯Â¼Å’Ã¤Â¹Å¸Ã¤Â¸ÂÃ¥â€ â„¢Ã¥â€¦Â¥Ã¤Â¸â‚¬Ã¦ÂÂ¡Ã§Â©ÂºÃ§Å¡â€žÃ¦Å’â€¡Ã¦â€¢Â°Ã¥Å½â€ Ã¥ÂÂ²Ã¯Â¼Ë†Ã¥Å½Å¸Ã¦ÂÂ¥Ã¦Â¸â€¦Ã§Â©ÂºÃ¥ÂÅ½Ã¤Â¼Å¡Ã¨Â¢Â«Ã§Â«â€¹Ã¥Ë†Â»Ã¥â€ â„¢Ã¥â€ºÅ¾Ã¯Â¼â€°
   const idx = (raw.pa == null && raw.ft == null && raw.days30 === 0) ? { ...raw, score: null } : raw;
   const advice = homeAdvice(idx);
   if (idx.score == null) {
@@ -4545,7 +4545,7 @@ function renderHome() {
       <div class="hm-index">
         <div class="hm-score">${idx.score}</div>
         <div>
-          <span class="hm-lv">${t('homeLevel')} Â· ${t('gwLv' + idx.level)}</span>
+          <span class="hm-lv">${t('homeLevel')} Ã‚Â· ${t('gwLv' + idx.level)}</span>
           ${delta != null ? `<span class="hm-lv" style="margin-left:6px;background:rgba(245,158,11,.15);color:#b45309">${t('homeIdxTrend', { v: delta >= 0 ? t('homeUp', { d: delta }) : t('homeDown', { d: -delta }) })}</span>` : ''}
           <div class="hm-parts">
             ${idx.pa != null ? `<div class="hm-part"><span>${t('paTitle')}</span><b>${idx.pa}</b><div class="hm-bar"><div class="hm-bar-fill" style="width:${idx.pa}%"></div></div></div>` : ''}
@@ -4555,12 +4555,12 @@ function renderHome() {
           ${toNext ? `<div class="hint tiny" style="margin-top:6px">${t('homeToNext', { l: t('gwLv' + nextLv), d: toNext })}</div>` : ''}
         </div>
       </div>
-      <div class="hm-advice">ðŸ’¡ ${advice.text}${advice.action ? ` <a class="link-btn" id="hm-adv-btn" style="margin-left:6px">${advice.action === 'guide' ? t('homeAdvGuideBtn') : advice.action === 'train' ? t('homeAdvGoBtn') : t('homeQuickPosture')} â†’</a>` : ''}</div>`;
+      <div class="hm-advice">Ã°Å¸â€™Â¡ ${advice.text}${advice.action ? ` <a class="link-btn" id="hm-adv-btn" style="margin-left:6px">${advice.action === 'guide' ? t('homeAdvGuideBtn') : advice.action === 'train' ? t('homeAdvGoBtn') : t('homeQuickPosture')} Ã¢â€ â€™</a>` : ''}</div>`;
     if (advice.action) {
       $('hm-adv-btn').addEventListener('click', () => switchTab(advice.action === 'posture' ? 'posture' : advice.action));
     }
   }
-  // ä»Šæ—¥ä»»åŠ¡ï¼šä¸Žæ—¥ç¨‹é¡µåŒä¸€æ•°æ®æºï¼ˆplanForToday + æŒ‰ p.ex æ‰“å¡ï¼‰ï¼Œå¯ä¸€é”®å®Œæˆ
+  // Ã¤Â»Å Ã¦â€”Â¥Ã¤Â»Â»Ã¥Å Â¡Ã¯Â¼Å¡Ã¤Â¸Å½Ã¦â€”Â¥Ã§Â¨â€¹Ã©Â¡ÂµÃ¥ÂÅ’Ã¤Â¸â‚¬Ã¦â€¢Â°Ã¦ÂÂ®Ã¦ÂºÂÃ¯Â¼Ë†planForToday + Ã¦Å’â€° p.ex Ã¦â€°â€œÃ¥ÂÂ¡Ã¯Â¼â€°Ã¯Â¼Å’Ã¥ÂÂ¯Ã¤Â¸â‚¬Ã©â€Â®Ã¥Â®Å’Ã¦Ë†Â
   const todays = planForToday();
   const doneArr = planDoneGet()[todayKeyStr()] || [];
   const listEl = $('home-today');
@@ -4568,8 +4568,8 @@ function renderHome() {
     listEl.innerHTML = `
       <div class="empty">${icon('schedule')}<span>${t('homeTodayNone')}</span></div>
       <div class="controls" style="margin-top:10px">
-        <button class="btn small" id="hm-sched"><span>${t('navSchedule')} â†’</span></button>
-        <button class="btn small" id="hm-guide2"><span>${t('navGuide')} â†’</span></button>
+        <button class="btn small" id="hm-sched"><span>${t('navSchedule')} Ã¢â€ â€™</span></button>
+        <button class="btn small" id="hm-guide2"><span>${t('navGuide')} Ã¢â€ â€™</span></button>
       </div>`;
     $('hm-sched').addEventListener('click', () => switchTab('schedule'));
     $('hm-guide2').addEventListener('click', () => switchTab('guide'));
@@ -4580,18 +4580,18 @@ function renderHome() {
       const isDone = doneArr.includes(p.ex);
       return `<div class="item">
         <button class="todo-check ${isDone ? 'on' : ''}" data-hex="${p.ex}">${isDone ? icon('check') : ''}</button>
-        <div style="flex:1"><div class="t"><span class="t-ico">${icon(e ? e.icon : 'custom')}</span>${e ? exName(e) : p.ex} Â· ${t('repsN', { n: p.reps })}</div></div>
+        <div style="flex:1"><div class="t"><span class="t-ico">${icon(e ? e.icon : 'custom')}</span>${e ? exName(e) : p.ex} Ã‚Â· ${t('repsN', { n: p.reps })}</div></div>
       </div>`;
     }).join('') + `<div class="plan-progress">
       <div class="plan-progress-txt">${t('planProgress', { d: doneCount, t: todays.length })}</div>
       <div class="plan-bar"><div class="plan-fill" style="width:${(100 * doneCount / todays.length).toFixed(0)}%"></div></div>
     </div>`;
     listEl.querySelectorAll('.todo-check').forEach((b) => b.addEventListener('click', () => {
-      togglePlanDone(b.dataset.hex);   // æ—§å‡½æ•°åªè°ƒç”¨ä¸ä¿®æ”¹ï¼šå†™è®¡åˆ’å®Œæˆ + åˆ·æ–°æ—§æ—¥ç¨‹é¡µ
-      renderHome();                    // åˆ·æ–°ä»Šæ—¥é¡µè‡ªèº«
+      togglePlanDone(b.dataset.hex);   // Ã¦â€”Â§Ã¥â€¡Â½Ã¦â€¢Â°Ã¥ÂÂªÃ¨Â°Æ’Ã§â€Â¨Ã¤Â¸ÂÃ¤Â¿Â®Ã¦â€Â¹Ã¯Â¼Å¡Ã¥â€ â„¢Ã¨Â®Â¡Ã¥Ë†â€™Ã¥Â®Å’Ã¦Ë†Â + Ã¥Ë†Â·Ã¦â€“Â°Ã¦â€”Â§Ã¦â€”Â¥Ã§Â¨â€¹Ã©Â¡Âµ
+      renderHome();                    // Ã¥Ë†Â·Ã¦â€“Â°Ã¤Â»Å Ã¦â€”Â¥Ã©Â¡ÂµÃ¨â€¡ÂªÃ¨ÂºÂ«
     }));
   }
-  // 30 å¤©çƒ­åŠ›å›¾ + æ±‡æ€»
+  // 30 Ã¥Â¤Â©Ã§Æ’Â­Ã¥Å â€ºÃ¥â€ºÂ¾ + Ã¦Â±â€¡Ã¦â‚¬Â»
   const sessions = sget('rehab_sessions', []);
   const counts = {};
   sessions.forEach((s) => { const k = new Date(s.ts).toDateString(); counts[k] = (counts[k] || 0) + 1; });
@@ -4601,7 +4601,7 @@ function renderHome() {
     const k = d.toDateString();
     const n = counts[k] || 0;
     const lvl = n >= 3 ? 3 : n >= 2 ? 2 : n >= 1 ? 1 : 0;
-    cells.push(`<div class="hm-cell hm${lvl}${i === 0 ? ' today' : ''}" title="${d.toLocaleDateString(locale())} Â· ${n}"></div>`);
+    cells.push(`<div class="hm-cell hm${lvl}${i === 0 ? ' today' : ''}" title="${d.toLocaleDateString(locale())} Ã‚Â· ${n}"></div>`);
   }
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const from30 = new Date(today); from30.setDate(from30.getDate() - 29);
@@ -4609,7 +4609,7 @@ function renderHome() {
   const wkStart = new Date(today); wkStart.setDate(wkStart.getDate() - 6);
   const d7 = new Set(sessions.filter((s) => new Date(s.ts) >= wkStart).map((s) => new Date(s.ts).toDateString())).size;
   $('home-heat').innerHTML = cells.join('') + `<div class="hint tiny" style="margin-top:6px">${t('homeHeatSum', { d30, d7 })}</div>`;
-  // æœ¬å‘¨å°ç»“ + ä¸Šå‘¨å¯¹æ¯” + é£Žé™©
+  // Ã¦Å“Â¬Ã¥â€˜Â¨Ã¥Â°ÂÃ§Â»â€œ + Ã¤Â¸Å Ã¥â€˜Â¨Ã¥Â¯Â¹Ã¦Â¯â€ + Ã©Â£Å½Ã©â„¢Â©
   const weekS = sessions.filter((s) => new Date(s.ts) >= wkStart);
   const rTotal = weekS.reduce((a, s) => a + (s.reps || 0), 0);
   const qAvg = weekS.length ? Math.round(100 - weekS.reduce((a, s) => a + (s.badPct || 0), 0) / weekS.length) : null;
@@ -4618,20 +4618,20 @@ function renderHome() {
   const weekPrev = sessions.filter((s) => new Date(s.ts) >= wkPrevStart && new Date(s.ts) < wkStart).length;
   const deltaW = weekS.length - weekPrev;
   $('home-week').innerHTML = weekS.length
-    ? `<div class="summary-line">${t('homeWeekLine', { n: weekS.length, r: rTotal, q: qAvg })}${riskN ? ' Â· ' + t('homeRisk', { n: riskN }) : ''}
+    ? `<div class="summary-line">${t('homeWeekLine', { n: weekS.length, r: rTotal, q: qAvg })}${riskN ? ' Ã‚Â· ' + t('homeRisk', { n: riskN }) : ''}
         <span class="hint tiny" style="display:block">${t('homeWeekDelta', { v: (deltaW >= 0 ? '+' : '') + deltaW })}</span>
-        <button class="btn small" id="hm-record" style="margin-top:6px"><span>${t('homeGoRecord')} â†’</span></button>
+        <button class="btn small" id="hm-record" style="margin-top:6px"><span>${t('homeGoRecord')} Ã¢â€ â€™</span></button>
       </div>`
     : `<div class="empty">${icon('record')}<span>${t('homeWeekNone')}</span></div>`;
   if ($('hm-record')) $('hm-record').addEventListener('click', () => switchTab('record'));
 }
 
-/* ---- åŠ¨ä½œè½¨è¿¹ï¼ˆTempo å¼è½¨è¿¹å›žæ”¾ï¼šä½  vs æ ‡å‡†ï¼‰ ---- */
+/* ---- Ã¥Å Â¨Ã¤Â½Å“Ã¨Â½Â¨Ã¨Â¿Â¹Ã¯Â¼Ë†Tempo Ã¥Â¼ÂÃ¨Â½Â¨Ã¨Â¿Â¹Ã¥â€ºÅ¾Ã¦â€Â¾Ã¯Â¼Å¡Ã¤Â½Â  vs Ã¦Â â€¡Ã¥â€¡â€ Ã¯Â¼â€° ---- */
 function ftRefTraj(key, n = 13) {
   const pts = [];
   for (let i = 0; i < n; i++) {
     const t = i / (n - 1);
-    const d = Math.sin(t * Math.PI);   // 0â†’1â†’0
+    const d = Math.sin(t * Math.PI);   // 0Ã¢â€ â€™1Ã¢â€ â€™0
     if (key === 'arm') pts.push([0.5, 0.36 - 0.30 * d]);
     else if (key === 'bend') pts.push([0.5 + 0.12 * d, 0.30 + 0.20 * d]);
     else pts.push([0.5, 0.46 + 0.06 * d]);
@@ -4671,9 +4671,9 @@ function ftDrawTraj(canvas, user, ref) {
   if (user) plot(user, '#0e7c66', false);
 }
 
-/* ============ æ–°å¢žåŠŸèƒ½ï¼ˆv2.21.5ï¼‰ï¼šè®­ç»ƒæ¨¡å—ç»†åŒ– ============ */
-// çº¯æ–°å¢žï¼ˆä¸åŠ¨æ—§åˆ†æžå¾ªçŽ¯ï¼‰ï¼šâ‘ è®­ç»ƒé¡µã€Œä»Šæ—¥ä»»åŠ¡ã€å°æ¡ï¼ˆä¸Žæ—¥ç¨‹/ä»Šæ—¥åŒæºï¼Œå¯ä¸€é”®æ‰“å¡ï¼‰
-// â‘¡è®­ç»ƒæ—¶é•¿è®¡æ—¶å™¨ï¼ˆç”»é¢å³ä¸Šè§’ï¼Œè½®è¯¢ state.running çŠ¶æ€ï¼Œé›¶ä¾µå…¥ï¼‰
+/* ============ Ã¦â€“Â°Ã¥Â¢Å¾Ã¥Å Å¸Ã¨Æ’Â½Ã¯Â¼Ë†v2.21.5Ã¯Â¼â€°Ã¯Â¼Å¡Ã¨Â®Â­Ã§Â»Æ’Ã¦Â¨Â¡Ã¥Ââ€”Ã§Â»â€ Ã¥Å’â€“ ============ */
+// Ã§ÂºÂ¯Ã¦â€“Â°Ã¥Â¢Å¾Ã¯Â¼Ë†Ã¤Â¸ÂÃ¥Å Â¨Ã¦â€”Â§Ã¥Ë†â€ Ã¦Å¾ÂÃ¥Â¾ÂªÃ§Å½Â¯Ã¯Â¼â€°Ã¯Â¼Å¡Ã¢â€˜Â Ã¨Â®Â­Ã§Â»Æ’Ã©Â¡ÂµÃ£â‚¬Å’Ã¤Â»Å Ã¦â€”Â¥Ã¤Â»Â»Ã¥Å Â¡Ã£â‚¬ÂÃ¥Â°ÂÃ¦ÂÂ¡Ã¯Â¼Ë†Ã¤Â¸Å½Ã¦â€”Â¥Ã§Â¨â€¹/Ã¤Â»Å Ã¦â€”Â¥Ã¥ÂÅ’Ã¦ÂºÂÃ¯Â¼Å’Ã¥ÂÂ¯Ã¤Â¸â‚¬Ã©â€Â®Ã¦â€°â€œÃ¥ÂÂ¡Ã¯Â¼â€°
+// Ã¢â€˜Â¡Ã¨Â®Â­Ã§Â»Æ’Ã¦â€”Â¶Ã©â€¢Â¿Ã¨Â®Â¡Ã¦â€”Â¶Ã¥â„¢Â¨Ã¯Â¼Ë†Ã§â€Â»Ã©ÂÂ¢Ã¥ÂÂ³Ã¤Â¸Å Ã¨Â§â€™Ã¯Â¼Å’Ã¨Â½Â®Ã¨Â¯Â¢ state.running Ã§Å Â¶Ã¦â‚¬ÂÃ¯Â¼Å’Ã©â€ºÂ¶Ã¤Â¾ÂµÃ¥â€¦Â¥Ã¯Â¼â€°
 function renderTrainToday() {
   const el = $('train-today');
   if (!el) return;
@@ -4687,11 +4687,11 @@ function renderTrainToday() {
     const isDone = doneArr.includes(p.ex);
     return `<div class="item">
       <button class="todo-check ${isDone ? 'on' : ''}" data-tex="${p.ex}">${isDone ? icon('check') : ''}</button>
-      <div style="flex:1"><div class="t"><span class="t-ico">${icon(e ? e.icon : 'custom')}</span>${e ? exName(e) : p.ex} Â· ${t('repsN', { n: p.reps })}</div></div>
+      <div style="flex:1"><div class="t"><span class="t-ico">${icon(e ? e.icon : 'custom')}</span>${e ? exName(e) : p.ex} Ã‚Â· ${t('repsN', { n: p.reps })}</div></div>
     </div>`;
   }).join('') + `<div class="plan-progress"><div class="plan-progress-txt">${t('planProgress', { d: doneCount, t: todays.length })}</div><div class="plan-bar"><div class="plan-fill" style="width:${(100 * doneCount / todays.length).toFixed(0)}%"></div></div></div>`;
   el.querySelectorAll('.todo-check').forEach((b) => b.addEventListener('click', () => {
-    togglePlanDone(b.dataset.tex);   // æ—§å‡½æ•°åªè°ƒç”¨ä¸ä¿®æ”¹
+    togglePlanDone(b.dataset.tex);   // Ã¦â€”Â§Ã¥â€¡Â½Ã¦â€¢Â°Ã¥ÂÂªÃ¨Â°Æ’Ã§â€Â¨Ã¤Â¸ÂÃ¤Â¿Â®Ã¦â€Â¹
     renderTrainToday();
     renderHome();
   }));
@@ -4708,7 +4708,7 @@ function trainTimerTick() {
   }
   if (running) {
     const s = Math.floor((trainTimer.acc + (performance.now() - trainTimer.start)) / 1000);
-    el.textContent = 'â± ' + String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
+    el.textContent = 'Ã¢ÂÂ± ' + String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
     el.classList.remove('hidden');
   } else {
     el.classList.add('hidden');
@@ -4716,8 +4716,8 @@ function trainTimerTick() {
 }
 setInterval(trainTimerTick, 500);
 
-// v2.21.9ï¼šè®¾ç½®é¡µã€Œæœ¬æœºæ•°æ®å ç”¨ã€ï¼ˆåªè¯»ç»Ÿè®¡ï¼Œçº¯æ–°å¢žï¼‰
-// ä¿®å¤ï¼šç™»å½•åŽæ•°æ®å†™åœ¨è´¦å·åˆ†åŒºé”® u:<é‚®ç®±>:rehab_*ï¼ŒåŽŸå®žçŽ°åªè®¤ 'rehab' å‰ç¼€ â†’ å·²ç™»å½•æ—¶ç»Ÿè®¡åå°
+// v2.21.9Ã¯Â¼Å¡Ã¨Â®Â¾Ã§Â½Â®Ã©Â¡ÂµÃ£â‚¬Å’Ã¦Å“Â¬Ã¦Å“ÂºÃ¦â€¢Â°Ã¦ÂÂ®Ã¥ÂÂ Ã§â€Â¨Ã£â‚¬ÂÃ¯Â¼Ë†Ã¥ÂÂªÃ¨Â¯Â»Ã§Â»Å¸Ã¨Â®Â¡Ã¯Â¼Å’Ã§ÂºÂ¯Ã¦â€“Â°Ã¥Â¢Å¾Ã¯Â¼â€°
+// Ã¤Â¿Â®Ã¥Â¤ÂÃ¯Â¼Å¡Ã§â„¢Â»Ã¥Â½â€¢Ã¥ÂÅ½Ã¦â€¢Â°Ã¦ÂÂ®Ã¥â€ â„¢Ã¥Å“Â¨Ã¨Â´Â¦Ã¥ÂÂ·Ã¥Ë†â€ Ã¥Å’ÂºÃ©â€Â® u:<Ã©â€šÂ®Ã§Â®Â±>:rehab_*Ã¯Â¼Å’Ã¥Å½Å¸Ã¥Â®Å¾Ã§Å½Â°Ã¥ÂÂªÃ¨Â®Â¤ 'rehab' Ã¥â€°ÂÃ§Â¼â‚¬ Ã¢â€ â€™ Ã¥Â·Â²Ã§â„¢Â»Ã¥Â½â€¢Ã¦â€”Â¶Ã§Â»Å¸Ã¨Â®Â¡Ã¥ÂÂÃ¥Â°Â
 const STG_APP_KEY = /^(u:.*:)?rehab/;
 const stgBytes = (s) => { try { return new Blob([s]).size; } catch { return s.length * 2; } };
 const stgFmt = (b) => (b < 1024 ? b + ' B' : b < 1048576 ? (b / 1024).toFixed(1) + ' KB' : (b / 1048576).toFixed(2) + ' MB');
@@ -4747,7 +4747,7 @@ function renderStorageSize() {
       : t('stgBreak', { r: stgFmt(g.records), c: stgFmt(g.collect), m: stgFmt(g.custom), o: stgFmt(Math.max(0, g.total - g.records - g.collect - g.custom)) });
   }
 }
-// v2.21.9ï¼šå¤‡ä»½å¡ã€Œä¸Šæ¬¡å¯¼å‡ºå¤‡ä»½ã€æç¤ºï¼ˆâ‰¥7 å¤©æ ‡é»„æé†’ï¼‰
+// v2.21.9Ã¯Â¼Å¡Ã¥Â¤â€¡Ã¤Â»Â½Ã¥ÂÂ¡Ã£â‚¬Å’Ã¤Â¸Å Ã¦Â¬Â¡Ã¥Â¯Â¼Ã¥â€¡ÂºÃ¥Â¤â€¡Ã¤Â»Â½Ã£â‚¬ÂÃ¦ÂÂÃ§Â¤ÂºÃ¯Â¼Ë†Ã¢â€°Â¥7 Ã¥Â¤Â©Ã¦Â â€¡Ã©Â»â€žÃ¦ÂÂÃ©â€ â€™Ã¯Â¼â€°
 function renderLastBackup() {
   const el = $('last-backup');
   if (!el) return;
@@ -4757,11 +4757,11 @@ function renderLastBackup() {
   el.textContent = t(days <= 0 ? 'bakToday' : 'bakDaysAgo', { d: days });
   el.classList.toggle('warn', days >= 7);
 }
-// v2.21.9ï¼šæ•°æ®è¢«æ›¿æ¢/æ¸…ç©º/åŒæ­¥åŽç»Ÿä¸€åˆ·æ–°å…¨éƒ¨ä¾èµ–æ¨¡å—ï¼ˆå¯¼å…¥ã€æ¸…ç©ºã€äºŒç»´ç åŒæ­¥å…±ç”¨ï¼‰
-/* ============ v2.34.0 æ ‡å‡†åŠ¨ä½œç¤ºèŒƒï¼ˆå›¾è§£ï¼‰+ ç¤ºèŒƒå½•åƒ ============ */
-const dmbState = { key: null, playing: false, raf: 0, t0: 0, az: 35 };   // az=è§‚å¯Ÿæ–¹ä½è§’ï¼š0 ä¾§é¢ / 35 æ–œå‰ / 90 æ­£é¢
+// v2.21.9Ã¯Â¼Å¡Ã¦â€¢Â°Ã¦ÂÂ®Ã¨Â¢Â«Ã¦â€ºÂ¿Ã¦ÂÂ¢/Ã¦Â¸â€¦Ã§Â©Âº/Ã¥ÂÅ’Ã¦Â­Â¥Ã¥ÂÅ½Ã§Â»Å¸Ã¤Â¸â‚¬Ã¥Ë†Â·Ã¦â€“Â°Ã¥â€¦Â¨Ã©Æ’Â¨Ã¤Â¾ÂÃ¨Âµâ€“Ã¦Â¨Â¡Ã¥Ââ€”Ã¯Â¼Ë†Ã¥Â¯Â¼Ã¥â€¦Â¥Ã£â‚¬ÂÃ¦Â¸â€¦Ã§Â©ÂºÃ£â‚¬ÂÃ¤ÂºÅ’Ã§Â»Â´Ã§Â ÂÃ¥ÂÅ’Ã¦Â­Â¥Ã¥â€¦Â±Ã§â€Â¨Ã¯Â¼â€°
+/* ============ v2.34.0 Ã¦Â â€¡Ã¥â€¡â€ Ã¥Å Â¨Ã¤Â½Å“Ã§Â¤ÂºÃ¨Å’Æ’Ã¯Â¼Ë†Ã¥â€ºÂ¾Ã¨Â§Â£Ã¯Â¼â€°+ Ã§Â¤ÂºÃ¨Å’Æ’Ã¥Â½â€¢Ã¥Æ’Â ============ */
+const dmbState = { key: null, playing: false, raf: 0, t0: 0, az: 35 };   // az=Ã¨Â§â€šÃ¥Â¯Å¸Ã¦â€“Â¹Ã¤Â½ÂÃ¨Â§â€™Ã¯Â¼Å¡0 Ã¤Â¾Â§Ã©ÂÂ¢ / 35 Ã¦â€“Å“Ã¥â€°Â / 90 Ã¦Â­Â£Ã©ÂÂ¢
 const recState = { rec: null, t0: 0 };
-// è·Ÿç»ƒè¯¾é‡Œå‡ºçŽ°è¿‡çš„åŠ¨ä½œï¼ŒæŒ‰è¯¾ç¨‹é¡ºåºåŽ»é‡ï¼ˆè·Ÿç»ƒæ˜¯æ—¥å¸¸æœ€å¸¸èµ°çš„è·¯ï¼‰
+// Ã¨Â·Å¸Ã§Â»Æ’Ã¨Â¯Â¾Ã©â€¡Å’Ã¥â€¡ÂºÃ§Å½Â°Ã¨Â¿â€¡Ã§Å¡â€žÃ¥Å Â¨Ã¤Â½Å“Ã¯Â¼Å’Ã¦Å’â€°Ã¨Â¯Â¾Ã§Â¨â€¹Ã©Â¡ÂºÃ¥ÂºÂÃ¥Å½Â»Ã©â€¡ÂÃ¯Â¼Ë†Ã¨Â·Å¸Ã§Â»Æ’Ã¦ËœÂ¯Ã¦â€”Â¥Ã¥Â¸Â¸Ã¦Å“â‚¬Ã¥Â¸Â¸Ã¨ÂµÂ°Ã§Å¡â€žÃ¨Â·Â¯Ã¯Â¼â€°
 function guideStepKeys() {
   const seen = [];
   Object.values(GW_PROGRAMS).forEach((p) => p.steps.forEach((s) => {
@@ -4797,8 +4797,8 @@ function dmbTick(ts) {
   if (!dmbState.t0) dmbState.t0 = ts;
   const dur = 2800;
   const u = ((ts - dmbState.t0) % dur) / dur;
-  const tri = u < 0.5 ? u * 2 : (1 - u) * 2;   // åŽ»-å›žï¼Œåƒ GIF ä¸€æ ·å¾ªçŽ¯
-  big.innerHTML = '';   // v2.38.0ï¼šåˆæˆäººå½¢å·²ä¸‹çº¿ï¼ˆæ”¹çœŸäººç¤ºèŒƒï¼‰ï¼ŒåŠ¨ç”»ä¿ç•™ä¸ºç©ºå®žçŽ°
+  const tri = u < 0.5 ? u * 2 : (1 - u) * 2;   // Ã¥Å½Â»-Ã¥â€ºÅ¾Ã¯Â¼Å’Ã¥Æ’Â GIF Ã¤Â¸â‚¬Ã¦Â Â·Ã¥Â¾ÂªÃ§Å½Â¯
+  big.innerHTML = '';   // v2.38.0Ã¯Â¼Å¡Ã¥ÂË†Ã¦Ë†ÂÃ¤ÂºÂºÃ¥Â½Â¢Ã¥Â·Â²Ã¤Â¸â€¹Ã§ÂºÂ¿Ã¯Â¼Ë†Ã¦â€Â¹Ã§Å“Å¸Ã¤ÂºÂºÃ§Â¤ÂºÃ¨Å’Æ’Ã¯Â¼â€°Ã¯Â¼Å’Ã¥Å Â¨Ã§â€Â»Ã¤Â¿ÂÃ§â€¢â„¢Ã¤Â¸ÂºÃ§Â©ÂºÃ¥Â®Å¾Ã§Å½Â°
   void tri;
   dmbState.raf = requestAnimationFrame(dmbTick);
 }
@@ -4816,11 +4816,11 @@ function renderDemoBody() {
   const d = DEMOS[key];
   const e = EXERCISES[key];
   const az = dmbState.az;
-  const frames = '';   // v2.38.0ï¼šåŽ»æŽ‰åˆæˆäººå½¢ï¼Œå…³é”®å¸§æ”¹ç”±çœŸäººåŠ¨å›¾ + æ–‡å­—é˜ˆå€¼è¡¨è¾¾
-  const faults = d.faults.concat(d.front ? [{ key: d.front.key }] : []).map((ft) => '<div class="dmb-err">â€¢ ' + t(ft.key) + '</div>').join('');
+  const frames = '';   // v2.38.0Ã¯Â¼Å¡Ã¥Å½Â»Ã¦Å½â€°Ã¥ÂË†Ã¦Ë†ÂÃ¤ÂºÂºÃ¥Â½Â¢Ã¯Â¼Å’Ã¥â€¦Â³Ã©â€Â®Ã¥Â¸Â§Ã¦â€Â¹Ã§â€Â±Ã§Å“Å¸Ã¤ÂºÂºÃ¥Å Â¨Ã¥â€ºÂ¾ + Ã¦â€“â€¡Ã¥Â­â€”Ã©ËœË†Ã¥â‚¬Â¼Ã¨Â¡Â¨Ã¨Â¾Â¾
+  const faults = d.faults.concat(d.front ? [{ key: d.front.key }] : []).map((ft) => '<div class="dmb-err">Ã¢â‚¬Â¢ ' + t(ft.key) + '</div>').join('');
   const real = realDemo(key);
   el.innerHTML =
-    (real ? '<div class="dmb-real"><img class="dmb-real-img" src="' + real + '?v=236" alt="çœŸäººæ ‡å‡†ç¤ºèŒƒ"><div class="dmb-real-cap">çœŸäººæ ‡å‡†ç¤ºèŒƒ</div></div>' : '') +
+    (real ? '<div class="dmb-real"><img class="dmb-real-img" src="' + real + '?v=236" alt="Ã§Å“Å¸Ã¤ÂºÂºÃ¦Â â€¡Ã¥â€¡â€ Ã§Â¤ÂºÃ¨Å’Æ’"><div class="dmb-real-cap">Ã§Å“Å¸Ã¤ÂºÂºÃ¦Â â€¡Ã¥â€¡â€ Ã§Â¤ÂºÃ¨Å’Æ’</div></div>' : '') +
     '<div class="dmb-top">' + (real ? '' : '<div class="dmb-sided"><div class="dmb-fr-cap">' + t('dmbNoReal') + '</div></div>') +
       '<div class="dmb-side">' +
         '<div class="dmb-name">' + dmbName(key) + '</div>' +
@@ -4839,7 +4839,7 @@ function renderDemoBody() {
   renderClips($('dmb-clips'));
 }
 
-/* ---- å½•åƒï¼šå½•çš„æ˜¯åˆ†æžç”»å¸ƒï¼ˆæ‘„åƒå¤´ç”»é¢ + éª¨æž¶å åŠ ï¼‰ï¼Œåªå­˜æœ¬æœº ---- */
+/* ---- Ã¥Â½â€¢Ã¥Æ’ÂÃ¯Â¼Å¡Ã¥Â½â€¢Ã§Å¡â€žÃ¦ËœÂ¯Ã¥Ë†â€ Ã¦Å¾ÂÃ§â€Â»Ã¥Â¸Æ’Ã¯Â¼Ë†Ã¦â€˜â€žÃ¥Æ’ÂÃ¥Â¤Â´Ã§â€Â»Ã©ÂÂ¢ + Ã©ÂªÂ¨Ã¦Å¾Â¶Ã¥ÂÂ Ã¥Å Â Ã¯Â¼â€°Ã¯Â¼Å’Ã¥ÂÂªÃ¥Â­ËœÃ¦Å“Â¬Ã¦Å“Âº ---- */
 async function recToggle() {
   if (recState.rec) { try { recState.rec.stop(); } catch (e) { /* ignore */ } return; }
   const cv = $('overlay');
@@ -4878,8 +4878,8 @@ async function renderClips(host) {
   host.innerHTML = all.map((c) => '<div class="dmb-clip" data-clip="' + c.id + '">' +
     '<div class="dmb-clip-meta"><b>' + (c.label || c.ex || t('dmbClip')) + '</b>' +
       '<span class="hint tiny"> ' + new Date(c.ts).toLocaleString(locale(), { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) +
-      ' Â· ' + c.durSec + 's Â· ' + Math.max(1, Math.round((c.bytes || 0) / 1048576 * 10) / 10) + 'MB' +
-      (c.forEx ? ' Â· ' + t('dmbDemoFor', { n: dmbName(c.forEx) }) : '') + '</span></div>' +
+      ' Ã‚Â· ' + c.durSec + 's Ã‚Â· ' + Math.max(1, Math.round((c.bytes || 0) / 1048576 * 10) / 10) + 'MB' +
+      (c.forEx ? ' Ã‚Â· ' + t('dmbDemoFor', { n: dmbName(c.forEx) }) : '') + '</span></div>' +
     '<div class="controls"><button class="btn small" data-clip-play="' + c.id + '">' + t('dmbPlayClip') + '</button>' +
       '<button class="btn small" data-clip-set="' + c.id + '">' + t('dmbSetAsDemo') + '</button>' +
       '<button class="btn small" data-clip-del="' + c.id + '">' + t('dmbDel') + '</button></div>' +
@@ -4903,10 +4903,10 @@ async function renderClips(host) {
   }));
 }
 
-/* ---- è·Ÿç»ƒé¡µç¤ºèŒƒå¢™ ---- */
+/* ---- Ã¨Â·Å¸Ã§Â»Æ’Ã©Â¡ÂµÃ§Â¤ÂºÃ¨Å’Æ’Ã¥Â¢â„¢ ---- */
 function renderDemos() {
   const card = $('gw-demos-card');
-  if (card) card.classList.toggle('hidden', !!gwState.active);   // è·Ÿç»ƒè¿›è¡Œä¸­ä¸å å±å¹•ï¼Œç¤ºèŒƒç›´æŽ¥æ˜¾ç¤ºåœ¨è®­ç»ƒå°
+  if (card) card.classList.toggle('hidden', !!gwState.active);   // Ã¨Â·Å¸Ã§Â»Æ’Ã¨Â¿â€ºÃ¨Â¡Å’Ã¤Â¸Â­Ã¤Â¸ÂÃ¥ÂÂ Ã¥Â±ÂÃ¥Â¹â€¢Ã¯Â¼Å’Ã§Â¤ÂºÃ¨Å’Æ’Ã§â€ºÂ´Ã¦Å½Â¥Ã¦ËœÂ¾Ã§Â¤ÂºÃ¥Å“Â¨Ã¨Â®Â­Ã§Â»Æ’Ã¥ÂÂ°
   const el = $('gw-demos');
   if (!el) return;
   const keys = guideStepKeys();
@@ -4916,19 +4916,19 @@ function renderDemos() {
     '<button class="btn small" data-dmb="' + k + '">' + t('dmbLook') + '</button></div>').join('');
   el.querySelectorAll('[data-dmb]').forEach((b) => b.addEventListener('click', () => openDemo(b.dataset.dmb)));
 }
-// éªŒæ”¶ç”¨é’©å­ï¼šæŠŠç¤ºèŒƒå›¾ä¸Žå½•åƒå­˜å–æš´éœ²ç»™è‡ªåŠ¨åŒ–æµ‹è¯•ï¼ˆä¸å½±å“æ­£å¸¸åŠŸèƒ½ï¼‰
+// Ã©ÂªÅ’Ã¦â€Â¶Ã§â€Â¨Ã©â€™Â©Ã¥Â­ÂÃ¯Â¼Å¡Ã¦Å Å Ã§Â¤ÂºÃ¨Å’Æ’Ã¥â€ºÂ¾Ã¤Â¸Å½Ã¥Â½â€¢Ã¥Æ’ÂÃ¥Â­ËœÃ¥Ââ€“Ã¦Å¡Â´Ã©Å“Â²Ã§Â»â„¢Ã¨â€¡ÂªÃ¥Å Â¨Ã¥Å’â€“Ã¦Âµâ€¹Ã¨Â¯â€¢Ã¯Â¼Ë†Ã¤Â¸ÂÃ¥Â½Â±Ã¥â€œÂÃ¦Â­Â£Ã¥Â¸Â¸Ã¥Å Å¸Ã¨Æ’Â½Ã¯Â¼â€°
 try {
   window.__rehabDemo = { hasDemo: hasDemo, demoAngles: demoAngles, demoFigure: demoFigure, demoParams: demoParams,
     DEMOS: DEMOS, balanceOf: balanceOf, poseOf: poseOf, demoPose: demoPose,
     clipPut: clipPut, clipAll: clipAll, clipDel: clipDel, idb: idbAvailable };
-} catch (e) { try { console.error('demo hook init failed:', e && e.message); } catch (x) { /* ignore */ } }   // ä¸å†é™é»˜ï¼šé’©å­åæŽ‰å¿…é¡»çœ‹å¾—è§
-// äº‘ç«¯éªŒæ”¶é’©å­
+} catch (e) { try { console.error('demo hook init failed:', e && e.message); } catch (x) { /* ignore */ } }   // Ã¤Â¸ÂÃ¥â€ ÂÃ©Ââ„¢Ã©Â»ËœÃ¯Â¼Å¡Ã©â€™Â©Ã¥Â­ÂÃ¥ÂÂÃ¦Å½â€°Ã¥Â¿â€¦Ã©Â¡Â»Ã§Å“â€¹Ã¥Â¾â€”Ã¨Â§Â
+// Ã¤Âºâ€˜Ã§Â«Â¯Ã©ÂªÅ’Ã¦â€Â¶Ã©â€™Â©Ã¥Â­Â
 try {
   window.__rehabCloud = { cfg: cloudCfg, session: cloudSession, sync: cloudSync, del: cloudDeleteAccount, autoSync: cloudAutoSync };
 } catch (e) { try { console.error('cloud hook init failed:', e && e.message); } catch (x) { /* ignore */ } }
 
-/* ---- è®­ç»ƒé¡µï¼šå½“å‰åŠ¨ä½œçš„æ ‡å‡†ç¤ºèŒƒ + å½•åˆ¶ ---- */
-/* v2.40.0 æ–°å¢žï¼šè®­ç»ƒé¡µã€Œå…¨éƒ¨åŠ¨ä½œ Â· çœŸäººç¤ºèŒƒã€å¢™ â€”â€” ä¸Šé¢åˆ—å‡ºçš„æ¯ä¸ªåŠ¨ä½œéƒ½èƒ½çœ‹åˆ°çœŸäººç¤ºèŒƒï¼ˆçº¯æ–°å¢žï¼Œä¸æ”¹æ—§é€»è¾‘ï¼‰ */
+/* ---- Ã¨Â®Â­Ã§Â»Æ’Ã©Â¡ÂµÃ¯Â¼Å¡Ã¥Â½â€œÃ¥â€°ÂÃ¥Å Â¨Ã¤Â½Å“Ã§Å¡â€žÃ¦Â â€¡Ã¥â€¡â€ Ã§Â¤ÂºÃ¨Å’Æ’ + Ã¥Â½â€¢Ã¥Ë†Â¶ ---- */
+/* v2.40.0 Ã¦â€“Â°Ã¥Â¢Å¾Ã¯Â¼Å¡Ã¨Â®Â­Ã§Â»Æ’Ã©Â¡ÂµÃ£â‚¬Å’Ã¥â€¦Â¨Ã©Æ’Â¨Ã¥Å Â¨Ã¤Â½Å“ Ã‚Â· Ã§Å“Å¸Ã¤ÂºÂºÃ§Â¤ÂºÃ¨Å’Æ’Ã£â‚¬ÂÃ¥Â¢â„¢ Ã¢â‚¬â€Ã¢â‚¬â€ Ã¤Â¸Å Ã©ÂÂ¢Ã¥Ë†â€”Ã¥â€¡ÂºÃ§Å¡â€žÃ¦Â¯ÂÃ¤Â¸ÂªÃ¥Å Â¨Ã¤Â½Å“Ã©Æ’Â½Ã¨Æ’Â½Ã§Å“â€¹Ã¥Ë†Â°Ã§Å“Å¸Ã¤ÂºÂºÃ§Â¤ÂºÃ¨Å’Æ’Ã¯Â¼Ë†Ã§ÂºÂ¯Ã¦â€“Â°Ã¥Â¢Å¾Ã¯Â¼Å’Ã¤Â¸ÂÃ¦â€Â¹Ã¦â€”Â§Ã©â‚¬Â»Ã¨Â¾â€˜Ã¯Â¼â€° */
 function renderRealDemoWall() {
   const el = $('real-demo-grid');
   if (!el) return;
@@ -4952,7 +4952,7 @@ function renderTrainDemo() {
   el.classList.remove('hidden');
   const e = EXERCISES[id];
   const has = hasDemo(id);
-  el.innerHTML = '<h3>' + t('dmbTrainTitle') + ' Â· ' + dmbName(id) + '</h3>' +
+  el.innerHTML = '<h3>' + t('dmbTrainTitle') + ' Ã‚Â· ' + dmbName(id) + '</h3>' +
     (realDemo(id) ? '<div class="dmb-train-fig"><img class="dmb-thumb" src="' + realDemo(id) + '" alt=""><div class="dmb-real-cap">' + t('dmbReal') + '</div></div>' +
       '<div class="dmb-angles">' + dmbAngleChips(id) + '</div>'
       : '<p class="hint">' + t('dmbNoDemo') + '</p>') +
@@ -4971,14 +4971,14 @@ function refreshAllData() {
   renderCollectCount(); renderProfile(); renderTodayPlan(); renderPlanList(); renderPlanPick();
   renderAchievements(); renderGoal(); renderHome(); renderTrainToday();
   renderPaUI(); renderFtUI(); renderStorageSize(); renderLastBackup();
-  renderPain(); renderPainStrip(); renderReport();   // v2.22.0/v2.24.0ï¼šç–¼ç—›ä¸ŽæŠ¥å‘Šæ•°æ®ä¸€èµ·åˆ·æ–°
-  renderRomHistory(); renderRomResult(romHistory()[0] || null);   // v2.26.0ï¼šROM æ•°æ®ä¸€èµ·åˆ·æ–°
-  renderPromHistory();                                  // v2.27.0ï¼šPROMs æ•°æ®ä¸€èµ·åˆ·æ–°
-  renderAiPlan(); renderAiEngine(); renderPath(); renderCareLoop(); renderRecheck();   // v2.28-v2.33ï¼šå¼•æ“ŽÂ·è·¯å¾„Â·é—­çŽ¯Â·å¤è¯„ä¸€èµ·åˆ·æ–°
+  renderPain(); renderPainStrip(); renderReport();   // v2.22.0/v2.24.0Ã¯Â¼Å¡Ã§â€“Â¼Ã§â€”â€ºÃ¤Â¸Å½Ã¦Å Â¥Ã¥â€˜Å Ã¦â€¢Â°Ã¦ÂÂ®Ã¤Â¸â‚¬Ã¨ÂµÂ·Ã¥Ë†Â·Ã¦â€“Â°
+  renderRomHistory(); renderRomResult(romHistory()[0] || null);   // v2.26.0Ã¯Â¼Å¡ROM Ã¦â€¢Â°Ã¦ÂÂ®Ã¤Â¸â‚¬Ã¨ÂµÂ·Ã¥Ë†Â·Ã¦â€“Â°
+  renderPromHistory();                                  // v2.27.0Ã¯Â¼Å¡PROMs Ã¦â€¢Â°Ã¦ÂÂ®Ã¤Â¸â‚¬Ã¨ÂµÂ·Ã¥Ë†Â·Ã¦â€“Â°
+  renderAiPlan(); renderAiEngine(); renderPath(); renderCareLoop(); renderRecheck();   // v2.28-v2.33Ã¯Â¼Å¡Ã¥Â¼â€¢Ã¦â€œÅ½Ã‚Â·Ã¨Â·Â¯Ã¥Â¾â€žÃ‚Â·Ã©â€”Â­Ã§Å½Â¯Ã‚Â·Ã¥Â¤ÂÃ¨Â¯â€žÃ¤Â¸â‚¬Ã¨ÂµÂ·Ã¥Ë†Â·Ã¦â€“Â°
 }
 
-/* ============ v2.33.0 æ–°æ¨¡å—ï¼šä¸‰å—å¼æž¶æž„ï¼ˆè¯„ä¼° / è®­ç»ƒ / å¤è¯„ï¼‰+ è‚Œç¾¤åˆ†æž ============ */
-// åº•éƒ¨å¯¼èˆªæ”¶æ•›ä¸º 6 ä¸ªä¸»å…¥å£ï¼Œè¯„ä¼°ä¸Žè®­ç»ƒä¸¤å—ç”¨å­æ ‡ç­¾å®¹çº³å„è‡ªçš„é¡µé¢ï¼›å¤è¯„é¡µåšå‰åŽå¯¹æ¯”ä¸Žè–„å¼±è‚Œç¾¤åˆ†æžã€‚
+/* ============ v2.33.0 Ã¦â€“Â°Ã¦Â¨Â¡Ã¥Ââ€”Ã¯Â¼Å¡Ã¤Â¸â€°Ã¥Ââ€”Ã¥Â¼ÂÃ¦Å¾Â¶Ã¦Å¾â€žÃ¯Â¼Ë†Ã¨Â¯â€žÃ¤Â¼Â° / Ã¨Â®Â­Ã§Â»Æ’ / Ã¥Â¤ÂÃ¨Â¯â€žÃ¯Â¼â€°+ Ã¨â€šÅ’Ã§Â¾Â¤Ã¥Ë†â€ Ã¦Å¾Â ============ */
+// Ã¥Âºâ€¢Ã©Æ’Â¨Ã¥Â¯Â¼Ã¨Ë†ÂªÃ¦â€Â¶Ã¦â€¢â€ºÃ¤Â¸Âº 6 Ã¤Â¸ÂªÃ¤Â¸Â»Ã¥â€¦Â¥Ã¥ÂÂ£Ã¯Â¼Å’Ã¨Â¯â€žÃ¤Â¼Â°Ã¤Â¸Å½Ã¨Â®Â­Ã§Â»Æ’Ã¤Â¸Â¤Ã¥Ââ€”Ã§â€Â¨Ã¥Â­ÂÃ¦Â â€¡Ã§Â­Â¾Ã¥Â®Â¹Ã§ÂºÂ³Ã¥Ââ€žÃ¨â€¡ÂªÃ§Å¡â€žÃ©Â¡ÂµÃ©ÂÂ¢Ã¯Â¼â€ºÃ¥Â¤ÂÃ¨Â¯â€žÃ©Â¡ÂµÃ¥ÂÅ¡Ã¥â€°ÂÃ¥ÂÅ½Ã¥Â¯Â¹Ã¦Â¯â€Ã¤Â¸Å½Ã¨â€“â€žÃ¥Â¼Â±Ã¨â€šÅ’Ã§Â¾Â¤Ã¥Ë†â€ Ã¦Å¾ÂÃ£â‚¬â€š
 const BLOCK_DEF = {
   assess: { label: 'blockAssess', items: [['posture', 'subPosture'], ['ft', 'subFt'], ['assess', 'subAssess']] },
   train: { label: 'blockTrain', items: [['guide', 'subGuide'], ['schedule', 'subSchedule'], ['train', 'subTrain']] },
@@ -4995,14 +4995,14 @@ function renderBlockSub() {
     BLOCK_DEF[blk].items.map(([k, key]) => `<button class="bs-btn ${cur === k ? 'on' : ''}" data-bs="${k}">${t(key)}</button>`).join('');
   el.querySelectorAll('[data-bs]').forEach((b) => b.addEventListener('click', () => switchTab(b.dataset.bs)));
 }
-// è‚Œç¾¤æ˜ å°„ï¼šæŠŠ"é—®é¢˜"ç¿»è¯‘æˆ"è¦ç»ƒå“ªå—è‚Œè‚‰ + ç»ƒä»€ä¹ˆ"
+// Ã¨â€šÅ’Ã§Â¾Â¤Ã¦ËœÂ Ã¥Â°â€žÃ¯Â¼Å¡Ã¦Å Å "Ã©â€”Â®Ã©Â¢Ëœ"Ã§Â¿Â»Ã¨Â¯â€˜Ã¦Ë†Â"Ã¨Â¦ÂÃ§Â»Æ’Ã¥â€œÂªÃ¥Ââ€”Ã¨â€šÅ’Ã¨â€šâ€° + Ã§Â»Æ’Ã¤Â»â‚¬Ã¤Â¹Ë†"
 const MUSCLE_MAP = [
-  { test: (s) => s.paItems.some((x) => /shoulder|è‚©/i.test(x)) || s.dims && s.dims.sym != null && s.dims.sym < 80, key: 'gluteMed', ex: ['stepup', 'lunge'] },
-  { test: (s) => s.paItems.some((x) => /knee|è†/i.test(x)) || (s.dims && s.dims.align != null && s.dims.align < 75), key: 'quadVmo', ex: ['sitstand', 'squat'] },
-  { test: (s) => s.paItems.some((x) => /hip|é«‹|éª¨ç›†|pelvis/i.test(x)), key: 'gluteMax', ex: ['hiphinge', 'bridge'] },
-  { test: (s) => s.paItems.some((x) => /back|è…°|è„ŠæŸ±|spine/i.test(x)) || (s.dims && s.dims.stab != null && s.dims.stab < 75), key: 'coreDeep', ex: ['plank', 'hiphinge'] },
-  { test: (s) => s.paItems.some((x) => /neck|é¢ˆ|head|å¤´/i.test(x)), key: 'neckDeep', ex: ['shoulderraise', 'standing'] },
-  { test: (s) => s.paItems.some((x) => /ankle|è¸|foot|è¶³/i.test(x)) || (s.dims && s.dims.rom != null && s.dims.rom < 75), key: 'calfAnkle', ex: ['squat', 'stepup'] },
+  { test: (s) => s.paItems.some((x) => /shoulder|Ã¨â€šÂ©/i.test(x)) || s.dims && s.dims.sym != null && s.dims.sym < 80, key: 'gluteMed', ex: ['stepup', 'lunge'] },
+  { test: (s) => s.paItems.some((x) => /knee|Ã¨â€ Â/i.test(x)) || (s.dims && s.dims.align != null && s.dims.align < 75), key: 'quadVmo', ex: ['sitstand', 'squat'] },
+  { test: (s) => s.paItems.some((x) => /hip|Ã©Â«â€¹|Ã©ÂªÂ¨Ã§â€ºâ€ |pelvis/i.test(x)), key: 'gluteMax', ex: ['hiphinge', 'bridge'] },
+  { test: (s) => s.paItems.some((x) => /back|Ã¨â€¦Â°|Ã¨â€žÅ Ã¦Å¸Â±|spine/i.test(x)) || (s.dims && s.dims.stab != null && s.dims.stab < 75), key: 'coreDeep', ex: ['plank', 'hiphinge'] },
+  { test: (s) => s.paItems.some((x) => /neck|Ã©Â¢Ë†|head|Ã¥Â¤Â´/i.test(x)), key: 'neckDeep', ex: ['shoulderraise', 'standing'] },
+  { test: (s) => s.paItems.some((x) => /ankle|Ã¨Â¸Â|foot|Ã¨Â¶Â³/i.test(x)) || (s.dims && s.dims.rom != null && s.dims.rom < 75), key: 'calfAnkle', ex: ['squat', 'stepup'] },
 ];
 function bodyAnalysis() {
   const s = assessSnapshot();
@@ -5033,7 +5033,7 @@ function renderBodyAnalysis() {
   const el = $('body-analysis');
   if (!el) return;
   const a = bodyAnalysis();
-  el.innerHTML = `<div class="an-find">${a.findings.map((f) => `<div class="an-item ${f.kind}">â€¢ ${f.text}</div>`).join('')}</div>
+  el.innerHTML = `<div class="an-find">${a.findings.map((f) => `<div class="an-item ${f.kind}">Ã¢â‚¬Â¢ ${f.text}</div>`).join('')}</div>
     ${a.muscles.length ? `<div class="an-cols"><div><b>${t('anMuscles')}</b><ul>${a.muscles.map((m) => `<li>${t('mus' + m.charAt(0).toUpperCase() + m.slice(1))}</li>`).join('')}</ul></div>
     <div><b>${t('anExercises')}</b><ul>${a.ex.map((x) => { const e = getEx(x); return `<li>${e ? exName(e) : x}</li>`; }).join('')}</ul></div></div>
     <div class="controls"><button id="btn-an-plan" class="btn primary">${t('anMakePlan')}</button>
@@ -5049,25 +5049,25 @@ function renderRecheck() {
   const s = assessSnapshot();
   const rom = romHistory();
   const rows = [];
-  // æ´»åŠ¨åº¦ï¼šåŒé¡¹åŒä¾§ æœ€è¿‘ vs ä¸Šä¸€æ¬¡
+  // Ã¦Â´Â»Ã¥Å Â¨Ã¥ÂºÂ¦Ã¯Â¼Å¡Ã¥ÂÅ’Ã©Â¡Â¹Ã¥ÂÅ’Ã¤Â¾Â§ Ã¦Å“â‚¬Ã¨Â¿â€˜ vs Ã¤Â¸Å Ã¤Â¸â‚¬Ã¦Â¬Â¡
   ROM_ITEMS.forEach((it) => {
     const list = rom.filter((r) => r.key === it.key && r.rom != null);
     const now = list[0], prev = list.find((r, i) => i > 0 && r.side === (now && now.side));
-    if (now) rows.push({ k: t('romItem' + it.key.charAt(0).toUpperCase() + it.key.slice(1)) + (now.side === 'L' ? ' å·¦' : ' å³'), now: now.rom + 'Â°', prev: prev ? prev.rom + 'Â°' : 'â€”', d: prev ? now.rom - prev.rom : null, better: prev ? now.rom >= prev.rom : null, unit: 'Â°' });
+    if (now) rows.push({ k: t('romItem' + it.key.charAt(0).toUpperCase() + it.key.slice(1)) + (now.side === 'L' ? ' Ã¥Â·Â¦' : ' Ã¥ÂÂ³'), now: now.rom + 'Ã‚Â°', prev: prev ? prev.rom + 'Ã‚Â°' : 'Ã¢â‚¬â€', d: prev ? now.rom - prev.rom : null, better: prev ? now.rom >= prev.rom : null, unit: 'Ã‚Â°' });
   });
-  // ç–¼ç—›ï¼šè®­ç»ƒå‰ vs è®­ç»ƒåŽï¼ˆè¶Šä½Žè¶Šå¥½ï¼‰
+  // Ã§â€“Â¼Ã§â€”â€ºÃ¯Â¼Å¡Ã¨Â®Â­Ã§Â»Æ’Ã¥â€°Â vs Ã¨Â®Â­Ã§Â»Æ’Ã¥ÂÅ½Ã¯Â¼Ë†Ã¨Â¶Å Ã¤Â½Å½Ã¨Â¶Å Ã¥Â¥Â½Ã¯Â¼â€°
   const pairs = painTodayPair();
   if (pairs) rows.push({ k: t('painTitle'), now: pairs.post + '', prev: pairs.pre + '', d: pairs.post - pairs.pre, better: pairs.post <= pairs.pre, unit: '' });
-  // åŠŸèƒ½æµ‹è¯•ç»¼åˆ
+  // Ã¥Å Å¸Ã¨Æ’Â½Ã¦Âµâ€¹Ã¨Â¯â€¢Ã§Â»Â¼Ã¥ÂË†
   const ftAll = ftHistory().filter((r) => r.score != null);
   if (ftAll.length >= 2) rows.push({ k: t('repFt'), now: String(ftAll[0].score), prev: String(ftAll[1].score), d: ftAll[0].score - ftAll[1].score, better: ftAll[0].score >= ftAll[1].score, unit: '' });
-  // ä½“æ€ / é‡è¡¨
+  // Ã¤Â½â€œÃ¦â‚¬Â / Ã©â€¡ÂÃ¨Â¡Â¨
   const paAll = paHistory();
   if (paAll.length >= 2) rows.push({ k: t('repPa'), now: String(paAll[0].score), prev: String(paAll[1].score), d: paAll[0].score - paAll[1].score, better: paAll[0].score >= paAll[1].score, unit: '' });
   const prAll = promHistory();
   if (prAll.length >= 2 && prAll[0].key === prAll[1].key) rows.push({ k: t(promNameKey(prAll[0].key)), now: String(prAll[0].total), prev: String(prAll[1].total), d: prAll[0].total - prAll[1].total, better: promDef(prAll[0].key).type === 'ratio' ? prAll[0].total <= prAll[1].total : prAll[0].total >= prAll[1].total, unit: '' });
   el.innerHTML = rows.length
-    ? rows.map((r) => `<div class="rc-row"><span class="rc-k">${r.k}</span><span class="rc-prev">${r.prev}${r.unit}</span><span class="rc-arrow">â†’</span><span class="rc-now">${r.now}${r.unit}</span>
+    ? rows.map((r) => `<div class="rc-row"><span class="rc-k">${r.k}</span><span class="rc-prev">${r.prev}${r.unit}</span><span class="rc-arrow">Ã¢â€ â€™</span><span class="rc-now">${r.now}${r.unit}</span>
         ${r.d == null ? '' : `<span class="rc-d ${r.better ? 'ok' : 'warn'}">${r.d > 0 ? '+' : ''}${r.d}${r.unit}</span>`}</div>`).join('')
     : `<p class="hint tiny">${t('rcNoData')}</p>`;
   const tr = $('rc-trend');
@@ -5083,7 +5083,7 @@ $('btn-rc-report') && $('btn-rc-report').addEventListener('click', () => $('btn-
 $('btn-rc-assess') && $('btn-rc-assess').addEventListener('click', () => switchTab('posture'));
 $('btn-rc-trend') && $('btn-rc-trend').addEventListener('click', () => { const e3 = $('rc-trend'); if (e3) e3.scrollIntoView({ behavior: 'smooth' }); });
 
-/* ============ v2.32.0 æ–°æ¨¡å—ï¼šç«¯æ‰‹æŽ¥åŠ›ï¼ˆæ‰‹æœº â‡„ ç”µè„‘ æ•°æ®åˆå¹¶å¼äº’é€šï¼‰ ============ */
+/* ============ v2.32.0 Ã¦â€“Â°Ã¦Â¨Â¡Ã¥Ââ€”Ã¯Â¼Å¡Ã§Â«Â¯Ã¦â€°â€¹Ã¦Å½Â¥Ã¥Å â€ºÃ¯Â¼Ë†Ã¦â€°â€¹Ã¦Å“Âº Ã¢â€¡â€ž Ã§â€ÂµÃ¨â€žâ€˜ Ã¦â€¢Â°Ã¦ÂÂ®Ã¥ÂË†Ã¥Â¹Â¶Ã¥Â¼ÂÃ¤Âºâ€™Ã©â‚¬Å¡Ã¯Â¼â€° ============ */
 function renderRelayState() {
   const el = $('relay-state');
   if (!el) return;
@@ -5091,13 +5091,13 @@ function renderRelayState() {
   const last = LS.get('rehab_last_backup', 0);
   el.textContent = t('relayState', { n, d: last ? new Date(last).toLocaleDateString(locale()) : t('repNone') });
 }
-// å…¥å£æ”¾åœ¨ä»Šæ—¥é¡µæœ€ä¸Šæ–¹ï¼šå¯¼å‡º â†’ ä¼ æ–‡ä»¶ â†’ å¯¼å…¥å¹¶åˆå¹¶ï¼ˆä¸ŽäºŒç»´ç åŒæ­¥å…±ç”¨ mergeSyncData åˆå¹¶å¼•æ“Žï¼‰
+// Ã¥â€¦Â¥Ã¥ÂÂ£Ã¦â€Â¾Ã¥Å“Â¨Ã¤Â»Å Ã¦â€”Â¥Ã©Â¡ÂµÃ¦Å“â‚¬Ã¤Â¸Å Ã¦â€“Â¹Ã¯Â¼Å¡Ã¥Â¯Â¼Ã¥â€¡Âº Ã¢â€ â€™ Ã¤Â¼Â Ã¦â€“â€¡Ã¤Â»Â¶ Ã¢â€ â€™ Ã¥Â¯Â¼Ã¥â€¦Â¥Ã¥Â¹Â¶Ã¥ÂË†Ã¥Â¹Â¶Ã¯Â¼Ë†Ã¤Â¸Å½Ã¤ÂºÅ’Ã§Â»Â´Ã§Â ÂÃ¥ÂÅ’Ã¦Â­Â¥Ã¥â€¦Â±Ã§â€Â¨ mergeSyncData Ã¥ÂË†Ã¥Â¹Â¶Ã¥Â¼â€¢Ã¦â€œÅ½Ã¯Â¼â€°
 $('btn-relay-export') && $('btn-relay-export').addEventListener('click', () => $('btn-export').click());
 $('btn-relay-import') && $('btn-relay-import').addEventListener('click', () => $('btn-import').click());
 $('btn-relay-qr') && $('btn-relay-qr').addEventListener('click', () => { startSyncShow(); });
 
-/* ============ v2.31.0 æ–°æ¨¡å—ï¼šåº·å¤é—­çŽ¯ï¼ˆæŠŠè¯„ä¼°/é—®é¢˜/è®­ç»ƒ/å¤è¯„/å¯¹æ¯”ä¸²æˆä¸€æ¡ä¸»çº¿ï¼‰ ============ */
-// è§£å†³â€œå„æ¨¡å—å„è¯´å„è¯â€ï¼šæ‰€æœ‰è¯„ä¼° â†’ é—®é¢˜æ¸…å• â†’ ç”Ÿæˆè®­ç»ƒè®¡åˆ’ â†’ è®­ç»ƒåŽè®°ç–¼ç—› â†’ å¤è¯„ â†’ å‰åŽå¯¹æ¯”ï¼Œå…¨éƒ¨äº’ç›¸è°ƒç”¨ã€‚
+/* ============ v2.31.0 Ã¦â€“Â°Ã¦Â¨Â¡Ã¥Ââ€”Ã¯Â¼Å¡Ã¥ÂºÂ·Ã¥Â¤ÂÃ©â€”Â­Ã§Å½Â¯Ã¯Â¼Ë†Ã¦Å Å Ã¨Â¯â€žÃ¤Â¼Â°/Ã©â€”Â®Ã©Â¢Ëœ/Ã¨Â®Â­Ã§Â»Æ’/Ã¥Â¤ÂÃ¨Â¯â€ž/Ã¥Â¯Â¹Ã¦Â¯â€Ã¤Â¸Â²Ã¦Ë†ÂÃ¤Â¸â‚¬Ã¦ÂÂ¡Ã¤Â¸Â»Ã§ÂºÂ¿Ã¯Â¼â€° ============ */
+// Ã¨Â§Â£Ã¥â€ Â³Ã¢â‚¬Å“Ã¥Ââ€žÃ¦Â¨Â¡Ã¥Ââ€”Ã¥Ââ€žÃ¨Â¯Â´Ã¥Ââ€žÃ¨Â¯ÂÃ¢â‚¬ÂÃ¯Â¼Å¡Ã¦â€°â‚¬Ã¦Å“â€°Ã¨Â¯â€žÃ¤Â¼Â° Ã¢â€ â€™ Ã©â€”Â®Ã©Â¢ËœÃ¦Â¸â€¦Ã¥Ââ€¢ Ã¢â€ â€™ Ã§â€Å¸Ã¦Ë†ÂÃ¨Â®Â­Ã§Â»Æ’Ã¨Â®Â¡Ã¥Ë†â€™ Ã¢â€ â€™ Ã¨Â®Â­Ã§Â»Æ’Ã¥ÂÅ½Ã¨Â®Â°Ã§â€“Â¼Ã§â€”â€º Ã¢â€ â€™ Ã¥Â¤ÂÃ¨Â¯â€ž Ã¢â€ â€™ Ã¥â€°ÂÃ¥ÂÅ½Ã¥Â¯Â¹Ã¦Â¯â€Ã¯Â¼Å’Ã¥â€¦Â¨Ã©Æ’Â¨Ã¤Âºâ€™Ã§â€ºÂ¸Ã¨Â°Æ’Ã§â€Â¨Ã£â‚¬â€š
 function assessSnapshot() {
   const pa = paHistory()[0] || null;
   const ft = ftHistory().find((r) => r.battery && r.dims) || ftHistory()[0] || null;
@@ -5106,7 +5106,7 @@ function assessSnapshot() {
   const ts = Math.max(pa ? pa.ts || 0 : 0, ft ? ft.ts || 0 : 0, rom ? rom.ts || 0 : 0, prom ? prom.ts || 0 : 0);
   return { pa, ft, rom, prom, ts, painMax: painRecentMax(7), painLast: painHistory()[0] || null };
 }
-// é—®é¢˜æ¸…å•ï¼šæŠŠäº”ç±»è¯„ä¼°çš„å¼±é¡¹æ±‡æ€»æˆå¯æ‰§è¡Œæ¡ç›®ï¼ˆæ¯æ¡éƒ½çŸ¥é“è‡ªå·±æ¥è‡ªå“ªä¸ªæ¨¡å—ã€è¯¥ç»ƒä»€ä¹ˆï¼‰
+// Ã©â€”Â®Ã©Â¢ËœÃ¦Â¸â€¦Ã¥Ââ€¢Ã¯Â¼Å¡Ã¦Å Å Ã¤Âºâ€Ã§Â±Â»Ã¨Â¯â€žÃ¤Â¼Â°Ã§Å¡â€žÃ¥Â¼Â±Ã©Â¡Â¹Ã¦Â±â€¡Ã¦â‚¬Â»Ã¦Ë†ÂÃ¥ÂÂ¯Ã¦â€°Â§Ã¨Â¡Å’Ã¦ÂÂ¡Ã§â€ºÂ®Ã¯Â¼Ë†Ã¦Â¯ÂÃ¦ÂÂ¡Ã©Æ’Â½Ã§Å¸Â¥Ã©Ââ€œÃ¨â€¡ÂªÃ¥Â·Â±Ã¦ÂÂ¥Ã¨â€¡ÂªÃ¥â€œÂªÃ¤Â¸ÂªÃ¦Â¨Â¡Ã¥Ââ€”Ã£â‚¬ÂÃ¨Â¯Â¥Ã§Â»Æ’Ã¤Â»â‚¬Ã¤Â¹Ë†Ã¯Â¼â€°
 function issueList() {
   const s = assessSnapshot();
   const out = [];
@@ -5134,12 +5134,12 @@ function issueList() {
   const bad = promHistory().find((r) => r.level === 'bad');
   if (bad) out.push({ key: 'prom:' + bad.key, src: t('loopSrcProm'), name: t(promNameKey(bad.key)), detail: t('loopPromBad', { v: bad.total }), sev: 'bad', go: 'assess' });
   if (s.painMax != null && s.painMax >= 4) out.push({
-    key: 'pain', src: t('loopSrcPain'), name: t('painTitle'), detail: t('loopPain', { v: s.painMax, p: s.painLast ? t('painPart' + String(s.painLast.part || 'other').replace(/^\w/, (c) => c.toUpperCase()).replace('Lowback', 'LowBack')) : 'â€”' }),
+    key: 'pain', src: t('loopSrcPain'), name: t('painTitle'), detail: t('loopPain', { v: s.painMax, p: s.painLast ? t('painPart' + String(s.painLast.part || 'other').replace(/^\w/, (c) => c.toUpperCase()).replace('Lowback', 'LowBack')) : 'Ã¢â‚¬â€' }),
     sev: s.painMax >= 7 ? 'bad' : 'warn', go: 'record',
   });
   return out.sort((a, b) => SEV[a.sev] - SEV[b.sev]);
 }
-// é—­çŽ¯äº”æ­¥ + å½“å‰è¯¥åšçš„ä¸€ä»¶äº‹
+// Ã©â€”Â­Ã§Å½Â¯Ã¤Âºâ€Ã¦Â­Â¥ + Ã¥Â½â€œÃ¥â€°ÂÃ¨Â¯Â¥Ã¥ÂÅ¡Ã§Å¡â€žÃ¤Â¸â‚¬Ã¤Â»Â¶Ã¤Âºâ€¹
 function careLoop() {
   const s = assessSnapshot();
   const sessions = sget('rehab_sessions', []);
@@ -5173,7 +5173,7 @@ function careLoop() {
   else next = { act: 'compare', label: t('loopNextCompare') };
   return { s, steps, issues, next, cmp, trainedToday };
 }
-// æŒ‰é—®é¢˜æ¸…å•ä¸€é”®ç”Ÿæˆä»Šæ—¥è®¡åˆ’ï¼ˆä½“æ€/åŠŸèƒ½æµ‹è¯•/ROM/é‡è¡¨/ç–¼ç—› â†’ åŠ¨ä½œï¼‰
+// Ã¦Å’â€°Ã©â€”Â®Ã©Â¢ËœÃ¦Â¸â€¦Ã¥Ââ€¢Ã¤Â¸â‚¬Ã©â€Â®Ã§â€Å¸Ã¦Ë†ÂÃ¤Â»Å Ã¦â€”Â¥Ã¨Â®Â¡Ã¥Ë†â€™Ã¯Â¼Ë†Ã¤Â½â€œÃ¦â‚¬Â/Ã¥Å Å¸Ã¨Æ’Â½Ã¦Âµâ€¹Ã¨Â¯â€¢/ROM/Ã©â€¡ÂÃ¨Â¡Â¨/Ã§â€“Â¼Ã§â€”â€º Ã¢â€ â€™ Ã¥Å Â¨Ã¤Â½Å“Ã¯Â¼â€°
 function loopPlanFromIssues() {
   const issues = issueList();
   const map = { pa: 'posture', ft: 'fa', rom: 'squat', prom: 'sitstand', pain: 'hiphinge' };
@@ -5205,7 +5205,7 @@ function renderCareLoop() {
   const el = $('care-loop');
   if (!el) return;
   const L = careLoop();
-  const chips = L.steps.map((x) => `<span class="loop-step ${x.done ? 'on' : ''}">${x.done ? 'âœ“' : 'â—‹'} ${x.label}</span>`).join('<span class="loop-arrow">â†’</span>');
+  const chips = L.steps.map((x) => `<span class="loop-step ${x.done ? 'on' : ''}">${x.done ? 'Ã¢Å“â€œ' : 'Ã¢â€”â€¹'} ${x.label}</span>`).join('<span class="loop-arrow">Ã¢â€ â€™</span>');
   const issues = L.issues.slice(0, 3).map((it) => `<div class="loop-issue ${it.sev}">
       <span class="loop-tag">${it.src}</span><b>${it.name}</b><span class="loop-detail">${it.detail}</span>
       <button class="link-btn" data-loop-go="${it.go}">${t('loopGo')}</button></div>`).join('');
@@ -5216,7 +5216,7 @@ function renderCareLoop() {
     <div class="loop-now"><b>${t('loopNow')}</b> ${L.next.label}
       <button id="btn-loop-next" class="btn primary small">${t('loopDo')}</button></div>
     ${issues ? `<div class="loop-issues">${issues}</div>` : `<p class="hint tiny">${t('loopNoIssues')}</p>`}
-    ${cmp.length ? `<p class="hint tiny">${t('loopCompare')}ï¼š${cmp.join(' Â· ')}</p>` : ''}`;
+    ${cmp.length ? `<p class="hint tiny">${t('loopCompare')}Ã¯Â¼Å¡${cmp.join(' Ã‚Â· ')}</p>` : ''}`;
   const nb = $('btn-loop-next');
   if (nb) nb.addEventListener('click', () => {
     const a = L.next.act;
@@ -5228,9 +5228,9 @@ function renderCareLoop() {
   el.querySelectorAll('[data-loop-go]').forEach((b) => b.addEventListener('click', () => switchTab(b.dataset.loopGo)));
 }
 
-/* ============ v2.30.0 æ–°æ¨¡å—ï¼šå½±åƒèƒ½åŠ›å‡çº§ï¼ˆè§†é‡Žè‡ªé€‚åº” Â· è·ç¦»å¼•å¯¼ Â· è®¾å¤‡èƒ½åŠ›å¯è§†åŒ–ï¼‰ ============ */
-// ç›®æ ‡ï¼šæ‰‹æœºä¸ç”¨æ”¾å¾ˆè¿œä¹Ÿèƒ½æ‹å…¨ â€”â€” é»˜è®¤ç«–å¹… 3:4ï¼ˆåŒè·ç¦»èƒ½çœ‹åˆ°æ›´å¤šèº«ä½“ï¼‰ã€æ”¯æŒ zoom çš„è®¾å¤‡è‡ªåŠ¨æ‹‰åˆ°æœ€å¹¿ã€
-// è¯†åˆ«ä¸åˆ°å…¨èº«æ—¶ç»™å‡ºã€ŒåŽé€€/é è¿‘/æŠ¬æ‰‹æœºã€çš„å…·ä½“å¼•å¯¼ï¼Œè€Œä¸æ˜¯ä¸€å¥â€œå¤±è´¥äº†â€ã€‚
+/* ============ v2.30.0 Ã¦â€“Â°Ã¦Â¨Â¡Ã¥Ââ€”Ã¯Â¼Å¡Ã¥Â½Â±Ã¥Æ’ÂÃ¨Æ’Â½Ã¥Å â€ºÃ¥Ââ€¡Ã§ÂºÂ§Ã¯Â¼Ë†Ã¨Â§â€ Ã©â€¡Å½Ã¨â€¡ÂªÃ©â‚¬â€šÃ¥Âºâ€ Ã‚Â· Ã¨Â·ÂÃ§Â¦Â»Ã¥Â¼â€¢Ã¥Â¯Â¼ Ã‚Â· Ã¨Â®Â¾Ã¥Â¤â€¡Ã¨Æ’Â½Ã¥Å â€ºÃ¥ÂÂ¯Ã¨Â§â€ Ã¥Å’â€“Ã¯Â¼â€° ============ */
+// Ã§â€ºÂ®Ã¦Â â€¡Ã¯Â¼Å¡Ã¦â€°â€¹Ã¦Å“ÂºÃ¤Â¸ÂÃ§â€Â¨Ã¦â€Â¾Ã¥Â¾Ë†Ã¨Â¿Å“Ã¤Â¹Å¸Ã¨Æ’Â½Ã¦â€¹ÂÃ¥â€¦Â¨ Ã¢â‚¬â€Ã¢â‚¬â€ Ã©Â»ËœÃ¨Â®Â¤Ã§Â«â€“Ã¥Â¹â€¦ 3:4Ã¯Â¼Ë†Ã¥ÂÅ’Ã¨Â·ÂÃ§Â¦Â»Ã¨Æ’Â½Ã§Å“â€¹Ã¥Ë†Â°Ã¦â€ºÂ´Ã¥Â¤Å¡Ã¨ÂºÂ«Ã¤Â½â€œÃ¯Â¼â€°Ã£â‚¬ÂÃ¦â€Â¯Ã¦Å’Â zoom Ã§Å¡â€žÃ¨Â®Â¾Ã¥Â¤â€¡Ã¨â€¡ÂªÃ¥Å Â¨Ã¦â€¹â€°Ã¥Ë†Â°Ã¦Å“â‚¬Ã¥Â¹Â¿Ã£â‚¬Â
+// Ã¨Â¯â€ Ã¥Ë†Â«Ã¤Â¸ÂÃ¥Ë†Â°Ã¥â€¦Â¨Ã¨ÂºÂ«Ã¦â€”Â¶Ã§Â»â„¢Ã¥â€¡ÂºÃ£â‚¬Å’Ã¥ÂÅ½Ã©â‚¬â‚¬/Ã©ÂÂ Ã¨Â¿â€˜/Ã¦Å Â¬Ã¦â€°â€¹Ã¦Å“ÂºÃ£â‚¬ÂÃ§Å¡â€žÃ¥â€¦Â·Ã¤Â½â€œÃ¥Â¼â€¢Ã¥Â¯Â¼Ã¯Â¼Å’Ã¨â‚¬Å’Ã¤Â¸ÂÃ¦ËœÂ¯Ã¤Â¸â‚¬Ã¥ÂÂ¥Ã¢â‚¬Å“Ã¥Â¤Â±Ã¨Â´Â¥Ã¤Âºâ€ Ã¢â‚¬ÂÃ£â‚¬â€š
 const CAM_PREFS_DEF = { aspect: '34', follow: true, guide: true, zoom: null, deviceId: null };
 const camPrefs = () => Object.assign({}, CAM_PREFS_DEF, sget('rehab_cam_prefs', {}) || {});
 const camPrefSet = (patch) => { sset('rehab_cam_prefs', Object.assign(camPrefs(), patch)); renderCamCard(); };
@@ -5261,7 +5261,7 @@ function camSaveCaps(stream) {
     renderCamCard();
   } catch { /* ignore */ }
 }
-// å…¥é•œæ¯”ä¾‹ï¼šä»¥å¤´åˆ°è„šï¼ˆæˆ–è‚©åˆ°è¸ï¼‰çš„å½’ä¸€åŒ–é«˜åº¦ä¼°è®¡â€œç¦»å¾—å¤Ÿä¸å¤Ÿè¿œâ€
+// Ã¥â€¦Â¥Ã©â€¢Å“Ã¦Â¯â€Ã¤Â¾â€¹Ã¯Â¼Å¡Ã¤Â»Â¥Ã¥Â¤Â´Ã¥Ë†Â°Ã¨â€žÅ¡Ã¯Â¼Ë†Ã¦Ë†â€“Ã¨â€šÂ©Ã¥Ë†Â°Ã¨Â¸ÂÃ¯Â¼â€°Ã§Å¡â€žÃ¥Â½â€™Ã¤Â¸â‚¬Ã¥Å’â€“Ã©Â«ËœÃ¥ÂºÂ¦Ã¤Â¼Â°Ã¨Â®Â¡Ã¢â‚¬Å“Ã§Â¦Â»Ã¥Â¾â€”Ã¥Â¤Å¸Ã¤Â¸ÂÃ¥Â¤Å¸Ã¨Â¿Å“Ã¢â‚¬Â
 function camFitInfo(lms) {
   if (!lms) return null;
   const ys = [];
@@ -5280,7 +5280,7 @@ function camGuideUpdate(lms) {
   el.textContent = f.level === 'far' ? t('camGuideFar') : f.level === 'close' ? t('camGuideClose') : t('camGuideOk', { p: Math.round(f.h * 100) });
   el.className = 'cam-guide ' + (f.level === 'ok' ? 'ok' : 'warn');
 }
-// è‡ªåŠ¨æŒ‘é€‰â€œæœ€å¹¿è§†é‡Žâ€çš„æ‘„åƒå¤´ï¼šé€ä¸ªå€™é€‰æ‰“å¼€ï¼Œé‡åŒä¸€ä¸ªäººåœ¨åŒä¸€ä½ç½®çš„å…¥é•œé«˜åº¦ï¼Œå–æœ€å°è€…ï¼ˆè¶Šå°=è§†é‡Žè¶Šå¹¿ï¼‰
+// Ã¨â€¡ÂªÃ¥Å Â¨Ã¦Å’â€˜Ã©â‚¬â€°Ã¢â‚¬Å“Ã¦Å“â‚¬Ã¥Â¹Â¿Ã¨Â§â€ Ã©â€¡Å½Ã¢â‚¬ÂÃ§Å¡â€žÃ¦â€˜â€žÃ¥Æ’ÂÃ¥Â¤Â´Ã¯Â¼Å¡Ã©â‚¬ÂÃ¤Â¸ÂªÃ¥â‚¬â„¢Ã©â‚¬â€°Ã¦â€°â€œÃ¥Â¼â‚¬Ã¯Â¼Å’Ã©â€¡ÂÃ¥ÂÅ’Ã¤Â¸â‚¬Ã¤Â¸ÂªÃ¤ÂºÂºÃ¥Å“Â¨Ã¥ÂÅ’Ã¤Â¸â‚¬Ã¤Â½ÂÃ§Â½Â®Ã§Å¡â€žÃ¥â€¦Â¥Ã©â€¢Å“Ã©Â«ËœÃ¥ÂºÂ¦Ã¯Â¼Å’Ã¥Ââ€“Ã¦Å“â‚¬Ã¥Â°ÂÃ¨â‚¬â€¦Ã¯Â¼Ë†Ã¨Â¶Å Ã¥Â°Â=Ã¨Â§â€ Ã©â€¡Å½Ã¨Â¶Å Ã¥Â¹Â¿Ã¯Â¼â€°
 async function camAutoPickWidest() {
   const btn = $('btn-cam-pick');
   if (btn) btn.disabled = true;
@@ -5307,7 +5307,7 @@ async function camAutoPickWidest() {
           await new Promise((r2) => setTimeout(r2, 180));
         }
         results.push({ id: d.deviceId, label: d.label || d.deviceId.slice(0, 6), h: best });
-      } catch { /* è¯¥è®¾å¤‡æ‰“ä¸å¼€å°±è·³è¿‡ */ }
+      } catch { /* Ã¨Â¯Â¥Ã¨Â®Â¾Ã¥Â¤â€¡Ã¦â€°â€œÃ¤Â¸ÂÃ¥Â¼â‚¬Ã¥Â°Â±Ã¨Â·Â³Ã¨Â¿â€¡ */ }
       finally { if (stream) stream.getTracks().forEach((x) => x.stop()); }
     }
     const ok = results.filter((r) => r.h != null).sort((a, b) => a.h - b.h);
@@ -5341,17 +5341,17 @@ function renderCamCard() {
   const st = $('cam-status');
   if (st) {
     const parts = [];
-    parts.push(t('camStRes', { w: camCaps.w || 'â€”', h: camCaps.h || 'â€”' }));
+    parts.push(t('camStRes', { w: camCaps.w || 'Ã¢â‚¬â€', h: camCaps.h || 'Ã¢â‚¬â€' }));
     parts.push(camCaps.supported ? t('camStZoom', { z: Number(camCaps.zoom).toFixed(1) }) : t('camStNoZoom'));
     parts.push(p.deviceId ? t('camStPicked') : t('camStAuto'));
-    st.textContent = parts.join(' Â· ');
+    st.textContent = parts.join(' Ã‚Â· ');
   }
 }
 $('btn-cam-pick') && $('btn-cam-pick').addEventListener('click', camAutoPickWidest);
 $('btn-cam-reset') && $('btn-cam-reset').addEventListener('click', () => { camPrefSet({ zoom: null, deviceId: null }); toast(t('camReset')); });
 
-/* ============ v2.29.0 æ–°æ¨¡å—ï¼šåº·å¤è·¯å¾„ï¼ˆåˆ†é˜¶æ®µ Â· æ¡ä»¶å¯æ”¹ Â· æŒ‰ä½ çš„æ•°æ®æŽ¨èï¼‰ ============ */
-// åŽŸåˆ™å»¶ç»­ï¼šè·¯å¾„åªæ˜¯ã€Œèµ·ç‚¹ã€ï¼Œé˜¶æ®µ/å‰‚é‡/è¿›é˜¶æ¡ä»¶å…¨éƒ¨å¯æ”¹ï¼›ç³»ç»ŸæŒ‰ç”¨æˆ·è‡ªå·±çš„æ•°æ®æŽ¨èä¸Žæç¤ºå‡çº§ã€‚
+/* ============ v2.29.0 Ã¦â€“Â°Ã¦Â¨Â¡Ã¥Ââ€”Ã¯Â¼Å¡Ã¥ÂºÂ·Ã¥Â¤ÂÃ¨Â·Â¯Ã¥Â¾â€žÃ¯Â¼Ë†Ã¥Ë†â€ Ã©ËœÂ¶Ã¦Â®Âµ Ã‚Â· Ã¦ÂÂ¡Ã¤Â»Â¶Ã¥ÂÂ¯Ã¦â€Â¹ Ã‚Â· Ã¦Å’â€°Ã¤Â½Â Ã§Å¡â€žÃ¦â€¢Â°Ã¦ÂÂ®Ã¦Å½Â¨Ã¨ÂÂÃ¯Â¼â€° ============ */
+// Ã¥Å½Å¸Ã¥Ë†â„¢Ã¥Â»Â¶Ã§Â»Â­Ã¯Â¼Å¡Ã¨Â·Â¯Ã¥Â¾â€žÃ¥ÂÂªÃ¦ËœÂ¯Ã£â‚¬Å’Ã¨ÂµÂ·Ã§â€šÂ¹Ã£â‚¬ÂÃ¯Â¼Å’Ã©ËœÂ¶Ã¦Â®Âµ/Ã¥â€°â€šÃ©â€¡Â/Ã¨Â¿â€ºÃ©ËœÂ¶Ã¦ÂÂ¡Ã¤Â»Â¶Ã¥â€¦Â¨Ã©Æ’Â¨Ã¥ÂÂ¯Ã¦â€Â¹Ã¯Â¼â€ºÃ§Â³Â»Ã§Â»Å¸Ã¦Å’â€°Ã§â€Â¨Ã¦Ë†Â·Ã¨â€¡ÂªÃ¥Â·Â±Ã§Å¡â€žÃ¦â€¢Â°Ã¦ÂÂ®Ã¦Å½Â¨Ã¨ÂÂÃ¤Â¸Å½Ã¦ÂÂÃ§Â¤ÂºÃ¥Ââ€¡Ã§ÂºÂ§Ã£â‚¬â€š
 const PATHS = [
   { key: 'lowback', ico: 'hiphinge', phases: [
     { ex: [['hiphinge', 8, 2], ['sitstand', 8, 2]] },
@@ -5377,7 +5377,7 @@ const pathCfg = () => {
   return { path: c.path || null, phase: Number(c.phase) || 0, cond: Object.assign({}, PATH_CFG_DEF.cond, c.cond || {}), autoSuggest: c.autoSuggest !== false, log: c.log || [] };
 };
 const pathSave = (patch) => { sset('rehab_path', Object.assign(pathCfg(), patch)); renderPath(); renderAiPlan(); };
-// æŒ‰ç”¨æˆ·è‡ªå·±çš„æ•°æ®æŽ¨èè·¯å¾„ï¼ˆç–¼ç—›éƒ¨ä½ä¼˜å…ˆï¼Œå…¶æ¬¡é‡è¡¨ï¼Œæœ€åŽåŠŸèƒ½æµ‹è¯•å¼±é¡¹ï¼‰
+// Ã¦Å’â€°Ã§â€Â¨Ã¦Ë†Â·Ã¨â€¡ÂªÃ¥Â·Â±Ã§Å¡â€žÃ¦â€¢Â°Ã¦ÂÂ®Ã¦Å½Â¨Ã¨ÂÂÃ¨Â·Â¯Ã¥Â¾â€žÃ¯Â¼Ë†Ã§â€“Â¼Ã§â€”â€ºÃ©Æ’Â¨Ã¤Â½ÂÃ¤Â¼ËœÃ¥â€¦Ë†Ã¯Â¼Å’Ã¥â€¦Â¶Ã¦Â¬Â¡Ã©â€¡ÂÃ¨Â¡Â¨Ã¯Â¼Å’Ã¦Å“â‚¬Ã¥ÂÅ½Ã¥Å Å¸Ã¨Æ’Â½Ã¦Âµâ€¹Ã¨Â¯â€¢Ã¥Â¼Â±Ã©Â¡Â¹Ã¯Â¼â€°
 function pathRecommend() {
   const pain = painHistory();
   const part = pain.length ? (pain[0].part || '') : '';
@@ -5393,7 +5393,7 @@ function pathRecommend() {
   if (ft && ft.sym != null && ft.sym < 80) return { key: 'knee', why: t('pathWhySym', { v: Math.round(ft.sym) }) };
   return { key: 'knee', why: t('pathWhyDefault') };
 }
-// è¿›é˜¶æ¡ä»¶æ£€æŸ¥ï¼ˆæ¡ä»¶å€¼ç”±ç”¨æˆ·è®¾å®šï¼‰
+// Ã¨Â¿â€ºÃ©ËœÂ¶Ã¦ÂÂ¡Ã¤Â»Â¶Ã¦Â£â‚¬Ã¦Å¸Â¥Ã¯Â¼Ë†Ã¦ÂÂ¡Ã¤Â»Â¶Ã¥â‚¬Â¼Ã§â€Â±Ã§â€Â¨Ã¦Ë†Â·Ã¨Â®Â¾Ã¥Â®Å¡Ã¯Â¼â€°
 function pathCheck() {
   const cfg = pathCfg();
   const c = cfg.cond;
@@ -5413,7 +5413,7 @@ function renderPath() {
   const cfg = pathCfg();
   const rec = pathRecommend();
   const eff = cfg.path || rec.key;
-  $('path-rec').innerHTML = `${t('pathRec')}ï¼š<b>${t('path' + rec.key.charAt(0).toUpperCase() + rec.key.slice(1) + 'T')}</b> Â· ${rec.why}` +
+  $('path-rec').innerHTML = `${t('pathRec')}Ã¯Â¼Å¡<b>${t('path' + rec.key.charAt(0).toUpperCase() + rec.key.slice(1) + 'T')}</b> Ã‚Â· ${rec.why}` +
     (cfg.path ? '' : ` <button class="link-btn" id="path-use-rec">${t('pathUseRec')}</button>`);
   const useBtn = $('path-use-rec');
   if (useBtn) useBtn.addEventListener('click', () => { pathSave({ path: rec.key, phase: 0 }); toast(t('pathStarted')); });
@@ -5445,7 +5445,7 @@ function renderPath() {
       <label class="ai-tgt"><span>${t('pathCondSym')}</span><input type="number" min="0" max="100" value="${cfg.cond.sym}" data-cond="sym"></label>
       <label class="ai-tgt"><span>${t('pathAuto')}</span><input type="checkbox" id="path-auto" ${cfg.autoSuggest ? 'checked' : ''} style="width:auto"></label>
     </div>
-    <div class="hint tiny">${t('pathStatus', { pain: ck.posts, need: ck.need, max: ck.painMax, sym: ck.sym == null ? 'â€”' : ck.sym, symNeed: ck.symNeed })}</div>
+    <div class="hint tiny">${t('pathStatus', { pain: ck.posts, need: ck.need, max: ck.painMax, sym: ck.sym == null ? 'Ã¢â‚¬â€' : ck.sym, symNeed: ck.symNeed })}</div>
     <div class="controls">
       <button id="btn-path-apply" class="btn primary">${t('pathApply')}</button>
       <button id="btn-path-up" class="btn" ${pi >= pd.phases.length - 1 ? 'disabled' : ''}>${t('pathUp')}</button>
@@ -5483,12 +5483,12 @@ function renderPath() {
   $('btn-path-reset').addEventListener('click', () => { pathSave({ phase: 0 }); toast(t('pathResetDone')); });
 }
 
-/* ============ v2.28.0 æ–°æ¨¡å—ï¼šè‡ªé€‚åº”æ™ºèƒ½å¼•æ“Žï¼ˆä¸ªäººåŸºçº¿ Â· å¯è°ƒè§„åˆ™ Â· å¯å­¦ä¹ å¤„æ–¹ï¼‰ ============ */
-// è®¾è®¡åŽŸåˆ™ï¼šå›ºå®šä¸´åºŠæ ‡å‡†åªä½œã€Œå‚è€ƒã€ï¼Œä¸»åˆ¤å®šä¸€å¾‹ç”¨ç”¨æˆ·è‡ªå·±çš„åŽ†å²åŸºçº¿ï¼›æ¯æ¡è§„åˆ™éƒ½å¯è§ã€å¯æ”¹ã€å¯å…³ã€‚
+/* ============ v2.28.0 Ã¦â€“Â°Ã¦Â¨Â¡Ã¥Ââ€”Ã¯Â¼Å¡Ã¨â€¡ÂªÃ©â‚¬â€šÃ¥Âºâ€Ã¦â„¢ÂºÃ¨Æ’Â½Ã¥Â¼â€¢Ã¦â€œÅ½Ã¯Â¼Ë†Ã¤Â¸ÂªÃ¤ÂºÂºÃ¥Å¸ÂºÃ§ÂºÂ¿ Ã‚Â· Ã¥ÂÂ¯Ã¨Â°Æ’Ã¨Â§â€žÃ¥Ë†â„¢ Ã‚Â· Ã¥ÂÂ¯Ã¥Â­Â¦Ã¤Â¹Â Ã¥Â¤â€žÃ¦â€“Â¹Ã¯Â¼â€° ============ */
+// Ã¨Â®Â¾Ã¨Â®Â¡Ã¥Å½Å¸Ã¥Ë†â„¢Ã¯Â¼Å¡Ã¥â€ºÂºÃ¥Â®Å¡Ã¤Â¸Â´Ã¥ÂºÅ Ã¦Â â€¡Ã¥â€¡â€ Ã¥ÂÂªÃ¤Â½Å“Ã£â‚¬Å’Ã¥Ââ€šÃ¨â‚¬Æ’Ã£â‚¬ÂÃ¯Â¼Å’Ã¤Â¸Â»Ã¥Ë†Â¤Ã¥Â®Å¡Ã¤Â¸â‚¬Ã¥Â¾â€¹Ã§â€Â¨Ã§â€Â¨Ã¦Ë†Â·Ã¨â€¡ÂªÃ¥Â·Â±Ã§Å¡â€žÃ¥Å½â€ Ã¥ÂÂ²Ã¥Å¸ÂºÃ§ÂºÂ¿Ã¯Â¼â€ºÃ¦Â¯ÂÃ¦ÂÂ¡Ã¨Â§â€žÃ¥Ë†â„¢Ã©Æ’Â½Ã¥ÂÂ¯Ã¨Â§ÂÃ£â‚¬ÂÃ¥ÂÂ¯Ã¦â€Â¹Ã£â‚¬ÂÃ¥ÂÂ¯Ã¥â€¦Â³Ã£â‚¬â€š
 const AI_PREFS_DEF = { painAlarm: 2, intensity: 'std', autoAdapt: true, romTargets: {} };
 const aiPrefs = () => Object.assign({}, AI_PREFS_DEF, sget('rehab_ai_prefs', {}) || {});
 const aiFeedback = () => LS.get('rehab_ai_feedback', { accepted: 0, ignored: 0 });
-const aiLearnAdd = (k) => { const f = aiFeedback(); f[k] = (f[k] || 0) + 1; LS.set('rehab_ai_feedback', f); renderAiPlan(); renderAiEngine(); };   // æ³¨æ„ï¼šai.js å·²å¯¼å‡º aiFeedbackAddï¼ˆåé¦ˆæ—¥å¿—ï¼‰ï¼Œæ­¤å¤„å¿…é¡»ç”¨ä¸åŒåå­—
+const aiLearnAdd = (k) => { const f = aiFeedback(); f[k] = (f[k] || 0) + 1; LS.set('rehab_ai_feedback', f); renderAiPlan(); renderAiEngine(); };   // Ã¦Â³Â¨Ã¦â€žÂÃ¯Â¼Å¡ai.js Ã¥Â·Â²Ã¥Â¯Â¼Ã¥â€¡Âº aiFeedbackAddÃ¯Â¼Ë†Ã¥ÂÂÃ©Â¦Ë†Ã¦â€”Â¥Ã¥Â¿â€”Ã¯Â¼â€°Ã¯Â¼Å’Ã¦Â­Â¤Ã¥Â¤â€žÃ¥Â¿â€¦Ã©Â¡Â»Ã§â€Â¨Ã¤Â¸ÂÃ¥ÂÅ’Ã¥ÂÂÃ¥Â­â€”
 const aiPrefSet = (patch) => {
   sset('rehab_ai_prefs', Object.assign(aiPrefs(), patch));
   renderAiEngine(); renderAiPlan(); renderPain();
@@ -5499,7 +5499,7 @@ const median = (a) => {
   const m = Math.floor(s.length / 2);
   return s.length % 2 ? s[m] : Math.round((s[m - 1] + s[m]) / 2);
 };
-// ä¸ªäººåŸºçº¿ï¼šå–ç”¨æˆ·è‡ªå·±çš„åŽ†å²ä¸­ä½æ•°/æœ€ä½³/æœ€è¿‘ä¸€æ¬¡ï¼ˆè€Œä¸æ˜¯äººç¾¤å¸¸æ¨¡ï¼‰
+// Ã¤Â¸ÂªÃ¤ÂºÂºÃ¥Å¸ÂºÃ§ÂºÂ¿Ã¯Â¼Å¡Ã¥Ââ€“Ã§â€Â¨Ã¦Ë†Â·Ã¨â€¡ÂªÃ¥Â·Â±Ã§Å¡â€žÃ¥Å½â€ Ã¥ÂÂ²Ã¤Â¸Â­Ã¤Â½ÂÃ¦â€¢Â°/Ã¦Å“â‚¬Ã¤Â½Â³/Ã¦Å“â‚¬Ã¨Â¿â€˜Ã¤Â¸â‚¬Ã¦Â¬Â¡Ã¯Â¼Ë†Ã¨â‚¬Å’Ã¤Â¸ÂÃ¦ËœÂ¯Ã¤ÂºÂºÃ§Â¾Â¤Ã¥Â¸Â¸Ã¦Â¨Â¡Ã¯Â¼â€°
 function romBaseline(key, side) {
   const list = romHistory().filter((r) => r.key === key && (!side || r.side === side) && r.rom != null).map((r) => r.rom);
   return list.length ? { n: list.length, med: median(list), best: Math.max(...list), last: list[0] } : null;
@@ -5511,9 +5511,9 @@ function painBaseline() {
 function romTarget(it) {
   const t = (aiPrefs().romTargets || {})[it.key];
   const v = Number(t);
-  return (t == null || t === '' || Number.isNaN(v) || v <= 0) ? it.norm : v;   // æœªè®¾ = ç”¨ä¸´åºŠå‚è€ƒå€¼ï¼ˆå¯è¦†ç›–ï¼‰
+  return (t == null || t === '' || Number.isNaN(v) || v <= 0) ? it.norm : v;   // Ã¦Å“ÂªÃ¨Â®Â¾ = Ã§â€Â¨Ã¤Â¸Â´Ã¥ÂºÅ Ã¥Ââ€šÃ¨â‚¬Æ’Ã¥â‚¬Â¼Ã¯Â¼Ë†Ã¥ÂÂ¯Ã¨Â¦â€ Ã§â€ºâ€“Ã¯Â¼â€°
 }
-// å¤„æ–¹å¼•æ“Žï¼šæ¯ä¸€æ­¥éƒ½äº§å‡ºã€Œç†ç”±ã€ï¼Œå¯è§£é‡Šã€å¯å­¦ä¹ 
+// Ã¥Â¤â€žÃ¦â€“Â¹Ã¥Â¼â€¢Ã¦â€œÅ½Ã¯Â¼Å¡Ã¦Â¯ÂÃ¤Â¸â‚¬Ã¦Â­Â¥Ã©Æ’Â½Ã¤ÂºÂ§Ã¥â€¡ÂºÃ£â‚¬Å’Ã§Ââ€ Ã§â€Â±Ã£â‚¬ÂÃ¯Â¼Å’Ã¥ÂÂ¯Ã¨Â§Â£Ã©â€¡Å Ã£â‚¬ÂÃ¥ÂÂ¯Ã¥Â­Â¦Ã¤Â¹Â 
 function aiPrescribe() {
   const p = aiPrefs();
   const f = aiFeedback();
@@ -5531,9 +5531,9 @@ function aiPrescribe() {
     .sort((a, b) => b.gap - a.gap)[0] || null;
   const reasons = [];
   const basis = [
-    t('aiBasisPain', { v: painMax == null ? 'â€”' : painMax, a: p.painAlarm }),
-    t('aiBasisSym', { v: sym == null ? 'â€”' : sym }),
-    t('aiBasisRom', weak ? { n: t('romShort' + weak.it.key.charAt(0).toUpperCase() + weak.it.key.slice(1)), v: weak.b.last, tg: romTarget(weak.it) } : { n: 'â€”', v: 'â€”', tg: 'â€”' }),
+    t('aiBasisPain', { v: painMax == null ? 'Ã¢â‚¬â€' : painMax, a: p.painAlarm }),
+    t('aiBasisSym', { v: sym == null ? 'Ã¢â‚¬â€' : sym }),
+    t('aiBasisRom', weak ? { n: t('romShort' + weak.it.key.charAt(0).toUpperCase() + weak.it.key.slice(1)), v: weak.b.last, tg: romTarget(weak.it) } : { n: 'Ã¢â‚¬â€', v: 'Ã¢â‚¬â€', tg: 'Ã¢â‚¬â€' }),
     t('aiBasisAdh', { d: d7 }),
     t('aiBasisFeed', { a: f.accepted || 0, i: f.ignored || 0 }),
   ];
@@ -5559,7 +5559,7 @@ function aiPrescribe() {
     } else {
       focus = 'strength';
       if (idx.score != null && idx.score >= 75) { sets += 1; reps += 2; reasons.push(t('aiReasonProgress', { v: idx.score })); }
-      else reasons.push(t('aiReasonKeep', { v: idx.score == null ? 'â€”' : idx.score }));
+      else reasons.push(t('aiReasonKeep', { v: idx.score == null ? 'Ã¢â‚¬â€' : idx.score }));
     }
     if (p.intensity === 'soft') { sets = Math.max(1, sets - 1); rest += 30; reasons.push(t('aiReasonSoft')); }
     if (p.intensity === 'hard') { sets += 1; rest = Math.max(30, rest - 15); reasons.push(t('aiReasonHard')); }
@@ -5573,11 +5573,11 @@ function renderAiPlan() {
   const pr = aiPrescribe();
   const e = getEx(pr.ex);
   el.innerHTML = `<div class="ai-plan-head"><span class="t-ico">${icon(e ? e.icon : 'custom')}</span>
-      <b>${e ? exName(e) : pr.ex}</b> Â· ${t('aiPlanDose', { s: pr.sets, r: pr.reps, rest: pr.rest })}
+      <b>${e ? exName(e) : pr.ex}</b> Ã‚Â· ${t('aiPlanDose', { s: pr.sets, r: pr.reps, rest: pr.rest })}
       <span class="rom-lv ${pr.focus === 'pain' ? 'bad' : pr.focus === 'strength' ? 'good' : 'warn'}">${t('aiFocus' + pr.focus.charAt(0).toUpperCase() + pr.focus.slice(1))}</span></div>
-    <div class="ai-plan-reasons">${pr.reasons.map((r) => `<div class="ai-reason">â€¢ ${r}</div>`).join('')}</div>
+    <div class="ai-plan-reasons">${pr.reasons.map((r) => `<div class="ai-reason">Ã¢â‚¬Â¢ ${r}</div>`).join('')}</div>
     <details class="ai-basis"><summary class="hint tiny">${t('aiBasisTitle')}</summary>
-      ${pr.basis.map((b) => `<div class="hint tiny">Â· ${b}</div>`).join('')}</details>
+      ${pr.basis.map((b) => `<div class="hint tiny">Ã‚Â· ${b}</div>`).join('')}</details>
     <div class="controls">
       <button id="btn-ai-apply" class="btn primary" data-i18n="${pr.focus === 'pain' ? 'aiApply' : 'aiApply'}">${t('aiApply')}</button>
       <button id="btn-ai-ignore" class="btn">${t('aiIgnore')}</button>
@@ -5645,8 +5645,8 @@ $('btn-ai-reset') && $('btn-ai-reset').addEventListener('click', () => {
   toast(t('aiEngResetDone'));
 });
 
-/* ============ v2.27.0 æ–°æ¨¡å—ï¼šæ ‡å‡†åŒ–ç»“å±€é‡è¡¨ PROMsï¼ˆODI / NDI / KOOS-12 / EQ-5D-5Lï¼‰ ============ */
-// å¯¹æ ‡ Physitrack / Hinge Health çš„ PROMs éšè®¿ï¼šç”¨å›½é™…é€šç”¨é‡è¡¨è®°å½•åŠŸèƒ½å—é™ç¨‹åº¦å¹¶è·Ÿè¸ªå˜åŒ–ã€‚
+/* ============ v2.27.0 Ã¦â€“Â°Ã¦Â¨Â¡Ã¥Ââ€”Ã¯Â¼Å¡Ã¦Â â€¡Ã¥â€¡â€ Ã¥Å’â€“Ã§Â»â€œÃ¥Â±â‚¬Ã©â€¡ÂÃ¨Â¡Â¨ PROMsÃ¯Â¼Ë†ODI / NDI / KOOS-12 / EQ-5D-5LÃ¯Â¼â€° ============ */
+// Ã¥Â¯Â¹Ã¦Â â€¡ Physitrack / Hinge Health Ã§Å¡â€ž PROMs Ã©Å¡ÂÃ¨Â®Â¿Ã¯Â¼Å¡Ã§â€Â¨Ã¥â€ºÂ½Ã©â„¢â€¦Ã©â‚¬Å¡Ã§â€Â¨Ã©â€¡ÂÃ¨Â¡Â¨Ã¨Â®Â°Ã¥Â½â€¢Ã¥Å Å¸Ã¨Æ’Â½Ã¥Ââ€”Ã©â„¢ÂÃ§Â¨â€¹Ã¥ÂºÂ¦Ã¥Â¹Â¶Ã¨Â·Å¸Ã¨Â¸ÂªÃ¥ÂËœÃ¥Å’â€“Ã£â‚¬â€š
 const PROM_DEFS = [
   { key: 'odi', type: 'ratio', opt: 6, max: 5, items: 10 },
   { key: 'ndi', type: 'ratio', opt: 6, max: 5, items: 10 },
@@ -5716,7 +5716,7 @@ function renderPromForm() {
       <div class="prom-qt">${qi + 1}. ${t(k)}</div>
       <div class="prom-opts">${Array.from({ length: d.opt }, (_, v) => `<button class="prom-opt ${promState.answers[qi] === v ? 'on' : ''}" data-qi="${qi}" data-qv="${v}">${t('promL' + v)}</button>`).join('')}</div>
     </div>`).join('') + (d.type === 'eq' ? `
-    <div class="prom-q"><div class="prom-qt">${t('promVas')} Â· <b id="prom-vas-val">${promState.vas}</b></div>
+    <div class="prom-q"><div class="prom-qt">${t('promVas')} Ã‚Â· <b id="prom-vas-val">${promState.vas}</b></div>
       <input type="range" id="prom-vas" min="0" max="100" value="${promState.vas}" style="width:100%"></div>` : '')
     + `<div class="controls"><button id="btn-prom-submit" class="btn primary">${t('promSubmit')}</button></div></div>`;
   box.querySelectorAll('[data-qi]').forEach((b) => b.addEventListener('click', () => {
@@ -5762,7 +5762,7 @@ function renderPromResult(rec) {
     : isKoos
       ? Object.entries(rec.subs).map(([k, v]) => `<span><i>${t(PROM_SUB_KEYS[k] || k)}</i> <b>${v}</b></span>`).join('')
       : '';
-  el.innerHTML = `<div class="prom-head">${t(promNameKey(rec.key))} Â· <span class="rom-lv ${rec.level}">${t('promBand' + rec.band)}</span></div>
+  el.innerHTML = `<div class="prom-head">${t(promNameKey(rec.key))} Ã‚Â· <span class="rom-lv ${rec.level}">${t('promBand' + rec.band)}</span></div>
     <div class="prom-big">${rec.total}${d.type === 'eq' ? ' / 100' : '%'}</div>
     ${subTxt ? `<div class="prom-sub">${subTxt}</div>` : ''}
     ${delta == null ? '' : `<p class="hint tiny ${better ? '' : delta === 0 ? '' : 'warn'}">${t(better ? 'promBetter' : delta === 0 ? 'promSame' : 'promWorse', { d: Math.abs(delta) })}</p>`}
@@ -5777,7 +5777,7 @@ function renderPromHistory() {
       <div>
         <div class="t"><span class="t-ico">${icon('assess')}</span>${t(promNameKey(r.key))}
           <span class="rom-lv ${r.level}">${t('promBand' + r.band)}</span></div>
-        <div class="d">${new Date(r.ts).toLocaleString(locale(), { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })} Â· ${r.total}${promDef(r.key).type === 'eq' ? ' / 100' : '%'}</div>
+        <div class="d">${new Date(r.ts).toLocaleString(locale(), { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })} Ã‚Â· ${r.total}${promDef(r.key).type === 'eq' ? ' / 100' : '%'}</div>
       </div>
       <div><button class="mini del" data-promdel="${r.id}">${icon('trash')}</button></div>
     </div>`).join('');
@@ -5799,7 +5799,7 @@ $('btn-prom-cancel').addEventListener('click', () => {
   $('prom-form').classList.add('hidden');
   renderPromUI();
 });
-// æŠ¥å‘Šï¼šå„é‡è¡¨æœ€è¿‘ä¸€æ¬¡ç»“æžœ
+// Ã¦Å Â¥Ã¥â€˜Å Ã¯Â¼Å¡Ã¥Ââ€žÃ©â€¡ÂÃ¨Â¡Â¨Ã¦Å“â‚¬Ã¨Â¿â€˜Ã¤Â¸â‚¬Ã¦Â¬Â¡Ã§Â»â€œÃ¦Å¾Å“
 function promReportRows() {
   const h = promHistory();
   const rows = [];
@@ -5807,15 +5807,15 @@ function promReportRows() {
   h.forEach((r) => { if (!latest[r.key]) latest[r.key] = r; });
   const keys = Object.keys(latest);
   if (keys.length) {
-    rows.push({ k: t('repProms'), v: keys.map((k) => `${t(promNameKey(k))} ${latest[k].total}${promDef(k).type === 'eq' ? '' : '%'}`).join(' Â· '), cls: keys.some((k) => latest[k].level === 'bad') ? 'warn' : keys.every((k) => latest[k].level === 'good') ? 'ok' : '' });
+    rows.push({ k: t('repProms'), v: keys.map((k) => `${t(promNameKey(k))} ${latest[k].total}${promDef(k).type === 'eq' ? '' : '%'}`).join(' Ã‚Â· '), cls: keys.some((k) => latest[k].level === 'bad') ? 'warn' : keys.every((k) => latest[k].level === 'good') ? 'ok' : '' });
   }
   return rows;
 }
 function promBadCount() { return promHistory().filter((r) => r.level === 'bad').length; }
 
-/* ============ v2.26.0 æ–°æ¨¡å—ï¼šROM å…³èŠ‚æ´»åŠ¨åº¦ï¼ˆRange of Motionï¼‰ ============ */
-// å¯¹æ ‡ä¸“ä¸šåº·å¤äº§å“çš„ ROM æµ‹é‡ï¼šå•æ‘„åƒå¤´ â†’ å…³é”®ç‚¹è§’åº¦ â†’ å…³èŠ‚æœ€å¤§æ´»åŠ¨èŒƒå›´ + å·¦å³å·®å¼‚ã€‚
-const ROM_MS = 6000;                 // æ¯æ¬¡æµ‹é‡æ—¶é•¿ï¼ˆ6 ç§’ï¼Œåšåˆ°æœ€å¤§å¹…åº¦å¹¶ä¿æŒï¼‰
+/* ============ v2.26.0 Ã¦â€“Â°Ã¦Â¨Â¡Ã¥Ââ€”Ã¯Â¼Å¡ROM Ã¥â€¦Â³Ã¨Å â€šÃ¦Â´Â»Ã¥Å Â¨Ã¥ÂºÂ¦Ã¯Â¼Ë†Range of MotionÃ¯Â¼â€° ============ */
+// Ã¥Â¯Â¹Ã¦Â â€¡Ã¤Â¸â€œÃ¤Â¸Å¡Ã¥ÂºÂ·Ã¥Â¤ÂÃ¤ÂºÂ§Ã¥â€œÂÃ§Å¡â€ž ROM Ã¦Âµâ€¹Ã©â€¡ÂÃ¯Â¼Å¡Ã¥Ââ€¢Ã¦â€˜â€žÃ¥Æ’ÂÃ¥Â¤Â´ Ã¢â€ â€™ Ã¥â€¦Â³Ã©â€Â®Ã§â€šÂ¹Ã¨Â§â€™Ã¥ÂºÂ¦ Ã¢â€ â€™ Ã¥â€¦Â³Ã¨Å â€šÃ¦Å“â‚¬Ã¥Â¤Â§Ã¦Â´Â»Ã¥Å Â¨Ã¨Å’Æ’Ã¥â€ºÂ´ + Ã¥Â·Â¦Ã¥ÂÂ³Ã¥Â·Â®Ã¥Â¼â€šÃ£â‚¬â€š
+const ROM_MS = 6000;                 // Ã¦Â¯ÂÃ¦Â¬Â¡Ã¦Âµâ€¹Ã©â€¡ÂÃ¦â€”Â¶Ã©â€¢Â¿Ã¯Â¼Ë†6 Ã§Â§â€™Ã¯Â¼Å’Ã¥ÂÅ¡Ã¥Ë†Â°Ã¦Å“â‚¬Ã¥Â¤Â§Ã¥Â¹â€¦Ã¥ÂºÂ¦Ã¥Â¹Â¶Ã¤Â¿ÂÃ¦Å’ÂÃ¯Â¼â€°
 const ROM_IDX = {
   L: { shoulder: 11, elbow: 13, hip: 23, knee: 25, ankle: 27 },
   R: { shoulder: 12, elbow: 14, hip: 24, knee: 26, ankle: 28 },
@@ -5843,13 +5843,13 @@ function romRawAngle(lm, side, lms) {
     if (lm === 'knee') return romAngleAt(lms[I.knee], lms[I.hip], lms[I.ankle]);
     if (lm === 'hip') return romAngleAt(lms[I.hip], lms[I.shoulder], lms[I.knee]);
     if (lm === 'shoulder') return romAngleAt(lms[I.shoulder], lms[I.hip], lms[I.elbow]);
-  } catch { /* å…³é”®ç‚¹ç¼ºå¤± */ }
+  } catch { /* Ã¥â€¦Â³Ã©â€Â®Ã§â€šÂ¹Ã§Â¼ÂºÃ¥Â¤Â± */ }
   return 0;
 }
 function romValueOf(it, min, max) {
   if (min == null || max == null) return null;
-  if (it.mode === 'deficit') return Math.round(180 - max);            // ä¼¸å±•ç¼ºæŸï¼ˆè¶Šå°è¶Šå¥½ï¼‰
-  return Math.round(it.lm === 'shoulder' ? max : 180 - min);          // å±ˆæ›²/å¤–å±•å–æœ€å¤§è§’
+  if (it.mode === 'deficit') return Math.round(180 - max);            // Ã¤Â¼Â¸Ã¥Â±â€¢Ã§Â¼ÂºÃ¦ÂÅ¸Ã¯Â¼Ë†Ã¨Â¶Å Ã¥Â°ÂÃ¨Â¶Å Ã¥Â¥Â½Ã¯Â¼â€°
+  return Math.round(it.lm === 'shoulder' ? max : 180 - min);          // Ã¥Â±Ë†Ã¦â€ºÂ²/Ã¥Â¤â€“Ã¥Â±â€¢Ã¥Ââ€“Ã¦Å“â‚¬Ã¥Â¤Â§Ã¨Â§â€™
 }
 function romLevel(it, v) {
   if (v == null) return 'none';
@@ -5857,16 +5857,16 @@ function romLevel(it, v) {
   return v >= it.norm ? 'good' : v >= it.norm - 20 ? 'warn' : 'bad';
 }
 const romState = { active: false, demo: false, key: 'kneeFlex', side: 'L', t0: 0, min: null, max: null, lastT: 0, videoOn: false };
-// æ¼”ç¤ºæ¨¡å¼ï¼šåˆæˆã€Œä»Žèµ·å§‹è§’åŒ€é€Ÿåˆ°æœ€å¤§è§’ã€çš„éª¨æž¶å¸§ï¼ˆæµ‹è¯•ä¸Žæ— æ‘„åƒå¤´æ—¶å¯ç”¨ï¼‰
+// Ã¦Â¼â€Ã§Â¤ÂºÃ¦Â¨Â¡Ã¥Â¼ÂÃ¯Â¼Å¡Ã¥ÂË†Ã¦Ë†ÂÃ£â‚¬Å’Ã¤Â»Å½Ã¨ÂµÂ·Ã¥Â§â€¹Ã¨Â§â€™Ã¥Å’â‚¬Ã©â‚¬Å¸Ã¥Ë†Â°Ã¦Å“â‚¬Ã¥Â¤Â§Ã¨Â§â€™Ã£â‚¬ÂÃ§Å¡â€žÃ©ÂªÂ¨Ã¦Å¾Â¶Ã¥Â¸Â§Ã¯Â¼Ë†Ã¦Âµâ€¹Ã¨Â¯â€¢Ã¤Â¸Å½Ã¦â€”Â Ã¦â€˜â€žÃ¥Æ’ÂÃ¥Â¤Â´Ã¦â€”Â¶Ã¥ÂÂ¯Ã§â€Â¨Ã¯Â¼â€°
 function romDemoFrame(key, ts) {
   const it = romItem(key);
-  const elapsed = romState.t0 ? ts - romState.t0 : 0;          // ç”¨æœ¬æ¬¡æµ‹é‡çš„å·²ç”¨æ—¶é—´ï¼Œä¿è¯ 6 ç§’èµ°å®Œå…¨ç¨‹
+  const elapsed = romState.t0 ? ts - romState.t0 : 0;          // Ã§â€Â¨Ã¦Å“Â¬Ã¦Â¬Â¡Ã¦Âµâ€¹Ã©â€¡ÂÃ§Å¡â€žÃ¥Â·Â²Ã§â€Â¨Ã¦â€”Â¶Ã©â€”Â´Ã¯Â¼Å’Ã¤Â¿ÂÃ¨Â¯Â 6 Ã§Â§â€™Ã¨ÂµÂ°Ã¥Â®Å’Ã¥â€¦Â¨Ã§Â¨â€¹
   const p = Math.min(1, Math.max(0, elapsed / ROM_MS));
   const ang = ((it.from + (it.to - it.from) * p) * Math.PI) / 180;
   const mk = (x, y) => ({ x, y, z: 0, visibility: 1 });
   const lms = Array.from({ length: 33 }, () => mk(0.5, 0.5));
-  const dir = [Math.sin(ang), -Math.cos(ang)];    // ä¸Žã€Œå‘ä¸Šã€çš„åŸºå‡†æˆ angï¼ˆè†/é«‹ç”¨ï¼‰
-  const dir2 = [Math.sin(ang), Math.cos(ang)];     // ä¸Žã€Œå‘ä¸‹ã€çš„åŸºå‡†æˆ angï¼ˆè‚©ç”¨ï¼‰
+  const dir = [Math.sin(ang), -Math.cos(ang)];    // Ã¤Â¸Å½Ã£â‚¬Å’Ã¥Ââ€˜Ã¤Â¸Å Ã£â‚¬ÂÃ§Å¡â€žÃ¥Å¸ÂºÃ¥â€¡â€ Ã¦Ë†Â angÃ¯Â¼Ë†Ã¨â€ Â/Ã©Â«â€¹Ã§â€Â¨Ã¯Â¼â€°
+  const dir2 = [Math.sin(ang), Math.cos(ang)];     // Ã¤Â¸Å½Ã£â‚¬Å’Ã¥Ââ€˜Ã¤Â¸â€¹Ã£â‚¬ÂÃ§Å¡â€žÃ¥Å¸ÂºÃ¥â€¡â€ Ã¦Ë†Â angÃ¯Â¼Ë†Ã¨â€šÂ©Ã§â€Â¨Ã¯Â¼â€°
   if (it.lm === 'knee') {
     const hip = mk(0.5, 0.28), knee = mk(0.5, 0.56);
     lms[23] = lms[24] = hip; lms[25] = lms[26] = knee;
@@ -5904,8 +5904,8 @@ function renderRomLive(cur) {
   const it = romItem(romState.key);
   const v = romValueOf(it, romState.min, romState.max);
   const pct = romState.t0 ? Math.min(100, Math.round(((performance.now() - romState.t0) / ROM_MS) * 100)) : 0;
-  el.innerHTML = `<div class="rom-row"><b>${t('romCurrent')}</b><span class="rom-cur">${cur == null ? 'â€”' : cur.toFixed(0)}Â°</span>
-    <b>${t('romBest')}</b><span class="rom-best">${v == null ? 'â€”' : v + 'Â°'}</span></div>
+  el.innerHTML = `<div class="rom-row"><b>${t('romCurrent')}</b><span class="rom-cur">${cur == null ? 'Ã¢â‚¬â€' : cur.toFixed(0)}Ã‚Â°</span>
+    <b>${t('romBest')}</b><span class="rom-best">${v == null ? 'Ã¢â‚¬â€' : v + 'Ã‚Â°'}</span></div>
     <div class="rom-bar"><div class="rom-fill" style="width:${pct}%"></div></div>`;
 }
 function renderRomResult(rec) {
@@ -5917,10 +5917,10 @@ function renderRomResult(rec) {
   const diff = prev && prev.rom != null && rec.rom != null ? rec.rom - prev.rom : null;
   el.classList.remove('hidden');
   el.className = 'rom-result ' + rec.level;
-  el.innerHTML = `<div class="rom-head">${t('romItem' + it.key.charAt(0).toUpperCase() + it.key.slice(1))} Â· ${rec.side === 'L' ? t('romSideL') : t('romSideR')}
+  el.innerHTML = `<div class="rom-head">${t('romItem' + it.key.charAt(0).toUpperCase() + it.key.slice(1))} Ã‚Â· ${rec.side === 'L' ? t('romSideL') : t('romSideR')}
       <span class="rom-lv ${rec.level}">${t('romLv' + rec.level.charAt(0).toUpperCase() + rec.level.slice(1))}</span></div>
-    <div class="rom-big">${it.mode === 'deficit' ? t('romDeficit', { v: rec.rom == null ? 'â€”' : rec.rom }) : t('romRange', { v: rec.rom == null ? 'â€”' : rec.rom })}</div>
-    <p class="hint tiny">${t('romDetail', { min: rec.min == null ? 'â€”' : rec.min, max: rec.max == null ? 'â€”' : rec.max, n: it.norm })}</p>
+    <div class="rom-big">${it.mode === 'deficit' ? t('romDeficit', { v: rec.rom == null ? 'Ã¢â‚¬â€' : rec.rom }) : t('romRange', { v: rec.rom == null ? 'Ã¢â‚¬â€' : rec.rom })}</div>
+    <p class="hint tiny">${t('romDetail', { min: rec.min == null ? 'Ã¢â‚¬â€' : rec.min, max: rec.max == null ? 'Ã¢â‚¬â€' : rec.max, n: it.norm })}</p>
     ${(function () { const b = romBaseline(rec.key, rec.side); if (!b || rec.rom == null) return ''; const d = rec.rom - b.med; return `<p class="hint tiny ${d < 0 ? 'warn' : ''}">${t('romVsBaseline', { v: b.med, d: (d >= 0 ? '+' : '') + d, n: b.n })}</p>`; })()}
     ${diff == null ? '' : `<p class="hint tiny ${diff > 0 ? '' : diff < 0 ? 'warn' : ''}">${t(diff >= 0 ? 'romUp' : 'romDown', { d: Math.abs(diff) })}</p>`}
     <p class="hint tiny">${t('romAdvice' + (rec.level === 'good' ? 'Good' : rec.level === 'bad' ? 'Bad' : 'Warn'))}</p>`;
@@ -5934,9 +5934,9 @@ function renderRomHistory() {
     const it = romItem(r.key);
     return `<div class="item">
       <div>
-        <div class="t"><span class="t-ico">${icon('assess')}</span>${t('romItem' + it.key.charAt(0).toUpperCase() + it.key.slice(1))} Â· ${r.side === 'L' ? t('romSideL') : t('romSideR')}
+        <div class="t"><span class="t-ico">${icon('assess')}</span>${t('romItem' + it.key.charAt(0).toUpperCase() + it.key.slice(1))} Ã‚Â· ${r.side === 'L' ? t('romSideL') : t('romSideR')}
           <span class="rom-lv ${r.level}">${t('romLv' + r.level.charAt(0).toUpperCase() + r.level.slice(1))}</span></div>
-        <div class="d">${new Date(r.ts).toLocaleString(locale(), { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })} Â· ${t('romDetailShort', { v: r.rom == null ? 'â€”' : r.rom })}</div>
+        <div class="d">${new Date(r.ts).toLocaleString(locale(), { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })} Ã‚Â· ${t('romDetailShort', { v: r.rom == null ? 'Ã¢â‚¬â€' : r.rom })}</div>
       </div>
       <div><button class="mini del" data-romdel="${r.id}">${icon('trash')}</button></div>
     </div>`;
@@ -5972,7 +5972,7 @@ function renderRomUI() {
 }
 async function romStart(demo) {
   if (romState.active) { romStop(); return; }
-  if (paState.active) paStop();                       // ä¸Žä½“æ€è¯„ä¼°äº’æ–¥ï¼Œé˜²æ­¢æ‘„åƒå¤´å ç”¨
+  if (paState.active) paStop();                       // Ã¤Â¸Å½Ã¤Â½â€œÃ¦â‚¬ÂÃ¨Â¯â€žÃ¤Â¼Â°Ã¤Âºâ€™Ã¦â€“Â¥Ã¯Â¼Å’Ã©ËœÂ²Ã¦Â­Â¢Ã¦â€˜â€žÃ¥Æ’ÂÃ¥Â¤Â´Ã¥ÂÂ Ã§â€Â¨
   romState.active = true; romState.demo = !!demo;
   romState.t0 = 0; romState.min = null; romState.max = null;
   renderRomResult(null);
@@ -6063,7 +6063,7 @@ function romFinish() {
 }
 $('btn-rom-start').addEventListener('click', () => { romStart(false); });
 $('btn-rom-demo').addEventListener('click', () => { romStart(true); });
-// æŠ¥å‘Šé‡Œçš„ ROM è¡Œ + å·¦å³å·®å¼‚
+// Ã¦Å Â¥Ã¥â€˜Å Ã©â€¡Å’Ã§Å¡â€ž ROM Ã¨Â¡Å’ + Ã¥Â·Â¦Ã¥ÂÂ³Ã¥Â·Â®Ã¥Â¼â€š
 function romReportRows() {
   const h = romHistory();
   const rows = [];
@@ -6071,20 +6071,20 @@ function romReportRows() {
   if (measured.length) {
     rows.push({ k: t('repRom'), v: measured.map((it) => {
       const last = h.find((r) => r.key === it.key && r.rom != null);
-      return `${t('romShort' + it.key.charAt(0).toUpperCase() + it.key.slice(1))} ${last.rom}Â°`;
-    }).join(' Â· '), cls: '' });
+      return `${t('romShort' + it.key.charAt(0).toUpperCase() + it.key.slice(1))} ${last.rom}Ã‚Â°`;
+    }).join(' Ã‚Â· '), cls: '' });
     const diffs = [], seen = {};
     h.forEach((r) => { if (r.rom == null) return; seen[r.key] = seen[r.key] || {}; if (!seen[r.key][r.side]) seen[r.key][r.side] = r.rom; });
     Object.entries(seen).forEach(([k, v]) => {
-      if (v.L != null && v.R != null) diffs.push(`${t('romShort' + k.charAt(0).toUpperCase() + k.slice(1))} ${Math.abs(v.L - v.R)}Â°`);
+      if (v.L != null && v.R != null) diffs.push(`${t('romShort' + k.charAt(0).toUpperCase() + k.slice(1))} ${Math.abs(v.L - v.R)}Ã‚Â°`);
     });
-    if (diffs.length) rows.push({ k: t('repRomDiff'), v: diffs.join(' Â· '), cls: diffs.some((d) => parseInt(d.match(/(\d+)Â°/)[1], 10) > 10) ? 'warn' : 'ok' });
+    if (diffs.length) rows.push({ k: t('repRomDiff'), v: diffs.join(' Ã‚Â· '), cls: diffs.some((d) => parseInt(d.match(/(\d+)Ã‚Â°/)[1], 10) > 10) ? 'warn' : 'ok' });
   }
   return rows;
 }
 
-/* ============ v2.25.0 æŠ¥å‘Šå‡çº§ï¼šä½“æ€æˆªå›¾ + å…­ç»´é›·è¾¾ + 30 å¤©è¶‹åŠ¿ ============ */
-// ä½“æ€æˆªå›¾ï¼šä¼˜å…ˆå­˜ã€Œéª¨æž¶å›¾ã€ï¼ˆåªå«ç«æŸ´äººï¼Œä¸å«çœŸäººç…§ç‰‡ï¼Œéšç§å‹å¥½ï¼‰ï¼Œé€€åŒ–åˆ°è§†é¢‘å¸§
+/* ============ v2.25.0 Ã¦Å Â¥Ã¥â€˜Å Ã¥Ââ€¡Ã§ÂºÂ§Ã¯Â¼Å¡Ã¤Â½â€œÃ¦â‚¬ÂÃ¦Ë†ÂªÃ¥â€ºÂ¾ + Ã¥â€¦Â­Ã§Â»Â´Ã©â€ºÂ·Ã¨Â¾Â¾ + 30 Ã¥Â¤Â©Ã¨Â¶â€¹Ã¥Å Â¿ ============ */
+// Ã¤Â½â€œÃ¦â‚¬ÂÃ¦Ë†ÂªÃ¥â€ºÂ¾Ã¯Â¼Å¡Ã¤Â¼ËœÃ¥â€¦Ë†Ã¥Â­ËœÃ£â‚¬Å’Ã©ÂªÂ¨Ã¦Å¾Â¶Ã¥â€ºÂ¾Ã£â‚¬ÂÃ¯Â¼Ë†Ã¥ÂÂªÃ¥ÂÂ«Ã§ÂÂ«Ã¦Å¸Â´Ã¤ÂºÂºÃ¯Â¼Å’Ã¤Â¸ÂÃ¥ÂÂ«Ã§Å“Å¸Ã¤ÂºÂºÃ§â€¦Â§Ã§â€°â€¡Ã¯Â¼Å’Ã©Å¡ÂÃ§Â§ÂÃ¥Ââ€¹Ã¥Â¥Â½Ã¯Â¼â€°Ã¯Â¼Å’Ã©â‚¬â‚¬Ã¥Å’â€“Ã¥Ë†Â°Ã¨Â§â€ Ã©Â¢â€˜Ã¥Â¸Â§
 function paSnapShot() {
   try {
     const cv = document.createElement('canvas');
@@ -6102,7 +6102,7 @@ function paSnapShot() {
     return url && url.length > 400 ? url : null;
   } catch { return null; }
 }
-// åŠŸèƒ½æµ‹è¯•å…­ç»´é›·è¾¾ï¼ˆå¯¹ç§°/æŽ’åˆ—/åŠ¨æ€/ç¨³å®š/æ´»åŠ¨åº¦/ä¸€è‡´æ€§ï¼‰
+// Ã¥Å Å¸Ã¨Æ’Â½Ã¦Âµâ€¹Ã¨Â¯â€¢Ã¥â€¦Â­Ã§Â»Â´Ã©â€ºÂ·Ã¨Â¾Â¾Ã¯Â¼Ë†Ã¥Â¯Â¹Ã§Â§Â°/Ã¦Å½â€™Ã¥Ë†â€”/Ã¥Å Â¨Ã¦â‚¬Â/Ã§Â¨Â³Ã¥Â®Å¡/Ã¦Â´Â»Ã¥Å Â¨Ã¥ÂºÂ¦/Ã¤Â¸â‚¬Ã¨â€¡Â´Ã¦â‚¬Â§Ã¯Â¼â€°
 const FT_DIM_ORDER = ['sym', 'align', 'dyn', 'stab', 'rom', 'cons'];
 const FT_DIM_KEYS = ['ftDimSym', 'ftDimAlign', 'ftDimDyn', 'ftDimStab', 'ftDimRom', 'ftDimCons'];
 function ftLatestDims() {
@@ -6128,7 +6128,7 @@ function radarSvg(dims, uid) {
   </svg>
   <div class="radar-vals">${FT_DIM_ORDER.map((k, i) => `<span class="rv"><i>${t(FT_DIM_KEYS[i])}</i><b>${vals[i]}</b></span>`).join('')}</div>`;
 }
-// è¿‘ 30 å¤©æ¯æ—¥è®­ç»ƒæ¬¡æ•°ï¼ˆ0 çš„å¤©ä¹Ÿä¿ç•™ï¼Œå½¢æˆè¿žç»­è¶‹åŠ¿ï¼‰
+// Ã¨Â¿â€˜ 30 Ã¥Â¤Â©Ã¦Â¯ÂÃ¦â€”Â¥Ã¨Â®Â­Ã§Â»Æ’Ã¦Â¬Â¡Ã¦â€¢Â°Ã¯Â¼Ë†0 Ã§Å¡â€žÃ¥Â¤Â©Ã¤Â¹Å¸Ã¤Â¿ÂÃ§â€¢â„¢Ã¯Â¼Å’Ã¥Â½Â¢Ã¦Ë†ÂÃ¨Â¿Å¾Ã§Â»Â­Ã¨Â¶â€¹Ã¥Å Â¿Ã¯Â¼â€°
 function trend30Points() {
   const sessions = sget('rehab_sessions', []);
   const out = [];
@@ -6146,7 +6146,7 @@ const loadImg = (src) => new Promise((res) => {
   im.onerror = () => res(null);
   im.src = src;
 });
-// canvas ç‰ˆé›·è¾¾ + æŠ˜çº¿ï¼ˆä¾› PNG é•¿å›¾ä½¿ç”¨ï¼‰
+// canvas Ã§â€°Ë†Ã©â€ºÂ·Ã¨Â¾Â¾ + Ã¦Å ËœÃ§ÂºÂ¿Ã¯Â¼Ë†Ã¤Â¾â€º PNG Ã©â€¢Â¿Ã¥â€ºÂ¾Ã¤Â½Â¿Ã§â€Â¨Ã¯Â¼â€°
 function drawRadarCanvas(c, cx, cy, R, dims) {
   const V = dims || {};
   const n = FT_DIM_ORDER.length;
@@ -6190,8 +6190,8 @@ function drawTrendCanvas(c, x, y, w, h, pts) {
   c.fillStyle = 'rgba(14,124,102,.12)'; c.fill();
 }
 
-/* ============ v2.24.0 æ–°æ¨¡å—ï¼šæ²»ç–—å¸ˆæŠ¥å‘Šï¼ˆä¸€é”®æ±‡æ€» + HTML/PDF/å›¾ç‰‡/æ‘˜è¦ï¼‰ ============ */
-// å¯¹æ ‡ PhysiApp çš„ä¼šè¯çº§å›žä¼ ï¼šæŠŠè¯„ä¼°ã€è®­ç»ƒä¾ä»Žæ€§ã€ç–¼ç—›ä¸Žå»ºè®®æ±‡æ€»æˆä¸€é¡µå¯åˆ†äº«çš„æŠ¥å‘Šã€‚
+/* ============ v2.24.0 Ã¦â€“Â°Ã¦Â¨Â¡Ã¥Ââ€”Ã¯Â¼Å¡Ã¦Â²Â»Ã§â€“â€”Ã¥Â¸Ë†Ã¦Å Â¥Ã¥â€˜Å Ã¯Â¼Ë†Ã¤Â¸â‚¬Ã©â€Â®Ã¦Â±â€¡Ã¦â‚¬Â» + HTML/PDF/Ã¥â€ºÂ¾Ã§â€°â€¡/Ã¦â€˜ËœÃ¨Â¦ÂÃ¯Â¼â€° ============ */
+// Ã¥Â¯Â¹Ã¦Â â€¡ PhysiApp Ã§Å¡â€žÃ¤Â¼Å¡Ã¨Â¯ÂÃ§ÂºÂ§Ã¥â€ºÅ¾Ã¤Â¼Â Ã¯Â¼Å¡Ã¦Å Å Ã¨Â¯â€žÃ¤Â¼Â°Ã£â‚¬ÂÃ¨Â®Â­Ã§Â»Æ’Ã¤Â¾ÂÃ¤Â»Å½Ã¦â‚¬Â§Ã£â‚¬ÂÃ§â€“Â¼Ã§â€”â€ºÃ¤Â¸Å½Ã¥Â»ÂºÃ¨Â®Â®Ã¦Â±â€¡Ã¦â‚¬Â»Ã¦Ë†ÂÃ¤Â¸â‚¬Ã©Â¡ÂµÃ¥ÂÂ¯Ã¥Ë†â€ Ã¤ÂºÂ«Ã§Å¡â€žÃ¦Å Â¥Ã¥â€˜Å Ã£â‚¬â€š
 function buildReportData() {
   const sessions = sget('rehab_sessions', []);
   const from = Date.now() - 30 * 86400000;
@@ -6213,23 +6213,23 @@ function buildReportData() {
     planDays: doneKeys.length,
     ai: aiLast,
     spike: painSpike(),
-    snap: (paHistory()[0] && paHistory()[0].snap) || null,   // v2.25.0ï¼šæœ€æ–°ä½“æ€éª¨æž¶å¿«ç…§
-    dims: ftLatestDims(),                                    // v2.25.0ï¼šåŠŸèƒ½æµ‹è¯•å…­ç»´
-    trend30: trend30Points(),                                // v2.25.0ï¼šè¿‘ 30 å¤©è®­ç»ƒè¶‹åŠ¿
+    snap: (paHistory()[0] && paHistory()[0].snap) || null,   // v2.25.0Ã¯Â¼Å¡Ã¦Å“â‚¬Ã¦â€“Â°Ã¤Â½â€œÃ¦â‚¬ÂÃ©ÂªÂ¨Ã¦Å¾Â¶Ã¥Â¿Â«Ã§â€¦Â§
+    dims: ftLatestDims(),                                    // v2.25.0Ã¯Â¼Å¡Ã¥Å Å¸Ã¨Æ’Â½Ã¦Âµâ€¹Ã¨Â¯â€¢Ã¥â€¦Â­Ã§Â»Â´
+    trend30: trend30Points(),                                // v2.25.0Ã¯Â¼Å¡Ã¨Â¿â€˜ 30 Ã¥Â¤Â©Ã¨Â®Â­Ã§Â»Æ’Ã¨Â¶â€¹Ã¥Å Â¿
   };
 }
 function reportRows(r) {
   const rows = [];
-  rows.push({ k: t('repPatient'), v: (r.prof.name || t('repAnon')) + (r.prof.goal ? ' Â· ' + t('goal' + r.prof.goal.charAt(0).toUpperCase() + r.prof.goal.slice(1)) : ''), cls: '' });
-  rows.push({ k: t('repIndex'), v: r.idx.score == null ? t('repNone') : r.idx.score + ' Â· ' + (r.idx.level ? t('gwLv' + r.idx.level) : ''), cls: r.idx.score == null ? '' : r.idx.score >= 75 ? 'ok' : r.idx.score < 60 ? 'warn' : '' });
-  rows.push({ k: t('repPa'), v: r.pa ? r.pa.score + ' Â· ' + t('paGrade' + (r.pa.grade || 'C')) : t('repNone'), cls: '' });
+  rows.push({ k: t('repPatient'), v: (r.prof.name || t('repAnon')) + (r.prof.goal ? ' Ã‚Â· ' + t('goal' + r.prof.goal.charAt(0).toUpperCase() + r.prof.goal.slice(1)) : ''), cls: '' });
+  rows.push({ k: t('repIndex'), v: r.idx.score == null ? t('repNone') : r.idx.score + ' Ã‚Â· ' + (r.idx.level ? t('gwLv' + r.idx.level) : ''), cls: r.idx.score == null ? '' : r.idx.score >= 75 ? 'ok' : r.idx.score < 60 ? 'warn' : '' });
+  rows.push({ k: t('repPa'), v: r.pa ? r.pa.score + ' Ã‚Â· ' + t('paGrade' + (r.pa.grade || 'C')) : t('repNone'), cls: '' });
   rows.push({ k: t('repFt'), v: r.ft ? String(r.ft.score) : t('repNone'), cls: '' });
   rows.push({ k: t('repPain'), v: r.painMax == null ? t('repNone') : r.painMax + ' / 10', cls: r.painMax != null && r.painMax >= 7 ? 'warn' : r.painMax != null && r.painMax <= 3 ? 'ok' : '' });
   rows.push({ k: t('repAdherence'), v: t('repAdh', { d: r.days, n: r.sessions, r: r.reps }), cls: r.days >= 12 ? 'ok' : r.days === 0 ? 'warn' : '' });
   rows.push({ k: t('repStreak'), v: t('repDays', { n: r.streak }), cls: '' });
   rows.push({ k: t('repPlan'), v: t('repPlanV', { p: r.plan, d: r.planDays }), cls: '' });
-  romReportRows().forEach((x) => rows.push(x));   // v2.26.0ï¼šROM æµ‹é‡æ±‡æ€»è¿›æŠ¥å‘Š
-  promReportRows().forEach((x) => rows.push(x));  // v2.27.0ï¼šPROMs é‡è¡¨ç»“æžœè¿›æŠ¥å‘Š
+  romReportRows().forEach((x) => rows.push(x));   // v2.26.0Ã¯Â¼Å¡ROM Ã¦Âµâ€¹Ã©â€¡ÂÃ¦Â±â€¡Ã¦â‚¬Â»Ã¨Â¿â€ºÃ¦Å Â¥Ã¥â€˜Å 
+  promReportRows().forEach((x) => rows.push(x));  // v2.27.0Ã¯Â¼Å¡PROMs Ã©â€¡ÂÃ¨Â¡Â¨Ã§Â»â€œÃ¦Å¾Å“Ã¨Â¿â€ºÃ¦Å Â¥Ã¥â€˜Å 
   return rows;
 }
 function reportAdvice(r) {
@@ -6255,8 +6255,8 @@ function renderReport() {
     + `<div class="rep-sec"><h4>${t('repTrend30')}</h4>${lineChart(r.trend30, '#0e7c66', 'rep30')}</div>`;
 }
 function reportSummaryText(r) {
-  const L = [t('repTitle') + ' Â· ' + new Date().toLocaleDateString(locale())];
-  reportRows(r).forEach((x) => L.push(`${x.k}ï¼š${x.v}`));
+  const L = [t('repTitle') + ' Ã‚Â· ' + new Date().toLocaleDateString(locale())];
+  reportRows(r).forEach((x) => L.push(`${x.k}Ã¯Â¼Å¡${x.v}`));
   L.push('', t('repSuggest'));
   reportAdvice(r).forEach((a, i) => L.push(`${i + 1}. ${a}`));
   L.push('', t('repDisclaimer'));
@@ -6274,7 +6274,7 @@ function reportHtmlDoc(r) {
   const adv = reportAdvice(r).map((a) => `<li>${a}</li>`).join('');
   return `<!doctype html><html lang="${locale()}"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>${t('repTitle')} Â· ${new Date().toLocaleDateString(locale())}</title>
+<title>${t('repTitle')} Ã‚Â· ${new Date().toLocaleDateString(locale())}</title>
 <style>
 body{font-family:-apple-system,"Segoe UI",Roboto,"Helvetica Neue","Microsoft YaHei",sans-serif;max-width:760px;margin:28px auto;padding:0 18px;color:#22262e;line-height:1.65}
 h1{font-size:22px;margin:0 0 4px}.sub{color:#69707c;font-size:13px;margin-bottom:18px}
@@ -6288,7 +6288,7 @@ ul{margin:6px 0 0 18px;padding:0}li{font-size:14px;margin-bottom:6px}
 @media print{body{margin:0}}
 </style></head><body>
 <h1>${t('repTitle')}</h1>
-<div class="sub">${t('repSubtitle')} Â· ${new Date().toLocaleString(locale())}</div>
+<div class="sub">${t('repSubtitle')} Ã‚Â· ${new Date().toLocaleString(locale())}</div>
 <table>${rows}</table>
 ${snapHtml}${radarHtml}${trendHtml}
 ${chart ? `<h2>${t('repPainTrend')}</h2>${chart}` : ''}
@@ -6323,7 +6323,7 @@ async function exportReportPng() {
   c.fillStyle = '#22262e'; c.font = 'bold 30px "Microsoft YaHei",system-ui,sans-serif';
   c.fillText(t('repTitle'), 68, 110);
   c.fillStyle = '#69707c'; c.font = '16px "Microsoft YaHei",system-ui,sans-serif';
-  c.fillText(t('repSubtitle') + ' Â· ' + new Date().toLocaleString(locale()), 68, 142);
+  c.fillText(t('repSubtitle') + ' Ã‚Â· ' + new Date().toLocaleString(locale()), 68, 142);
   let y = 200;
   reportRows(r).forEach((x) => {
     c.fillStyle = '#69707c'; c.font = '17px "Microsoft YaHei",system-ui,sans-serif';
@@ -6331,12 +6331,12 @@ async function exportReportPng() {
     c.fillStyle = x.cls === 'warn' ? '#d14a4a' : x.cls === 'ok' ? '#0e7c66' : '#22262e';
     c.font = 'bold 18px "Microsoft YaHei",system-ui,sans-serif';
     const txt = String(x.v);
-    c.fillText(txt.length > 44 ? txt.slice(0, 43) + 'â€¦' : txt, 260, y);
+    c.fillText(txt.length > 44 ? txt.slice(0, 43) + 'Ã¢â‚¬Â¦' : txt, 260, y);
     c.strokeStyle = '#e7e2d7'; c.lineWidth = 1;
     c.beginPath(); c.moveTo(68, y + 14); c.lineTo(W - 68, y + 14); c.stroke();
     y += 52;
   });
-  // v2.25.0ï¼šä½“æ€éª¨æž¶æˆªå›¾ + å…­ç»´é›·è¾¾ + 30 å¤©è®­ç»ƒè¶‹åŠ¿
+  // v2.25.0Ã¯Â¼Å¡Ã¤Â½â€œÃ¦â‚¬ÂÃ©ÂªÂ¨Ã¦Å¾Â¶Ã¦Ë†ÂªÃ¥â€ºÂ¾ + Ã¥â€¦Â­Ã§Â»Â´Ã©â€ºÂ·Ã¨Â¾Â¾ + 30 Ã¥Â¤Â©Ã¨Â®Â­Ã§Â»Æ’Ã¨Â¶â€¹Ã¥Å Â¿
   let y2 = y + 16;
   c.fillStyle = '#0e7c66'; c.font = 'bold 18px "Microsoft YaHei",system-ui,sans-serif';
   c.fillText(t('repSnap'), 68, y2);
@@ -6383,14 +6383,14 @@ $('btn-rep-copy').addEventListener('click', async () => {
   catch { toast(t('repCopyFail')); }
 });
 
-/* ============ v2.23.0 æ–°æ¨¡å—ï¼šåº·å¤å°è¯¾å ‚ï¼ˆæ‚£è€…æ•™è‚²ï¼‰+ ç–¼ç—›ä¸Šå‡é¢„è­¦ ============ */
-// å¯¹æ ‡ PhysioTrack / ReplayRehabï¼šæŠŠã€Œé—®é¢˜â†’è®­ç»ƒã€è¡¥ä¸Šã€Œä¸ºä»€ä¹ˆä¼šè¿™æ ·ã€ä¸çº æ­£ä¼šæ€Žæ ·ã€æ—¥å¸¸æ³¨æ„ä»€ä¹ˆã€ã€‚
+/* ============ v2.23.0 Ã¦â€“Â°Ã¦Â¨Â¡Ã¥Ââ€”Ã¯Â¼Å¡Ã¥ÂºÂ·Ã¥Â¤ÂÃ¥Â°ÂÃ¨Â¯Â¾Ã¥Â â€šÃ¯Â¼Ë†Ã¦â€šÂ£Ã¨â‚¬â€¦Ã¦â€¢â„¢Ã¨â€šÂ²Ã¯Â¼â€°+ Ã§â€“Â¼Ã§â€”â€ºÃ¤Â¸Å Ã¥Ââ€¡Ã©Â¢â€žÃ¨Â­Â¦ ============ */
+// Ã¥Â¯Â¹Ã¦Â â€¡ PhysioTrack / ReplayRehabÃ¯Â¼Å¡Ã¦Å Å Ã£â‚¬Å’Ã©â€”Â®Ã©Â¢ËœÃ¢â€ â€™Ã¨Â®Â­Ã§Â»Æ’Ã£â‚¬ÂÃ¨Â¡Â¥Ã¤Â¸Å Ã£â‚¬Å’Ã¤Â¸ÂºÃ¤Â»â‚¬Ã¤Â¹Ë†Ã¤Â¼Å¡Ã¨Â¿â„¢Ã¦Â Â·Ã£â‚¬ÂÃ¤Â¸ÂÃ§ÂºÂ Ã¦Â­Â£Ã¤Â¼Å¡Ã¦â‚¬Å½Ã¦Â Â·Ã£â‚¬ÂÃ¦â€”Â¥Ã¥Â¸Â¸Ã¦Â³Â¨Ã¦â€žÂÃ¤Â»â‚¬Ã¤Â¹Ë†Ã£â‚¬ÂÃ£â‚¬â€š
 const EDU_CARDS = [
-  { id: 'round', ico: 'shoulderraise', go: 'guide', key: 'eduRound' },     // åœ†è‚© â†’ ä½“æ€æ”¹å–„è¯¾
-  { id: 'valgus', ico: 'squat', go: 'train', key: 'eduValgus' },            // è†å†…æ‰£ â†’ è®­ç»ƒé¡µ
-  { id: 'pelvic', ico: 'bridge', go: 'guide', key: 'eduPelvic' },           // éª¨ç›†å‰å€¾ â†’ ä½“æ€æ”¹å–„è¯¾
-  { id: 'fhead', ico: 'standing', go: 'guide', key: 'eduFHead' },           // å¤´å‰ä¼¸ â†’ ä½“æ€æ”¹å–„è¯¾
-  { id: 'lowback', ico: 'hiphinge', go: 'train', key: 'eduLowBack' },       // ä¸‹èƒŒç—› â†’ è®­ç»ƒé¡µ
+  { id: 'round', ico: 'shoulderraise', go: 'guide', key: 'eduRound' },     // Ã¥Å“â€ Ã¨â€šÂ© Ã¢â€ â€™ Ã¤Â½â€œÃ¦â‚¬ÂÃ¦â€Â¹Ã¥â€“â€žÃ¨Â¯Â¾
+  { id: 'valgus', ico: 'squat', go: 'train', key: 'eduValgus' },            // Ã¨â€ ÂÃ¥â€ â€¦Ã¦â€°Â£ Ã¢â€ â€™ Ã¨Â®Â­Ã§Â»Æ’Ã©Â¡Âµ
+  { id: 'pelvic', ico: 'bridge', go: 'guide', key: 'eduPelvic' },           // Ã©ÂªÂ¨Ã§â€ºâ€ Ã¥â€°ÂÃ¥â‚¬Â¾ Ã¢â€ â€™ Ã¤Â½â€œÃ¦â‚¬ÂÃ¦â€Â¹Ã¥â€“â€žÃ¨Â¯Â¾
+  { id: 'fhead', ico: 'standing', go: 'guide', key: 'eduFHead' },           // Ã¥Â¤Â´Ã¥â€°ÂÃ¤Â¼Â¸ Ã¢â€ â€™ Ã¤Â½â€œÃ¦â‚¬ÂÃ¦â€Â¹Ã¥â€“â€žÃ¨Â¯Â¾
+  { id: 'lowback', ico: 'hiphinge', go: 'train', key: 'eduLowBack' },       // Ã¤Â¸â€¹Ã¨Æ’Å’Ã§â€”â€º Ã¢â€ â€™ Ã¨Â®Â­Ã§Â»Æ’Ã©Â¡Âµ
 ];
 const eduOpen = {};
 function renderEdu() {
@@ -6402,13 +6402,13 @@ function renderEdu() {
       <button class="edu-head" data-edu="${c.id}">
         <span class="edu-ico">${icon(c.ico)}</span>
         <span class="edu-t">${t(c.key + 'T')}</span>
-        <span class="edu-arrow">${open ? 'âˆ’' : '+'}</span>
+        <span class="edu-arrow">${open ? 'Ã¢Ë†â€™' : '+'}</span>
       </button>
       ${open ? `<div class="edu-body">
         <p><b>${t('eduWhy')}</b>${t(c.key + 'Why')}</p>
         <p><b>${t('eduRisk')}</b>${t(c.key + 'Risk')}</p>
         <p><b>${t('eduDaily')}</b>${t(c.key + 'Daily')}</p>
-        <button class="btn small" data-edugo="${c.go}">${t('eduGo')} â†’</button>
+        <button class="btn small" data-edugo="${c.go}">${t('eduGo')} Ã¢â€ â€™</button>
       </div>` : ''}
     </div>`;
   }).join('');
@@ -6418,7 +6418,7 @@ function renderEdu() {
   }));
   el.querySelectorAll('[data-edugo]').forEach((b) => b.addEventListener('click', () => switchTab(b.dataset.edugo)));
 }
-// ç–¼ç—›ä¸Šå‡é¢„è­¦ï¼šåŒä¸€å¤©ã€Œè®­ç»ƒåŽ âˆ’ è®­ç»ƒå‰ â‰¥ 2 åˆ†ã€â†’ å»ºè®®é™å¼ºåº¦æˆ–æš‚åœè¯¥åŠ¨ä½œ
+// Ã§â€“Â¼Ã§â€”â€ºÃ¤Â¸Å Ã¥Ââ€¡Ã©Â¢â€žÃ¨Â­Â¦Ã¯Â¼Å¡Ã¥ÂÅ’Ã¤Â¸â‚¬Ã¥Â¤Â©Ã£â‚¬Å’Ã¨Â®Â­Ã§Â»Æ’Ã¥ÂÅ½ Ã¢Ë†â€™ Ã¨Â®Â­Ã§Â»Æ’Ã¥â€°Â Ã¢â€°Â¥ 2 Ã¥Ë†â€ Ã£â‚¬ÂÃ¢â€ â€™ Ã¥Â»ÂºÃ¨Â®Â®Ã©â„¢ÂÃ¥Â¼ÂºÃ¥ÂºÂ¦Ã¦Ë†â€“Ã¦Å¡â€šÃ¥ÂÅ“Ã¨Â¯Â¥Ã¥Å Â¨Ã¤Â½Å“
 function painTodayPair() {
   const k = dayKeyOf(Date.now());
   const rows = painHistory().filter((r) => dayKeyOf(r.ts) === k);
@@ -6428,13 +6428,13 @@ function painTodayPair() {
 }
 function painSpike() {
   const p = painTodayPair();
-  // v2.28.0ï¼šé˜ˆå€¼ä¸å†å†™æ­»ï¼Œç”±ã€Œæ™ºèƒ½å¼•æ“Žã€é‡Œçš„è®¾ç½®å†³å®šï¼ˆé»˜è®¤ 2 åˆ†ï¼Œå¯æ”¹ 1â€“4 æˆ–å…³é—­è‡ªåŠ¨è°ƒå‚ï¼‰
+  // v2.28.0Ã¯Â¼Å¡Ã©ËœË†Ã¥â‚¬Â¼Ã¤Â¸ÂÃ¥â€ ÂÃ¥â€ â„¢Ã¦Â­Â»Ã¯Â¼Å’Ã§â€Â±Ã£â‚¬Å’Ã¦â„¢ÂºÃ¨Æ’Â½Ã¥Â¼â€¢Ã¦â€œÅ½Ã£â‚¬ÂÃ©â€¡Å’Ã§Å¡â€žÃ¨Â®Â¾Ã§Â½Â®Ã¥â€ Â³Ã¥Â®Å¡Ã¯Â¼Ë†Ã©Â»ËœÃ¨Â®Â¤ 2 Ã¥Ë†â€ Ã¯Â¼Å’Ã¥ÂÂ¯Ã¦â€Â¹ 1Ã¢â‚¬â€œ4 Ã¦Ë†â€“Ã¥â€¦Â³Ã©â€”Â­Ã¨â€¡ÂªÃ¥Å Â¨Ã¨Â°Æ’Ã¥Ââ€šÃ¯Â¼â€°
   const thr = Number(aiPrefs().painAlarm) || 2;
   return (p && p.delta >= thr) ? p : null;
 }
 
-/* ============ v2.22.0 æ–°æ¨¡å—ï¼šç–¼ç—›ç®¡ç†ï¼ˆVAS 0â€“10 Â· è®­ç»ƒå‰åŽ Â· è¶‹åŠ¿ï¼‰ ============ */
-// å¯¹æ ‡ PhysiApp / Kaia Healthï¼šæ¯æ¬¡è®­ç»ƒå‰åŽå„è®°ä¸€æ¬¡ç–¼ç—›ï¼Œç–¼ç—›å˜åŒ–è¿›å…¥è¶‹åŠ¿ä¸Žæ¢å¤å»ºè®®ã€‚
+/* ============ v2.22.0 Ã¦â€“Â°Ã¦Â¨Â¡Ã¥Ââ€”Ã¯Â¼Å¡Ã§â€“Â¼Ã§â€”â€ºÃ§Â®Â¡Ã§Ââ€ Ã¯Â¼Ë†VAS 0Ã¢â‚¬â€œ10 Ã‚Â· Ã¨Â®Â­Ã§Â»Æ’Ã¥â€°ÂÃ¥ÂÅ½ Ã‚Â· Ã¨Â¶â€¹Ã¥Å Â¿Ã¯Â¼â€° ============ */
+// Ã¥Â¯Â¹Ã¦Â â€¡ PhysiApp / Kaia HealthÃ¯Â¼Å¡Ã¦Â¯ÂÃ¦Â¬Â¡Ã¨Â®Â­Ã§Â»Æ’Ã¥â€°ÂÃ¥ÂÅ½Ã¥Ââ€žÃ¨Â®Â°Ã¤Â¸â‚¬Ã¦Â¬Â¡Ã§â€“Â¼Ã§â€”â€ºÃ¯Â¼Å’Ã§â€“Â¼Ã§â€”â€ºÃ¥ÂËœÃ¥Å’â€“Ã¨Â¿â€ºÃ¥â€¦Â¥Ã¨Â¶â€¹Ã¥Å Â¿Ã¤Â¸Å½Ã¦ÂÂ¢Ã¥Â¤ÂÃ¥Â»ÂºÃ¨Â®Â®Ã£â‚¬â€š
 const PAIN_MAX = 10;
 const painHistory = () => sget('rehab_pain_history', []);
 const painSave = (list) => sset('rehab_pain_history', list.slice(0, 120));
@@ -6449,7 +6449,7 @@ const dayKeyOf = (ts) => {
   const d = new Date(ts);
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 };
-// è¿‘ N å¤©ï¼šæ¯å¤©å–æœ€åŽä¸€æ¬¡ã€Œè®­ç»ƒå‰ / è®­ç»ƒåŽã€è¯„åˆ†ï¼Œä¾›åŒçº¿è¶‹åŠ¿å›¾
+// Ã¨Â¿â€˜ N Ã¥Â¤Â©Ã¯Â¼Å¡Ã¦Â¯ÂÃ¥Â¤Â©Ã¥Ââ€“Ã¦Å“â‚¬Ã¥ÂÅ½Ã¤Â¸â‚¬Ã¦Â¬Â¡Ã£â‚¬Å’Ã¨Â®Â­Ã§Â»Æ’Ã¥â€°Â / Ã¨Â®Â­Ã§Â»Æ’Ã¥ÂÅ½Ã£â‚¬ÂÃ¨Â¯â€žÃ¥Ë†â€ Ã¯Â¼Å’Ã¤Â¾â€ºÃ¥ÂÅ’Ã§ÂºÂ¿Ã¨Â¶â€¹Ã¥Å Â¿Ã¥â€ºÂ¾
 function painDailyPairs(days = 14) {
   const h = painHistory();
   const out = [];
@@ -6464,7 +6464,7 @@ function painDailyPairs(days = 14) {
   }
   return out;
 }
-// åŒçº¿è¶‹åŠ¿å›¾ï¼ˆçº¯æ–°å¢žï¼Œä¸åŠ¨æ—§ lineChartï¼‰
+// Ã¥ÂÅ’Ã§ÂºÂ¿Ã¨Â¶â€¹Ã¥Å Â¿Ã¥â€ºÂ¾Ã¯Â¼Ë†Ã§ÂºÂ¯Ã¦â€“Â°Ã¥Â¢Å¾Ã¯Â¼Å’Ã¤Â¸ÂÃ¥Å Â¨Ã¦â€”Â§ lineChartÃ¯Â¼â€°
 function painChartSvg(pairs) {
   const W = 320, H = 92, P = 10;
   const n = pairs.length;
@@ -6483,7 +6483,7 @@ function painChartSvg(pairs) {
       ${line('pre', '#0e7c66')}${line('post', '#e07a5f')}
     </svg>`;
 }
-// è¿‘ N å¤©æœ€é«˜ç–¼ç—›ï¼ˆä¾›ä»Šæ—¥é¡µå»ºè®®ä¸Ž AI ç®¡å®¶ï¼‰
+// Ã¨Â¿â€˜ N Ã¥Â¤Â©Ã¦Å“â‚¬Ã©Â«ËœÃ§â€“Â¼Ã§â€”â€ºÃ¯Â¼Ë†Ã¤Â¾â€ºÃ¤Â»Å Ã¦â€”Â¥Ã©Â¡ÂµÃ¥Â»ÂºÃ¨Â®Â®Ã¤Â¸Å½ AI Ã§Â®Â¡Ã¥Â®Â¶Ã¯Â¼â€°
 function painRecentMax(days = 7) {
   const from = Date.now() - days * 86400000;
   const list = painHistory().filter((r) => r.ts >= from);
@@ -6499,17 +6499,17 @@ function renderPain() {
   const postT = today.filter((r) => r.when === 'post').pop();
   const last = today[0] || h[0] || null;
   el.innerHTML = `<div class="pain-now-row">
-    <span class="pain-chip ${preT ? painLevelOf(preT.v) : 'none'}">${t('painPre')} Â· ${preT ? preT.v : 'â€”'}</span>
-    <span class="pain-chip ${postT ? painLevelOf(postT.v) : 'none'}">${t('painPost')} Â· ${postT ? postT.v : 'â€”'}</span>
+    <span class="pain-chip ${preT ? painLevelOf(preT.v) : 'none'}">${t('painPre')} Ã‚Â· ${preT ? preT.v : 'Ã¢â‚¬â€'}</span>
+    <span class="pain-chip ${postT ? painLevelOf(postT.v) : 'none'}">${t('painPost')} Ã‚Â· ${postT ? postT.v : 'Ã¢â‚¬â€'}</span>
     ${preT && postT ? `<span class="pain-delta ${postT.v > preT.v ? 'up' : postT.v < preT.v ? 'down' : ''}">${postT.v > preT.v ? t('painUp', { d: postT.v - preT.v }) : postT.v < preT.v ? t('painDown', { d: preT.v - postT.v }) : t('painSame')}</span>` : ''}
     ${last ? `<span class="hint tiny">${t('painLast', { d: dayKeyOf(last.ts).slice(5), v: last.v })}</span>` : ''}
   </div>`;
   const sp = painSpike();
   if (sp) {
     el.innerHTML += `<div class="pain-spike">${t('painSpikeTip', { d: sp.delta, post: sp.post })}
-      <button class="link-btn" id="pain-spike-more">${t('painSpikeBtn')} â†’</button></div>`;
+      <button class="link-btn" id="pain-spike-more">${t('painSpikeBtn')} Ã¢â€ â€™</button></div>`;
     const mb = $('pain-spike-more');
-    if (mb) mb.addEventListener('click', () => switchTab('posture'));   // åŽ»ã€Œåº·å¤å°è¯¾å ‚ã€çœ‹æ—¥å¸¸æ³¨æ„ä¸Žè®­ç»ƒ
+    if (mb) mb.addEventListener('click', () => switchTab('posture'));   // Ã¥Å½Â»Ã£â‚¬Å’Ã¥ÂºÂ·Ã¥Â¤ÂÃ¥Â°ÂÃ¨Â¯Â¾Ã¥Â â€šÃ£â‚¬ÂÃ§Å“â€¹Ã¦â€”Â¥Ã¥Â¸Â¸Ã¦Â³Â¨Ã¦â€žÂÃ¤Â¸Å½Ã¨Â®Â­Ã§Â»Æ’
   }
   const chartEl = $('pain-chart');
   if (chartEl) chartEl.innerHTML = painChartSvg(painDailyPairs(14));
@@ -6519,9 +6519,9 @@ function renderPain() {
     list.innerHTML = h.slice(0, 6).map((r) => `
       <div class="item">
         <div>
-          <div class="t"><span class="t-ico">${icon('alert')}</span>${r.v} Â· ${t(r.when === 'pre' ? 'painPre' : r.when === 'post' ? 'painPost' : 'painManual')}
+          <div class="t"><span class="t-ico">${icon('alert')}</span>${r.v} Ã‚Â· ${t(r.when === 'pre' ? 'painPre' : r.when === 'post' ? 'painPost' : 'painManual')}
             <span class="pain-lv ${painLevelOf(r.v)}">${t(painLvKey(r.v))}</span></div>
-          <div class="d">${new Date(r.ts).toLocaleString(locale(), { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}${r.note ? ' Â· ' + r.note : ''}</div>
+          <div class="d">${new Date(r.ts).toLocaleString(locale(), { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}${r.note ? ' Ã‚Â· ' + r.note : ''}</div>
         </div>
         <div><button class="mini del" data-paindel="${r.id}">${icon('trash')}</button></div>
       </div>`).join('');
@@ -6532,7 +6532,7 @@ function renderPain() {
       toast(t('toastDeleted'));
     }));
   }
-  // ä»Šæ—¥é¡µæç¤ºè¡Œï¼ˆä¸Žä»Šæ—¥æ€»è§ˆåŒæºï¼Œä¸æ”¹åŠ¨ renderHomeï¼‰
+  // Ã¤Â»Å Ã¦â€”Â¥Ã©Â¡ÂµÃ¦ÂÂÃ§Â¤ÂºÃ¨Â¡Å’Ã¯Â¼Ë†Ã¤Â¸Å½Ã¤Â»Å Ã¦â€”Â¥Ã¦â‚¬Â»Ã¨Â§Ë†Ã¥ÂÅ’Ã¦ÂºÂÃ¯Â¼Å’Ã¤Â¸ÂÃ¦â€Â¹Ã¥Å Â¨ renderHomeÃ¯Â¼â€°
   const hp = $('home-pain');
   if (hp) {
     const mx = painRecentMax(7);
@@ -6550,8 +6550,8 @@ function renderPainStrip() {
   const h = painHistory().filter((r) => dayKeyOf(r.ts) === todayK);
   const pre = h.filter((r) => r.when === 'pre').pop();
   const post = h.filter((r) => r.when === 'post').pop();
-  el.innerHTML = `<button class="pain-mini ${pre ? painLevelOf(pre.v) : ''}" data-pain="pre">${t('painPre')} ${pre ? pre.v : 'â€”'}</button>
-    <button class="pain-mini ${post ? painLevelOf(post.v) : ''}" data-pain="post">${t('painPost')} ${post ? post.v : 'â€”'}</button>
+  el.innerHTML = `<button class="pain-mini ${pre ? painLevelOf(pre.v) : ''}" data-pain="pre">${t('painPre')} ${pre ? pre.v : 'Ã¢â‚¬â€'}</button>
+    <button class="pain-mini ${post ? painLevelOf(post.v) : ''}" data-pain="post">${t('painPost')} ${post ? post.v : 'Ã¢â‚¬â€'}</button>
     <span class="hint tiny">${t('painStripHint')}</span>`;
   el.querySelectorAll('[data-pain]').forEach((b) => b.addEventListener('click', () => openPainModal(b.dataset.pain)));
 }
@@ -6577,17 +6577,17 @@ $('pain-save').addEventListener('click', () => {
   painAdd(painState.when, painState.v, $('pain-part').value, $('pain-note').value.trim());
   $('pain-modal').classList.add('hidden');
   renderPain(); renderPainStrip(); renderCareLoop();
-  aiRun();                              // v2.22.0ï¼šç–¼ç—›æ•°æ® â†’ AI ç®¡å®¶å»ºè®®å³æ—¶æ›´æ–°
+  aiRun();                              // v2.22.0Ã¯Â¼Å¡Ã§â€“Â¼Ã§â€”â€ºÃ¦â€¢Â°Ã¦ÂÂ® Ã¢â€ â€™ AI Ã§Â®Â¡Ã¥Â®Â¶Ã¥Â»ÂºÃ¨Â®Â®Ã¥ÂÂ³Ã¦â€”Â¶Ã¦â€ºÂ´Ã¦â€“Â°
   toast(t('toastPainSaved', { v: painState.v }));
   scheduleCloudSync();
 });
 
-/* ============ v2.21.10 å…¨å±€ï¼šé”®ç›˜æ“ä½œã€æ— éšœç¢è¯­ä¹‰ä¸Žå¼¹çª—ç„¦ç‚¹ ============ */
+/* ============ v2.21.10 Ã¥â€¦Â¨Ã¥Â±â‚¬Ã¯Â¼Å¡Ã©â€Â®Ã§â€ºËœÃ¦â€œÂÃ¤Â½Å“Ã£â‚¬ÂÃ¦â€”Â Ã©Å¡Å“Ã§Â¢ÂÃ¨Â¯Â­Ã¤Â¹â€°Ã¤Â¸Å½Ã¥Â¼Â¹Ã§Âªâ€”Ã§â€žÂ¦Ã§â€šÂ¹ ============ */
 const NAV_TABS = ['home', 'train', 'posture', 'ft', 'guide', 'record', 'assess', 'schedule', 'settings'];
-const FOCUS_MODALS = ['onboard', 'qr-modal', 'fb-modal'];      // æ‰“å¼€æ—¶æŽ¥ç®¡ç„¦ç‚¹ã€å…³é—­æ—¶å½’è¿˜
-const ESC_MODALS = ['qr-modal', 'fb-modal', 'onboard'];        // Esc å¯å…³é—­ï¼ˆç™»å½•å±ä¸å¯å…³ï¼Œé¿å…è¯¯é€€ï¼‰
+const FOCUS_MODALS = ['onboard', 'qr-modal', 'fb-modal'];      // Ã¦â€°â€œÃ¥Â¼â‚¬Ã¦â€”Â¶Ã¦Å½Â¥Ã§Â®Â¡Ã§â€žÂ¦Ã§â€šÂ¹Ã£â‚¬ÂÃ¥â€¦Â³Ã©â€”Â­Ã¦â€”Â¶Ã¥Â½â€™Ã¨Â¿Ëœ
+const ESC_MODALS = ['qr-modal', 'fb-modal', 'onboard'];        // Esc Ã¥ÂÂ¯Ã¥â€¦Â³Ã©â€”Â­Ã¯Â¼Ë†Ã§â„¢Â»Ã¥Â½â€¢Ã¥Â±ÂÃ¤Â¸ÂÃ¥ÂÂ¯Ã¥â€¦Â³Ã¯Â¼Å’Ã©ÂÂ¿Ã¥â€¦ÂÃ¨Â¯Â¯Ã©â‚¬â‚¬Ã¯Â¼â€°
 const focusTrap = { prev: null };
-// åº•éƒ¨å¯¼èˆªæŒ‰é’®çš„ aria-label è·Ÿéšå¯è§æ–‡å­—ä¸Žè¯­è¨€ï¼ˆä¸­æ–‡ â†’ã€Œè®­ç»ƒã€ï¼Œè‹±æ–‡ â†’ã€ŒTrainã€ï¼‰
+// Ã¥Âºâ€¢Ã©Æ’Â¨Ã¥Â¯Â¼Ã¨Ë†ÂªÃ¦Å’â€°Ã©â€™Â®Ã§Å¡â€ž aria-label Ã¨Â·Å¸Ã©Å¡ÂÃ¥ÂÂ¯Ã¨Â§ÂÃ¦â€“â€¡Ã¥Â­â€”Ã¤Â¸Å½Ã¨Â¯Â­Ã¨Â¨â‚¬Ã¯Â¼Ë†Ã¤Â¸Â­Ã¦â€“â€¡ Ã¢â€ â€™Ã£â‚¬Å’Ã¨Â®Â­Ã§Â»Æ’Ã£â‚¬ÂÃ¯Â¼Å’Ã¨â€¹Â±Ã¦â€“â€¡ Ã¢â€ â€™Ã£â‚¬Å’TrainÃ£â‚¬ÂÃ¯Â¼â€°
 function navLabelSync() {
   document.querySelectorAll('.bottom-nav button').forEach((b) => {
     const lab = b.querySelector('.nav-label');
@@ -6610,7 +6610,7 @@ function modalFocusOut(el) {
   if (p && document.contains(p)) { try { p.focus({ preventScroll: true }); } catch { /* ignore */ } }
 }
 function closeTopModal() {
-  if (syncState.scanning) { cancelSyncScan(); return true; }   // æ‰«ç ä¸­ï¼šEsc ç»“æŸæ‰«ç 
+  if (syncState.scanning) { cancelSyncScan(); return true; }   // Ã¦â€°Â«Ã§Â ÂÃ¤Â¸Â­Ã¯Â¼Å¡Esc Ã§Â»â€œÃ¦ÂÅ¸Ã¦â€°Â«Ã§Â Â
   for (const id of ESC_MODALS.slice().reverse()) {
     const el = $(id);
     if (!el || el.classList.contains('hidden')) continue;
@@ -6624,13 +6624,13 @@ function closeTopModal() {
 const isTypingTarget = (el) => !!(el && el.closest && el.closest('input, textarea, select, [contenteditable="true"]'));
 document.addEventListener('keydown', (ev) => {
   if (ev.key === 'Escape' || ev.key === 'Esc') { if (closeTopModal()) ev.preventDefault(); return; }
-  if (ev.ctrlKey || ev.metaKey || ev.altKey || ev.shiftKey) return;      // ä¸æŠ¢ç³»ç»Ÿå¿«æ·é”®
-  if (isTypingTarget(ev.target)) return;                                 // è¾“å…¥æ¡†é‡Œè¾“å…¥æ•°å­—ä¸åˆ‡é¡µ
+  if (ev.ctrlKey || ev.metaKey || ev.altKey || ev.shiftKey) return;      // Ã¤Â¸ÂÃ¦Å Â¢Ã§Â³Â»Ã§Â»Å¸Ã¥Â¿Â«Ã¦ÂÂ·Ã©â€Â®
+  if (isTypingTarget(ev.target)) return;                                 // Ã¨Â¾â€œÃ¥â€¦Â¥Ã¦Â¡â€ Ã©â€¡Å’Ã¨Â¾â€œÃ¥â€¦Â¥Ã¦â€¢Â°Ã¥Â­â€”Ã¤Â¸ÂÃ¥Ë†â€¡Ã©Â¡Âµ
   for (const id of ESC_MODALS) { const el = $(id); if (el && !el.classList.contains('hidden')) return; }
   const n = Number(ev.key);
   if (Number.isInteger(n) && n >= 1 && n <= NAV_TABS.length) { switchTab(NAV_TABS[n - 1]); ev.preventDefault(); }
 });
-// å¼¹çª—æ˜¾éš â†’ è‡ªåŠ¨æŽ¥ç®¡/å½’è¿˜ç„¦ç‚¹ï¼ˆè§‚å¯Ÿå™¨å®žçŽ°ï¼Œçº¯æ–°å¢žï¼Œä¸æ”¹åŠ¨æ—§çš„å¼€åˆé€»è¾‘ï¼‰
+// Ã¥Â¼Â¹Ã§Âªâ€”Ã¦ËœÂ¾Ã©Å¡Â Ã¢â€ â€™ Ã¨â€¡ÂªÃ¥Å Â¨Ã¦Å½Â¥Ã§Â®Â¡/Ã¥Â½â€™Ã¨Â¿ËœÃ§â€žÂ¦Ã§â€šÂ¹Ã¯Â¼Ë†Ã¨Â§â€šÃ¥Â¯Å¸Ã¥â„¢Â¨Ã¥Â®Å¾Ã§Å½Â°Ã¯Â¼Å’Ã§ÂºÂ¯Ã¦â€“Â°Ã¥Â¢Å¾Ã¯Â¼Å’Ã¤Â¸ÂÃ¦â€Â¹Ã¥Å Â¨Ã¦â€”Â§Ã§Å¡â€žÃ¥Â¼â‚¬Ã¥ÂË†Ã©â‚¬Â»Ã¨Â¾â€˜Ã¯Â¼â€°
 const modalObserver = new MutationObserver((list) => {
   list.forEach((m) => {
     const el = m.target;
@@ -6640,48 +6640,48 @@ const modalObserver = new MutationObserver((list) => {
   });
 });
 FOCUS_MODALS.forEach((id) => { const el = $(id); if (el) modalObserver.observe(el, { attributes: true, attributeFilter: ['class'] }); });
-// æ³¨æ„ï¼šnavLabelSync() å¿…é¡»ç­‰ initI18n() æŠŠå¯è§æ–‡å­—æœ¬åœ°åŒ–ä¹‹åŽå†è°ƒç”¨ï¼ˆè§å¯åŠ¨æ®µï¼‰
+// Ã¦Â³Â¨Ã¦â€žÂÃ¯Â¼Å¡navLabelSync() Ã¥Â¿â€¦Ã©Â¡Â»Ã§Â­â€° initI18n() Ã¦Å Å Ã¥ÂÂ¯Ã¨Â§ÂÃ¦â€“â€¡Ã¥Â­â€”Ã¦Å“Â¬Ã¥Å“Â°Ã¥Å’â€“Ã¤Â¹â€¹Ã¥ÂÅ½Ã¥â€ ÂÃ¨Â°Æ’Ã§â€Â¨Ã¯Â¼Ë†Ã¨Â§ÂÃ¥ÂÂ¯Ã¥Å Â¨Ã¦Â®ÂµÃ¯Â¼â€°
 
-/* ============ å¯åŠ¨ ============ */
+/* ============ Ã¥ÂÂ¯Ã¥Å Â¨ ============ */
 initI18n();
-setCustomKey(ukey('rehab_custom_ex'));   // è´¦å·åˆ†åŒºï¼šè‡ªå®šä¹‰åŠ¨ä½œæŒ‰å½“å‰è´¦å·éš”ç¦»
+setCustomKey(ukey('rehab_custom_ex'));   // Ã¨Â´Â¦Ã¥ÂÂ·Ã¥Ë†â€ Ã¥Å’ÂºÃ¯Â¼Å¡Ã¨â€¡ÂªÃ¥Â®Å¡Ã¤Â¹â€°Ã¥Å Â¨Ã¤Â½Å“Ã¦Å’â€°Ã¥Â½â€œÃ¥â€°ÂÃ¨Â´Â¦Ã¥ÂÂ·Ã©Å¡â€Ã§Â¦Â»
 onLangChanged(() => {
   renderExChips(); renderCollectLabels(getEx(activeExId()));
   renderRecords(); renderAssessments(); renderAppts(); renderCustomList();
   renderCollectCount();
   renderProfile(); renderReminder(); renderCloud();
   renderTodayPlan(); renderPlanList(); renderPlanPick(); renderPlanDayDots();
-  renderGoal(); renderVoice(); renderAchievements();   // æˆå°±ç½‘æ ¼ä¹Ÿéšè¯­è¨€åˆ‡æ¢
-  aiRun();                                              // AI ç®¡å®¶å¡ç‰‡éšè¯­è¨€åˆ‡æ¢
-  renderSedentary();                                    // ä¹…åæé†’è®¾ç½®éšè¯­è¨€åˆ‡æ¢
-  renderPaUI();                                         // ä½“æ€è¯„ä¼°é¡µéšè¯­è¨€åˆ‡æ¢
-  renderFtUI();                                         // åŠŸèƒ½æµ‹è¯•é¡µéšè¯­è¨€åˆ‡æ¢
-  renderHome();                                         // v2.21ï¼šä»Šæ—¥æ€»è§ˆéšè¯­è¨€åˆ‡æ¢
-  renderGuide();                                        // v2.21ï¼šè·Ÿç»ƒé¡µéšè¯­è¨€åˆ‡æ¢
-  renderTrainToday();                                   // v2.21.5ï¼šè®­ç»ƒé¡µä»Šæ—¥ä»»åŠ¡å°æ¡éšè¯­è¨€åˆ‡æ¢
-  renderStorageSize();                                  // v2.21.9ï¼šæ•°æ®å ç”¨éšè¯­è¨€åˆ‡æ¢
-  renderLastBackup();                                   // v2.21.9ï¼šä¸Šæ¬¡å¤‡ä»½æç¤ºéšè¯­è¨€åˆ‡æ¢
-  navLabelSync();                                       // v2.21.10ï¼šå¯¼èˆª aria-label éšè¯­è¨€åˆ‡æ¢
-  renderPain(); renderPainStrip();                      // v2.22.0ï¼šç–¼ç—›å¡éšè¯­è¨€åˆ‡æ¢
-  renderEdu();                                          // v2.23.0ï¼šåº·å¤å°è¯¾å ‚éšè¯­è¨€åˆ‡æ¢
-  renderReport();                                       // v2.24.0ï¼šæ²»ç–—å¸ˆæŠ¥å‘Šæ‘˜è¦éšè¯­è¨€åˆ‡æ¢
-  renderRomUI(); renderRomHistory(); renderRomResult(romHistory()[0] || null);   // v2.26.0ï¼šROM éšè¯­è¨€åˆ‡æ¢
-  renderPromUI(); renderPromHistory();                  // v2.27.0ï¼šPROMs éšè¯­è¨€åˆ‡æ¢
-  renderAiPlan(); renderAiEngine();                     // v2.28.0ï¼šè‡ªé€‚åº”å¼•æ“Žéšè¯­è¨€åˆ‡æ¢
-  renderPath();                                         // v2.29.0ï¼šåº·å¤è·¯å¾„éšè¯­è¨€åˆ‡æ¢
-  renderCamCard();                                      // v2.30.0ï¼šå½±åƒè®¾ç½®éšè¯­è¨€åˆ‡æ¢
-  renderCareLoop();                                     // v2.31.0ï¼šåº·å¤é—­çŽ¯éšè¯­è¨€åˆ‡æ¢
-  renderBlockSub(); renderRecheck();                    // v2.33.0ï¼šå­æ ‡ç­¾ä¸Žå¤è¯„é¡µéšè¯­è¨€åˆ‡æ¢
-  $('about-version').textContent = t('versionLabel', { v: APP_VERSION });   // v2.21.9ï¼šå…³äºŽé¡µç‰ˆæœ¬å·éšè¯­è¨€åˆ‡æ¢ï¼ˆåŽŸæ¥åªè®¾ç½®ä¸€æ¬¡ï¼‰
+  renderGoal(); renderVoice(); renderAchievements();   // Ã¦Ë†ÂÃ¥Â°Â±Ã§Â½â€˜Ã¦Â Â¼Ã¤Â¹Å¸Ã©Å¡ÂÃ¨Â¯Â­Ã¨Â¨â‚¬Ã¥Ë†â€¡Ã¦ÂÂ¢
+  aiRun();                                              // AI Ã§Â®Â¡Ã¥Â®Â¶Ã¥ÂÂ¡Ã§â€°â€¡Ã©Å¡ÂÃ¨Â¯Â­Ã¨Â¨â‚¬Ã¥Ë†â€¡Ã¦ÂÂ¢
+  renderSedentary();                                    // Ã¤Â¹â€¦Ã¥ÂÂÃ¦ÂÂÃ©â€ â€™Ã¨Â®Â¾Ã§Â½Â®Ã©Å¡ÂÃ¨Â¯Â­Ã¨Â¨â‚¬Ã¥Ë†â€¡Ã¦ÂÂ¢
+  renderPaUI();                                         // Ã¤Â½â€œÃ¦â‚¬ÂÃ¨Â¯â€žÃ¤Â¼Â°Ã©Â¡ÂµÃ©Å¡ÂÃ¨Â¯Â­Ã¨Â¨â‚¬Ã¥Ë†â€¡Ã¦ÂÂ¢
+  renderFtUI();                                         // Ã¥Å Å¸Ã¨Æ’Â½Ã¦Âµâ€¹Ã¨Â¯â€¢Ã©Â¡ÂµÃ©Å¡ÂÃ¨Â¯Â­Ã¨Â¨â‚¬Ã¥Ë†â€¡Ã¦ÂÂ¢
+  renderHome();                                         // v2.21Ã¯Â¼Å¡Ã¤Â»Å Ã¦â€”Â¥Ã¦â‚¬Â»Ã¨Â§Ë†Ã©Å¡ÂÃ¨Â¯Â­Ã¨Â¨â‚¬Ã¥Ë†â€¡Ã¦ÂÂ¢
+  renderGuide();                                        // v2.21Ã¯Â¼Å¡Ã¨Â·Å¸Ã§Â»Æ’Ã©Â¡ÂµÃ©Å¡ÂÃ¨Â¯Â­Ã¨Â¨â‚¬Ã¥Ë†â€¡Ã¦ÂÂ¢
+  renderTrainToday();                                   // v2.21.5Ã¯Â¼Å¡Ã¨Â®Â­Ã§Â»Æ’Ã©Â¡ÂµÃ¤Â»Å Ã¦â€”Â¥Ã¤Â»Â»Ã¥Å Â¡Ã¥Â°ÂÃ¦ÂÂ¡Ã©Å¡ÂÃ¨Â¯Â­Ã¨Â¨â‚¬Ã¥Ë†â€¡Ã¦ÂÂ¢
+  renderStorageSize();                                  // v2.21.9Ã¯Â¼Å¡Ã¦â€¢Â°Ã¦ÂÂ®Ã¥ÂÂ Ã§â€Â¨Ã©Å¡ÂÃ¨Â¯Â­Ã¨Â¨â‚¬Ã¥Ë†â€¡Ã¦ÂÂ¢
+  renderLastBackup();                                   // v2.21.9Ã¯Â¼Å¡Ã¤Â¸Å Ã¦Â¬Â¡Ã¥Â¤â€¡Ã¤Â»Â½Ã¦ÂÂÃ§Â¤ÂºÃ©Å¡ÂÃ¨Â¯Â­Ã¨Â¨â‚¬Ã¥Ë†â€¡Ã¦ÂÂ¢
+  navLabelSync();                                       // v2.21.10Ã¯Â¼Å¡Ã¥Â¯Â¼Ã¨Ë†Âª aria-label Ã©Å¡ÂÃ¨Â¯Â­Ã¨Â¨â‚¬Ã¥Ë†â€¡Ã¦ÂÂ¢
+  renderPain(); renderPainStrip();                      // v2.22.0Ã¯Â¼Å¡Ã§â€“Â¼Ã§â€”â€ºÃ¥ÂÂ¡Ã©Å¡ÂÃ¨Â¯Â­Ã¨Â¨â‚¬Ã¥Ë†â€¡Ã¦ÂÂ¢
+  renderEdu();                                          // v2.23.0Ã¯Â¼Å¡Ã¥ÂºÂ·Ã¥Â¤ÂÃ¥Â°ÂÃ¨Â¯Â¾Ã¥Â â€šÃ©Å¡ÂÃ¨Â¯Â­Ã¨Â¨â‚¬Ã¥Ë†â€¡Ã¦ÂÂ¢
+  renderReport();                                       // v2.24.0Ã¯Â¼Å¡Ã¦Â²Â»Ã§â€“â€”Ã¥Â¸Ë†Ã¦Å Â¥Ã¥â€˜Å Ã¦â€˜ËœÃ¨Â¦ÂÃ©Å¡ÂÃ¨Â¯Â­Ã¨Â¨â‚¬Ã¥Ë†â€¡Ã¦ÂÂ¢
+  renderRomUI(); renderRomHistory(); renderRomResult(romHistory()[0] || null);   // v2.26.0Ã¯Â¼Å¡ROM Ã©Å¡ÂÃ¨Â¯Â­Ã¨Â¨â‚¬Ã¥Ë†â€¡Ã¦ÂÂ¢
+  renderPromUI(); renderPromHistory();                  // v2.27.0Ã¯Â¼Å¡PROMs Ã©Å¡ÂÃ¨Â¯Â­Ã¨Â¨â‚¬Ã¥Ë†â€¡Ã¦ÂÂ¢
+  renderAiPlan(); renderAiEngine();                     // v2.28.0Ã¯Â¼Å¡Ã¨â€¡ÂªÃ©â‚¬â€šÃ¥Âºâ€Ã¥Â¼â€¢Ã¦â€œÅ½Ã©Å¡ÂÃ¨Â¯Â­Ã¨Â¨â‚¬Ã¥Ë†â€¡Ã¦ÂÂ¢
+  renderPath();                                         // v2.29.0Ã¯Â¼Å¡Ã¥ÂºÂ·Ã¥Â¤ÂÃ¨Â·Â¯Ã¥Â¾â€žÃ©Å¡ÂÃ¨Â¯Â­Ã¨Â¨â‚¬Ã¥Ë†â€¡Ã¦ÂÂ¢
+  renderCamCard();                                      // v2.30.0Ã¯Â¼Å¡Ã¥Â½Â±Ã¥Æ’ÂÃ¨Â®Â¾Ã§Â½Â®Ã©Å¡ÂÃ¨Â¯Â­Ã¨Â¨â‚¬Ã¥Ë†â€¡Ã¦ÂÂ¢
+  renderCareLoop();                                     // v2.31.0Ã¯Â¼Å¡Ã¥ÂºÂ·Ã¥Â¤ÂÃ©â€”Â­Ã§Å½Â¯Ã©Å¡ÂÃ¨Â¯Â­Ã¨Â¨â‚¬Ã¥Ë†â€¡Ã¦ÂÂ¢
+  renderBlockSub(); renderRecheck();                    // v2.33.0Ã¯Â¼Å¡Ã¥Â­ÂÃ¦Â â€¡Ã§Â­Â¾Ã¤Â¸Å½Ã¥Â¤ÂÃ¨Â¯â€žÃ©Â¡ÂµÃ©Å¡ÂÃ¨Â¯Â­Ã¨Â¨â‚¬Ã¥Ë†â€¡Ã¦ÂÂ¢
+  $('about-version').textContent = t('versionLabel', { v: APP_VERSION });   // v2.21.9Ã¯Â¼Å¡Ã¥â€¦Â³Ã¤ÂºÅ½Ã©Â¡ÂµÃ§â€°Ë†Ã¦Å“Â¬Ã¥ÂÂ·Ã©Å¡ÂÃ¨Â¯Â­Ã¨Â¨â‚¬Ã¥Ë†â€¡Ã¦ÂÂ¢Ã¯Â¼Ë†Ã¥Å½Å¸Ã¦ÂÂ¥Ã¥ÂÂªÃ¨Â®Â¾Ã§Â½Â®Ã¤Â¸â‚¬Ã¦Â¬Â¡Ã¯Â¼â€°
   setStartBtn(state.running ? 'btnStop' : 'btnStart', state.running ? 'stop' : 'play');
   $('btn-collect-label').textContent = state.collectMode ? t('btnCollectStop') : t('btnCollect');
   $('feedback')._last = null;
-  if (state.running) state.statsKey = null;   // ä¸‹ä¸€å¸§æŒ‰æ–°è¯­è¨€é‡å»ºç»Ÿè®¡
-  else $('feedback').classList.add('hidden'); // ä¸è®­ç»ƒæ—¶åé¦ˆæ¡ä¸æ®‹ç•™æ—§è¯­è¨€æ–‡æ¡ˆ
-  if (!$('onboard').classList.contains('hidden')) renderOnboard();        // å¼•å¯¼é¡µéšè¯­è¨€åˆ‡æ¢
-  if (!$('fb-modal').classList.contains('hidden')) openFeedback();         // åé¦ˆå¼¹çª—æŠ¥å‘Šéšè¯­è¨€åˆ‡æ¢
+  if (state.running) state.statsKey = null;   // Ã¤Â¸â€¹Ã¤Â¸â‚¬Ã¥Â¸Â§Ã¦Å’â€°Ã¦â€“Â°Ã¨Â¯Â­Ã¨Â¨â‚¬Ã©â€¡ÂÃ¥Â»ÂºÃ§Â»Å¸Ã¨Â®Â¡
+  else $('feedback').classList.add('hidden'); // Ã¤Â¸ÂÃ¨Â®Â­Ã§Â»Æ’Ã¦â€”Â¶Ã¥ÂÂÃ©Â¦Ë†Ã¦ÂÂ¡Ã¤Â¸ÂÃ¦Â®â€¹Ã§â€¢â„¢Ã¦â€”Â§Ã¨Â¯Â­Ã¨Â¨â‚¬Ã¦â€“â€¡Ã¦Â¡Ë†
+  if (!$('onboard').classList.contains('hidden')) renderOnboard();        // Ã¥Â¼â€¢Ã¥Â¯Â¼Ã©Â¡ÂµÃ©Å¡ÂÃ¨Â¯Â­Ã¨Â¨â‚¬Ã¥Ë†â€¡Ã¦ÂÂ¢
+  if (!$('fb-modal').classList.contains('hidden')) openFeedback();         // Ã¥ÂÂÃ©Â¦Ë†Ã¥Â¼Â¹Ã§Âªâ€”Ã¦Å Â¥Ã¥â€˜Å Ã©Å¡ÂÃ¨Â¯Â­Ã¨Â¨â‚¬Ã¥Ë†â€¡Ã¦ÂÂ¢
   if (!$('custom-form-card').classList.contains('hidden')) $('cf-title').textContent = editingCustomId ? t('cfTitleEdit') : t('cfTitleNew');
-  renderQrFrame();                                                          // äºŒç»´ç åŒæ­¥å¸§ï¼ˆå¦‚å¯è§ï¼‰
+  renderQrFrame();                                                          // Ã¤ÂºÅ’Ã§Â»Â´Ã§Â ÂÃ¥ÂÅ’Ã¦Â­Â¥Ã¥Â¸Â§Ã¯Â¼Ë†Ã¥Â¦â€šÃ¥ÂÂ¯Ã¨Â§ÂÃ¯Â¼â€°
   if (state._lastCamErr && !$('cam-retry').classList.contains('hidden')) showCameraError(state._lastCamErr, state._lastCamIsModel);
 });
 renderExChips(); renderCollectLabels(getEx(activeExId())); resetAgg();
@@ -6691,7 +6691,7 @@ renderProfile(); renderReminder(); renderCloud(); renderAuth();
 renderTodayPlan(); renderPlanList();
 renderVoice();
 renderSedentary();
-// v2.19ï¼šä½“æ€è¯„ä¼°é¡µåˆå§‹åŒ–ï¼ˆé€‰æ‹©ä½“æ€ / å¼€å§‹ä¸Žæ¼”ç¤ºæŒ‰é’®ï¼‰
+// v2.19Ã¯Â¼Å¡Ã¤Â½â€œÃ¦â‚¬ÂÃ¨Â¯â€žÃ¤Â¼Â°Ã©Â¡ÂµÃ¥Ë†ÂÃ¥Â§â€¹Ã¥Å’â€“Ã¯Â¼Ë†Ã©â‚¬â€°Ã¦â€¹Â©Ã¤Â½â€œÃ¦â‚¬Â / Ã¥Â¼â‚¬Ã¥Â§â€¹Ã¤Â¸Å½Ã¦Â¼â€Ã§Â¤ÂºÃ¦Å’â€°Ã©â€™Â®Ã¯Â¼â€°
 renderPaUI();
 document.querySelectorAll('.pa-kind').forEach((b) => b.addEventListener('click', () => {
   paState.kind = b.dataset.pa;
@@ -6701,46 +6701,46 @@ document.querySelectorAll('.pa-kind').forEach((b) => b.addEventListener('click',
 }));
 $('btn-pa-start').addEventListener('click', () => { paStart(false); });
 $('btn-pa-demo').addEventListener('click', () => { paStart(true); });
-// v2.20ï¼šåŠŸèƒ½æµ‹è¯•é¡µåˆå§‹åŒ–
+// v2.20Ã¯Â¼Å¡Ã¥Å Å¸Ã¨Æ’Â½Ã¦Âµâ€¹Ã¨Â¯â€¢Ã©Â¡ÂµÃ¥Ë†ÂÃ¥Â§â€¹Ã¥Å’â€“
 renderFtUI();
 $('btn-ft-start').addEventListener('click', () => { ftStart(ftState.key, false); });
 $('btn-ft-demo').addEventListener('click', () => { ftStart(ftState.key, true); });
 $('btn-ft-battery').addEventListener('click', () => { ftStart('battery', false); });
-window.__ftBatteryDemo = () => ftStart('battery', true);   // æµ‹è¯•é’©å­ï¼šå®Œæ•´æµ‹è¯•æ¼”ç¤ºæ¨¡å¼
-// v2.21ï¼šä»Šæ—¥æ€»è§ˆ + è·Ÿç»ƒåˆå§‹åŒ–
+window.__ftBatteryDemo = () => ftStart('battery', true);   // Ã¦Âµâ€¹Ã¨Â¯â€¢Ã©â€™Â©Ã¥Â­ÂÃ¯Â¼Å¡Ã¥Â®Å’Ã¦â€¢Â´Ã¦Âµâ€¹Ã¨Â¯â€¢Ã¦Â¼â€Ã§Â¤ÂºÃ¦Â¨Â¡Ã¥Â¼Â
+// v2.21Ã¯Â¼Å¡Ã¤Â»Å Ã¦â€”Â¥Ã¦â‚¬Â»Ã¨Â§Ë† + Ã¨Â·Å¸Ã§Â»Æ’Ã¥Ë†ÂÃ¥Â§â€¹Ã¥Å’â€“
 renderHome();
 renderGuide();
 renderTrainToday();
 renderStorageSize();
 renderLastBackup();
-navLabelSync();                                          // v2.21.10ï¼šæœ¬åœ°åŒ–åŽå†åŒæ­¥å¯¼èˆª aria-label
-renderPain(); renderPainStrip();                         // v2.22.0ï¼šç–¼ç—›å¡åˆå§‹åŒ–
-renderEdu();                                             // v2.23.0ï¼šåº·å¤å°è¯¾å ‚åˆå§‹åŒ–
-renderReport();                                          // v2.24.0ï¼šæ²»ç–—å¸ˆæŠ¥å‘Šæ‘˜è¦åˆå§‹åŒ–
-renderRomUI(); renderRomHistory(); renderRomResult(null); // v2.26.0ï¼šROM æµ‹é‡åˆå§‹åŒ–
-renderPromUI(); renderPromHistory();                     // v2.27.0ï¼šPROMs é‡è¡¨åˆå§‹åŒ–
-renderAiPlan(); renderAiEngine();                        // v2.28.0ï¼šè‡ªé€‚åº”å¼•æ“Žåˆå§‹åŒ–
-renderPath();                                            // v2.29.0ï¼šåº·å¤è·¯å¾„åˆå§‹åŒ–
-renderCamCard();                                         // v2.30.0ï¼šå½±åƒè®¾ç½®åˆå§‹åŒ–
-renderCareLoop();                                        // v2.31.0ï¼šåº·å¤é—­çŽ¯åˆå§‹åŒ–
-renderRelayState();                                      // v2.32.0ï¼šç«¯æ‰‹æŽ¥åŠ›çŠ¶æ€
-renderBlockSub(); renderRecheck();                        // v2.33.0ï¼šä¸‰å—å¼æž¶æž„ä¸Žå¤è¯„é¡µåˆå§‹åŒ–
-window.__gwSkip = () => gwFinish(true);                   // æµ‹è¯•é’©å­ï¼šç›´æŽ¥å®Œæˆå½“å‰è·Ÿç»ƒ
+navLabelSync();                                          // v2.21.10Ã¯Â¼Å¡Ã¦Å“Â¬Ã¥Å“Â°Ã¥Å’â€“Ã¥ÂÅ½Ã¥â€ ÂÃ¥ÂÅ’Ã¦Â­Â¥Ã¥Â¯Â¼Ã¨Ë†Âª aria-label
+renderPain(); renderPainStrip();                         // v2.22.0Ã¯Â¼Å¡Ã§â€“Â¼Ã§â€”â€ºÃ¥ÂÂ¡Ã¥Ë†ÂÃ¥Â§â€¹Ã¥Å’â€“
+renderEdu();                                             // v2.23.0Ã¯Â¼Å¡Ã¥ÂºÂ·Ã¥Â¤ÂÃ¥Â°ÂÃ¨Â¯Â¾Ã¥Â â€šÃ¥Ë†ÂÃ¥Â§â€¹Ã¥Å’â€“
+renderReport();                                          // v2.24.0Ã¯Â¼Å¡Ã¦Â²Â»Ã§â€“â€”Ã¥Â¸Ë†Ã¦Å Â¥Ã¥â€˜Å Ã¦â€˜ËœÃ¨Â¦ÂÃ¥Ë†ÂÃ¥Â§â€¹Ã¥Å’â€“
+renderRomUI(); renderRomHistory(); renderRomResult(null); // v2.26.0Ã¯Â¼Å¡ROM Ã¦Âµâ€¹Ã©â€¡ÂÃ¥Ë†ÂÃ¥Â§â€¹Ã¥Å’â€“
+renderPromUI(); renderPromHistory();                     // v2.27.0Ã¯Â¼Å¡PROMs Ã©â€¡ÂÃ¨Â¡Â¨Ã¥Ë†ÂÃ¥Â§â€¹Ã¥Å’â€“
+renderAiPlan(); renderAiEngine();                        // v2.28.0Ã¯Â¼Å¡Ã¨â€¡ÂªÃ©â‚¬â€šÃ¥Âºâ€Ã¥Â¼â€¢Ã¦â€œÅ½Ã¥Ë†ÂÃ¥Â§â€¹Ã¥Å’â€“
+renderPath();                                            // v2.29.0Ã¯Â¼Å¡Ã¥ÂºÂ·Ã¥Â¤ÂÃ¨Â·Â¯Ã¥Â¾â€žÃ¥Ë†ÂÃ¥Â§â€¹Ã¥Å’â€“
+renderCamCard();                                         // v2.30.0Ã¯Â¼Å¡Ã¥Â½Â±Ã¥Æ’ÂÃ¨Â®Â¾Ã§Â½Â®Ã¥Ë†ÂÃ¥Â§â€¹Ã¥Å’â€“
+renderCareLoop();                                        // v2.31.0Ã¯Â¼Å¡Ã¥ÂºÂ·Ã¥Â¤ÂÃ©â€”Â­Ã§Å½Â¯Ã¥Ë†ÂÃ¥Â§â€¹Ã¥Å’â€“
+renderRelayState();                                      // v2.32.0Ã¯Â¼Å¡Ã§Â«Â¯Ã¦â€°â€¹Ã¦Å½Â¥Ã¥Å â€ºÃ§Å Â¶Ã¦â‚¬Â
+renderBlockSub(); renderRecheck();                        // v2.33.0Ã¯Â¼Å¡Ã¤Â¸â€°Ã¥Ââ€”Ã¥Â¼ÂÃ¦Å¾Â¶Ã¦Å¾â€žÃ¤Â¸Å½Ã¥Â¤ÂÃ¨Â¯â€žÃ©Â¡ÂµÃ¥Ë†ÂÃ¥Â§â€¹Ã¥Å’â€“
+window.__gwSkip = () => gwFinish(true);                   // Ã¦Âµâ€¹Ã¨Â¯â€¢Ã©â€™Â©Ã¥Â­ÂÃ¯Â¼Å¡Ã§â€ºÂ´Ã¦Å½Â¥Ã¥Â®Å’Ã¦Ë†ÂÃ¥Â½â€œÃ¥â€°ÂÃ¨Â·Å¸Ã§Â»Æ’
 showOnboard();
-setTimeout(reminderCatchUp, 4000);            // é”™è¿‡æé†’æ—¶é—´ â†’ æ‰“å¼€æ—¶è¡¥ä¸€æ¬¡
-// å¼€å‘æ¨¡å¼ï¼š?cfg=1 æ˜¾ç¤ºé…ç½®å…¥å£ï¼ˆæ™®é€šç”¨æˆ·æ°¸è¿œçœ‹ä¸åˆ°ï¼›å¯†é’¥å†™æ­»åŽç”± CLOUD_HARDCODED ç”Ÿæ•ˆï¼‰
+setTimeout(reminderCatchUp, 4000);            // Ã©â€â„¢Ã¨Â¿â€¡Ã¦ÂÂÃ©â€ â€™Ã¦â€”Â¶Ã©â€”Â´ Ã¢â€ â€™ Ã¦â€°â€œÃ¥Â¼â‚¬Ã¦â€”Â¶Ã¨Â¡Â¥Ã¤Â¸â‚¬Ã¦Â¬Â¡
+// Ã¥Â¼â‚¬Ã¥Ââ€˜Ã¦Â¨Â¡Ã¥Â¼ÂÃ¯Â¼Å¡?cfg=1 Ã¦ËœÂ¾Ã§Â¤ÂºÃ©â€¦ÂÃ§Â½Â®Ã¥â€¦Â¥Ã¥ÂÂ£Ã¯Â¼Ë†Ã¦â„¢Â®Ã©â‚¬Å¡Ã§â€Â¨Ã¦Ë†Â·Ã¦Â°Â¸Ã¨Â¿Å“Ã§Å“â€¹Ã¤Â¸ÂÃ¥Ë†Â°Ã¯Â¼â€ºÃ¥Â¯â€ Ã©â€™Â¥Ã¥â€ â„¢Ã¦Â­Â»Ã¥ÂÅ½Ã§â€Â± CLOUD_HARDCODED Ã§â€Å¸Ã¦â€¢Ë†Ã¯Â¼â€°
 if (location.search.includes('cfg')) {
   $('btn-auth-cfg-toggle').classList.remove('hidden');
   $('btn-config-server').classList.remove('hidden');
 }
 $('btn-collect-label').textContent = t('btnCollect');
 setStartBtn('btnStart', 'play');
-// ç™»å½•ç”¨æˆ·ï¼šå¯åŠ¨åŽè‡ªåŠ¨åŒæ­¥ä¸€æ¬¡ï¼›è‡ªä¸»æ›´æ–°æ£€æµ‹ï¼ˆæ¯å¤©ä¸€æ¬¡ï¼Œç©ºé—²æ—¶ç½‘é¡µç‰ˆå…¨è‡ªåŠ¨ï¼‰
+// Ã§â„¢Â»Ã¥Â½â€¢Ã§â€Â¨Ã¦Ë†Â·Ã¯Â¼Å¡Ã¥ÂÂ¯Ã¥Å Â¨Ã¥ÂÅ½Ã¨â€¡ÂªÃ¥Å Â¨Ã¥ÂÅ’Ã¦Â­Â¥Ã¤Â¸â‚¬Ã¦Â¬Â¡Ã¯Â¼â€ºÃ¨â€¡ÂªÃ¤Â¸Â»Ã¦â€ºÂ´Ã¦â€“Â°Ã¦Â£â‚¬Ã¦Âµâ€¹Ã¯Â¼Ë†Ã¦Â¯ÂÃ¥Â¤Â©Ã¤Â¸â‚¬Ã¦Â¬Â¡Ã¯Â¼Å’Ã§Â©ÂºÃ©â€”Â²Ã¦â€”Â¶Ã§Â½â€˜Ã©Â¡ÂµÃ§â€°Ë†Ã¥â€¦Â¨Ã¨â€¡ÂªÃ¥Å Â¨Ã¯Â¼â€°
 if (cloudCfg() && cloudSession()) setTimeout(() => cloudSync().catch(() => {}), 2500);
 if (!location.search.includes('updatetest')) setTimeout(() => checkUpdate(false), 6000);
-// AI ç³»ç»Ÿç®¡å®¶ï¼šå¯åŠ¨ä½“æ£€ + ä¸»åŠ¨æé†’ + å…¨å±€å¼‚å¸¸æ”¶é›†
+// AI Ã§Â³Â»Ã§Â»Å¸Ã§Â®Â¡Ã¥Â®Â¶Ã¯Â¼Å¡Ã¥ÂÂ¯Ã¥Å Â¨Ã¤Â½â€œÃ¦Â£â‚¬ + Ã¤Â¸Â»Ã¥Å Â¨Ã¦ÂÂÃ©â€ â€™ + Ã¥â€¦Â¨Ã¥Â±â‚¬Ã¥Â¼â€šÃ¥Â¸Â¸Ã¦â€Â¶Ã©â€ºâ€ 
 aiProactive();
-// æ ‡é¢˜éšè¯­è¨€åˆ‡æ¢ï¼ˆä¸­æ–‡ â†’ åº·å¤AIï¼‰
+// Ã¦Â â€¡Ã©Â¢ËœÃ©Å¡ÂÃ¨Â¯Â­Ã¨Â¨â‚¬Ã¥Ë†â€¡Ã¦ÂÂ¢Ã¯Â¼Ë†Ã¤Â¸Â­Ã¦â€“â€¡ Ã¢â€ â€™ Ã¥ÂºÂ·Ã¥Â¤ÂAIÃ¯Â¼â€°
 const syncTitle = () => { document.title = t('pageTitle'); };
 syncTitle();
 onLangChanged(syncTitle);
@@ -6754,7 +6754,7 @@ $('btn-fb-copy').addEventListener('click', copyFeedback);
 $('btn-fb-close').addEventListener('click', () => $('fb-modal').classList.add('hidden'));
 $('fb-modal').addEventListener('click', (ev) => { if (ev.target === $('fb-modal')) $('fb-modal').classList.add('hidden'); });
 $('fb-text').addEventListener('input', openFeedback);
-// å…³äºŽï¼šç‰ˆæœ¬å· + åˆ†äº«
+// Ã¥â€¦Â³Ã¤ÂºÅ½Ã¯Â¼Å¡Ã§â€°Ë†Ã¦Å“Â¬Ã¥ÂÂ· + Ã¥Ë†â€ Ã¤ÂºÂ«
 $('about-version').textContent = t('versionLabel', { v: APP_VERSION });
 $('btn-check-update').addEventListener('click', () => checkUpdate(true));
 $('btn-share').addEventListener('click', async () => {
@@ -6771,7 +6771,7 @@ $('btn-share').addEventListener('click', async () => {
     catch { toast(t('shareFail')); }
   }
 });
-// PWAï¼šå¯å®‰è£…åˆ°ä¸»å±å¹• + ç¦»çº¿å¯ç”¨ + è‡ªä¸»æ›´æ–°ï¼ˆæ–°ç‰ˆå°±ç»ª â†’ è‡ªåŠ¨åˆ‡æ¢ â†’ è‡ªåŠ¨é‡å¯ï¼‰
+// PWAÃ¯Â¼Å¡Ã¥ÂÂ¯Ã¥Â®â€°Ã¨Â£â€¦Ã¥Ë†Â°Ã¤Â¸Â»Ã¥Â±ÂÃ¥Â¹â€¢ + Ã§Â¦Â»Ã§ÂºÂ¿Ã¥ÂÂ¯Ã§â€Â¨ + Ã¨â€¡ÂªÃ¤Â¸Â»Ã¦â€ºÂ´Ã¦â€“Â°Ã¯Â¼Ë†Ã¦â€“Â°Ã§â€°Ë†Ã¥Â°Â±Ã§Â»Âª Ã¢â€ â€™ Ã¨â€¡ÂªÃ¥Å Â¨Ã¥Ë†â€¡Ã¦ÂÂ¢ Ã¢â€ â€™ Ã¨â€¡ÂªÃ¥Å Â¨Ã©â€¡ÂÃ¥ÂÂ¯Ã¯Â¼â€°
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('./sw.js').then((reg) => {
@@ -6783,15 +6783,15 @@ if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
         nw.addEventListener('statechange', () => {
           if (nw.state !== 'installed' || !navigator.serviceWorker.controller) return;
           if (updState.autoApply) {
-            nw.postMessage({ type: 'SKIP_WAITING' });   // ç«‹å³æŽ¥ç®¡ï¼Œé©¬ä¸Šç”Ÿæ•ˆ
+            nw.postMessage({ type: 'SKIP_WAITING' });   // Ã§Â«â€¹Ã¥ÂÂ³Ã¦Å½Â¥Ã§Â®Â¡Ã¯Â¼Å’Ã©Â©Â¬Ã¤Â¸Å Ã§â€Å¸Ã¦â€¢Ë†
           } else {
-            toast(t('swUpdate'));                        // æœ‰æ›´æ–°ä½†è®­ç»ƒä¸­ â†’ åªæç¤º
+            toast(t('swUpdate'));                        // Ã¦Å“â€°Ã¦â€ºÂ´Ã¦â€“Â°Ã¤Â½â€ Ã¨Â®Â­Ã§Â»Æ’Ã¤Â¸Â­ Ã¢â€ â€™ Ã¥ÂÂªÃ¦ÂÂÃ§Â¤Âº
           }
         });
       });
     }).catch(() => {});
     navigator.serviceWorker.addEventListener('controllerchange', () => {
-      if (!updState.autoApply) return;                   // ä»…è‡ªä¸»æ›´æ–°æ—¶è‡ªåŠ¨é‡å¯
+      if (!updState.autoApply) return;                   // Ã¤Â»â€¦Ã¨â€¡ÂªÃ¤Â¸Â»Ã¦â€ºÂ´Ã¦â€“Â°Ã¦â€”Â¶Ã¨â€¡ÂªÃ¥Å Â¨Ã©â€¡ÂÃ¥ÂÂ¯
       updState.applied = true;
       toast(t('updAutoDone', { v: updState.info ? updState.info.version : '' }));
       setTimeout(() => location.reload(), 800);
@@ -6799,7 +6799,7 @@ if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
   });
 }
 if (location.hash === '#selftest') selfTest();
-// å¾®ä¿¡å†…ç½®æµè§ˆå™¨ä¸æ”¯æŒæ‘„åƒå¤´ â€”â€” æ‰“å¼€æ—¶å°±æç¤ºç”¨ç³»ç»Ÿæµè§ˆå™¨
+// Ã¥Â¾Â®Ã¤Â¿Â¡Ã¥â€ â€¦Ã§Â½Â®Ã¦ÂµÂÃ¨Â§Ë†Ã¥â„¢Â¨Ã¤Â¸ÂÃ¦â€Â¯Ã¦Å’ÂÃ¦â€˜â€žÃ¥Æ’ÂÃ¥Â¤Â´ Ã¢â‚¬â€Ã¢â‚¬â€ Ã¦â€°â€œÃ¥Â¼â‚¬Ã¦â€”Â¶Ã¥Â°Â±Ã¦ÂÂÃ§Â¤ÂºÃ§â€Â¨Ã§Â³Â»Ã§Â»Å¸Ã¦ÂµÂÃ¨Â§Ë†Ã¥â„¢Â¨
 if (/micromessenger/i.test(navigator.userAgent)) {
   const fb = $('feedback');
   fb.classList.remove('hidden');
@@ -6807,33 +6807,33 @@ if (/micromessenger/i.test(navigator.userAgent)) {
   fb.className = 'feedback warn';
   fb._last = 'wechat';
 }
-// ?autostart=1 â†’ é¡µé¢åŠ è½½åŽè‡ªåŠ¨å¼€å§‹åˆ†æžï¼ˆæµ‹è¯• / å¿«æ·è¿›å…¥ç”¨ï¼‰
+// ?autostart=1 Ã¢â€ â€™ Ã©Â¡ÂµÃ©ÂÂ¢Ã¥Å Â Ã¨Â½Â½Ã¥ÂÅ½Ã¨â€¡ÂªÃ¥Å Â¨Ã¥Â¼â‚¬Ã¥Â§â€¹Ã¥Ë†â€ Ã¦Å¾ÂÃ¯Â¼Ë†Ã¦Âµâ€¹Ã¨Â¯â€¢ / Ã¥Â¿Â«Ã¦ÂÂ·Ã¨Â¿â€ºÃ¥â€¦Â¥Ã§â€Â¨Ã¯Â¼â€°
 if (location.search.includes('autostart')) setTimeout(() => toggleStart(), 800);
-// ?updatetest=1 â†’ æ¨¡æ‹Ÿå‘çŽ°æ–°ç‰ˆæœ¬ï¼ˆæµ‹è¯•æ›´æ–°å¡ç‰‡ UI + AI ç®¡å®¶æ›´æ–°æ„ŸçŸ¥ï¼Œä¸çœŸå®žä¸‹è½½ï¼‰
+// ?updatetest=1 Ã¢â€ â€™ Ã¦Â¨Â¡Ã¦â€¹Å¸Ã¥Ââ€˜Ã§Å½Â°Ã¦â€“Â°Ã§â€°Ë†Ã¦Å“Â¬Ã¯Â¼Ë†Ã¦Âµâ€¹Ã¨Â¯â€¢Ã¦â€ºÂ´Ã¦â€“Â°Ã¥ÂÂ¡Ã§â€°â€¡ UI + AI Ã§Â®Â¡Ã¥Â®Â¶Ã¦â€ºÂ´Ã¦â€“Â°Ã¦â€žÅ¸Ã§Å¸Â¥Ã¯Â¼Å’Ã¤Â¸ÂÃ§Å“Å¸Ã¥Â®Å¾Ã¤Â¸â€¹Ã¨Â½Â½Ã¯Â¼â€°
 if (location.search.includes('updatetest')) {
   setTimeout(() => {
-    const fake = { version: '9.9.9', apk: '', releaseUrl: 'https://github.com/xushengqin666-cell/rehab-ai/releases/latest', notes: 'æµ‹è¯•æ›´æ–°è¯´æ˜Ž TestNotes', important: true };
+    const fake = { version: '9.9.9', apk: '', releaseUrl: 'https://github.com/xushengqin666-cell/rehab-ai/releases/latest', notes: 'Ã¦Âµâ€¹Ã¨Â¯â€¢Ã¦â€ºÂ´Ã¦â€“Â°Ã¨Â¯Â´Ã¦ËœÅ½ TestNotes', important: true };
     updState.info = fake;
     showUpdateCard(fake);
     aiRun();
   }, 800);
 }
-// ?modeltest=1 â†’ è‡ªæ£€ AI æ¨¡åž‹èƒ½å¦åŠ è½½ï¼ˆwasm/MIME/è·¯å¾„ï¼Œä¾›éƒ¨ç½²éªŒè¯ç”¨ï¼‰
+// ?modeltest=1 Ã¢â€ â€™ Ã¨â€¡ÂªÃ¦Â£â‚¬ AI Ã¦Â¨Â¡Ã¥Å¾â€¹Ã¨Æ’Â½Ã¥ÂÂ¦Ã¥Å Â Ã¨Â½Â½Ã¯Â¼Ë†wasm/MIME/Ã¨Â·Â¯Ã¥Â¾â€žÃ¯Â¼Å’Ã¤Â¾â€ºÃ©Æ’Â¨Ã§Â½Â²Ã©ÂªÅ’Ã¨Â¯ÂÃ§â€Â¨Ã¯Â¼â€°
 if (location.search.includes('modeltest')) {
   (async () => {
     const out = $('selftest-out');
     const t0 = performance.now();
     try {
       await loadModel();
-      out.innerHTML += `<div class="st-pass">âœ… model load OK (${Math.round(performance.now() - t0)}ms)</div>`;
+      out.innerHTML += `<div class="st-pass">Ã¢Å“â€¦ model load OK (${Math.round(performance.now() - t0)}ms)</div>`;
       console.log('MODELTEST: PASS');
     } catch (e) {
-      out.innerHTML += `<div class="st-fail">âŒ model load FAIL: ${e.message}</div>`;
+      out.innerHTML += `<div class="st-fail">Ã¢ÂÅ’ model load FAIL: ${e.message}</div>`;
       console.log('MODELTEST: FAIL', e);
     }
   })();
 }
-// ?alarmtest=1 â†’ è§¦å‘ä¸€æ¬¡è­¦æŠ¥ UIï¼ˆå£°éŸ³+éœ‡åŠ¨+é—ªçƒï¼‰ï¼Œä¸Šå¸‚éªŒæ”¶ç”¨
+// ?alarmtest=1 Ã¢â€ â€™ Ã¨Â§Â¦Ã¥Ââ€˜Ã¤Â¸â‚¬Ã¦Â¬Â¡Ã¨Â­Â¦Ã¦Å Â¥ UIÃ¯Â¼Ë†Ã¥Â£Â°Ã©Å¸Â³+Ã©Å“â€¡Ã¥Å Â¨+Ã©â€”ÂªÃ§Æ’ÂÃ¯Â¼â€°Ã¯Â¼Å’Ã¤Â¸Å Ã¥Â¸â€šÃ©ÂªÅ’Ã¦â€Â¶Ã§â€Â¨
 if (location.search.includes('alarmtest')) {
   setTimeout(() => {
     const fb = $('feedback');
@@ -6843,24 +6843,24 @@ if (location.search.includes('alarmtest')) {
     alarmBurst();
   }, 1000);
 }
-// ?synctest=1 â†’ äºŒç»´ç åŒæ­¥ç¼–è§£ç /åˆå¹¶è‡ªæ£€
+// ?synctest=1 Ã¢â€ â€™ Ã¤ÂºÅ’Ã§Â»Â´Ã§Â ÂÃ¥ÂÅ’Ã¦Â­Â¥Ã§Â¼â€“Ã¨Â§Â£Ã§Â Â/Ã¥ÂË†Ã¥Â¹Â¶Ã¨â€¡ÂªÃ¦Â£â‚¬
 if (location.search.includes('synctest')) {
   (async () => {
     const out = $('selftest-out');
     const log = (n, okv, d) => {
-      out.innerHTML += `<div class="${okv ? 'st-pass' : 'st-fail'}">${okv ? 'âœ…' : 'âŒ'} ${n} ${d || ''}</div>`;
+      out.innerHTML += `<div class="${okv ? 'st-pass' : 'st-fail'}">${okv ? 'Ã¢Å“â€¦' : 'Ã¢ÂÅ’'} ${n} ${d || ''}</div>`;
       console.log('SYNCTEST:', n, okv ? 'PASS' : 'FAIL');
     };
     try {
       const data = { app: 'RehabAI', v: 3, ts: Date.now(), sessions: [{ id: 'a1', ts: 111, reps: 5 }], assessments: [{ id: 'b1', ts: 222, score: 2 }], appts: [], customExercises: [] };
       const b64 = await gzipB64(JSON.stringify(data));
       const back = JSON.parse(await gunzipB64(b64));
-      log('gzip å¾€è¿”ç¼–è§£ç ', back.sessions?.[0]?.id === 'a1' && back.assessments?.[0]?.id === 'b1');
+      log('gzip Ã¥Â¾â‚¬Ã¨Â¿â€Ã§Â¼â€“Ã¨Â§Â£Ã§Â Â', back.sessions?.[0]?.id === 'a1' && back.assessments?.[0]?.id === 'b1');
       const qr = window.qrcode(0, 'L');
       qr.addData(SYNC_PREFIX + '|0|1|' + b64.slice(0, 200), 'Byte');
       qr.make();
-      log('äºŒç»´ç ç”Ÿæˆ', qr.getModuleCount() > 10 && qr.isDark(0, 0));
-      // çœŸå®žå¾€è¿”ï¼šç”»åˆ° canvas åƒç´  â†’ jsQR è§£ç 
+      log('Ã¤ÂºÅ’Ã§Â»Â´Ã§Â ÂÃ§â€Å¸Ã¦Ë†Â', qr.getModuleCount() > 10 && qr.isDark(0, 0));
+      // Ã§Å“Å¸Ã¥Â®Å¾Ã¥Â¾â‚¬Ã¨Â¿â€Ã¯Â¼Å¡Ã§â€Â»Ã¥Ë†Â° canvas Ã¥Æ’ÂÃ§Â´Â  Ã¢â€ â€™ jsQR Ã¨Â§Â£Ã§Â Â
       const cv = document.createElement('canvas');
       const n2 = qr.getModuleCount();
       const S = n2 * 10;
@@ -6871,16 +6871,16 @@ if (location.search.includes('synctest')) {
       for (let r2 = 0; r2 < n2; r2++) for (let c2 = 0; c2 < n2; c2++) if (qr.isDark(r2, c2)) cctx.fillRect(c2 * 10, r2 * 10, 10.5, 10.5);
       const img2 = cctx.getImageData(0, 0, S, S);
       const dec = window.jsQR(img2.data, S, S);
-      log('çœŸå®žäºŒç»´ç  ç”Ÿæˆâ†’åƒç´ â†’è§£ç ', !!dec && dec.data === SYNC_PREFIX + '|0|1|' + b64.slice(0, 200));
+      log('Ã§Å“Å¸Ã¥Â®Å¾Ã¤ÂºÅ’Ã§Â»Â´Ã§Â Â Ã§â€Å¸Ã¦Ë†ÂÃ¢â€ â€™Ã¥Æ’ÂÃ§Â´Â Ã¢â€ â€™Ã¨Â§Â£Ã§Â Â', !!dec && dec.data === SYNC_PREFIX + '|0|1|' + b64.slice(0, 200));
       const before = sget('rehab_sessions', []);
       sset('rehab_sessions', [{ id: 'x9', ts: 999, reps: 1 }]);
       mergeSyncData(back);
       const after = sget('rehab_sessions', []);
       sset('rehab_sessions', before);
-      log('æ•°æ®åˆå¹¶(åŽ»é‡+ä¿ç•™åŒæ–¹)', after.length === 2 && after.some((s) => s.id === 'a1'));
-      log('jsQR è§£ç å™¨å¯ç”¨', typeof window.jsQR === 'function');
+      log('Ã¦â€¢Â°Ã¦ÂÂ®Ã¥ÂË†Ã¥Â¹Â¶(Ã¥Å½Â»Ã©â€¡Â+Ã¤Â¿ÂÃ§â€¢â„¢Ã¥ÂÅ’Ã¦â€“Â¹)', after.length === 2 && after.some((s) => s.id === 'a1'));
+      log('jsQR Ã¨Â§Â£Ã§Â ÂÃ¥â„¢Â¨Ã¥ÂÂ¯Ã§â€Â¨', typeof window.jsQR === 'function');
     } catch (e) {
-      log('å¼‚å¸¸', false, e.message);
+      log('Ã¥Â¼â€šÃ¥Â¸Â¸', false, e.message);
     }
   })();
 }
