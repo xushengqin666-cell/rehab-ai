@@ -1020,6 +1020,10 @@ const pv = await evl(`(document.querySelector('[data-i18n="privacyText"]')||{}).
 (await evl(`!!document.getElementById('cloud-last')`)) ? ok('云同步卡显示「上次同步」时间') : bad('缺上次同步时间显示');
 (await evl(`typeof window.__rehabCloud.autoSync === 'function'`)) ? ok('启动与回到前台会自动拉取云端（跨设备打开即最新）') : bad('缺自动同步');
 
+console.log('===== 36. 编码防回归（v2.42.1：防 PowerShell 重写导致的双重编码乱码） =====');
+const enc = await evl(`(async function(){const out=[];for(const f of ['app.js','i18n.js','demo.js','sw.js','index.html','style.css','demo.css']){try{const t=await (await fetch('/'+f+'?enc='+Date.now())).text();const bad=(t.match(/Ã|Ā|â,¬/g)||[]).length;out.push(f+'='+bad);}catch(e){out.push(f+'=ERR');}}return out.join(' ');})()`);
+(!String(enc).includes('ERR') && !/=[1-9]/.test(String(enc))) ? ok('静态资源无双重编码乱码（' + enc + '）') : bad('检测到乱码：' + enc);
+
 console.log('===== 结果 =====');
 console.log('CONSOLE_ERRORS:', consoleErrors.length ? consoleErrors.join(' ||| ') : 'none');
 if (consoleErrors.length) failN++;

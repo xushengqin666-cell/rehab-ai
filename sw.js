@@ -1,7 +1,7 @@
-﻿// Service Worker Ã¢â‚¬â€ Ã§Â¦Â»Ã§ÂºÂ¿Ã§Â­â€“Ã§â€¢Â¥Ã¯Â¼Å¡
-//   Ã‚Â· Ã©Â¡ÂµÃ©ÂÂ¢/JS/CSS Ã§Â½â€˜Ã§Â»Å“Ã¤Â¼ËœÃ¥â€¦Ë†Ã¯Â¼Ë†Ã¦â€ºÂ´Ã¦â€“Â°Ã¥ÂÅ Ã¦â€”Â¶Ã§â€Å¸Ã¦â€¢Ë†Ã¯Â¼â€°Ã¯Â¼Å’Ã§Â¦Â»Ã§ÂºÂ¿Ã¦â€”Â¶Ã¥â€ºÅ¾Ã©â‚¬â‚¬Ã§Â¼â€œÃ¥Â­Ëœ
-//   Ã‚Â· Ã¥Â¤Â§Ã¦â€“â€¡Ã¤Â»Â¶Ã¯Â¼Ë†wasm / Ã¦Â¨Â¡Ã¥Å¾â€¹ / vendor Ã¥Âºâ€œ / Ã¥â€ºÂ¾Ã¦Â â€¡Ã¯Â¼â€°Ã§Â¼â€œÃ¥Â­ËœÃ¤Â¼ËœÃ¥â€¦Ë†Ã¯Â¼Ë†Ã§Å“ÂÃ¦ÂµÂÃ©â€¡ÂÃ£â‚¬ÂÃ§Â¦Â»Ã§ÂºÂ¿Ã¥ÂÂ¯Ã§â€Â¨Ã¯Â¼â€°
-const CACHE = 'rehab-v2.42.0';
+// Service Worker — 离线策略：
+//   · 页面/JS/CSS 网络优先（更新及时生效），离线时回退缓存
+//   · 大文件（wasm / 模型 / vendor 库 / 图标）缓存优先（省流量、离线可用）
+const CACHE = 'rehab-v2.42.1';
 const PRECACHE = ['./', './index.html', './style.css', './demo.css', './app.js', './analysis.js', './demo.js', './ai.js', './i18n.js', './manifest.json', './icon-192.png', './icon-512.png'];
 const CACHE_FIRST = ['./vision_bundle.mjs', './vendor/qrcode.js', './vendor/jsqr.js', './pose_landmarker_full.task',
   './demo-media/squat.gif', './demo-media/lunge.gif', './demo-media/stepup.gif', './demo-media/shoulderraise.gif',
@@ -27,7 +27,7 @@ self.addEventListener('activate', (e) => {
 self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET') return;
   const url = new URL(e.request.url);
-  if (url.origin !== location.origin) return;   // Ã¨Â·Â¨Ã¥Å¸Å¸Ã¯Â¼Ë†jsDelivr/Google Ã¦Â¨Â¡Ã¥Å¾â€¹Ã©â€¢Å“Ã¥Æ’ÂÃ¯Â¼â€°Ã¨ÂµÂ°Ã§Â½â€˜Ã§Â»Å“
+  if (url.origin !== location.origin) return;   // 跨域（jsDelivr/Google 模型镜像）走网络
   const rel = relPath(url);
   const cacheFirst = CACHE_FIRST.includes(rel) || rel.startsWith('/wasm/');
   if (cacheFirst) {

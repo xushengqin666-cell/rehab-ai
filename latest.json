@@ -1,7 +1,7 @@
 {
-  "version": "2.42.0",
-  "apk": "https://cdn.jsdelivr.net/gh/xushengqin666-cell/rehab-ai@main/downloads/RehabAI-v2.42.0.apk",
+  "version": "2.42.1",
+  "apk": "https://cdn.jsdelivr.net/gh/xushengqin666-cell/rehab-ai@main/downloads/RehabAI-v2.42.1.apk",
   "releaseUrl": "https://github.com/xushengqin666-cell/rehab-ai/releases/latest",
-  "notes": "v2.42.0：补齐「臀桥」真人示范（瑜伽桥式 Setu Bandhasana 真人实拍照片，CC BY 3.0 可商用，已压缩到 38KB）；「坐位体前屈」已在 v2.41.0 更正为前屈类真人示范（原来误用了背部后伸/抱膝类的图）。示范墙改为延迟渲染，避免与摄像头启动抢主线程。仍缺「墙靠蹲」的真人素材（公有领域与 CC 图库已逐源排查：Commons 关键词与分类、Openverse、CDC 全套 22 张、NIA 站点 403），显示「正在补充」占位，坚持不用合成图顶替。",
+  "notes": "v2.42.1 紧急修复【界面文字变乱码】：上一版改版本号时用了 PowerShell 的 Get-Content -Raw | Set-Content -Encoding UTF8 写法，而 PowerShell 5.1 读文件默认按 ANSI 编码，导致 app.js 与 sw.js 里的中文被读坏后又被写成 UTF-8（双重编码），界面上出现「ĀšÂ¯ĀÂu…」这类乱码，示范弹窗里的「真人标准示范」、常见错误前的圆点符号等位置最明显。现已从上一个干净提交恢复这两个文件并重放改动，全文件扫描 0 处乱码、无 BOM。并新增一条永久验收：自动扫描 app.js / i18n.js / demo.js / sw.js / index.html / style.css / demo.css 是否含双重编码特征，一旦出现直接测挂，杜绝再犯。功能与 v2.42.0 相同（臀桥真人示范、坐位体前屈更正、示范墙延迟渲染）。",
   "important": true
 }
