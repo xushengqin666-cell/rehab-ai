@@ -1,7 +1,7 @@
 {
-  "version": "2.42.1",
-  "apk": "https://cdn.jsdelivr.net/gh/xushengqin666-cell/rehab-ai@main/downloads/RehabAI-v2.42.1.apk",
+  "version": "2.42.2",
+  "apk": "https://cdn.jsdelivr.net/gh/xushengqin666-cell/rehab-ai@main/downloads/RehabAI-v2.42.2.apk",
   "releaseUrl": "https://github.com/xushengqin666-cell/rehab-ai/releases/latest",
-  "notes": "v2.42.1 紧急修复【界面文字变乱码】：上一版改版本号时用了 PowerShell 的 Get-Content -Raw | Set-Content -Encoding UTF8 写法，而 PowerShell 5.1 读文件默认按 ANSI 编码，导致 app.js 与 sw.js 里的中文被读坏后又被写成 UTF-8（双重编码），界面上出现「ĀšÂ¯ĀÂu…」这类乱码，示范弹窗里的「真人标准示范」、常见错误前的圆点符号等位置最明显。现已从上一个干净提交恢复这两个文件并重放改动，全文件扫描 0 处乱码、无 BOM。并新增一条永久验收：自动扫描 app.js / i18n.js / demo.js / sw.js / index.html / style.css / demo.css 是否含双重编码特征，一旦出现直接测挂，杜绝再犯。功能与 v2.42.0 相同（臀桥真人示范、坐位体前屈更正、示范墙延迟渲染）。",
-  "important": true
+  "notes": "v2.42.2 工程健康修复（App 功能与 v2.42.1 完全相同，本次不新增功能）。① 版本号修正（重要）：安卓包从 v2.40.0 起四个版本都卡在 versionCode 63 / versionName 2.40.0（手工改漏了），导致应用信息里显示旧版本、新包装不上、Play 控制台也无法重复上传；现在版本号由发版信息自动生成（本版 versionCode 24202），以后不会再漏。② 发版脚本修复：一键发版脚本存成了无 BOM 的 UTF-8，而本机只有 PowerShell 5.1（读脚本按 ANSI 解码），中文项目路径会变乱码、脚本根本跑不起来。③ 测试环境更稳：启动测试服务器改成轮询等待就绪（原来固定等 2 秒，冷启动时静态服务器还没起来，整套验收会崩在第一屏）。④ 新增发版前置检查：自动拦截双重编码乱码、要求含中文的 PowerShell 脚本带 UTF-8 BOM、并校验版本号三处一致（发版信息 / App 版本常量 / Service Worker 缓存名），发版前先跑它。⑤ 安卓打包脚本不再把产物文件名写死成 v2.21.8。本版验收 258 项全通过、无控制台错误。",
+  "important": false
 }

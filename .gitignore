@@ -5,3 +5,6 @@ as-out.txt
 ct-err.txt
 ct-out.txt
 tests/_last-run.txt
+# 临时调试脚本/输出（下划线开头，本机一次性用，不该进仓库）
+tests/_*.mjs
+tests/_*.txt
