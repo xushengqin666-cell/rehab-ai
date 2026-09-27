@@ -15,11 +15,15 @@
 #   6) 发版前先跑 tests/preflight.mjs：把「文件被写坏成双重编码」「含中文的 .ps1 缺 BOM」
 #      「版本号三处不一致」这三类事故挡在提交之前（v2.42.1 的界面乱码、上一版脚本跑不起来，
 #      都是这一类；版本号漏改一处会让关于页显示旧版本）。
+#   7) 分清两个目录（写混了会在 bundleRelease 之前报「找不到路径 ...\.rehab-cap\android」）：
+#        $CAP      = C:\Users\User\rehab-cap         ← Capacitor 工程根目录，android/ 与 gradle 在这
+#        $CAPSCRIPT= C:\Users\User\.rehab-cap\build-apk.ps1  ← 打包脚本（注意是隐藏目录）
 #
 # 说明：验收不过会立即中止，不会提交、不会构建、不会发版。
 $ErrorActionPreference = 'Stop'
 $ROOT = 'C:\Users\User\Desktop\项目文件夹\rehab-app'
-$CAP  = 'C:\Users\User\.rehab-cap'
+$CAP  = 'C:\Users\User\rehab-cap'
+$CAPSCRIPT = 'C:\Users\User\.rehab-cap\build-apk.ps1'
 $DESK = 'C:\Users\User\Desktop'
 $env:JAVA_HOME = 'C:\jdk-21.0.12.1+1'
 $env:ANDROID_HOME = 'C:\android-sdk'
@@ -85,7 +89,7 @@ git push
 if ($LASTEXITCODE -ne 0) { throw 'git push 失败' }
 
 Step '4/8' '构建 APK/AAB（Capacitor 同步 + 签名）'
-& powershell.exe -ExecutionPolicy Bypass -File "$CAP\build-apk.ps1"
+& powershell.exe -ExecutionPolicy Bypass -File $CAPSCRIPT
 if ($LASTEXITCODE -ne 0) { throw 'build-apk.ps1 失败' }
 Set-Location "$CAP\android"
 .\gradlew.bat bundleRelease --no-daemon
