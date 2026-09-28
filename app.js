@@ -94,7 +94,7 @@ function migrateDeviceData(email) {
 }
 const fmtDate = (ts) => new Date(ts).toLocaleString(locale(), { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-const APP_VERSION = 'v2.43.1';
+const APP_VERSION = 'v2.43.2';
 const exName = (e) => (e.custom ? e.name : t(e.nameKey));
 const exDesc = (e) => (e.custom ? e.desc : t(e.descKey));
 const depthTxt = (d) => t('depth' + (d ? d.charAt(0).toUpperCase() + d.slice(1) : 'Ok')) || d;
@@ -4838,7 +4838,7 @@ function renderDemoBody() {
         '<div class="dmb-name">' + dmbName(key) + '</div>' +
         (e && e.stdKey ? '<p class="hint">' + t(e.stdKey) + '</p>' : '') +
         '<div class="dmb-angles">' + dmbAngleChips(key) + '</div>' +
-        '<div class="controls"><button class="btn small" id="dmb-rec">' + (recState.rec ? t('dmbRecStop') : t('dmbRec')) + '</button></div>' +
+        '<div class="controls">' + (e ? '<button class="btn small primary" id="dmb-go-train">' + t('dmbGoTrain') + '</button>' : '') + '<button class="btn small" id="dmb-rec">' + (recState.rec ? t('dmbRecStop') : t('dmbRec')) + '</button></div>' +
       '</div></div>' +
     (frames ? '<div class="dmb-sec">' + t('dmbFrames') + '</div><div class="dmb-row">' + frames + '</div>' : '') +
     (e && e.descKey ? '<div class="dmb-sec">' + t('dmbCues') + '</div><p class="hint">' + t(e.descKey) + '</p>' : '') +
@@ -4848,6 +4848,16 @@ function renderDemoBody() {
     '<div class="dmb-sec">' + t('dmbClips') + '</div><div id="dmb-clips" class="dmb-clips"></div>';
   const p = $('dmb-play'); if (p) p.addEventListener('click', dmbPlayToggle);
   const rc = $('dmb-rec'); if (rc) rc.addEventListener('click', recToggle);
+  // v2.43.2 新增：看完示范直接去练这个动作（把示范与训练串起来）。
+  // 只对训练动作表里的动作显示（跟练课特有的靠墙静蹲/平板支撑等不在表里，训练页无法选中）。
+  const gt = $('dmb-go-train');
+  if (gt) gt.addEventListener('click', () => {
+    LS.set('rehab_active_ex', key);
+    closeDemo();
+    switchTab('train');
+    switchEx();
+    toast(t('dmbGoTrainToast', { n: dmbName(key) }));
+  });
   renderClips($('dmb-clips'));
 }
 

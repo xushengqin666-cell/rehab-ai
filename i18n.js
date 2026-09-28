@@ -88,6 +88,7 @@ const DICT = {
   dmbWallTitle: '全部动作 · 真人示范', dmbWallHint: '下面每个动作都配了真人实拍示范，点「看示范」看完整动图、判定角度与动作要点。', dmbReal: '真人标准示范', dmbNoReal: '该动作的真人示范正在补充', dmbErrTitle: '常见错误（做的时候自查）', dmbAzSide: '侧面', dmbAz35: '斜前方', dmbAzFront: '正面', dmbAzTitle: '视角',
   dmbTitle: '标准动作示范', dmbClose: '关闭', dmbLook: '看示范', dmbPlay: '播放示范', dmbPause: '暂停',
   dmbGuide: '看图解',
+  dmbGoTrain: '去练这个动作', dmbGoTrainToast: '已切到「{n}」——点开始分析即可',
   // v2.43.1：数据采集的标签按钮原来回落成英文原文（good/shallow/…），中文界面里很突兀。
   // 注意：导出的 CSV 里存的仍是原始英文标签（data-label），中文只用于界面显示。
   lb_good: '合格', lb_shallow: '幅度不足', lb_deep: '过深', lb_lean: '前倾', lb_valgus: '膝内扣',
@@ -838,6 +839,7 @@ const DICT = {
   dmbWallTitle: 'All moves - real-person demos', dmbWallHint: 'Every move below has a real-person demo. Tap Show form for the full animation, thresholds and cues.', dmbReal: 'Real-person demo', dmbNoReal: 'Real-person demo coming soon', dmbErrTitle: 'Common mistakes (self-check)', dmbAzSide: 'Side', dmbAz35: 'Three-quarter', dmbAzFront: 'Front', dmbAzTitle: 'View',
   dmbTitle: 'Standard form demo', dmbClose: 'Close', dmbLook: 'Show form', dmbPlay: 'Play', dmbPause: 'Pause',
   dmbGuide: 'View guide',
+  dmbGoTrain: 'Train this move', dmbGoTrainToast: 'Switched to {n} — tap Start to analyse',
   // v2.43.1: data-collection label chips used to fall back to the raw English tag; the CSV keeps the raw tag.
   lb_good: 'Good', lb_shallow: 'Too shallow', lb_deep: 'Too deep', lb_lean: 'Leaning', lb_valgus: 'Knee valgus',
   lb_frontShallow: 'Front knee shallow', lb_frontDeep: 'Front knee deep', lb_sag: 'Sagging hips', lb_bad: 'Off target',
