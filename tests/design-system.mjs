@@ -47,6 +47,8 @@ const evl = async (expr) => {
 };
 
 await send('Runtime.enable'); await send('Page.enable');
+// 禁缓存：否则可能测到上一次的 app.js / css（只清 SW 与 Cache Storage 不够，见 tests/README.md）
+await send('Network.enable'); await send('Network.setCacheDisabled', { cacheDisabled: true });
 await send('Page.navigate', { url: APP });
 await sleep(2500);
 await evl(`navigator.serviceWorker.getRegistrations().then(rs=>Promise.all(rs.map(r=>r.unregister()))).then(()=>caches.keys()).then(ks=>Promise.all(ks.map(k=>caches.delete(k)))).then(()=>location.reload())`);

@@ -49,9 +49,19 @@ svg .dmb-fault.dmb-b, svg .dmb-fault.dmb-h { fill: var(--red); }
 .dmb-angles { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0; }
 .dmb-chip { font-size: 12px; padding: 3px 8px; border-radius: 999px; background: var(--bg2); color: var(--dim); }
 .dmb-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 8px; margin-top: 8px; }
-.dmb-cell { background: var(--bg); border-radius: 12px; padding: 6px 4px 8px; text-align: center; }
-.dmb-cell-fig { height: 124px; display: flex; align-items: flex-end; justify-content: center; }
+/* v2.43.1：两处示范墙都是 9 个动作 → 固定 3 列刚好 3×3，不再出现 auto-fill 落单的一格；
+   桌面端限制最大宽度，卡片不会被拉得很宽；窄屏（≤360px）退回 2 列。 */
+#gw-demos.dmb-grid, #real-demo-grid.dmb-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; max-width: 560px; }
+#gw-demos .dmb-cell-fig { height: 96px; }
+#gw-demos .dmb-cell-fig svg { height: 92px; }
+#gw-demos .dmb-thumb, #real-demo-grid .dmb-thumb { max-height: 96px; }
+@media (max-width: 360px) { #gw-demos.dmb-grid, #real-demo-grid.dmb-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+/* 卡片等高、名称垂直居中、按钮贴底：缺图的那格不再是「上面一行小字 + 下面一片空」 */
+.dmb-cell { background: var(--bg); border-radius: 12px; padding: 8px 6px 10px; text-align: center; display: flex; flex-direction: column; }
+.dmb-cell-fig { height: 124px; display: flex; align-items: center; justify-content: center; }
 .dmb-cell-fig svg { height: 120px; }
+.dmb-cell .dmb-fr-cap { flex: 1 1 auto; display: flex; align-items: center; justify-content: center; min-height: 34px; }
+.dmb-cell .btn { margin-top: 4px; }
 .dmb-train-fig { background: var(--bg); border-radius: var(--radius); padding: 6px; max-width: 210px; margin: 6px auto; }
 .gw-stepdemo { background: var(--bg); border-radius: var(--radius); padding: 4px; margin: 6px auto 8px; max-width: 200px; display: flex; flex-direction: column; align-items: center; gap: 4px; }
 .dmb-clips { display: flex; flex-direction: column; gap: 8px; }

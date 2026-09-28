@@ -87,6 +87,11 @@ const DICT = {
     cloudLast: '上次同步：{t}', cloudDeleteConfirm2: '云端账号与所有云端数据也会一并永久删除，无法恢复。确定继续？', cloudDeleteFailed: '云端注销失败（{msg}），为免你误以为已删除，本次不执行注销',
   dmbWallTitle: '全部动作 · 真人示范', dmbWallHint: '下面每个动作都配了真人实拍示范，点「看示范」看完整动图、判定角度与动作要点。', dmbReal: '真人标准示范', dmbNoReal: '该动作的真人示范正在补充', dmbErrTitle: '常见错误（做的时候自查）', dmbAzSide: '侧面', dmbAz35: '斜前方', dmbAzFront: '正面', dmbAzTitle: '视角',
   dmbTitle: '标准动作示范', dmbClose: '关闭', dmbLook: '看示范', dmbPlay: '播放示范', dmbPause: '暂停',
+  dmbGuide: '看图解',
+  // v2.43.1：数据采集的标签按钮原来回落成英文原文（good/shallow/…），中文界面里很突兀。
+  // 注意：导出的 CSV 里存的仍是原始英文标签（data-label），中文只用于界面显示。
+  lb_good: '合格', lb_shallow: '幅度不足', lb_deep: '过深', lb_lean: '前倾', lb_valgus: '膝内扣',
+  lb_frontShallow: '前膝幅度不足', lb_frontDeep: '前膝过深', lb_sag: '塌腰', lb_bad: '不合格',
   dmbFrames: '关键帧图解', dmbCues: '动作要点', dmbFaults: '常见错误（对照着看）',
   dmbGuideDemos: '标准动作示范（跟练课动作）',
   dmbGuideDemosHint: '点动作看标准做法：关键帧图解 · 判定标准（本应用实际使用的角度）· 常见错误对照。可播放成动图，边看边练。',
@@ -832,6 +837,10 @@ const DICT = {
     cloudLast: 'Last synced: {t}', cloudDeleteConfirm2: 'Your cloud account and all cloud data will be permanently deleted. Continue?', cloudDeleteFailed: 'Cloud deletion failed ({msg}) - aborting so you are not misled',
   dmbWallTitle: 'All moves - real-person demos', dmbWallHint: 'Every move below has a real-person demo. Tap Show form for the full animation, thresholds and cues.', dmbReal: 'Real-person demo', dmbNoReal: 'Real-person demo coming soon', dmbErrTitle: 'Common mistakes (self-check)', dmbAzSide: 'Side', dmbAz35: 'Three-quarter', dmbAzFront: 'Front', dmbAzTitle: 'View',
   dmbTitle: 'Standard form demo', dmbClose: 'Close', dmbLook: 'Show form', dmbPlay: 'Play', dmbPause: 'Pause',
+  dmbGuide: 'View guide',
+  // v2.43.1: data-collection label chips used to fall back to the raw English tag; the CSV keeps the raw tag.
+  lb_good: 'Good', lb_shallow: 'Too shallow', lb_deep: 'Too deep', lb_lean: 'Leaning', lb_valgus: 'Knee valgus',
+  lb_frontShallow: 'Front knee shallow', lb_frontDeep: 'Front knee deep', lb_sag: 'Sagging hips', lb_bad: 'Off target',
   dmbFrames: 'Key frames', dmbCues: 'Form cues', dmbFaults: 'Common mistakes (compare)',
   dmbGuideDemos: 'Standard form demos (class moves)',
   dmbGuideDemosHint: 'Tap a move for the standard: key frames, the exact thresholds this app judges by, and common mistakes. Play it as an animation and follow along.',

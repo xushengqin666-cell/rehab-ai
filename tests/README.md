@@ -65,6 +65,20 @@ node tests/design-tokens-build.mjs --check  # 只报告会吸附多少处，不�
 - 生成器会跳过 `@keyframes` 与 `@media` 内部规则——关键帧选择器不是真规则，媒体查询内的
   取值属于分场景覆盖，强改会破坏动画与响应式。
 - 未覆盖的已知项：`border-radius: 50%`（正圆）、`0px`（无圆角）按设计保留。
+- app.js 里**运行时拼的内联样式**（`style="margin-top:10px"` 之类）不在样式表里，生成器抓不到，
+  由覆盖层的**属性选择器**段（`[style*="margin-top:10px"]`）吸附，并且必须带 `!important` 才能压过内联样式。
+
+## ⚠️ 跑自动化测试必须禁用浏览器缓存
+所有 CDP 测试脚本（`full.mjs` / `design-system.mjs` / `design-measure.mjs`）开头都执行：
+
+```js
+await send('Network.enable');
+await send('Network.setCacheDisabled', { cacheDisabled: true });
+```
+
+**只清 Service Worker 与 Cache Storage 是不够的**（HTTP 缓存仍会命中），页面可能执行上一次的
+`app.js` 或样式表——结果就是"改坏了测试还是绿的"或"改好了测试还报旧错"。v2.43.1 排查示范墙
+名称问题时被这个坑掉过一次：磁盘上的代码已经改对，页面里跑的仍是旧文件。
 
 脚本也可以自检（确认检查本身真的能抓到问题，而不是永远返回通过）：
 ```powershell

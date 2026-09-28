@@ -100,9 +100,12 @@ function snap(px, scale) {
   return best;
 }
 
-// ── 3) 解析 style.css（跳过 @keyframes 与 @media 内部：关键帧选择器不是规则，
+// ── 3) 解析样式表（跳过 @keyframes 与 @media 内部：关键帧选择器不是规则，
 //      媒体查询内的取值属于分场景覆盖，强改会破坏响应式）────────────────────────
-const raw = readFileSync(join(ROOT, 'style.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+// v2.43.1：同时扫 demo.css（示范墙/示范弹窗的样式表）—— 之前只扫 style.css，
+// 结果 .dmb-thumb 的 10px 圆角落网，只能手工补一条。
+const SOURCES = ['style.css', 'demo.css'];
+const raw = SOURCES.map((f) => readFileSync(join(ROOT, f), 'utf8')).join('\n').replace(/\/\*[\s\S]*?\*\//g, '');
 let skippedKeyframes = 0, skippedMediaRules = 0;
 const noKeyframes = raw.replace(/@keyframes[^{]*\{(?:[^{}]*\{[^{}]*\})*[^{}]*\}/g, () => { skippedKeyframes++; return ''; });
 const noMedia = noKeyframes.replace(/@media[^{]*\{(?:[^{}]*\{[^{}]*\})*[^{}]*\}/g, (m) => { skippedMediaRules += (m.match(/\{/g) || []).length - 1; return ''; });
@@ -244,7 +247,21 @@ ${rules(radiusOverrides)}
 /* ── ⑥b 排版基线：去掉浏览器默认的 16px / 13.3333px 游离值，让继承可预测 ────── */
 body { font-size: var(--text-body); }
 button, input, select, textarea { font-family: inherit; font-size: inherit; }
-.dmb-thumb { border-radius: var(--radius-md); }
+
+/* ── ⑧ app.js 运行时拼的内联样式（类选择器抓不到，只能用属性选择器吸附）──────────
+ * 这些值由 app.js 的模板串写死（例如 style="margin-top:10px"），不在样式表里，
+ * 所以上面的字号/圆角吸附覆盖不到，必须按 style 属性匹配，并用 !important 压过内联样式。
+ * v2.43.1 实测出的全部偏离值（app.js 内联 style 里带 px 的写法）：
+ *   margin-top: 3 / 6 / 10px → 4 / 8 / 12px（4px 间距音阶）
+ *   margin-left: 6px → 8px；border-radius: 10px → 12px（圆角音阶 md）
+ *   两处琥珀色字面量 → 警示色 token（原来与 --yellow 是两种不同的琥珀） */
+[style*="margin-top:3px"] { margin-top: var(--spacing-xxs) !important; }
+[style*="margin-top:6px"] { margin-top: var(--spacing-xs) !important; }
+[style*="margin-top:10px"] { margin-top: var(--spacing-sm) !important; }
+[style*="margin-left:6px"] { margin-left: var(--spacing-xs) !important; }
+[style*="border-radius:10px"] { border-radius: var(--radius-md) !important; }
+[style*="color:#b45309"] { color: var(--color-warning-strong) !important; }
+[style*="background:rgba(245,158,11,.15)"] { background: var(--color-warning-container) !important; }
 
 /* ── ⑦ 数字：等宽 + tabular，数值不跳动 ──────────────────────────────────── */
 .s-value, .stat, .ai-score, .pain-lv, .rom-lv, .hm-cell, .nav-num, .chart-cap,

@@ -46,6 +46,9 @@ const setFiles = async (sel, filePath) => {
 };
 
 await send('Runtime.enable'); await send('Page.enable'); await send('Log.enable'); await send('DOM.enable');
+// v2.43.1：必须禁掉浏览器缓存，否则页面可能执行上一次的 app.js / css —— 只清 Service Worker 与
+// Cache Storage 并不够（HTTP 缓存仍会命中），结果就是「改坏了测试还是绿的」或「改好了测试还报旧错」。
+await send('Network.enable'); await send('Network.setCacheDisabled', { cacheDisabled: true });
 const dlDir = mkdtempSync(join(tmpdir(), 'rh-dl-'));
 await send('Browser.setDownloadBehavior', { behavior: 'allow', downloadPath: dlDir });
 

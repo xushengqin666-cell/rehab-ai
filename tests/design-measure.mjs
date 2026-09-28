@@ -24,6 +24,8 @@ const evl = async (expr) => {
 };
 
 await send('Runtime.enable'); await send('Page.enable');
+// 禁缓存：否则统计的是上一次的样式（只清 SW 与 Cache Storage 不够）
+await send('Network.enable'); await send('Network.setCacheDisabled', { cacheDisabled: true });
 await send('Page.navigate', { url: APP });
 await sleep(2500);
 // 先清掉 Service Worker 与缓存再重载：否则测到的是上一次缓存的旧样式（覆盖层会被漏掉）

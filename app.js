@@ -94,7 +94,7 @@ function migrateDeviceData(email) {
 }
 const fmtDate = (ts) => new Date(ts).toLocaleString(locale(), { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-const APP_VERSION = 'v2.43.0';
+const APP_VERSION = 'v2.43.1';
 const exName = (e) => (e.custom ? e.name : t(e.nameKey));
 const exDesc = (e) => (e.custom ? e.desc : t(e.descKey));
 const depthTxt = (d) => t('depth' + (d ? d.charAt(0).toUpperCase() + d.slice(1) : 'Ok')) || d;
@@ -4769,7 +4769,19 @@ function guideStepKeys() {
   }));
   return seen;
 }
-function dmbName(key) { const e = EXERCISES[key]; return e ? exName(e) : t('dmbUnknown'); }
+// v2.43.1 修：跟练课里有几个动作（靠墙静蹲 / 平板支撑 / 体前屈 / 单腿臀桥）不在 EXERCISES 表里，
+// 旧写法会回落到 dmbUnknown、在示范墙上显示成「动作」。示范墙本来就是「跟练课动作」，
+// 所以这里补一层「跟练步骤名」映射（由 GW_PROGRAMS 派生，不新增维护点）。
+const GUIDE_STEP_NAME = (() => {
+  const m = {};
+  Object.values(GW_PROGRAMS).forEach((p) => p.steps.forEach((s) => { if (!m[s.icon]) m[s.icon] = s.name; }));
+  return m;
+})();
+function dmbName(key) {
+  const e = EXERCISES[key];
+  if (e) return exName(e);
+  return GUIDE_STEP_NAME[key] ? t(GUIDE_STEP_NAME[key]) : t('dmbUnknown');
+}
 function dmbAngleChips(key) {
   return demoAngles(key).map((a) => '<span class="dmb-chip">' + t(a.k, { v: a.v }) + '</span>').join('');
 }
@@ -4913,13 +4925,14 @@ function renderDemos() {
   el.innerHTML = keys.map((k) => '<div class="dmb-cell">' +
     '<div class="dmb-cell-fig">' + (realDemo(k) ? '<img class="dmb-thumb" src="' + realDemo(k) + '" alt="">' : '<span class="dmb-cell-none">' + t('dmbNoReal') + '</span>') + '</div>' +
     '<div class="dmb-fr-cap">' + dmbName(k) + '</div>' +
-    '<button class="btn small" data-dmb="' + k + '">' + t('dmbLook') + '</button></div>').join('');
+    '<button class="btn small" data-dmb="' + k + '">' + t(realDemo(k) ? 'dmbLook' : 'dmbGuide') + '</button></div>').join('');
   el.querySelectorAll('[data-dmb]').forEach((b) => b.addEventListener('click', () => openDemo(b.dataset.dmb)));
 }
 // 验收用钩子：把示范图与录像存取暴露给自动化测试（不影响正常功能）
 try {
   window.__rehabDemo = { hasDemo: hasDemo, demoAngles: demoAngles, demoFigure: demoFigure, demoParams: demoParams,
     DEMOS: DEMOS, balanceOf: balanceOf, poseOf: poseOf, demoPose: demoPose,
+    dmbName: dmbName, guideStepKeys: guideStepKeys, GUIDE_STEP_NAME: GUIDE_STEP_NAME,
     clipPut: clipPut, clipAll: clipAll, clipDel: clipDel, idb: idbAvailable };
 } catch (e) { try { console.error('demo hook init failed:', e && e.message); } catch (x) { /* ignore */ } }   // 不再静默：钩子坏掉必须看得见
 // 云端验收钩子

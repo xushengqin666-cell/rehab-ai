@@ -60,12 +60,9 @@ const { zh, en } = extractDict();
 const hasPrefix = (dict, p) => { for (const k of dict) if (k.startsWith(p)) return true; return false; };
 
 // 有意「不翻译」的前缀：必须写明理由，且每次运行都会打印出来（不做静默忽略）。
-// lb_：数据采集页的标签按钮 app.js:`${t('lb_' + l) || l}` 刻意显示原始英文数据标签
-//      （good/shallow/deep/lean/valgus/frontShallow/frontDeep/sag/bad），因为导出的 CSV
-//      里存的就是这些标签，保持一一对应便于科研数据核对。词典里没有 lb_* 时会回落到原文。
-const INTENTIONAL_PREFIX_FALLBACK = {
-  lb_: '数据采集标签刻意保留原始英文标签（与导出 CSV 的标签一一对应）',
-};
+// 目前为空 —— v2.43.1 已给数据采集标签（lb_*）补上中英词条，不再需要豁免。
+// 将来要豁免时写在这里，例如：lb_: '理由…'
+const INTENTIONAL_PREFIX_FALLBACK = {};
 
 // 同一串既当完整 key 又当前缀时，以「完整 key」为准（前缀就不用再单独要求了）
 for (const k of staticKeys) dynPrefixes.delete(k);

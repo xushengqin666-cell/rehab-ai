@@ -1,5 +1,5 @@
 /* rehab-design-system.css — 康复AI 设计系统覆盖层（生成物，请勿手改）
- * 生成：node tests/design-tokens-build.mjs      生成于 2026-09-28 08:12
+ * 生成：node tests/design-tokens-build.mjs      生成于 2026-09-28 15:02
  * 依据：DESIGN.md（Google Labs DESIGN.md 开放格式）的 token
  *
  * 定位：纯新增覆盖层，加载在 style.css 之后。不动旧规则、不动 DOM 与交互逻辑，
@@ -99,7 +99,7 @@
   --shadow: var(--elevation-2);
 }
 
-/* ── ③ 字号吸附：141 处声明中 90 处偏离音阶（51 处已在音阶上）── */
+/* ── ③ 字号吸附：151 处声明中 92 处偏离音阶（59 处已在音阶上）── */
 .lang-btn,
 #placeholder,
 #loading,
@@ -154,7 +154,8 @@
 .account-email,
 .pa-score-grade,
 .gw-card-name,
-.gw-cue { font-size: var(--text-body); }
+.gw-cue,
+.dmb-sec { font-size: var(--text-body); }
 
 .pa-safety { font-size: var(--text-caption) !important; }
 
@@ -191,7 +192,8 @@
 .pa-lv { font-size: var(--text-micro); }
 
 .edu-arrow,
-.account-avatar { font-size: var(--text-title-sm); }
+.account-avatar,
+.dmb-name { font-size: var(--text-title-sm); }
 
 .logo,
 .s-value,
@@ -199,7 +201,7 @@
 .ft-mv-score,
 .gw-step-name { font-size: var(--text-title); }
 
-/* ── ③ 圆角吸附：103 处声明中 43 处偏离音阶（47 处已在音阶上）── */
+/* ── ③ 圆角吸附：114 处声明中 45 处偏离音阶（52 处已在音阶上）── */
 .stat,
 .feedback,
 .assess-result,
@@ -233,7 +235,9 @@
 .plan-editor,
 .ft-curve,
 .ft-traj,
-.hm-advice { border-radius: var(--radius-md); }
+.hm-advice,
+.dmb-thumb,
+.dmb-video video { border-radius: var(--radius-md); }
 
 .chart .bar { border-radius: var(--radius-sm) var(--radius-sm) var(--radius-sm) var(--radius-sm); }
 
@@ -294,7 +298,21 @@
 /* ── ⑥b 排版基线：去掉浏览器默认的 16px / 13.3333px 游离值，让继承可预测 ────── */
 body { font-size: var(--text-body); }
 button, input, select, textarea { font-family: inherit; font-size: inherit; }
-.dmb-thumb { border-radius: var(--radius-md); }
+
+/* ── ⑧ app.js 运行时拼的内联样式（类选择器抓不到，只能用属性选择器吸附）──────────
+ * 这些值由 app.js 的模板串写死（例如 style="margin-top:10px"），不在样式表里，
+ * 所以上面的字号/圆角吸附覆盖不到，必须按 style 属性匹配，并用 !important 压过内联样式。
+ * v2.43.1 实测出的全部偏离值（app.js 内联 style 里带 px 的写法）：
+ *   margin-top: 3 / 6 / 10px → 4 / 8 / 12px（4px 间距音阶）
+ *   margin-left: 6px → 8px；border-radius: 10px → 12px（圆角音阶 md）
+ *   两处琥珀色字面量 → 警示色 token（原来与 --yellow 是两种不同的琥珀） */
+[style*="margin-top:3px"] { margin-top: var(--spacing-xxs) !important; }
+[style*="margin-top:6px"] { margin-top: var(--spacing-xs) !important; }
+[style*="margin-top:10px"] { margin-top: var(--spacing-sm) !important; }
+[style*="margin-left:6px"] { margin-left: var(--spacing-xs) !important; }
+[style*="border-radius:10px"] { border-radius: var(--radius-md) !important; }
+[style*="color:#b45309"] { color: var(--color-warning-strong) !important; }
+[style*="background:rgba(245,158,11,.15)"] { background: var(--color-warning-container) !important; }
 
 /* ── ⑦ 数字：等宽 + tabular，数值不跳动 ──────────────────────────────────── */
 .s-value, .stat, .ai-score, .pain-lv, .rom-lv, .hm-cell, .nav-num, .chart-cap,
