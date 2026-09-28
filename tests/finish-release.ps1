@@ -90,6 +90,9 @@ if ($From -le 2) {
   }
   node tests/keycheck.mjs | Select-Object -Last 1
   if ($LASTEXITCODE -ne 0) { throw 'keycheck（i18n 键覆盖）未通过 → 已中止' }
+  # 设计系统验收：DESIGN.md 的 token 必须真的落到运行时（覆盖层、统一度、无障碍四项）
+  node tests/design-system.mjs
+  if ($LASTEXITCODE -ne 0) { throw '设计系统验收未通过（DESIGN.md 与运行时不一致）→ 已中止' }
 }
 
 if ($From -le 3) {

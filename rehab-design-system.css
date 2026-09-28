@@ -1,0 +1,304 @@
+/* rehab-design-system.css — 康复AI 设计系统覆盖层（生成物，请勿手改）
+ * 生成：node tests/design-tokens-build.mjs      生成于 2026-09-28 08:12
+ * 依据：DESIGN.md（Google Labs DESIGN.md 开放格式）的 token
+ *
+ * 定位：纯新增覆盖层，加载在 style.css 之后。不动旧规则、不动 DOM 与交互逻辑，
+ *       只做三件事：① 定义 token；② 把应用的旧变量指向 token（一次改动全局生效）；
+ *       ③ 把散落的字号/圆角吸附到音阶（本节由生成器逐条产出）。
+ * 改 DESIGN.md 后：重跑 designmd export 同步 token 块 → 重跑本生成器。
+ */
+
+:root {
+  /* 色板：暖纸中性 + 青绿主色 + 语义三元组 */
+  --color-primary: #0e7c66;
+  --color-primary-strong: #0a5f4e;
+  --color-primary-soft: #2ba48a;
+  --color-primary-container: #e6f2ee;
+  --color-on-primary: #ffffff;
+  --color-success: #158a5c;
+  --color-success-strong: #0f6f49;
+  --color-success-container: #e7f4ee;
+  --color-warning: #b45309;
+  --color-warning-strong: #8a3f07;
+  --color-warning-container: #fdf1e0;
+  --color-danger: #c8443f;
+  --color-danger-strong: #9e3838;
+  --color-danger-container: #f0d9d5;
+  --color-ink: #22262e;
+  --color-ink-strong: #14181f;
+  --color-ink-muted: #5c6472;
+  --color-surface: #ffffff;
+  --color-surface-soft: #fbfaf6;
+  --color-background: #f6f4ef;
+  --color-background-alt: #efece4;
+  --color-border: #e7e2d7;
+  --color-border-strong: #ded9cf;
+  --color-info-container: #e7edf3;
+  /* 字号音阶（9 级） */
+  --text-hero: 40px;
+  --text-display: 26px;
+  --text-title: 20px;
+  --text-title-sm: 17px;
+  --text-body: 15px;
+  --text-body-sm: 13px;
+  --text-caption: 12px;
+  --text-micro: 11px;
+  --text-numeric: 20px;
+  /* 圆角音阶（5 级） */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 22px;
+  --radius-pill: 999px;
+  /* 间距音阶（4px 基准） */
+  --spacing-xxs: 4px;
+  --spacing-xs: 8px;
+  --spacing-sm: 12px;
+  --spacing-md: 16px;
+  --spacing-lg: 20px;
+  --spacing-xl: 24px;
+  --spacing-xxl: 32px;
+  /* 高度（4 档，阴影色一律取 ink 透明度，不用纯黑） */
+  --elevation-1: 0 1px 2px rgba(34, 38, 46, .05);
+  --elevation-2: 0 1px 2px rgba(34, 38, 46, .05), 0 10px 28px rgba(34, 38, 46, .06);
+  --elevation-3: 0 4px 12px rgba(34, 38, 46, .08), 0 18px 44px rgba(34, 38, 46, .12);
+  --elevation-4: 0 1px 0 rgba(34, 38, 46, .06);
+  --glow-brand: 0 4px 14px rgba(14, 124, 102, .28);
+  --glow-brand-soft: 0 2px 8px rgba(14, 124, 102, .20);
+  --glow-success: 0 4px 14px rgba(21, 138, 92, .26);
+  --glow-danger: 0 4px 14px rgba(200, 68, 63, .26);
+  /* 动效（3 档时长 + 2 种缓动） */
+  --dur-fast: 120ms;
+  --dur-base: 200ms;
+  --dur-slow: 320ms;
+  --ease-standard: cubic-bezier(.2, .8, .3, 1);
+  --ease-emphasized: cubic-bezier(.16, 1, .3, 1);
+  /* 字体栈 */
+  --font-sans: system-ui, -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --font-mono: ui-monospace, "Cascadia Mono", Consolas, monospace;
+}
+
+/* ── ② 旧变量 → token：全局生效，也是对比度达标（WCAG AA）的关键一步 ──────────────
+ * --dim  #69707c → #5c6472（对暖纸底 4.54:1 → 5.4:1）
+ * --red  #d14a4a → #c8443f（对白字 4.38:1 → 4.82:1，小字合规）
+ */
+:root {
+  --bg: var(--color-background);
+  --bg2: var(--color-background-alt);
+  --card: var(--color-surface);
+  --line: var(--color-border);
+  --text: var(--color-ink);
+  --dim: var(--color-ink-muted);
+  --teal: var(--color-primary);
+  --teal-d: var(--color-primary-strong);
+  /* 成功色文字用 strong 档：#158a5c 对白底仅 4.36:1（小字不合格），#0f6f49 为 5.48:1 */
+  --green: var(--color-success-strong);
+  --yellow: var(--color-warning);
+  --red: var(--color-danger);
+  --radius: var(--radius-lg);
+  --shadow: var(--elevation-2);
+}
+
+/* ── ③ 字号吸附：141 处声明中 90 处偏离音阶（51 处已在音阶上）── */
+.lang-btn,
+#placeholder,
+#loading,
+.feedback,
+.fb-action,
+.ai-item,
+.summary-line,
+.seg button,
+.assess-result,
+.about,
+.chip,
+.rc-row,
+.an-item,
+.an-cols li,
+.loop-issue,
+.path-head,
+.ai-plan-head,
+.ai-reason,
+.prom-qt,
+.rom-row,
+.rep-row,
+.edu-t,
+.edu-body p,
+.dist-row,
+.goal-line,
+.link-btn,
+#pa-placeholder,
+#pa-loading,
+.pa-item-name,
+.pa-item-text,
+.pa-item-advice,
+.pa-priority li,
+#ft-placeholder,
+#ft-loading,
+.ft-cue,
+.ft-sim-head,
+.ft-presc-row,
+.ft-ex,
+.ft-table,
+.hm-part,
+.gw-set-line,
+.train-timer { font-size: var(--text-body-sm); }
+
+.ai-meta b,
+.btn,
+.card h3,
+.item .del,
+.form input,
+.retry-card b,
+.pain-btn,
+.rem-row input[type="time"],
+.account-email,
+.pa-score-grade,
+.gw-card-name,
+.gw-cue { font-size: var(--text-body); }
+
+.pa-safety { font-size: var(--text-caption) !important; }
+
+.sub,
+.std,
+.item .d,
+.about-version,
+.cf-group b,
+.rc-d,
+.loop-step,
+.prom-opt,
+.prom-sub,
+.radar-vals .rv,
+.edu-body p b,
+.ach-name,
+.pa-check-note,
+.pa-score-sub,
+.ft-mv-sim,
+.hm-lv { font-size: var(--text-caption); }
+
+.prom-big { font-size: var(--text-display); }
+
+.ft-profile-score,
+.hm-score,
+.gw-big { font-size: var(--text-hero); }
+
+.s-label,
+.ai-score span,
+.fb-report,
+.chart .bar-label,
+.nav-label,
+.loop-tag,
+.ach-desc,
+.pa-lv { font-size: var(--text-micro); }
+
+.edu-arrow,
+.account-avatar { font-size: var(--text-title-sm); }
+
+.logo,
+.s-value,
+.rom-big,
+.ft-mv-score,
+.gw-step-name { font-size: var(--text-title); }
+
+/* ── ③ 圆角吸附：103 处声明中 43 处偏离音阶（47 处已在音阶上）── */
+.stat,
+.feedback,
+.assess-result,
+.retry-card,
+.auth-brand .brand-mark,
+.pa-kind,
+.pa-item,
+.ft-presc,
+.ft-profile-last,
+.gw-card,
+.gw-done { border-radius: var(--radius-lg); }
+
+.brand-mark,
+.fb-action,
+.ai-item,
+.fb-report-box,
+.btn,
+.item,
+.seg button,
+.nav-ico,
+.collect-feats,
+.cbtn,
+.cf-group,
+.cf-group select, .cf-group input, .cf-rep select, .cf-rep input,
+.pain-btn,
+.pain-spike,
+.loop-now,
+.cam-guide,
+.rep-snap,
+.ach-item,
+.plan-editor,
+.ft-curve,
+.ft-traj,
+.hm-advice { border-radius: var(--radius-md); }
+
+.chart .bar { border-radius: var(--radius-sm) var(--radius-sm) var(--radius-sm) var(--radius-sm); }
+
+.card h3::before,
+.mini,
+.plan-day,
+.ob-dot.on,
+.ft-ex,
+.hm-cell { border-radius: var(--radius-sm); }
+
+.camera-box,
+.ob-ico,
+.modal-card { border-radius: var(--radius-xl); }
+
+/* ── ④ 高度：阴影收敛到 4 档 + 光晕，纯黑阴影改 ink 透明 ───────────────────── */
+.card, .camera-box, .lang-btn, .retry-card { box-shadow: var(--elevation-2); }
+.stat, .feedback, .chip, .btn, .item { box-shadow: var(--elevation-1); }
+.auth-card, .modal-card { box-shadow: var(--elevation-3); }
+#toast { box-shadow: var(--elevation-3); }
+.btn.primary, .pa-kind.on, .stat.big { box-shadow: var(--glow-brand); }
+.btn.accent { box-shadow: var(--glow-success); }
+.btn.danger { box-shadow: var(--glow-danger); }
+.brand-mark, .account-avatar, .auth-brand .brand-mark { box-shadow: var(--glow-brand); }
+.chart .bar, .seg button.on, .chip.on { box-shadow: var(--glow-brand-soft); }
+
+/* ── ⑤ 动效：18 种节奏收敛到 3 档时长 + 2 种缓动（只改节奏，不改动画目标）─────── */
+*, *::before, *::after {
+  transition-duration: var(--dur-base) !important;
+  transition-timing-function: var(--ease-standard) !important;
+}
+.btn, .chip, .seg button, .nav-ico, .cbtn { transition-duration: var(--dur-fast) !important; }
+.modal-card, .card, .auth-card { transition-duration: var(--dur-slow) !important; transition-timing-function: var(--ease-emphasized) !important; }
+/* 注意：这里**不要**加 html { scroll-behavior: smooth }。
+ * 应用的设计是切换页面时"立刻"回到顶部（full.mjs 第 21 节有断言），
+ * 平滑滚动会让复位变成动画过程，既拖慢手感也会让断言读到中途位置（v2.43.0 踩过一次）。 */
+
+/* ── ⑥ 无障碍：焦点环统一、触控热区 ≥44px、跟随系统减少动效 ────────────────── */
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+.btn:not(.small), .form input, .form select, .bottom-nav button { min-height: 44px; }
+/* .small 按钮保持原视觉高度（布局不动），用叠加层把热区扩到 44px —— 移动端标准做法 */
+.btn.small { position: relative; }
+.btn.small::after { content: ''; position: absolute; left: 0; right: 0; top: 50%; height: 44px; transform: translateY(-50%); }
+@media (prefers-reduced-motion: reduce) {
+  /* 必须把上面带 !important 的选择器一起列进来：它们的优先级高于 *，
+   * 否则 .btn/.card 等仍会走 120–320ms 动画，"减少动态效果"形同虚设（本层踩过）。 */
+  *, *::before, *::after,
+  .btn, .chip, .seg button, .nav-ico, .cbtn, .modal-card, .card, .auth-card {
+    transition-duration: 1ms !important;
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ── ⑥b 排版基线：去掉浏览器默认的 16px / 13.3333px 游离值，让继承可预测 ────── */
+body { font-size: var(--text-body); }
+button, input, select, textarea { font-family: inherit; font-size: inherit; }
+.dmb-thumb { border-radius: var(--radius-md); }
+
+/* ── ⑦ 数字：等宽 + tabular，数值不跳动 ──────────────────────────────────── */
+.s-value, .stat, .ai-score, .pain-lv, .rom-lv, .hm-cell, .nav-num, .chart-cap,
+[class*="value"], [class*="score"], [class*="count"] {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}

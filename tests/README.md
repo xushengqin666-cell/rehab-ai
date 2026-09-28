@@ -37,6 +37,8 @@ $env:RH_CDP_PORT = '9228'
 node tests/preflight.mjs # 发版前置检查：乱码 / .ps1 缺 BOM / 版本号三处不一致（快，先跑这个）
 node tests/full.mjs      # ⭐ 上市级验收：36 节 258 项断言（需 mock-supabase 在 8555）
 node tests/keycheck.mjs  # i18n 键覆盖检查
+node tests/design-system.mjs  # 设计系统验收：DESIGN.md 的 token 是否真的落到运行时（18 项）
+node tests/design-measure.mjs # 设计成熟度实测：改造前后各跑一次出数据（不判定，只报告）
 node tests/smoke.mjs     # 双语全功能回归（中文+英文+自测+模型）
 node tests/system.mjs    # 完整系统（统计/成就/计划/资料/提醒/云配置）
 node tests/synctest.mjs  # 二维码同步编解码（gzip 往返 + 二维码像素往返 + 合并）
@@ -45,6 +47,24 @@ node tests/mock-supabase.mjs   # 模拟 Supabase 服务器（另开一个终端�
 ```
 `full.mjs` 的全量日志落在 `tests/_last-run.txt`（已 gitignore），最后一行是
 `PASS n / FAIL m / 总计 n+m`，发版脚本就是靠这行判断成败。
+
+## 设计系统（DESIGN.md 开放格式）
+视觉的唯一真源是仓库根目录的 `DESIGN.md`（Google Labs 格式：YAML token + 八节理由说明）。
+改视觉的顺序：**先改 DESIGN.md → 再改运行时**，不要反过来。
+
+```powershell
+npx -y -p "@google/design.md" designmd lint DESIGN.md                 # 结构 / 断链 / WCAG 对比度
+npx -y -p "@google/design.md" designmd export --format css-tailwind DESIGN.md  # → CSS token（@theme 需转 :root）
+node tests/design-tokens-build.mjs        # ⚙️ 由 DESIGN.md 的 token + style.css 生成覆盖层
+node tests/design-tokens-build.mjs --check  # 只报告会吸附多少处，不写文件
+```
+- `rehab-design-system.css` 是**生成物**（顶部有生成时间），不要手改；改完 `style.css` 或
+  DESIGN.md 后重跑生成器。
+- 覆盖层是纯新增层（加载在 `style.css` 之后）：定义 token、把旧变量指向 token、把散落的
+  字号/圆角吸附到音阶、统一动效节奏与阴影、补焦点环与触控热区。**不动 DOM 与交互逻辑**。
+- 生成器会跳过 `@keyframes` 与 `@media` 内部规则——关键帧选择器不是真规则，媒体查询内的
+  取值属于分场景覆盖，强改会破坏动画与响应式。
+- 未覆盖的已知项：`border-radius: 50%`（正圆）、`0px`（无圆角）按设计保留。
 
 脚本也可以自检（确认检查本身真的能抓到问题，而不是永远返回通过）：
 ```powershell

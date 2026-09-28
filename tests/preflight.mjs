@@ -26,7 +26,8 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
 // 网页静态资源（会被浏览器直接读，乱码会显示在界面上）+ 仓库内脚本 + 仓库外发版脚本
 const WEB_FILES = ['index.html', 'app.js', 'style.css', 'i18n.js', 'demo.js', 'demo.css', 'sw.js',
-  'manifest.json', 'privacy.html', 'camtest.html', 'analysis.js', 'ai.js', 'latest.json', 'README.md'];
+  'manifest.json', 'privacy.html', 'camtest.html', 'analysis.js', 'ai.js', 'latest.json', 'README.md',
+  'DESIGN.md', 'rehab-design-system.css'];
 const SCRIPT_FILES = ['tests/preflight.mjs', 'tests/full.mjs', 'tests/keycheck.mjs', 'tests/smoke.mjs',
   'tests/system.mjs', 'tests/cloud-e2e.mjs', 'tests/live-smoke.mjs', 'tests/synctest.mjs', 'tests/st.mjs',
   'tests/mock-supabase.mjs', 'tests/start-servers.ps1', 'tests/finish-release.ps1'];
