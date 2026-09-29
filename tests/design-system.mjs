@@ -154,6 +154,29 @@ parseFloat(rm) <= 0.002
   ? ok(`系统开启「减少动态效果」时动画被压缩（transition-duration ${rm}）`)
   : bad(`未遵守 prefers-reduced-motion：transition-duration=${rm}`);
 
+// ── ⑤ 渲染清晰度：叠加层画布必须按设备像素比分配 ────────────────────────────────
+// v2.43.3 修的真缺陷：此前只用 CSS 像素分配画布，高分屏手机上骨架被放大 → 火柴人发虚。
+// 用 CDP 模拟 2× 屏幕来核对。注意必须走**演示模式**：假摄像头画面里没有人，MediaPipe 检测不到
+// 人体，训练循环会在「未检测到人」分支提前 return，根本走不到画布尺寸那段（本断言踩过）。
+await send('Emulation.setDeviceMetricsOverride', { width: 430, height: 932, deviceScaleFactor: 2, mobile: true });
+await evl(`(function(){const b=document.querySelector('.bottom-nav button[data-tab="posture"]'); if(b) b.click(); return 1;})()`);
+await sleep(700);
+await evl(`document.getElementById('btn-pa-demo').click()`);
+let dprInfo = null;
+for (let i = 0; i < 12; i++) {
+  await sleep(1000);
+  dprInfo = await evl(`(function(){const o=document.getElementById('pa-overlay'); const cap=Math.min(window.devicePixelRatio||1,2);
+    return { w:o.width, h:o.height, cw:o.clientWidth, ch:o.clientHeight, dpr:window.devicePixelRatio, want:Math.round(o.clientWidth*cap) };})()`);
+  if (dprInfo.cw > 0 && dprInfo.w === dprInfo.want && dprInfo.w > dprInfo.cw) break;
+}
+(dprInfo && dprInfo.cw > 0 && dprInfo.w === dprInfo.want && dprInfo.w > dprInfo.cw)
+  ? ok(`叠加层按设备像素比分配（CSS ${dprInfo.cw}×${dprInfo.ch} → 画布 ${dprInfo.w}×${dprInfo.h}，DPR ${dprInfo.dpr}，上限 2×）`)
+  : bad(`画布未按 DPR 分配（骨架会发虚）：${JSON.stringify(dprInfo)}`);
+// 恢复：停演示 + 撤掉模拟设备
+await evl(`(function(){const b=document.getElementById('btn-pa-demo'); if(b) b.click(); return 1;})()`);
+await send('Emulation.clearDeviceMetricsOverride');
+await sleep(400);
+
 console.log(`\nPASS ${pass} / FAIL ${failN} / 总计 ${pass + failN}`);
 ws.close();
 process.exit(failN ? 1 : 0);

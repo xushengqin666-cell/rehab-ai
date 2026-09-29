@@ -94,7 +94,7 @@ function migrateDeviceData(email) {
 }
 const fmtDate = (ts) => new Date(ts).toLocaleString(locale(), { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-const APP_VERSION = 'v2.43.2';
+const APP_VERSION = 'v2.43.3';
 const exName = (e) => (e.custom ? e.name : t(e.nameKey));
 const exDesc = (e) => (e.custom ? e.desc : t(e.descKey));
 const depthTxt = (d) => t('depth' + (d ? d.charAt(0).toUpperCase() + d.slice(1) : 'Ok')) || d;
@@ -154,6 +154,21 @@ const emptyBox = (ico, key) => `<div class="empty">${icon(ico)}<span>${t(key)}</
 const BODY = '#4ade80', JOINT = '#22d3ee', BAD = '#ef4444', HEAD = '#facc15';
 const CONNECTIONS = PoseLandmarker.POSE_CONNECTIONS.map((c) => [c.start, c.end]);
 let currentVG = null;
+
+// v2.43.3 修复：叠加层画布此前只按 CSS 像素分配（全项目 devicePixelRatio 出现 0 次），
+// 在高分屏手机上骨架是先按 1/2.5~1/3.5 分辨率绘制、再被浏览器放大 → 火柴人发虚，
+// 与下面清晰的摄像头画面形成落差。现在按设备像素比分配，并用 setTransform 把绘制坐标
+// 仍保持在 CSS 像素上（drawStick 等绘制函数无需任何改动）。
+// 上限 2 倍：再高清晰度收益很小，而每帧的填充/描边成本（含 shadowBlur 发光）会成倍上升。
+const DPR_CAP = 2;
+function fitOverlay(canvas, ctx) {
+  const dpr = Math.min(window.devicePixelRatio || 1, DPR_CAP);
+  const cw = canvas.clientWidth, ch = canvas.clientHeight;
+  const w = Math.max(1, Math.round(cw * dpr)), h = Math.max(1, Math.round(ch * dpr));
+  if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
+  if (ctx) ctx.setTransform(dpr, 0, 0, dpr, 0, 0);   // 尺寸变化会重置变换，所以每帧都设一次
+  return { cw, ch };
+}
 
 function drawStick(ctx, lms, w, h, mirror) {
   const px = (lm) => { let x = lm.x * w; if (mirror) x = w - x; return [x, lm.y * h]; };
@@ -659,8 +674,7 @@ function loop() {
   const lms = result.landmarks[0];
   currentVG = kneeValgus(lms);
 
-  const cw = $('overlay').clientWidth, ch = $('overlay').clientHeight;
-  if ($('overlay').width !== cw || $('overlay').height !== ch) { $('overlay').width = cw; $('overlay').height = ch; }
+  const { cw, ch } = fitOverlay($('overlay'), ctx);
   ctx.clearRect(0, 0, cw, ch);
   drawStick(ctx, lms, cw, ch, true);
   camGuideUpdate(lms);            // v2.30.0：入镜/距离引导（可关）
@@ -999,8 +1013,7 @@ $('photo-input').addEventListener('change', async (ev) => {
     $('placeholder').classList.add('hidden');
     $('stats-box').classList.remove('hidden');
     $('feedback').classList.remove('hidden');
-    const cw = $('overlay').clientWidth, ch = $('overlay').clientHeight;
-    $('overlay').width = cw; $('overlay').height = ch;
+    const { cw, ch } = fitOverlay($('overlay'), ctx);
     ctx.clearRect(0, 0, cw, ch);
     const scale = Math.max(cw / img.width, ch / img.height);
     const dw = img.width * scale, dh = img.height * scale;
@@ -3351,9 +3364,8 @@ function paLoop() {
     if (result.landmarks && result.landmarks.length) lms = result.landmarks[0];
   }
   const c = $('pa-overlay');
-  const cw = c.clientWidth, ch = c.clientHeight;
-  if (c.width !== cw || c.height !== ch) { c.width = cw; c.height = ch; }
   const ctx2 = c.getContext('2d');
+  const { cw, ch } = fitOverlay(c, ctx2);
   ctx2.clearRect(0, 0, cw, ch);
   if (lms) drawStick(ctx2, lms, cw, ch, !paState.demo);   // 真实摄像头镜像，演示不镜像
   const g = paCompleteness(lms, paState.kind, ts);
@@ -3919,9 +3931,8 @@ function ftLoop() {
     if (result.landmarks && result.landmarks.length) lms = result.landmarks[0];
   }
   const c = $('ft-overlay');
-  const cw = c.clientWidth, ch = c.clientHeight;
-  if (c.width !== cw || c.height !== ch) { c.width = cw; c.height = ch; }
   const ctx2 = c.getContext('2d');
+  const { cw, ch } = fitOverlay(c, ctx2);
   ctx2.clearRect(0, 0, cw, ch);
   if (lms) drawStick(ctx2, lms, cw, ch, !ftState.demo);
   const g = ftGate(lms);
@@ -6051,9 +6062,8 @@ function romLoop() {
   }
   const c = $('pa-overlay');
   if (c) {
-    const cw = c.clientWidth, ch = c.clientHeight;
-    if (c.width !== cw || c.height !== ch) { c.width = cw; c.height = ch; }
     const ctx2 = c.getContext('2d');
+    const { cw, ch } = fitOverlay(c, ctx2);
     ctx2.clearRect(0, 0, cw, ch);
     if (lms) drawStick(ctx2, lms, cw, ch, !romState.demo);
   }
