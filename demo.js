@@ -293,7 +293,10 @@ export const REAL_DEMO = {
 // 其余真人示范（可挂到自定义动作或“更多动作”里）
 export const REAL_EXTRA = [
   ['wallpushup', '墙俯卧撑'], ['biceps', '臂弯举'], ['chestpress', '胸前推'],
-  ['kneeext', '坐姿伸膝'], ['backext', '俯卧背伸'], ['abdominal', '卷腹'],
+  // 注：原 'abdominal' 条目已移除——demo-media/abdominal.gif 从未随仓库提供，是死链。
+  // 上游 CDC 分类里有同名文件（Commons: File:Abdominal curl-CDC strength training for older adults.gif），
+  // 将来若下载到 demo-media/abdominal.gif，可把 ['abdominal', '卷腹'] 加回本数组。
+  ['kneeext', '坐姿伸膝'], ['backext', '俯卧背伸'],
   ['toestand', '提踵'], ['hipabduction', '髋外展'], ['kneecurl', '俯卧屈膝'],
   ['grip', '握力'], ['fingermarch', '手指爬墙'],
   ['backstretch', '背部拉伸'], ['cheststretch', '胸部拉伸'], ['hamstringstretch', '腘绳肌拉伸'], ['quadstretch', '股四头肌拉伸'],
