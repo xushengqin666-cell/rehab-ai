@@ -1,7 +1,7 @@
 {
-  "version": "2.43.5",
-  "apk": "https://cdn.jsdelivr.net/gh/xushengqin666-cell/rehab-ai@main/downloads/RehabAI-v2.43.5.apk",
+  "version": "2.43.6",
+  "apk": "https://cdn.jsdelivr.net/gh/xushengqin666-cell/rehab-ai@main/downloads/RehabAI-v2.43.6.apk",
   "releaseUrl": "https://github.com/xushengqin666-cell/rehab-ai/releases/latest",
-  "notes": "v2.43.5 示范素材补齐：『靠墙静蹲』有真人示范了。① 补齐最后一个缺口：跟练页示范墙此前 9 个动作里只有它显示「正在补充」，现已换成真人实拍照片（Pixabay 第 2523075 号作品，作者 Vaughan Gray Fitness，CC0 公有领域，可商用），离线存于本机、可离线查看。这个动作此前几轮一直找不到：CDC 教材全套 22 张、美国 CDC/NIA 教材与视频、开源动作库 wger 的 Wall-sit 词条、中文维基「靠墙静蹲」条目都没有对应素材，几家免费图库站点又被网络挡住，最后是绕道图片搜索定位到图库直链下载回来的。② 界面来源标注相应改写：由「来自美国联邦政府公有领域作品」扩展为「美国联邦政府公有领域作品 + 免费商用图库的公有领域 / CC0 素材」，继续如实标明许可。③ 顺手清掉一处死链：动作库里的『卷腹』条目指向一个从未随包提供的示范文件，已移除（该列表当前无界面入口，不影响功能）。本版验收 258 项全通过。",
+  "notes": "v2.43.6 靠墙静蹲的示范也动起来了。① 上一版给『靠墙静蹲』配的是静态照片，跟其余 8 个动图不一致，看着像「不会动」。本版改成动图：以同一张 CC0 实拍照片为源，做呼吸式的轻微推拉（6%）与纵向位移，320×212、12 帧、1.2 秒无缝循环，跟其他示范动图一样会自动播放，也一起进了离线缓存。② 如实说明：这个动图是「保持循环」，**不是在演示站直→滑下→保持→起身的完整过程**——静蹲本身是等长保持动作；找过全网免费视频（Wikimedia Commons 全部动作类目、CDC/NIA 官方视频库、Mixkit、Coverr、Videvo、Pixabay、Pexels）确认没有这个动作的可商用视频，有墙蹲的都是付费素材，因此没有拿别的动作凑数。③ 素材来源与许可不变：Pixabay 第 2523075 号作品（作者 Vaughan Gray Fitness），CC0 公有领域、可商用、可离线。本版验收 258 项全通过。",
   "important": false
 }

@@ -282,11 +282,18 @@ export function figureSvg(key, o) {
    之所以前几轮找不到：Wikimedia Commons 全套 CDC 教材 22 张、CDC/NIA 教材与视频系列、wger
    的 Wall-sit/Wall Squat 词条全都没有这个动作；Pexels / Unsplash / Flickr / Openverse /
    Max Pixel 的站点又被本机网络挡住（Cloudflare 或直连失败）。最后是绕道 Yandex 图片搜索定位到
-   图库直链、再用能直连的 cdn.pixabay.com 下回来的。已离线存为 demo-media/wallsit.jpg
-   （800×530，53 KB，保持原构图未裁切）。 */
+   图库直链、再用能直连的 cdn.pixabay.com 下回来的。
+   【v2.43.6：从静态图改成动图】原先只是那张家照片（wallsit.jpg），界面上不会动、跟另外 8 个
+   动图不一致。曾系统找过这个动作的免费视频，确认不存在：Commons 全部动作类目与视频分类、
+   CDC/NIA 官方视频库、Mixkit、Coverr、Videvo、Pixabay、Pexels 都没有（有墙蹲的都是
+   Shutterstock/Getty 付费素材；Pexels 的视频 CDN 本机可下，但翻遍索引找不到这个动作的视频 ID）。
+   于是改用「保持循环」做法：以同一张 CC0 实拍照片为源，做一次离散推拉（6%）＋纵向轻微位移的
+   呼吸式循环，320×212、12 帧、1.2 秒无缝循环、218 KB，存为 demo-media/wallsit.gif。
+   它是真人实拍、会动，但**不是在演示「站直→滑下→保持→起身」的过程**——静蹲本身是等长保持动作，
+   这一点如实记录，不冒充完整动作演示。若将来拿到真人视频，直接换掉这个文件即可。 */
 export const REAL_DEMO = {
   squat: 'demo-media/squat.gif',
-  wallsit: 'demo-media/wallsit.jpg',         // v2.43.5 补齐：靠墙静蹲 ← Pixabay #2523075 真人照（CC0 公有领域，与 Max Pixel 镜像同图）
+  wallsit: 'demo-media/wallsit.gif',         // v2.43.6：靠墙静蹲 ← Pixabay #2523075 CC0 实拍照做的「保持循环」动图（推拉 6%＋轻微位移，1.2s 无缝循环）
   lunge: 'demo-media/lunge.gif',
   stepup: 'demo-media/stepup.gif',
   shoulderraise: 'demo-media/shoulderraise.gif',
