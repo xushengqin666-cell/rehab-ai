@@ -1,7 +1,7 @@
 {
-  "version": "2.43.7",
-  "apk": "https://cdn.jsdelivr.net/gh/xushengqin666-cell/rehab-ai@main/downloads/RehabAI-v2.43.7.apk",
+  "version": "2.43.8",
+  "apk": "https://cdn.jsdelivr.net/gh/xushengqin666-cell/rehab-ai@main/downloads/RehabAI-v2.43.8.apk",
   "releaseUrl": "https://github.com/xushengqin666-cell/rehab-ai/releases/latest",
-  "notes": "v2.43.7 靠墙静蹲的动图现在一眼就能看出在动。① 上一版虽然已经是 12 帧动图，但推拉幅度只有 6%，在手机的小格子里几乎看不出在动，看着还像张静态图。本版把幅度加大：推拉 6%→18%、纵向位移同步加大，帧数 12→16、循环 1.28 秒，实测相邻帧差异从 2.4~7.8 提到 13.4~16.7（约 3 倍），静止图上是看不出这种变化的。② 仍然如实说明：这是「保持循环」动图，**不是在演示站直→滑下→保持→起身的完整过程**——静蹲是等长保持动作；全网免费可商用视频里确认没有这个动作（Commons 全部动作类目、CDC/NIA 官方视频库、Mixkit、Coverr、Videvo、Pixabay、Pexels 都查过），没有拿别的动作凑数。③ 素材来源与许可不变：Pixabay 第 2523075 号作品（作者 Vaughan Gray Fitness），CC0 公有领域、可商用、可离线。④ 如果你看到的是旧画面，多半是浏览器或手机上的旧版本缓存：网页版下拉刷新一次即可，安卓端请装本版 APK。本版验收 258 项全通过。",
+  "notes": "v2.43.8 「搬重物·髋铰链」换成了完整的动作示范动图。① 之前这个动作配的是一张静态照片（六角杠硬拉起举位），只能看到姿势、看不到动作过程。本版换成真人完整动作示范动图：站直 → 屈髋俯身 → 起身，2.76 秒无缝循环、320×185、23 帧，从 8.8 秒的示范原片里截取一次完整动作。② 素材来自 Mixkit 的免费商用素材《Man in sportswear doing a deadlift at the gym》（免费商用许可，无需署名），已离线存进本机并一起进离线缓存。③ 界面来源标注同步扩展为「美国联邦政府公有领域作品 + 免费商用图库的公有领域 / CC0 / 免费商用素材（Pixabay、Wikimedia Commons、Mixkit 等）」，许可如实标明。④ 说明：上一版把「靠墙静蹲」的动图幅度做大是多余的改动（那个动作本来就不需要改），本版没有动它。本版验收 258 项全通过。",
   "important": false
 }

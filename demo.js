@@ -301,7 +301,7 @@ export const REAL_DEMO = {
   shoulderraise: 'demo-media/shoulderraise.gif',
   // v2.39.0 追加：按动作模式就近对应（CDC 教材里没有同名动作，取模式最接近的一张，界面上会标明实际动作名）
   bend: 'demo-media/hamstringstretch.gif',   // v2.41.0 更正：体前屈 ← 腘绳肌拉伸（前屈类）；原来误用了 Backstretch（背部后伸类）
-  hiphinge: 'demo-media/hiphinge.jpg',       // v2.43.4 更正：髋铰链 ← 六角杠硬拉起举位（屈髋、背挺直、胸口抬起）真人照片，美国陆军公开示范照，公有领域。原来误用 uprightrow.gif（直立划船，全程站立持铃，与髋铰链完全不符）
+  hiphinge: 'demo-media/hiphinge.gif',       // v2.43.8：搬重物·髋铰链 ← 真人完整动作示范动图（Mixkit《Man in sportswear doing a deadlift at the gym》#47890，免费商用许可；从 8.8s 原片里截取「站直→屈髋俯身→起身」一次完整动作，2.76s 无缝循环）。v2.43.4 时这里放的是一张静态照片，用户指出「要那种详细的动作示范」，故换成动图
   pushup: 'demo-media/wallpushup.gif',       // 俯卧撑 ← 墙俯卧撑（俯卧撑退阶）
   plank: 'demo-media/plank.jpg',             // 平板支撑 ← 真人照片（公有领域）
   sitstand: 'demo-media/squat.gif',          // 椅子起坐 ← 同一套的扶椅下蹲（CDC 教材里坐站起立即用椅子）
@@ -322,7 +322,7 @@ export const REAL_EXTRA = [
 ];
 export const realDemo = (key) => REAL_DEMO[key] || '';
 export const realExtraSvg = (file) => 'demo-media/' + file + '.gif';
-export const CDC_CREDIT = '示范素材：真人实拍，来自美国联邦政府公有领域作品（CDC《Growing Stronger》老年人力量训练教材、美国陆军公开示范照片等）与免费商用图库的公有领域 / CC0 素材（Pixabay、Wikimedia Commons 等）；可商用、可离线。';
+export const CDC_CREDIT = '示范素材：真人实拍，来自美国联邦政府公有领域作品（CDC《Growing Stronger》老年人力量训练教材、美国陆军公开示范照片等）与免费商用图库的公有领域 / CC0 / 免费商用素材（Pixabay、Wikimedia Commons、Mixkit 等）；可商用、可离线。';
 
 /* ---------- 三维骨架 + 任意方位角投影（多个角度观察） ---------- */
 const LAT = { hip: 11, knee: 12, ankle: 12, shoulder: 17 };
