@@ -1,7 +1,7 @@
 {
-  "version": "2.43.8",
-  "apk": "https://cdn.jsdelivr.net/gh/xushengqin666-cell/rehab-ai@main/downloads/RehabAI-v2.43.8.apk",
+  "version": "2.43.9",
+  "apk": "https://cdn.jsdelivr.net/gh/xushengqin666-cell/rehab-ai@main/downloads/RehabAI-v2.43.9.apk",
   "releaseUrl": "https://github.com/xushengqin666-cell/rehab-ai/releases/latest",
-  "notes": "v2.43.8 「搬重物·髋铰链」换成了完整的动作示范动图。① 之前这个动作配的是一张静态照片（六角杠硬拉起举位），只能看到姿势、看不到动作过程。本版换成真人完整动作示范动图：站直 → 屈髋俯身 → 起身，2.76 秒无缝循环、320×185、23 帧，从 8.8 秒的示范原片里截取一次完整动作。② 素材来自 Mixkit 的免费商用素材《Man in sportswear doing a deadlift at the gym》（免费商用许可，无需署名），已离线存进本机并一起进离线缓存。③ 界面来源标注同步扩展为「美国联邦政府公有领域作品 + 免费商用图库的公有领域 / CC0 / 免费商用素材（Pixabay、Wikimedia Commons、Mixkit 等）」，许可如实标明。④ 说明：上一版把「靠墙静蹲」的动图幅度做大是多余的改动（那个动作本来就不需要改），本版没有动它。本版验收 258 项全通过。",
+  "notes": "v2.43.9 两处按你的意思更正。① 「搬重物·髋铰链」改成完整动作示范：改用整段 8.8 秒的示范原片、整幅画面不做任何裁切，从站直准备到反复屈髋俯身搬起全程都在，不再只截一次动作、也不再裁到人物身上（上一版裁过，肢体可能被切到）。② 「靠墙静蹲」改回不动的静态真人照——你说得对，那个动作本来就不需要动，之前两版给它做动图是多余的改动，已撤销。本版验收 258 项全通过。",
   "important": false
 }

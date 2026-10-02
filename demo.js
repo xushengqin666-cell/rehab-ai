@@ -292,16 +292,20 @@ export function figureSvg(key, o) {
    没改**；v2.43.7 已加大到推拉 18%＋纵向位移 18%（320×212、16 帧、80ms、1.28 秒无缝循环、336 KB，
    相邻帧差异从 2.4~7.8 提到 13.4~16.7）。以后改这段参数，务必保持「一眼看出在动」。
    它是真人实拍、会动，但**不是在演示「站直→滑下→保持→起身」的过程**——静蹲本身是等长保持动作，
-   这一点如实记录，不冒充完整动作演示。若将来拿到真人视频，直接换掉这个文件即可。 */
+   这一点如实记录，不冒充完整动作演示。若将来拿到真人视频，直接换掉这个文件即可。
+   【v2.43.9 两处更正·用户裁定】① 靠墙静蹲改回**静态图**（wallsit.jpg）——用户明确说「静蹲不用动」，
+   上面那两版给它做的动图属多余改动，别再动它。② 搬重物（hiphinge）改用**整段原片、整幅画面**：
+   用户要求「要完整的」，所以既不截取单次动作、也不裁到人物包围盒，8.8 秒全过程都在。
+   → 做示范动图的通用纪律：宁可保留整段动作与整幅画面，也不要为了「更近更小」而截断动作或裁掉肢体。 */
 export const REAL_DEMO = {
   squat: 'demo-media/squat.gif',
-  wallsit: 'demo-media/wallsit.gif',         // v2.43.7：靠墙静蹲 ← Pixabay #2523075 CC0 实拍照做的「保持循环」动图（推拉 18%＋纵向位移 18%，16 帧 / 1.28s 无缝循环。v2.43.6 的 6% 幅度太小被当成没改）
+  wallsit: 'demo-media/wallsit.jpg',         // v2.43.9：靠墙静蹲 ← 静态真人照（Pixabay #2523075，CC0 公有领域）。用户明确「静蹲不用动」，故从动图改回静态图；v2.43.6/2.43.7 那两版给它做动图属多余改动
   lunge: 'demo-media/lunge.gif',
   stepup: 'demo-media/stepup.gif',
   shoulderraise: 'demo-media/shoulderraise.gif',
   // v2.39.0 追加：按动作模式就近对应（CDC 教材里没有同名动作，取模式最接近的一张，界面上会标明实际动作名）
   bend: 'demo-media/hamstringstretch.gif',   // v2.41.0 更正：体前屈 ← 腘绳肌拉伸（前屈类）；原来误用了 Backstretch（背部后伸类）
-  hiphinge: 'demo-media/hiphinge.gif',       // v2.43.8：搬重物·髋铰链 ← 真人完整动作示范动图（Mixkit《Man in sportswear doing a deadlift at the gym》#47890，免费商用许可；从 8.8s 原片里截取「站直→屈髋俯身→起身」一次完整动作，2.76s 无缝循环）。v2.43.4 时这里放的是一张静态照片，用户指出「要那种详细的动作示范」，故换成动图
+  hiphinge: 'demo-media/hiphinge.gif',       // v2.43.9：搬重物·髋铰链 ← 真人完整动作示范动图，用整段 8.8 秒原片、整幅画面不裁切（Mixkit《Man in sportswear doing a deadlift at the gym》#47890，免费商用）。用户要求「要完整的」：不再只截一次动作、也不再裁到人物，全过程都在
   pushup: 'demo-media/wallpushup.gif',       // 俯卧撑 ← 墙俯卧撑（俯卧撑退阶）
   plank: 'demo-media/plank.jpg',             // 平板支撑 ← 真人照片（公有领域）
   sitstand: 'demo-media/squat.gif',          // 椅子起坐 ← 同一套的扶椅下蹲（CDC 教材里坐站起立即用椅子）
