@@ -274,7 +274,16 @@ export function figureSvg(key, o) {
 
 /* ---------- 真人示范动图（CDC《Growing Stronger》老年力量训练教材·美国政府作品·公有领域） ----------
    为什么用它：这是康复受众对口的官方标准示范、真人在做、动图能看清全过程，且无版权限制；
-   三维人体图继续保留，用于标注应用真正使用的角度阈值与常见错误对照。 */
+   三维人体图继续保留，用于标注应用真正使用的角度阈值与常见错误对照。
+   【已知空缺·别再重复找】wallsit（靠墙静蹲）没有真人素材，故不在 REAL_DEMO 里，界面按 dmbNoReal
+   显示「正在补充」。已核查且确认没有的免费来源：Wikimedia Commons（含 Category:CDC strength
+   training for older adults 全 22 张、220 个运动类目深挖、insource 检索）、CDC/NIA 教材与视频
+   系列、wger（有 Wall-sit/Wall Squat 词条但 0 张图）、zh 维基「靠墙静蹲」条目（只有一张 SVG 示意图）。
+   本机网络另把 Pexels / Pixabay / Unsplash / Flickr / Openverse / Max Pixel / archive.org 全部挡住，
+   拿不到 CC0 真人照。唯一带真人影像的是开源 App Feeel 的 wallSit.webp，但它是照片的低多边形风格化
+   衍生（CC BY-SA 4.0、纯黑背景、画面里没有墙），按「只认真人、不得用合成/风格化顶替」的规则不采用。
+   → 换到能连通的环境 / 拿到图库 API key 后，把真人照存成 demo-media/wallsit.jpg，
+     在 REAL_DEMO 加 wallsit 一行、并把它加进 sw.js 的 CACHE_FIRST 即可。 */
 export const REAL_DEMO = {
   squat: 'demo-media/squat.gif',
   lunge: 'demo-media/lunge.gif',
