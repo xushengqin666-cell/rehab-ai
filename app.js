@@ -9,6 +9,7 @@ import {
 } from './analysis.js';
 import { healthCheck, buildFeedbackReport, logAiError, aiErrors, aiStats, aiStatsGet, aiFeedbackAdd, aiSessionComment, generatePlan } from './ai.js';
 import { DEMOS, hasDemo, demoPose, demoParams, demoFigure, poseOf, demoAngles, balanceOf, realDemo, REAL_EXTRA, realExtraSvg, CDC_CREDIT, clipPut, clipAll, clipDel, clipGet, clipSetForEx, clipForEx, idbAvailable } from './demo.js';
+import { EV_METRICS, EV_SOURCES, EV_PRINCIPLES, evOf, classifyChange, compareReports, hasEvidence } from './evidence.js';   // v2.44.0：测量依据（MDC 门槛）
 
 /* ============ 基础工具 ============ */
 const $ = (id) => document.getElementById(id);
@@ -94,7 +95,7 @@ function migrateDeviceData(email) {
 }
 const fmtDate = (ts) => new Date(ts).toLocaleString(locale(), { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-const APP_VERSION = 'v2.43.9';
+const APP_VERSION = 'v2.44.0';
 const exName = (e) => (e.custom ? e.name : t(e.nameKey));
 const exDesc = (e) => (e.custom ? e.desc : t(e.descKey));
 const depthTxt = (d) => t('depth' + (d ? d.charAt(0).toUpperCase() + d.slice(1) : 'Ok')) || d;
@@ -3061,6 +3062,8 @@ function paItem(key, v, level, fmt, advice, textKey) {
   const texts = { good: key + 'G', warn: key + 'W', bad: key + 'B' };
   return {
     key, level, val: fmt ? fmt(v) : String(v), score: level === 'good' ? 100 : level === 'warn' ? 65 : 30,
+    // v2.44.0：保留原始数值，供「逐指标变化判定」按测量误差（MDC）判断是否真实变化
+    raw: Number(v),
     label: t(key), text: t(texts[level], { v: fmt ? fmt(v) : String(v) }),
     advice: level === 'good' ? '' : advice,
   };
@@ -5104,6 +5107,7 @@ function renderRecheck() {
     ? rows.map((r) => `<div class="rc-row"><span class="rc-k">${r.k}</span><span class="rc-prev">${r.prev}${r.unit}</span><span class="rc-arrow">→</span><span class="rc-now">${r.now}${r.unit}</span>
         ${r.d == null ? '' : `<span class="rc-d ${r.better ? 'ok' : 'warn'}">${r.d > 0 ? '+' : ''}${r.d}${r.unit}</span>`}</div>`).join('')
     : `<p class="hint tiny">${t('rcNoData')}</p>`;
+  renderRcEvidence();   // v2.44.0：逐指标变化判定（按系统综述的 MDC 门槛）
   const tr = $('rc-trend');
   if (tr) {
     const pts = trend30Points();
@@ -5112,6 +5116,37 @@ function renderRecheck() {
       ${pain30.length > 1 ? `<p class="chart-cap">${t('rcTrendPain')}</p>${lineChart(pain30, '#e07a5f', 'rcp')}` : ''}`;
   }
   renderBodyAnalysis();
+}
+/* v2.44.0：逐指标变化判定（含测量误差）
+ * 依据：本项目的系统综述指出「两次测量之差必须先跨过测量误差才能称为真实变化」。
+ * 老记录没有 raw 数值（v2.44.0 之前只存格式化字符串），自动跳过，不报错。 */
+function renderRcEvidence() {
+  const el = $('rc-evidence');
+  if (!el) return;
+  const h = paHistory().filter((r) => r && Array.isArray(r.items));
+  let nowR = null, prevR = null;
+  for (const r of h) {
+    if (!r.items.some((it) => it && typeof it.raw === 'number')) continue;   // 只认有新数值的记录
+    if (!nowR) { nowR = r; continue; }
+    if (r.kind === nowR.kind) { prevR = r; break; }
+  }
+  const rows = compareReports(nowR, prevR);
+  const verdictTxt = (v) => t(v === 'better' ? 'evBetter' : v === 'worse' ? 'evWorse' : 'evNoise');
+  const body = rows.length
+    ? `<p class="hint tiny">${t('evKindNote', { k: t((PA_META[nowR.kind] || PA_META.standing).nameKey), d: new Date(nowR.ts).toLocaleDateString(locale()), p: new Date(prevR.ts).toLocaleDateString(locale()) })}</p>` +
+      rows.map((r) => `<div class="rc-row rc-ev-row">
+        <span class="rc-k">${t(r.key)}</span>
+        <span class="rc-prev">${r.prev.toFixed(1)}${r.unit}</span><span class="rc-arrow">→</span><span class="rc-now">${r.now.toFixed(1)}${r.unit}</span>
+        <span class="rc-d ${r.verdict === 'better' ? 'ok' : r.verdict === 'worse' ? 'warn' : ''}">${r.delta > 0 ? '+' : ''}${r.delta.toFixed(1)}${r.unit}</span>
+        <span class="ev-badge ${r.verdict}" title="${t(r.whyKey)}">${verdictTxt(r.verdict)}${r.verdict === 'noise' ? ' ±' + r.mdc + r.unit : ''}</span>
+      </div>`).join('')
+    : `<p class="hint tiny">${t('evNoData')}</p>`;
+  const srcs = EV_SOURCES.map((s) => `<li>${t(s.key)}</li>`).join('');
+  const principles = EV_PRINCIPLES.map((k) => `<li>${t(k)}</li>`).join('');
+  el.innerHTML = body +
+    `<details class="ev-details"><summary>${t('evBasis')}</summary>` +
+    `<ul class="ev-src">${principles}</ul><ul class="ev-src">${srcs}</ul>` +
+    `<p class="hint tiny">${t('evBoundary')}</p></details>`;
 }
 $('btn-rc-report') && $('btn-rc-report').addEventListener('click', () => $('btn-rep-html').click());
 $('btn-rc-assess') && $('btn-rc-assess').addEventListener('click', () => switchTab('posture'));

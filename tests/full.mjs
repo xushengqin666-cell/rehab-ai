@@ -1027,6 +1027,70 @@ console.log('===== 36. 编码防回归（v2.42.1：防 PowerShell 重写导致�
 const enc = await evl(`(async function(){const out=[];for(const f of ['app.js','i18n.js','demo.js','sw.js','index.html','style.css','demo.css']){try{const t=await (await fetch('/'+f+'?enc='+Date.now())).text();const bad=(t.match(/Ã|Ā|â,¬/g)||[]).length;out.push(f+'='+bad);}catch(e){out.push(f+'=ERR');}}return out.join(' ');})()`);
 (!String(enc).includes('ERR') && !/=[1-9]/.test(String(enc))) ? ok('静态资源无双重编码乱码（' + enc + '）') : bad('检测到乱码：' + enc);
 
+console.log('===== 37. 测量依据与逐指标变化判定（v2.44.0：按系统综述的 MDC 门槛） =====');
+// ① 逻辑层：判定函数的边界行为（浏览器内动态 import 模块）
+const evLogic = await evl(`(async function(){
+  const m = await import('/evidence.js');
+  const v = (k, now, prev) => { const r = m.classifyChange(k, now, prev); return r ? r.verdict : 'null'; };
+  return {
+    tableSize: Object.keys(m.EV_METRICS).length,
+    noise: v('mStandHead', 42, 40),
+    better: v('mStandHead', 40, 46),
+    worse: v('mStandHead', 46, 40),
+    exactlyAtMdc: v('mStandHead', 45.5, 40),
+    bandCloser: v('mSquatTrunk', 30, 55),
+    bandFarther: v('mSquatTrunk', 55, 30),
+    unknown: m.classifyChange('nope', 1, 2),
+    frontMdc: m.EV_METRICS.mStandShoulder.mdc,
+    kneeMdc: m.EV_METRICS.mStandKnee.mdc,
+  };
+})()`);
+evLogic && evLogic.tableSize === 15 ? ok('测量依据表含 15 个指标门槛') : bad('门槛表条目异常：' + JSON.stringify(evLogic && evLogic.tableSize));
+evLogic && evLogic.noise === 'noise' ? ok('差值 2° 小于 CVA 门槛 5.5° → 判为「在误差内」') : bad('噪声判定异常：' + (evLogic && evLogic.noise));
+evLogic && evLogic.better === 'better' && evLogic.worse === 'worse' ? ok('跨过门槛后按方向判改善/变差') : bad('方向判定异常：' + JSON.stringify([evLogic && evLogic.better, evLogic && evLogic.worse]));
+evLogic && evLogic.exactlyAtMdc === 'worse' ? ok('差值恰等于门槛即算真实变化（≥ 门槛即判变化，方向按指标极性为变差）') : bad('门槛边界异常：' + (evLogic && evLogic.exactlyAtMdc));
+evLogic && evLogic.bandCloser === 'better' && evLogic.bandFarther === 'worse' ? ok('区间型指标按「是否更靠近目标区间」判定') : bad('区间判定异常：' + JSON.stringify([evLogic && evLogic.bandCloser, evLogic && evLogic.bandFarther]));
+evLogic && evLogic.unknown === null ? ok('未知指标不做判定（返回 null）') : bad('未知指标未返回 null');
+evLogic && evLogic.frontMdc === 14 && evLogic.kneeMdc === 11.4 ? ok('门槛取值与文献一致（额状面比例 14%、膝角 11.4°）') : bad('门槛取值异常：' + JSON.stringify([evLogic && evLogic.frontMdc, evLogic && evLogic.kneeMdc]));
+// ② 界面层：注入两份含原始数值的体态报告，复评页应逐指标渲染判定
+await evl(`(function(){
+  const now = Date.now();
+  const mk = (ts, head) => ({ kind: 'standing', ts, score: 80, grade: 'B', demo: false, priorities: [], items: [
+    { key: 'mStandHead', level: 'warn', val: head.toFixed(0) + '\u00b0', score: 65, raw: head, label: '', text: '', advice: '' },
+    { key: 'mStandTrunk', level: 'good', val: '12\u00b0', score: 100, raw: 12, label: '', text: '', advice: '' } ] });
+  localStorage.setItem('rehab_pa_history', JSON.stringify([mk(now, 40), mk(now - 86400000, 46)]));
+  return 1;
+})()`);
+await evl(`(function(){const b = document.querySelector('.bottom-nav button[data-tab="recheck"]'); if (b) b.click(); return 1;})()`);
+await sleep(700);
+const evUI = await evl(`(function(){
+  const el = document.getElementById('rc-evidence');
+  if (!el) return { missing: true };
+  const rows = [...el.querySelectorAll('.rc-ev-row')];
+  const badges = [...el.querySelectorAll('.ev-badge')].map((b) => b.textContent.trim());
+  return { rows: rows.length, badges, details: !!el.querySelector('.ev-details'),
+    hasSource: /Stolinski|Gallego|Kiatkulanusorn/.test(el.textContent), text: el.textContent.slice(0, 300) };
+})()`);
+evUI && !evUI.missing ? ok('复评页渲染出「逐指标变化判定」区块') : bad('复评页缺少判定区块');
+evUI && evUI.rows >= 2 ? ok('逐指标渲染出行（' + (evUI && evUI.rows) + ' 行）') : bad('逐指标行数不足：' + JSON.stringify(evUI && evUI.rows));
+evUI && evUI.badges.some((b) => b.indexOf('改善') >= 0) ? ok('头前伸 46°→40° 判为「改善」') : bad('未判出改善：' + JSON.stringify(evUI && evUI.badges));
+evUI && evUI.badges.some((b) => b.indexOf('在误差内') >= 0) ? ok('无变化项标注「在误差内」并附门槛数值') : bad('未标注在误差内：' + JSON.stringify(evUI && evUI.badges));
+evUI && evUI.details && evUI.hasSource ? ok('可展开「这些门槛的依据」并含文献来源') : bad('依据区缺失：' + JSON.stringify({ d: evUI && evUI.details, s: evUI && evUI.hasSource }));
+// ③ 兼容性：旧记录没有 raw 字段时不得报错
+await evl(`(function(){
+  localStorage.setItem('rehab_pa_history', JSON.stringify([
+    { kind: 'standing', ts: Date.now(), score: 80, grade: 'B', items: [{ key: 'mStandHead', level: 'good', val: '40\u00b0', score: 100, label: '', text: '' }] },
+    { kind: 'standing', ts: Date.now() - 1000, score: 80, grade: 'B', items: [{ key: 'mStandHead', level: 'good', val: '42\u00b0', score: 100, label: '', text: '' }] } ]));
+  const b = document.querySelector('.bottom-nav button[data-tab="recheck"]'); if (b) b.click();
+  return 1;
+})()`);
+await sleep(600);
+const evOldUI = await evl(`(function(){
+  const el = document.getElementById('rc-evidence');
+  return { has: !!el, txt: el ? el.textContent.slice(0, 120) : '' };
+})()`);
+evOldUI && evOldUI.has && evOldUI.txt.length > 0 ? ok('旧记录（无原始数值）不报错、显示提示文案') : bad('旧记录兼容异常：' + JSON.stringify(evOldUI));
+
 console.log('===== 结果 =====');
 console.log('CONSOLE_ERRORS:', consoleErrors.length ? consoleErrors.join(' ||| ') : 'none');
 if (consoleErrors.length) failN++;
